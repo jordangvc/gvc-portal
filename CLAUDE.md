@@ -1437,3 +1437,17 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
   "Jordan Haas". Andrea (office mgr — billing/estimates, Windows PC), Jake (sales),
   Melvin (estimator, Philippines). Andrea's PC = why the portal + future remote MCP
   matter (kills .mcpb installs).
+
+### 2026-07-26 — Canonical + git + takeoff integration (written from the takeoff project)
+- Joe Haas TERMINATED (Jordan, Jul 26). Pending: audit portal-side grants he
+  held (access.py entries, Monday/Stripe/GCP IAM). Takeoff app already blocklists him.
+- This Windows copy (`C:\Claude\GVC Invoice portal\portal-current`) is CANONICAL
+  per Jordan; Mac-era paths in docs above are historical.
+- Repo git-initialized (commit 5769329). Commit every change; local-only, no remote yet.
+- Takeoff app integration contract: docs/INTEGRATION-CONTRACT-TAKEOFF.md
+  (mirrored in the takeoff repo as docs/PORTAL-INTEGRATION-BRIEF.md — change both together).
+  Seam 1: takeoff exports estimate JSON in example_estimate.json's EXACT shape —
+  that file is now a cross-repo contract, don't reshape it casually.
+  Seam 2: takeoff reads win/loss + invoiced $ from Monday (Monday stays the bus).
+- Cross-project rule: sessions in the takeoff Claude Code project may read this
+  repo; any write from over there appends a dated note here (like this one).
