@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Change Order {{ co.co_number }}</title>
+<style>
+  @page {
+    size: letter;
+    margin: 0.5in 0.55in 0.55in 0.55in;
+    @bottom-left {
+      content: "Green Valley Contractors, Inc.  ·  billing@greenvalleycontractors.com  ·  DRYWALL EXPERTS SINCE 1987";
+      font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+      font-size: 7.5pt;
+      color: #6B7280;
+      padding-top: 4pt;
+      border-top: 0.5pt solid #E5E7EB;
+      width: 100%;
+    }
+  }
+
+  :root {
+    --gvc-green: #5BB833;
+    --gvc-green-dark: #2D5A1F;
+    --gvc-black: #111111;
+    --gvc-text: #1F2937;
+    --gvc-muted: #6B7280;
+    --gvc-line: #E5E7EB;
+    --gvc-soft: #F7F8F6;
+    --gvc-amber: #B45309;
+    --gvc-warn-bg: #FEF3C7;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt;
+    color: var(--gvc-text);
+    line-height: 1.45;
+  }
+  table { border-collapse: collapse; width: 100%; }
+  h1, h2, h3, h4 { margin: 0; font-weight: 700; color: var(--gvc-black); }
+
+  .top-band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10pt;
+    border-bottom: 3pt solid var(--gvc-green);
+    margin-bottom: 12pt;
+  }
+  .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 4pt; }
+  .brand img { width: 100pt; height: 100pt; object-fit: contain; }
+  .brand .tag {
+    font-size: 8pt; color: var(--gvc-muted); letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .doc-title { text-align: right; }
+  .doc-title h1 { font-size: 22pt; letter-spacing: 0.08em; color: var(--gvc-black); }
+  .doc-title .from-block { font-size: 8.5pt; color: var(--gvc-text); line-height: 1.35; margin-top: 6pt; }
+  .doc-title .from-block .from-name { font-weight: 700; color: var(--gvc-black); }
+  .doc-title .meta-line {
+    font-size: 9pt; color: var(--gvc-muted);
+    margin-top: 6pt; padding-top: 4pt;
+    border-top: 0.5pt solid var(--gvc-line);
+  }
+
+  .disclaimer {
+    background: var(--gvc-warn-bg);
+    color: var(--gvc-amber);
+    border-left: 4pt solid var(--gvc-amber);
+    padding: 9pt 12pt;
+    margin-bottom: 14pt;
+    font-size: 10pt;
+    line-height: 1.4;
+  }
+  .disclaimer strong { display: block; font-size: 9pt; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 3pt; }
+
+  .meta-grid {
+    display: flex;
+    gap: 24pt;
+    margin-bottom: 14pt;
+  }
+  .meta-block { flex: 1; }
+  .meta-block .label {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin-bottom: 4pt;
+  }
+  .meta-block .value { color: var(--gvc-text); white-space: pre-line; }
+  .meta-block .value.name { font-weight: 700; color: var(--gvc-black); font-size: 11pt; }
+  .meta-kv { width: 100%; }
+  .meta-kv td { padding: 2pt 0; font-size: 9.5pt; }
+  .meta-kv td.k { color: var(--gvc-muted); width: 38%; }
+  .meta-kv td.v { text-align: right; color: var(--gvc-text); font-weight: 600; white-space: nowrap; }
+
+  .section-title {
+    font-size: 9pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin: 12pt 0 4pt 0;
+  }
+
+  .co-title {
+    font-size: 13pt; font-weight: 700; color: var(--gvc-black);
+    margin-bottom: 6pt;
+  }
+  .co-description {
+    font-size: 10pt; color: var(--gvc-text); white-space: pre-line;
+    margin-bottom: 10pt;
+  }
+
+  .breakdown { margin-bottom: 10pt; }
+  .breakdown thead th {
+    background: var(--gvc-black); color: #FFF;
+    text-align: left; padding: 6pt 10pt; font-size: 9pt;
+    font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .breakdown thead th.num { text-align: right; }
+  .breakdown tbody td {
+    padding: 5pt 10pt; border-bottom: 1pt solid var(--gvc-line);
+    vertical-align: top; font-size: 10pt;
+  }
+  .breakdown tbody td.num { text-align: right; }
+  .breakdown tbody tr:nth-child(even) td { background: var(--gvc-soft); }
+
+  .totals-wrap { display: flex; justify-content: flex-end; margin-bottom: 12pt; }
+  .totals { width: 48%; }
+  .totals td { padding: 4pt 10pt; font-size: 10.5pt; }
+  .totals td.k { color: var(--gvc-muted); text-align: left; }
+  .totals td.v { text-align: right; font-weight: 600; }
+  .totals tr.total td {
+    border-top: 2pt solid var(--gvc-black);
+    padding-top: 8pt; padding-bottom: 8pt;
+    font-size: 13pt; font-weight: 800; color: var(--gvc-black);
+  }
+  .totals tr.total td.v { color: var(--gvc-green-dark); }
+
+  .approval-note {
+    background: var(--gvc-soft);
+    border-left: 4pt solid var(--gvc-green);
+    padding: 9pt 12pt;
+    font-size: 9.5pt;
+    color: var(--gvc-text);
+    white-space: pre-line;
+    page-break-inside: avoid;
+  }
+  .approval-note .label {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin-bottom: 4pt;
+  }
+
+  .appendix-page {
+    page-break-before: always;
+  }
+  .appendix-page .label {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin-bottom: 6pt;
+  }
+  .appendix-page .filename {
+    font-size: 9pt; color: var(--gvc-muted); margin-bottom: 8pt;
+  }
+  .appendix-page img {
+    max-width: 100%;
+    max-height: 8.5in;
+    display: block;
+    margin: 0 auto;
+  }
+</style>
+</head>
+<body>
+
+  <div class="top-band">
+    <div class="brand">
+      <img src="{{ logo_data_uri }}" alt="Green Valley Contractors">
+      <div class="tag">Drywall Experts Since 1987</div>
+    </div>
+    <div class="doc-title">
+      <h1>CHANGE ORDER</h1>
+      <div class="from-block">
+        <div class="from-name">Green Valley Contractors, Inc.</div>
+        <div>5121 Highland Center Rd</div>
+        <div>Brookville, IN 47012</div>
+        <div>(513) 912-2235</div>
+        <div>billing@greenvalleycontractors.com</div>
+        <div>www.greenvalleycontractors.com</div>
+      </div>
+      <div class="meta-line">{{ co.co_number }} &middot; {{ co.issue_date_pretty }}</div>
+    </div>
+  </div>
+
+  {% if standalone %}
+  <div class="approval-note" style="margin-bottom:14pt;">
+    <div class="label">Change Order — for approval</div>
+    This Change Order modifies the scope and price of the contract for the referenced project. Please review and indicate approval by reply. Upon approval, this work will be billed as <strong>{{ co.co_number }}</strong> (either as its own invoice or as a line on a project invoice). This document does not itself collect payment.
+  </div>
+  {% else %}
+  <div class="disclaimer">
+    <strong>Informational — Not an Invoice</strong>
+    This document is for informational purposes. It is not an invoice. It is the supporting record for the change-order line carried on invoice {{ co.linked_invoice_identifier }}, issued the same day. Payment is collected via that invoice only.
+  </div>
+  {% endif %}
+
+  <div class="meta-grid">
+    <div class="meta-block">
+      <div class="label">For</div>
+      <div class="value name">{{ client.name }}</div>
+      {% if client.contact_name %}<div class="value">Attn: {{ client.contact_name }}</div>{% endif %}
+      <div class="value">{{ client.billing_address }}</div>
+    </div>
+
+    <div class="meta-block">
+      <div class="label">Project</div>
+      <div class="value name">{{ job.name }}</div>
+      {% if job.site_address %}<div class="value">{{ job.site_address }}</div>{% endif %}
+    </div>
+
+    <div class="meta-block">
+      <table class="meta-kv">
+        <tr><td class="k">CO #</td><td class="v">{{ co.co_number }}</td></tr>
+        {% if standalone %}
+        <tr><td class="k">Project / Estimate #</td><td class="v">{{ co.base_number }}</td></tr>
+        {% else %}
+        <tr><td class="k">Linked invoice</td><td class="v">{{ co.linked_invoice_identifier }}</td></tr>
+        {% endif %}
+        <tr><td class="k">Date</td><td class="v">{{ co.issue_date_pretty }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  {% if co.title %}<div class="co-title">{{ co.title }}</div>{% endif %}
+  {% if co.description %}<div class="co-description">{{ co.description }}</div>{% endif %}
+
+  <div class="section-title">Breakdown</div>
+  <table class="breakdown">
+    <thead>
+      <tr>
+        <th>Description</th>
+        <th class="num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for row in co.breakdown %}
+      <tr>
+        <td>{{ row.label }}</td>
+        <td class="num">{{ row.amount_pretty }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="totals-wrap">
+    <table class="totals">
+      <tr class="total">
+        <td class="k">Total this Change Order</td>
+        <td class="v">{{ co.total_pretty }}</td>
+      </tr>
+    </table>
+  </div>
+
+  {% if co.approval_note %}
+  <div class="approval-note">
+    <div class="label">Approval &amp; sign-off</div>
+    {{ co.approval_note }}
+  </div>
+  {% endif %}
+
+  {% for img in co.appendix %}
+  <div class="appendix-page">
+    <div class="label">Appendix — Crew Approval / Field Ticket</div>
+    <div class="filename">{{ img.filename }}</div>
+    <img src="{{ img.data_uri }}" alt="{{ img.filename }}">
+  </div>
+  {% endfor %}
+
+</body>
+</html>

@@ -1,0 +1,34 @@
+# Keep the Cloud Build upload small + fast. Only what the Dockerfile COPYs is
+# needed (the .py modules, templates/, assets/, web/, requirements.txt).
+# Everything below is irrelevant to the build — notably mcp_server/ (~27MB of
+# vendored node_modules + .mcpb/.dxt bundles), which made `gcloud run deploy
+# --source .` hang on "uploading sources".
+
+mcp_server/
+inputs/
+output/
+logs/
+docs/
+tests/
+skills/
+_attic/
+venv/
+
+# caches / local artifacts / secrets
+__pycache__/
+**/__pycache__/
+*.pyc
+.venv/
+.env
+.google-service-account.json
+.gmail-token.json
+.gmail-token-hello.json
+.google-oauth-client.json
+.DS_Store
+**/.DS_Store
+.git/
+.claude/
+
+# build/distribution bundles
+*.dxt
+*.mcpb

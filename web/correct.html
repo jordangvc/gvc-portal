@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reissue / Correct — GVC Portal</title>
+<style>
+  :root { --green: #1f6b3b; --green-dark: #174f2b; --bg: #f5f6f5; --line: #e2e5e2; --warn: #8a5a00; --warn-bg: #fff7e6; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #1c211d; background: var(--bg); }
+  header { background: var(--green); color: #fff; padding: 14px 22px;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; font-size: 18px; margin: 0; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255,255,255,.16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header .who { justify-self: end; font-size: 13px; display: flex; gap: 12px; align-items: center; }
+  header .who a { color: #fff; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header .who { grid-row: 1; }
+  }
+  main { max-width: 860px; margin: 0 auto; padding: 24px 22px 64px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 18px; }
+  .card h2 { margin: 0 0 4px; font-size: 16px; }
+  .card p.hint { margin: 0 0 14px; color: #586; font-size: 13px; }
+  label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 5px; }
+  input[type=text], input[type=email], textarea, select {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; }
+  textarea { min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  .kinds { display: grid; gap: 10px; margin-top: 6px; }
+  .kind { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
+  .kind.sel { border-color: var(--green); background: #f3faf5; }
+  .kind b { display: block; font-size: 14px; }
+  .kind span { font-size: 12.5px; color: #586; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { background: var(--green); color: #fff; border: 0; border-radius: 9px; padding: 11px 18px;
+    font-size: 14px; font-weight: 700; cursor: pointer; }
+  button:hover { background: var(--green-dark); }
+  button.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  button:disabled { opacity: .5; cursor: default; }
+  .out { white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
+    background: #0f1a12; color: #d7ffe2; padding: 14px; border-radius: 10px; margin-top: 12px; display: none; }
+  .plan { border-left: 4px solid var(--green); padding: 6px 0 6px 14px; margin: 12px 0; }
+  .plan ol { margin: 6px 0; padding-left: 20px; }
+  .caveat { background: var(--warn-bg); color: var(--warn); border: 1px solid #f0d8a0; border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 13px; }
+  .hidden { display: none; }
+  .pill { display: inline-block; background: #eef4ef; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--green-dark); }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>🔧 Reissue / Correct</h1>
+  <div class="who"><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div class="card">
+    <h2>1 · The invoice you're correcting</h2>
+    <p class="hint">Enter the invoice number to load the saved JSON straight from Drive (stored next to the PDF when it was billed).
+      For older invoices without a saved JSON, paste it below instead.</p>
+    <div class="row" style="align-items:flex-end">
+      <div style="flex:1 1 260px">
+        <label for="ident">Invoice number</label>
+        <input type="text" id="ident" placeholder="GVC-2026-MV-007">
+      </div>
+      <button type="button" id="loadbtn" class="secondary">Load from Drive</button>
+    </div>
+    <div id="load-out" class="hint" style="margin-top:6px"></div>
+    <label for="original" style="margin-top:12px">Original invoice JSON</label>
+    <textarea id="original" placeholder='{ "client": { ... }, "job": { ... }, "invoice": { "identifier": "GVC-2026-MV-007", ... } }'></textarea>
+  </div>
+
+  <div class="card">
+    <h2>2 · Your corrections</h2>
+    <p class="hint">Enter only what changed. The tool diffs it against the original and figures out the route:
+      a non-money fix (e.g. the email) edits the existing invoice in place; a money/line-item change issues a clean revision (… Rev N).</p>
+
+    <label for="email">Correct email address</label>
+    <input type="email" id="email" placeholder="right@client.com">
+
+    <label for="overrides">Other corrections (optional JSON) <span class="pill">advanced</span></label>
+    <textarea id="overrides" placeholder='{ "invoice": { "line_items": [ ... ] } }  — leave blank if only the email is wrong'></textarea>
+  </div>
+
+  <div class="card">
+    <h2>3 · Preview, then confirm</h2>
+    <p class="hint">Dry-run shows exactly what will happen and rebuilds the corrected PDF — no changes are made until you confirm.</p>
+    <div class="row">
+      <button id="dryrun">Preview correction</button>
+      <button id="confirm" class="secondary hidden">Confirm &amp; apply</button>
+    </div>
+    <div id="planbox" class="hidden"></div>
+    <div id="out" class="out"></div>
+  </div>
+</main>
+
+<script>
+(function () {
+  var lastPayloadOk = false;
+
+  var out = document.getElementById("out");
+  var planbox = document.getElementById("planbox");
+  var confirmBtn = document.getElementById("confirm");
+
+  function show(obj) { out.style.display = "block"; out.textContent = typeof obj === "string" ? obj : JSON.stringify(obj, null, 2); }
+  function resetConfirm() { confirmBtn.classList.add("hidden"); planbox.classList.add("hidden"); lastPayloadOk = false; }
+
+  document.getElementById("loadbtn").addEventListener("click", function () {
+    var lo = document.getElementById("load-out");
+    var ident = document.getElementById("ident").value.trim();
+    if (!ident) { lo.textContent = "Enter an invoice number first."; return; }
+    lo.textContent = "Loading…"; resetConfirm();
+    fetch("/ui/api/invoice/original?identifier=" + encodeURIComponent(ident))
+      .then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .then(function (res) {
+        if (res.status >= 400) { var d = res.body.detail || res.body; lo.innerHTML = '<span style="color:#b3261e">' + (d.advice || d.detail || "Not found") + '</span>'; return; }
+        document.getElementById("original").value = JSON.stringify(res.body.original, null, 2);
+        lo.innerHTML = '<span style="color:#1f6b3b">✓ Loaded from Drive.</span> Enter your corrections below.';
+        document.getElementById("email").focus();
+      }).catch(function (e) { lo.textContent = String(e); });
+  });
+
+  function buildBody(mode) {
+    var original;
+    try { original = JSON.parse(document.getElementById("original").value); }
+    catch (e) { throw new Error("The original invoice JSON isn't valid JSON: " + e.message); }
+    var corrections = {};
+    var email = document.getElementById("email").value.trim();
+    if (email) corrections.email = email;
+    var ov = document.getElementById("overrides").value.trim();
+    if (ov) {
+      var parsed;
+      try { parsed = JSON.parse(ov); }
+      catch (e) { throw new Error("The 'other corrections' box isn't valid JSON: " + e.message); }
+      Object.keys(parsed).forEach(function (k) { corrections[k] = parsed[k]; });
+    }
+    return { original: original, corrections: corrections, mode: mode };
+  }
+
+  function esc(v) { return String(v === undefined || v === null ? "—" : v).replace(/[&<>]/g, function (m) { return ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" })[m]; }); }
+
+  var ROUTE_LABEL = {
+    noop: "No change", in_place: "Edit in place (same number)", revision: "Revision (… Rev N)"
+  };
+
+  function renderPlan(data) {
+    var p = data.plan || {};
+    var route = data.route || p.route;
+    var html = '<div class="plan"><b>' + (ROUTE_LABEL[route] || route) + '</b>';
+    html += '<div style="margin:6px 0"><span class="pill">' + esc(data.original_identifier) +
+            '</span> → <span class="pill">' + esc(data.corrected_identifier) + '</span></div>';
+    var changes = data.changes || p.changes || [];
+    if (changes.length) {
+      html += "<div style='margin:8px 0'><b>Changes</b><ul style='margin:4px 0;padding-left:20px'>";
+      changes.forEach(function (c) {
+        html += "<li>" + esc(c.path) + (c.monetary ? " 💲" : "") + ": <code>" + esc(c.from) + "</code> → <code>" + esc(c.to) + "</code></li>";
+      });
+      html += "</ul></div>";
+    }
+    if (p.steps && p.steps.length) {
+      html += "<b>Will do</b><ol>"; p.steps.forEach(function (s) { html += "<li>" + esc(s) + "</li>"; }); html += "</ol>";
+    }
+    html += "</div>";
+    (p.caveats || []).forEach(function (c) { html += '<div class="caveat">⚠ ' + esc(c) + "</div>"; });
+    planbox.innerHTML = html; planbox.classList.remove("hidden");
+    // Don't offer Confirm when there's nothing to do.
+    return route !== "noop";
+  }
+
+  function post(body, btn) {
+    btn.disabled = true;
+    return fetch("/ui/api/invoice/correct", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body)
+    }).then(function (r) { return r.json().then(function (j) { return { status: r.status, body: j }; }); })
+      .finally(function () { btn.disabled = false; });
+  }
+
+  document.getElementById("dryrun").addEventListener("click", function () {
+    resetConfirm();
+    var body;
+    try { body = buildBody("dry-run"); } catch (e) { show(e.message); return; }
+    post(body, this).then(function (res) {
+      if (res.status >= 400) { show(res.body.detail || res.body); return; }
+      var actionable = renderPlan(res.body);
+      show(res.body);
+      lastPayloadOk = actionable;
+      if (actionable) confirmBtn.classList.remove("hidden");
+    }).catch(function (e) { show(String(e)); });
+  });
+
+  confirmBtn.addEventListener("click", function () {
+    if (!lastPayloadOk) return;
+    if (!confirm("Apply this correction now? This will write to Stripe / Gmail / Monday.")) return;
+    var body;
+    try { body = buildBody("live"); } catch (e) { show(e.message); return; }
+    post(body, this).then(function (res) {
+      if (res.status >= 400) { show(res.body.detail || res.body); return; }
+      show(res.body);
+      confirmBtn.classList.add("hidden");
+    }).catch(function (e) { show(String(e)); });
+  });
+})();
+</script>
+</body>
+</html>

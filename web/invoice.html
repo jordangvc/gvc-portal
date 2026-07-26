@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Invoice Generator</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5; --co-bg: #fff7ed; --co-line: #fdba74;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 14px 24px;
+    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; text-align: center; }
+  .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px;
+    padding: 8px 12px; border-radius: 8px; opacity: .95; }
+  .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  .home-link .chev { font-size: 17px; line-height: 1; }
+  #health { justify-self: end; font-size: 12px; opacity: .95; display: flex; gap: 12px;
+    flex-wrap: wrap; justify-content: flex-end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    #health { grid-row: 1; }
+  }
+  #health span { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+  .dot.ok { background: #4ade80; }
+  .dot.bad { background: #f87171; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label .opt { font-weight: 400; color: var(--muted); }
+  input, textarea, select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
+    font: inherit; color: var(--ink); background: #fff; }
+  input:focus, textarea:focus, select:focus { outline: 2px solid var(--green); border-color: var(--green); }
+  textarea { resize: vertical; min-height: 64px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .line-item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fafbfc; }
+  .line-item.is-co { background: var(--co-bg); border-color: var(--co-line); }
+  .line-item .row1 { display: grid; grid-template-columns: 1fr 160px auto; gap: 10px; align-items: end; }
+  .line-item .detail { margin-top: 8px; }
+  .li-co-row { margin-top: 8px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; }
+  .li-co-row input[type=checkbox] { width: auto; }
+  .li-co-row .co-num { display: none; flex: 1; min-width: 200px; }
+  .li-co-row.show .co-num { display: block; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--green); color: #fff; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .btn.danger { background: #fff; color: #b91c1c; border: 1px solid var(--err-line); padding: 8px 12px; }
+  .btn.small { padding: 7px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .totals { margin-left: auto; text-align: right; font-size: 14px; color: var(--muted); }
+  .totals strong { color: var(--ink); font-size: 16px; }
+  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #preview-card { display: none; }
+  #preview-card.show { display: block; }
+  /* Corrections modal (in-generator) */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,26,18,.55);
+    z-index: 50; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 14px; width: 100%; max-width: 720px; box-shadow: 0 18px 50px rgba(0,0,0,.3); }
+  .modal-head { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid #e2e5e2; }
+  .modal-head h2 { margin: 0; font-size: 17px; }
+  .modal-x { background: none; border: 0; font-size: 24px; line-height: 1; cursor: pointer; color: #586; }
+  .modal-body { padding: 18px 20px; }
+  .modal-body .opt-card { border: 1px solid #e2e5e2; border-radius: 10px; padding: 14px 16px; margin: 10px 0; }
+  .modal-body .opt-card b { display: block; margin-bottom: 3px; }
+  .modal-body .opt-card span { font-size: 13px; color: #586; }
+  .modal-body .changes { margin: 8px 0; padding-left: 18px; }
+  .modal-body .changes li { margin: 3px 0; font-size: 13.5px; }
+  .modal-body code { background: #f1f4f1; padding: 1px 5px; border-radius: 4px; }
+  .modal-body .caveat { background: #fff7e6; color: #8a5a00; border: 1px solid #f0d8a0; border-radius: 8px; padding: 9px 12px; margin: 8px 0; font-size: 13px; }
+  .route-pill { display: inline-block; background: #eef4ef; color: #174f2b; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+  iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
+  .result-line { padding: 4px 0; }
+  .result-line a { color: var(--green-dark); font-weight: 600; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .spinner { display: none; }
+  .spinner.show { display: inline; }
+  /* Draft autosave UI */
+  .save-state { font-size: 12px; color: var(--muted); margin-left: auto; align-self: center; }
+  .save-state.synced { color: var(--green-dark); }
+  .save-state.local { color: #b45309; }
+  .draft-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 8px; background: #fafbfc; }
+  .draft-row.active { border-color: var(--green); background: #f0f7f3; }
+  .draft-row .d-main { flex: 1; min-width: 0; }
+  .draft-row .d-label { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .draft-row .d-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .badge.synced { background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0; }
+  .badge.local { background: var(--warn-bg); color: #b45309; border: 1px solid var(--warn-line); }
+  .badge.active { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+  /* Commercial section */
+  .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #374151; }
+  .toggle-row input { width: auto; }
+  #commercial-body { display: none; margin-top: 16px; border-top: 1px dashed var(--line); padding-top: 16px; }
+  #commercial-body.show { display: block; }
+  .sub { border: 1px solid var(--line); border-radius: 8px; padding: 14px; margin-bottom: 12px; background: #fafbfc; }
+  .sub h3 { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 10px; }
+  .co-block { border: 1px solid var(--co-line); border-radius: 8px; padding: 14px; margin-bottom: 12px; background: var(--co-bg); }
+  .breakdown-row { display: grid; grid-template-columns: 1fr 140px auto; gap: 8px; align-items: end; margin-bottom: 6px; }
+  .repeat-link { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: end; margin-bottom: 6px; }
+  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
+     visual fatigue on long forms. Calm green/slate alternation; overrides the
+     plain white .card above via source order. ── */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+  main form .card + .card { margin-top: 28px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>🏗️ Invoice Generator</h1>
+  <div id="health">Checking service…</div>
+</header>
+
+<main>
+  <div id="status"></div>
+
+  <form id="invoice-form" autocomplete="off">
+    <div class="card" id="prefill-card">
+      <h2>Start from a project</h2>
+      <div class="grid">
+        <div><label>Project # <span class="opt">(Projects board — pulls customer, job, type &amp; folder)</span></label>
+          <input name="project_number_lookup" placeholder="C-005 or MV-001" /></div>
+        <div style="display:flex;align-items:flex-end;gap:8px;">
+          <button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button>
+        </div>
+      </div>
+      <div id="prefill-note" class="hint"></div>
+      <!-- carry-through from the matched project (Projects board = source of truth) -->
+      <input type="hidden" name="job_monday_item_id" />
+      <input type="hidden" name="job_monday_job_type" />
+      <input type="hidden" name="job_project_type" />
+      <input type="hidden" name="job_project_number" />
+    </div>
+
+    <div class="card" id="drafts-card" style="display:none;">
+      <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress invoices — yours and your teammates')</span></h2>
+      <div id="drafts-list"></div>
+    </div>
+
+    <div class="card">
+      <h2>Client</h2>
+      <div class="grid">
+        <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports billing identity)</span></label>
+          <input name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
+          <div id="customer-results" style="display:none;border:1px solid var(--border,#ccc);border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;"></div></div>
+        <div><label>Client / company name</label><input name="client_name" required placeholder="Henderson Residence" /></div>
+        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Mark Henderson" /></div>
+        <div><label>Email <span class="opt">(Stripe customer lookup)</span></label><input name="client_email" type="email" required placeholder="mark@example.com" /></div>
+        <div><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Job</h2>
+      <div class="grid">
+        <div><label>Job name</label><input name="job_name" required placeholder="Henderson Kitchen Remodel" /></div>
+        <div><label>Site address <span class="opt">(optional)</span></label><textarea name="site_address" placeholder="Same as billing, or job site address"></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Invoice details</h2>
+      <div class="grid">
+        <div><label>Invoice number <span class="opt">(= the project number)</span></label><input name="identifier" required placeholder="2026-0622-001" />
+          <div class="hint">This is the <strong>project number carried over from the estimate</strong> — the same number on the estimate, the project, and any change orders. Auto-filled by “Look up &amp; fill”; edit only if you must.</div></div>
+        <div><label>Issue date</label><input name="issue_date" type="date" required /></div>
+        <div><label>Payment terms</label><input name="payment_terms" value="Net 30" /></div>
+        <div><label>Due date <span class="opt">(blank = Net 30 auto)</span></label><input name="due_date" type="date" /></div>
+        <div class="full"><label>Email context <span class="opt">(optional — one line atop the Gmail draft)</span></label><input name="email_context" placeholder="Final draw minus touch-up; pad install Tuesday" /></div>
+        <div class="full"><label>Notes <span class="opt">(optional — printed on the invoice)</span></label><textarea name="notes" placeholder="Thank you for your business. ACH preferred — no processing fee."></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Line items</h2>
+      <div id="line-items"></div>
+      <button type="button" class="btn secondary small" id="add-line">+ Add line item</button>
+    </div>
+
+    <div class="card">
+      <h2>Discount <span class="opt" style="text-transform:none;font-weight:400;">(optional — transparent line)</span></h2>
+      <div class="grid">
+        <div><label>Description</label><input name="discount_desc" placeholder="Repeat client courtesy" /></div>
+        <div><label>Amount ($) <span class="opt">(positive; rendered as −$)</span></label><input name="discount_amount" type="number" step="0.01" min="0" placeholder="185.00" /></div>
+      </div>
+    </div>
+
+    <!-- ---- Commercial / progress billing ---- -->
+    <div class="card">
+      <label class="toggle-row"><input type="checkbox" id="commercial-toggle" /> This is a commercial / progress-billing invoice (AIA)</label>
+      <div id="commercial-body">
+
+        <div class="sub">
+          <h3>Progress billing</h3>
+          <div class="grid three">
+            <div><label>Invoice type</label>
+              <select name="invoice_type">
+                <option value="standard">Standard</option>
+                <option value="progress">Progress (pay application)</option>
+                <option value="final">Final</option>
+              </select></div>
+            <div><label>Pay app # <span class="opt">(progress)</span></label><input name="pay_app_number" type="number" min="1" placeholder="1" /></div>
+            <div><label>Period end date <span class="opt">(progress)</span></label><input name="period_end_date" type="date" /></div>
+          </div>
+        </div>
+
+        <div class="sub">
+          <h3><label class="toggle-row" style="text-transform:none;letter-spacing:0;"><input type="checkbox" id="retainage-toggle" /> Retainage held this application</label></h3>
+          <div class="grid" id="retainage-body" style="display:none;">
+            <div><label>Percentage <span class="opt">(display only)</span></label><input name="retainage_pct" type="number" step="0.01" min="0" placeholder="10" /></div>
+            <div><label>Amount held ($)</label><input name="retainage_amount" type="number" step="0.01" min="0" placeholder="2342.69" /></div>
+            <div><label>Scope</label>
+              <select name="retainage_scope">
+                <option value="base">base — first non-CO line absorbs it</option>
+                <option value="all">all — proportional across every line</option>
+              </select></div>
+            <div><label>Description <span class="opt">(optional)</span></label><input name="retainage_desc" placeholder="10% retainage held — billed at completion" /></div>
+          </div>
+        </div>
+
+        <div class="sub">
+          <h3>AIA G702/G703</h3>
+          <div class="grid">
+            <div class="full"><label>AIA workbook (Google Drive link) <span class="opt">(the .xlsx in the job’s Drive folder)</span></label>
+              <input name="aia_excel_link" placeholder="https://drive.google.com/file/d/…/view  (or a drive:FILE_ID)" />
+              <div class="hint">The workbook stays in Drive — we read it server-side. Paste the share link or the file ID.</div></div>
+            <div><label>G702 sheet name</label><input name="g702_sheet_name" placeholder="G702 - Pay Application" /></div>
+            <div><label>G703 sheet name <span class="opt">(blank = auto from pay app #)</span></label><input name="g703_sheet_name" placeholder="1 - G703 - Schedule of Values" /></div>
+          </div>
+          <div class="hint" style="margin-top:10px;">Already have G702/G703 as PDFs instead? Paste their Drive links below (skips the Excel export):</div>
+          <div id="extra-pdfs"></div>
+          <button type="button" class="btn secondary small" id="add-extra-pdf">+ Add pre-made PDF link</button>
+        </div>
+
+        <div class="sub">
+          <h3>Drive writeback</h3>
+          <label>Job “Invoice/” folder (Google Drive link) <span class="opt">(optional — where completed PDFs are archived)</span></label>
+          <input name="drive_invoice_folder_link" placeholder="https://drive.google.com/drive/folders/…  (or a folder ID)" />
+          <div class="hint">On a live run we create a dated “Completed Invoices” subfolder here and upload the PDFs + sentinel. Requires the bot to have access to this Shared Drive.</div>
+        </div>
+
+        <div class="sub">
+          <h3>Change orders</h3>
+          <div class="hint">Change Orders are created in the <a href="/ui/change-order" target="_blank" rel="noopener">Change Order app</a> — this invoice does not create them. To <strong>bill</strong> an existing change order, add a line item above, check “Change order line”, and enter its CO number; the charge is then tracked as a change order on the invoice. (A picker to pull approved COs automatically is coming.)</div>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="actions">
+        <button type="button" class="btn" id="btn-generate">Generate Preview</button>
+        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Invoice</button>
+        <button type="button" class="btn secondary small" id="btn-new-invoice">Start new</button>
+        <button type="button" class="btn secondary small" id="btn-correct">Correct / reissue…</button>
+        <span class="spinner" id="spinner">⏳ Working…</span>
+        <span id="save-state" class="save-state"></span>
+        <div class="totals">
+          Line items <span id="t-subtotal">$0.00</span> &nbsp;·&nbsp; Discount <span id="t-discount">$0.00</span><br />
+          <strong>Before retainage <span id="t-total">$0.00</span></strong>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        <strong>Generate Preview</strong> renders the PDF(s) only — no Stripe, no email. <strong>Accept</strong> creates the finalized Stripe invoice + the billing@ Gmail draft. For commercial, exact retainage totals appear in the preview PDF.
+      </div>
+    </div>
+  </form>
+
+  <div class="card" id="preview-card">
+    <h2>Preview</h2>
+    <iframe id="preview-frame" title="Invoice PDF preview"></iframe>
+    <div id="co-previews" style="margin-top:10px;"></div>
+  </div>
+
+  <!-- Corrections flow (lives inside the generator; not a separate tool) -->
+  <div id="correct-overlay" class="modal-overlay">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="correct-title">
+      <div class="modal-head">
+        <h2 id="correct-title">Correct / reissue invoice</h2>
+        <button type="button" class="modal-x" id="correct-close" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body" id="correct-body"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const lineItemsEl = $("#line-items");
+
+/* ---- Google Drive link normalization ---- */
+function extractDriveId(s) {
+  s = (s || "").trim();
+  if (!s) return "";
+  if (s.startsWith("drive:")) return s.slice(6).trim();
+  let m = s.match(/\/d\/([a-zA-Z0-9_-]+)/); if (m) return m[1];
+  m = s.match(/[?&]id=([a-zA-Z0-9_-]+)/); if (m) return m[1];
+  m = s.match(/\/folders\/([a-zA-Z0-9_-]+)/); if (m) return m[1];
+  if (/^[a-zA-Z0-9_-]{10,}$/.test(s)) return s; // bare id
+  return s;
+}
+function driveRef(s) { const id = extractDriveId(s); return id ? "drive:" + id : ""; }
+
+/* ---- Line items ---- */
+function lineItemRow(v = {}) {
+  const div = document.createElement("div");
+  div.className = "line-item";
+  div.innerHTML = `
+    <div class="row1">
+      <div><label>Description</label><input class="li-desc" placeholder="Pay Application #1 — base contract work this period" value="${v.description || ""}" /></div>
+      <div><label>Amount ($)</label><input class="li-amount" type="number" step="0.01" min="0" placeholder="18200.00" value="${v.amount ?? ""}" /></div>
+      <div><button type="button" class="btn danger li-remove">Remove</button></div>
+    </div>
+    <div class="detail"><label>Detail <span class="opt">(optional sub-line)</span></label><input class="li-detail" placeholder="Kitchen, dining nook, ceiling repair." value="${v.detail || ""}" /></div>
+    <div class="li-co-row${(v.kind || "").toLowerCase() === "co" ? " show" : ""}">
+      <label><input type="checkbox" class="li-is-co"${(v.kind || "").toLowerCase() === "co" ? " checked" : ""} /> Change order line</label>
+      <input class="co-num" placeholder="CO number, e.g. C-005-CO-01" value="${v.co_number || ""}" />
+    </div>`;
+  div.querySelector(".li-remove").addEventListener("click", () => {
+    if (lineItemsEl.children.length > 1) div.remove();
+    recalcTotals();
+  });
+  const coChk = div.querySelector(".li-is-co");
+  if (coChk.checked) div.classList.add("is-co");
+  coChk.addEventListener("change", () => {
+    div.querySelector(".li-co-row").classList.toggle("show", coChk.checked);
+    div.classList.toggle("is-co", coChk.checked);
+  });
+  div.querySelectorAll("input").forEach((i) => i.addEventListener("input", recalcTotals));
+  return div;
+}
+function addLineItem(v) { lineItemsEl.appendChild(lineItemRow(v)); recalcTotals(); }
+
+function money(n) { return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+function recalcTotals() {
+  let subtotal = 0;
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const amt = parseFloat(row.querySelector(".li-amount").value);
+    if (!isNaN(amt)) subtotal += amt;
+  });
+  const disc = parseFloat($("[name=discount_amount]").value) || 0;
+  $("#t-subtotal").textContent = money(subtotal);
+  $("#t-discount").textContent = disc ? "-" + money(disc) : money(0);
+  $("#t-total").textContent = money(subtotal - disc);
+}
+
+/* ---- Extra PDF links (pre-made G702/G703) ---- */
+const extraPdfsEl = $("#extra-pdfs");
+function extraPdfRow() {
+  const div = document.createElement("div");
+  div.className = "repeat-link";
+  div.innerHTML = `<input class="extra-pdf-link" placeholder="https://drive.google.com/file/d/…/view" />
+    <button type="button" class="btn danger small remove-row">Remove</button>`;
+  div.querySelector(".remove-row").addEventListener("click", () => div.remove());
+  return div;
+}
+
+/* ---- Change orders ----
+ * Change Orders are authored in the standalone Change Order app, not here.
+ * The invoice only BILLS an existing CO: a line item flagged "Change order
+ * line" with its CO number (kind:"co"). No inline CO creation. */
+
+function commercialOn() { return $("#commercial-toggle").checked; }
+
+function collectData() {
+  const f = $("#invoice-form");
+  const val = (n) => (f.elements[n] ? (f.elements[n].value || "").trim() : "");
+
+  const client = { name: val("client_name"), email: val("client_email") };
+  if (val("contact_name")) client.contact_name = val("contact_name");
+  if (val("billing_address")) client.billing_address = val("billing_address");
+
+  const job = { name: val("job_name") };
+  if (val("site_address")) job.site_address = val("site_address");
+  // Carry-through from a Project # prefill (Projects board = source of truth):
+  // links the ledger row to the project, sets the Monday Job Type, and lets the
+  // server file the PDF in the project's own Invoice/ folder.
+  if (val("job_monday_item_id")) { const pid = parseInt(val("job_monday_item_id"), 10); if (!isNaN(pid)) job.monday_item_id = pid; }
+  if (val("job_monday_job_type")) job.monday_job_type = val("job_monday_job_type");
+  if (val("job_project_type")) job.project_type = val("job_project_type");
+  if (val("job_project_number")) job.project_number = val("job_project_number");
+
+  const line_items = [];
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const description = row.querySelector(".li-desc").value.trim();
+    const amount = parseFloat(row.querySelector(".li-amount").value);
+    if (!description && isNaN(amount)) return;
+    const li = { description, amount: isNaN(amount) ? null : amount };
+    const detail = row.querySelector(".li-detail").value.trim();
+    if (detail) li.detail = detail;
+    if (row.querySelector(".li-is-co").checked) {
+      li.kind = "co";
+      const cn = row.querySelector(".co-num").value.trim();
+      if (cn) li.co_number = cn;
+    }
+    line_items.push(li);
+  });
+
+  const invoice = { identifier: val("identifier"), issue_date: val("issue_date"),
+    payment_terms: val("payment_terms") || "Net 30", line_items };
+  if (val("due_date")) invoice.due_date = val("due_date");
+  if (val("notes")) invoice.notes = val("notes");
+  if (val("email_context")) invoice.email_context = val("email_context");
+
+  const discAmt = parseFloat(val("discount_amount"));
+  if (!isNaN(discAmt) && discAmt > 0) invoice.discount = { description: val("discount_desc") || "Discount", amount: discAmt };
+
+  if (commercialOn()) {
+    invoice.invoice_type = val("invoice_type") || "standard";
+    const payApp = parseInt(val("pay_app_number"), 10);
+    if (!isNaN(payApp)) invoice.pay_app_number = payApp;
+    if (val("period_end_date")) invoice.period_end_date = val("period_end_date");
+
+    if ($("#retainage-toggle").checked) {
+      const r = {};
+      const pct = parseFloat(val("retainage_pct")); if (!isNaN(pct)) r.percentage = pct;
+      const amt = parseFloat(val("retainage_amount")); if (!isNaN(amt)) r.amount = amt;
+      r.scope = val("retainage_scope") || "base";
+      if (val("retainage_desc")) r.description = val("retainage_desc");
+      invoice.retainage = r;
+    }
+
+    const aia = driveRef(val("aia_excel_link"));
+    if (aia) invoice.aia_excel_path = aia;
+    if (val("g702_sheet_name")) invoice.g702_sheet_name = val("g702_sheet_name");
+    if (val("g703_sheet_name")) invoice.g703_sheet_name = val("g703_sheet_name");
+
+    const extras = [];
+    extraPdfsEl.querySelectorAll(".extra-pdf-link").forEach((i) => { const r = driveRef(i.value); if (r) extras.push(r); });
+    if (extras.length) invoice.extra_pdfs = extras;
+
+    const folderId = extractDriveId(val("drive_invoice_folder_link"));
+    if (folderId) job.drive_invoice_folder_id = folderId;
+    // No change_orders[] authored here — COs come from the Change Order app.
+    // A CO is billed via a line item flagged kind:"co" with its co_number (above).
+  }
+
+  return { client, job, invoice };
+}
+
+function validateData(d) {
+  const e = [];
+  if (!d.client.name) e.push("Client name is required.");
+  if (!d.client.email) e.push("Client email is required.");
+  if (!d.client.billing_address) e.push("Billing address is required (it prints on the invoice “Bill To”).");
+  if (!d.job.name) e.push("Job name is required.");
+  if (!d.invoice.identifier) e.push("Invoice number is required.");
+  if (!d.invoice.issue_date) e.push("Issue date is required.");
+  if (!d.invoice.line_items.length) e.push("At least one line item is required.");
+  d.invoice.line_items.forEach((li, i) => {
+    if (!li.description) e.push(`Line item ${i + 1}: description is required.`);
+    if (li.amount === null || li.amount === undefined) e.push(`Line item ${i + 1}: a numeric amount is required.`);
+  });
+  return e;
+}
+
+function setStatus(kind, html) { const el = $("#status"); el.className = "show " + kind; el.innerHTML = html; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function clearStatus() { $("#status").className = ""; }
+
+let lastPreviewOk = false;
+function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = on || !lastPreviewOk; }
+
+async function run(mode) {
+  const data = collectData();
+  const errs = validateData(data);
+  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  window._lastInvoiceData = data;
+  showSpinner(true); clearStatus();
+  try {
+    const resp = await fetch("/ui/api/invoice/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data, mode, finalize: true }),
+    });
+    const body = await resp.json();
+    if (!resp.ok) {
+      const dd = body.detail || body;
+      let ehtml = `<strong>${dd.code || "Error"}</strong><br />${dd.advice || dd.detail || JSON.stringify(dd)}`;
+      // Blocked because the number already exists → offer the correction flow
+      // right here instead of leaving the user at a dead end.
+      if (dd.code === "IDEMPOTENCY_CONFLICT") {
+        ehtml += `<div class="result-line" style="margin-top:10px"><button type="button" class="btn secondary small" id="btn-correct-inline">Correct / reissue this invoice…</button></div>`;
+      }
+      setStatus("err", ehtml);
+      return;
+    }
+    const wb = body.writeback || {};
+    if (mode === "dry-run") {
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(data.invoice.identifier)}`;
+      $("#preview-frame").src = url;
+      const coWrap = $("#co-previews");
+      coWrap.innerHTML = "";
+      (wb.co_preview_pdf_urls || []).forEach((u, i) => {
+        coWrap.innerHTML += `<div class="result-line">📎 <a href="${u}" target="_blank" rel="noopener">Change Order Template ${i + 1} (preview)</a></div>`;
+      });
+      $("#preview-card").classList.add("show");
+      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      setStatus("info", "✅ Preview ready below. Review, then click <strong>Accept &amp; Create Invoice</strong>.");
+      $("#preview-card").scrollIntoView({ behavior: "smooth" });
+    } else {
+      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      let html = "<strong>✅ Invoice created.</strong><br />";
+      if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
+      if (wb.stripe_invoice_id) html += `<div class="result-line">Stripe invoice: <code>${wb.stripe_invoice_id}</code>${wb.already_existed ? " (already existed — not duplicated)" : ""}</div>`;
+      if (wb.hosted_invoice_url) html += `<div class="result-line">Payment page: <a href="${wb.hosted_invoice_url}" target="_blank" rel="noopener">${wb.hosted_invoice_url}</a></div>`;
+      if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the Gmail draft in billing@</a> — review, then click Send.</div>`;
+      if (wb.gmail_status) html += `<div class="result-line" style="color:#b91c1c">⚠️ ${wb.gmail_status}</div>`;
+      if (wb.drive_aia_writeback) html += `<div class="result-line">Drive AIA writeback: ${wb.drive_aia_writeback}</div>`;
+      if (wb.ledger && wb.ledger.ledger_item_url) html += `<div class="result-line">📒 <a href="${wb.ledger.ledger_item_url}" target="_blank" rel="noopener">Logged to the Monday Invoices board</a> (${wb.ledger.ledger_action || "recorded"}).</div>`;
+      // Inline correction: this run reused an existing invoice (likely a wrong
+      // recipient). Offer a one-click in-place recipient fix using the data
+      // already in the form — no separate trip to the correction tool.
+      if (wb.already_existed || wb.correction_hint) {
+        window._lastInvoiceData = data;
+        html += `<div class="result-line" style="margin-top:10px;color:#8a5a00">⚠️ ${wb.correction_hint || "This invoice number already exists in Stripe — re-running reuses it rather than changing it."}</div>`;
+        html += `<div class="result-line"><button type="button" class="btn secondary small" id="btn-correct-inline">Correct / reissue this invoice…</button></div>`;
+      }
+      setStatus("warn", html);
+      deleteCurrentDraftAfterFinalize();  // invoice is now real (Stripe + ledger) — drop the draft
+    }
+  } catch (e) {
+    setStatus("err", "Network/error: " + e.message);
+  } finally { showSpinner(false); }
+}
+
+/* ====================================================================
+   Corrections flow — lives INSIDE the generator as a modal. Triggered by
+   the "Correct / reissue…" button, the inline button on an "already exists"
+   result, or automatically offered when a run is blocked by
+   IDEMPOTENCY_CONFLICT. Reuses the data already in the form.
+   ==================================================================== */
+const cm = {
+  body: () => $("#correct-body"),
+  open() { $("#correct-overlay").classList.add("show"); },
+  close() { $("#correct-overlay").classList.remove("show"); },
+  set(html) { this.body().innerHTML = html; },
+};
+function escHtml(v) { return String(v === undefined || v === null ? "—" : v).replace(/[&<>]/g, m => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[m])); }
+function nextRev(id) { const m = /^(.*?)\s+rev\s+(\d+)\s*$/i.exec((id || "").trim()); return m ? `${m[1].trim()} Rev ${parseInt(m[2], 10) + 1}` : `${(id || "").trim()} Rev 1`; }
+
+async function correctPost(body) {
+  const r = await fetch("/ui/api/invoice/correct", {
+    method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+  });
+  return { status: r.status, body: await r.json() };
+}
+function correctErr(res) { const d = (res.body && (res.body.detail || res.body)) || {}; return d.advice || d.detail || "Something went wrong."; }
+
+// Entry point. Uses the current form payload as the desired end-state.
+async function openCorrectionFlow() {
+  const data = collectData();
+  const id = (data.invoice && data.invoice.identifier) || "";
+  if (!id) { cm.open(); cm.set(`<p>Fill in the invoice (at least the invoice number) first, then reopen this.</p>`); return; }
+  window._correctData = data;
+  $("#correct-title").textContent = `Correct / reissue ${id}`;
+  cm.open();
+  cm.set(`<p>Looking up <code>${escHtml(id)}</code> …</p>`);
+  // Try to load the saved original from Drive so we can show a true diff.
+  let original = null;
+  try {
+    const r = await fetch("/ui/api/invoice/original?identifier=" + encodeURIComponent(id));
+    if (r.ok) { original = (await r.json()).original; }
+  } catch (e) { /* fall through to no-original branch */ }
+  if (original) { renderDiffFlow(original, data); }
+  else { renderNoOriginalFlow(data); }
+}
+
+// We have the original → diff it against the current form, auto-route.
+async function renderDiffFlow(original, corrected) {
+  cm.set(`<p>Comparing your changes against the saved invoice…</p>`);
+  const res = await correctPost({ original, corrected, intent: "auto", mode: "dry-run" });
+  if (res.status >= 400) { cm.set(`<div class="caveat">${escHtml(correctErr(res))}</div>${closeBtn()}`); return; }
+  const b = res.body, p = b.plan || {}, changes = b.changes || [];
+  const ROUTE = { noop: "No change", in_place: "Edit in place (same number)", revision: "Revision (" + escHtml(b.corrected_identifier) + ")" };
+  let h = `<div class="route-pill">${ROUTE[b.route] || escHtml(b.route)}</div>`;
+  if (!changes.length) { h += `<p style="margin-top:10px">Nothing is different from the saved invoice — no correction needed.</p>` + closeBtn(); cm.set(h); return; }
+  h += `<ul class="changes">` + changes.map(c => `<li><b>${escHtml(c.path)}</b>${c.monetary ? " 💲" : ""}: <code>${escHtml(c.from)}</code> → <code>${escHtml(c.to)}</code></li>`).join("") + `</ul>`;
+  if (p.steps && p.steps.length) h += `<p style="margin-bottom:4px"><b>Will do</b></p><ul class="changes">` + p.steps.map(s => `<li>${escHtml(s)}</li>`).join("") + `</ul>`;
+  (p.caveats || []).forEach(c => { h += `<div class="caveat">⚠ ${escHtml(c)}</div>`; });
+  h += `<div style="margin-top:14px"><button type="button" class="btn" id="cm-apply-diff">Apply correction</button> <button type="button" class="btn secondary" id="cm-cancel">Cancel</button></div><div id="cm-out" style="margin-top:10px"></div>`;
+  cm.set(h);
+  $("#cm-apply-diff").onclick = async () => {
+    if (!confirm("Apply this correction now? It writes to Stripe / Drive / Monday / Gmail.")) return;
+    $("#cm-out").textContent = "Applying…";
+    const live = await correctPost({ original, corrected, intent: "auto", mode: "live" });
+    renderApplyResult(live);
+  };
+  $("#cm-cancel").onclick = () => cm.close();
+}
+
+// No saved original (older invoice, or Drive down) → offer explicit actions.
+function renderNoOriginalFlow(data) {
+  const id = data.invoice.identifier;
+  const rev = nextRev(id);
+  let h = `<p>No saved copy of <code>${escHtml(id)}</code>'s data was found (it was billed before we started saving it, or Drive is unavailable). Pick how to correct it:</p>`;
+  h += `<div class="opt-card"><b>Fix the recipient on the existing invoice</b><span>Keeps the same number. Use this if only the email/contact was wrong and the original invoice is still live in Stripe.</span><div style="margin-top:8px"><button type="button" class="btn" id="cm-recip">Preview recipient fix</button></div></div>`;
+  h += `<div class="opt-card"><b>Reissue with a new number (<code>${escHtml(rev)}</code>)</b><span>Always works — issues a clean corrected invoice under the next revision number. Use this if the original was voided or the amounts/scope changed.</span><div style="margin-top:8px"><button type="button" class="btn" id="cm-reissue">Reissue as ${escHtml(rev)}</button></div></div>`;
+  h += `<div id="cm-out" style="margin-top:10px"></div>` + closeBtn();
+  cm.set(h);
+  $("#cm-recip").onclick = async () => {
+    $("#cm-out").textContent = "Checking…";
+    const res = await correctPost({ corrected: data, intent: "recipient", mode: "dry-run" });
+    if (res.status >= 400) { $("#cm-out").innerHTML = `<div class="caveat">${escHtml(correctErr(res))}</div>`; return; }
+    const ch = (res.body.changes || [])[0] || {};
+    $("#cm-out").innerHTML = `<p>Recipient: <code>${escHtml(ch.from)}</code> → <code>${escHtml(ch.to)}</code>. Updates the existing invoice in place and rebuilds the draft.</p><button type="button" class="btn" id="cm-recip-apply">Apply recipient fix</button>`;
+    $("#cm-recip-apply").onclick = async () => {
+      if (!confirm("Update the recipient on the existing invoice?")) return;
+      $("#cm-out").textContent = "Applying…";
+      renderApplyResult(await correctPost({ corrected: data, intent: "recipient", mode: "live" }));
+    };
+  };
+  $("#cm-reissue").onclick = async () => {
+    if (!confirm(`Issue a new invoice numbered ${rev} to the current details?`)) return;
+    $("#cm-out").textContent = "Reissuing…";
+    const payload = JSON.parse(JSON.stringify(data));
+    payload.invoice.identifier = rev;
+    const r = await fetch("/ui/api/invoice/run", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ data: payload, mode: "live", finalize: true }) });
+    const body = await r.json();
+    renderApplyResult({ status: r.status, body });
+  };
+}
+
+function renderApplyResult(res) {
+  const out = $("#cm-out") || cm.body();
+  if (res.status >= 400) { out.innerHTML = `<div class="caveat">${escHtml(correctErr(res))}</div>`; return; }
+  const wb = res.body.writeback || {};
+  let h = `<p><strong>✅ Done.</strong>`;
+  if (res.body.corrected_identifier) h += ` Invoice <code>${escHtml(res.body.corrected_identifier)}</code>.`;
+  h += `</p>`;
+  if (wb.hosted_invoice_url) h += `<div class="result-line">Payment page: <a href="${wb.hosted_invoice_url}" target="_blank" rel="noopener">open</a></div>`;
+  if (wb.gmail_draft_url) h += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the corrected Gmail draft</a> — review, then Send.</div>`;
+  h += `<div style="margin-top:12px"><button type="button" class="btn secondary" id="cm-done">Close</button></div>`;
+  out.innerHTML = h;
+  const done = $("#cm-done"); if (done) done.onclick = () => cm.close();
+}
+function closeBtn() { return `<div style="margin-top:12px"><button type="button" class="btn secondary" id="cm-close2">Close</button></div>`; }
+
+document.addEventListener("click", (e) => {
+  const id = e.target && e.target.id;
+  if (id === "btn-correct" || id === "btn-correct-inline") openCorrectionFlow();
+  if (id === "correct-close" || id === "cm-close2") cm.close();
+});
+$("#correct-overlay").addEventListener("click", (e) => { if (e.target.id === "correct-overlay") cm.close(); });
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML =
+      `<span>${dot(h.stripe_configured)} Stripe</span>` +
+      `<span>${dot(h.gmail_ready)} Gmail draft</span>` +
+      `<span>${dot(h.preview_bucket_configured)} Preview</span>` +
+      `<span>${dot(h.drive_configured)} Drive</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+/* ---- Project # prefill (Projects board = source of truth) ---- */
+function setVal(name, value) {
+  const el = $("#invoice-form").elements[name];
+  if (el && value !== undefined && value !== null) el.value = value;
+}
+function applyPrefill(p) {
+  const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
+  if (c.name) setVal("client_name", c.name);
+  if (c.contact_name) setVal("contact_name", c.contact_name);
+  if (c.email) setVal("client_email", c.email);
+  if (c.billing_address) setVal("billing_address", c.billing_address);
+  if (j.name) setVal("job_name", j.name);
+  if (j.site_address) setVal("site_address", j.site_address);
+  if (inv.identifier) setVal("identifier", inv.identifier);
+  setVal("job_monday_item_id", j.monday_item_id || "");
+  setVal("job_monday_job_type", j.monday_job_type || "");
+  setVal("job_project_type", j.project_type || "");
+  setVal("job_project_number", j.project_number || "");
+  // AIA project → flip the commercial/AIA toggle so the AIA fields show.
+  if (j.monday_job_type === "AIA" && !$("#commercial-toggle").checked) {
+    $("#commercial-toggle").checked = true;
+    $("#commercial-toggle").dispatchEvent(new Event("change"));
+  }
+}
+async function lookupProject() {
+  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+  const note = $("#prefill-note");
+  if (!pn) { note.textContent = "Enter a Project # first."; return; }
+  note.textContent = "Looking up…";
+  try {
+    const r = await fetch("/ui/api/invoice/lookup?project_number=" + encodeURIComponent(pn));
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      note.textContent = (body.detail && body.detail.detail) || ("Lookup failed (" + r.status + ").");
+      return;
+    }
+    applyPrefill(body.prefill);
+    currentDraftId = null;  // a project prefill starts a fresh draft
+    scheduleAutosave();
+    const m = body.prefill._matched || {};
+    const notes = (body.prefill._notes || []).join(" ");
+    note.innerHTML = "Filled from <strong>" + (m.item_name || pn) + "</strong>" +
+      (m.url ? " (<a href='" + m.url + "' target='_blank' rel='noopener'>open project</a>)" : "") +
+      ". " + notes;
+  } catch (e) { note.textContent = "Lookup error: " + e.message; }
+}
+
+/* ---- Customer search (Customer & Vendor Directory) ---- */
+let custTimer = null;
+function customerSearch() {
+  const q = ($("#invoice-form").elements["customer_search"].value || "").trim();
+  const box = $("#customer-results");
+  clearTimeout(custTimer);
+  if (q.length < 2) { box.style.display = "none"; box.innerHTML = ""; return; }
+  custTimer = setTimeout(async () => {
+    try {
+      const r = await fetch("/ui/api/invoice/customer-search?q=" + encodeURIComponent(q));
+      const body = await r.json();
+      if (!r.ok || !body.ok) { box.style.display = "none"; box.innerHTML = ""; return; }
+      const items = body.customers || [];
+      box.innerHTML = "";
+      if (!items.length) {
+        box.innerHTML = "<div style='padding:8px;color:#777;'>No matches</div>";
+        box.style.display = "block"; return;
+      }
+      items.forEach((c) => {
+        const d = document.createElement("div");
+        d.style.cssText = "padding:8px 10px;cursor:pointer;border-bottom:1px solid #eee;";
+        d.textContent = c.name + (c.email ? "  ·  " + c.email : "") + (c.type ? "  ·  " + c.type : "");
+        d.addEventListener("mouseenter", () => d.style.background = "#f3f3f3");
+        d.addEventListener("mouseleave", () => d.style.background = "");
+        d.addEventListener("click", () => {
+          setVal("client_name", c.name || "");
+          if (c.contact_name) setVal("contact_name", c.contact_name);
+          if (c.email) setVal("client_email", c.email);
+          if (c.billing_address) setVal("billing_address", c.billing_address);
+          setVal("customer_search", c.name || "");
+          box.style.display = "none"; box.innerHTML = "";
+          scheduleAutosave();
+        });
+        box.appendChild(d);
+      });
+      box.style.display = "block";
+    } catch (e) { box.style.display = "none"; box.innerHTML = ""; }
+  }, 250);
+}
+
+/* ===================== Draft autosave + sync =====================
+   Mirrors the estimate generator. localStorage is the working copy (survives a
+   session timeout, dropped connection, or closed tab); the server (GCS, shared)
+   is synced best-effort so any teammate with the `invoice` grant can resume or
+   delete a draft from any device. Drafts are deleted on a successful live run. */
+const LS_KEY = "gvc_invoice_drafts_v1";
+let currentDraftId = null;
+let autosaveTimer = null;
+
+function genDraftId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "d-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+function loadLocal() { try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; } catch (e) { return {}; } }
+function saveLocal(map) { try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch (e) {} }
+function upsertLocal(rec) { const m = loadLocal(); m[rec.id] = rec; saveLocal(m); return m; }
+function removeLocal(id) { const m = loadLocal(); delete m[id]; saveLocal(m); return m; }
+
+function deriveLabel(p) {
+  const client = ((p.client || {}).name || "").trim();
+  const job = ((p.job || {}).name || "").trim();
+  return [client, job].filter(Boolean).join(" — ") || "Untitled invoice";
+}
+function isEmptyPayload(p) {
+  const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
+  const hasHeader = (c.name || c.email || j.name || "").trim();
+  const hasLine = (inv.line_items || []).some((li) => (li.description || "").trim() || li.amount != null);
+  return !hasHeader && !hasLine;
+}
+function relTime(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime(); if (isNaN(t)) return "";
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.round(s / 60); if (m < 60) return m + " min ago";
+  const h = Math.round(m / 60); if (h < 24) return h + (h === 1 ? " hr ago" : " hrs ago");
+  const d = Math.round(h / 24); return d + (d === 1 ? " day ago" : " days ago");
+}
+function setSaveState(kind, text) { const el = $("#save-state"); el.className = "save-state " + (kind || ""); el.textContent = text || ""; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+function setField(name, value) {
+  const el = $("#invoice-form").elements[name];
+  if (!el) return;
+  if (el.type === "checkbox") el.checked = !!value;
+  else el.value = value == null ? "" : value;
+}
+
+function applyData(p) {
+  p = p || {};
+  const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
+  setField("client_name", c.name); setField("contact_name", c.contact_name);
+  setField("client_email", c.email); setField("billing_address", c.billing_address);
+  setField("job_name", j.name); setField("site_address", j.site_address);
+  setField("job_monday_item_id", j.monday_item_id); setField("job_monday_job_type", j.monday_job_type);
+  setField("job_project_type", j.project_type); setField("job_project_number", j.project_number);
+  setField("identifier", inv.identifier);
+  setField("issue_date", inv.issue_date || new Date().toISOString().slice(0, 10));
+  setField("payment_terms", inv.payment_terms || "Net 30");
+  setField("due_date", inv.due_date); setField("email_context", inv.email_context); setField("notes", inv.notes);
+  const disc = inv.discount || {};
+  setField("discount_desc", disc.description); setField("discount_amount", disc.amount);
+  lineItemsEl.innerHTML = "";
+  const items = (inv.line_items && inv.line_items.length) ? inv.line_items : [{}];
+  items.forEach((li) => addLineItem(li));
+  // Commercial / AIA section: open it if the draft carries any commercial field.
+  const isComm = !!(inv.invoice_type || inv.pay_app_number != null || inv.period_end_date ||
+                    inv.retainage || inv.aia_excel_path || (inv.extra_pdfs || []).length ||
+                    j.drive_invoice_folder_id);
+  $("#commercial-toggle").checked = isComm;
+  $("#commercial-body").classList.toggle("show", isComm);
+  setField("invoice_type", inv.invoice_type || "standard");
+  setField("pay_app_number", inv.pay_app_number);
+  setField("period_end_date", inv.period_end_date);
+  const r = inv.retainage || null;
+  $("#retainage-toggle").checked = !!r;
+  $("#retainage-body").style.display = r ? "grid" : "none";
+  if (r) {
+    setField("retainage_pct", r.percentage); setField("retainage_amount", r.amount);
+    setField("retainage_scope", r.scope || "base"); setField("retainage_desc", r.description);
+  }
+  setField("aia_excel_link", inv.aia_excel_path);
+  setField("g702_sheet_name", inv.g702_sheet_name); setField("g703_sheet_name", inv.g703_sheet_name);
+  setField("drive_invoice_folder_link", j.drive_invoice_folder_id);
+  extraPdfsEl.innerHTML = "";
+  (inv.extra_pdfs || []).forEach((ref) => { const row = extraPdfRow(); row.querySelector(".extra-pdf-link").value = ref || ""; extraPdfsEl.appendChild(row); });
+  recalcTotals();
+}
+
+function clearForm() {
+  $("#invoice-form").reset();
+  lineItemsEl.innerHTML = ""; addLineItem();
+  extraPdfsEl.innerHTML = "";
+  $("#commercial-toggle").checked = false; $("#commercial-body").classList.remove("show");
+  $("#retainage-toggle").checked = false; $("#retainage-body").style.display = "none";
+  ["job_monday_item_id", "job_monday_job_type", "job_project_type", "job_project_number"].forEach((n) => setField(n, ""));
+  const note = $("#prefill-note"); if (note) note.textContent = "";
+  $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  recalcTotals();
+}
+
+async function serverPut(rec) {
+  return fetch("/ui/api/invoice/drafts/" + encodeURIComponent(rec.id), {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: rec.payload, label: rec.label, updated_at: rec.updated_at }),
+  });
+}
+function scheduleAutosave() { clearTimeout(autosaveTimer); autosaveTimer = setTimeout(doAutosave, 800); }
+async function doAutosave() {
+  const payload = collectData();
+  if (!currentDraftId && isEmptyPayload(payload)) return;
+  if (!currentDraftId) currentDraftId = genDraftId();
+  const rec = { id: currentDraftId, label: deriveLabel(payload), payload, updated_at: new Date().toISOString(), updated_by: "(you)" };
+  const existing = loadLocal()[currentDraftId] || {};
+  rec._syncedAt = existing._syncedAt;
+  upsertLocal(rec);
+  setSaveState("local", "Saving…");
+  try {
+    const resp = await serverPut(rec);
+    if (resp.ok) { rec._syncedAt = rec.updated_at; upsertLocal(rec); setSaveState("synced", "Saved · synced ✓"); }
+    else if (resp.status === 401 || resp.status === 403) setSaveState("local", "Saved on this device · sign in to sync");
+    else setSaveState("local", "Saved on this device");
+  } catch (e) { setSaveState("local", "Saved on this device (offline)"); }
+}
+
+async function refreshDrafts() {
+  let map = loadLocal();
+  try {
+    const resp = await fetch("/ui/api/invoice/drafts");
+    if (resp.ok) {
+      const body = await resp.json();
+      const server = {}; (body.drafts || []).forEach((d) => { server[d.id] = d; });
+      const now = new Date().toISOString();
+      Object.keys(map).forEach((id) => {
+        if (!server[id]) { const l = map[id]; const dirty = !l._syncedAt || (l.updated_at || "") > l._syncedAt; if (!dirty) delete map[id]; }
+      });
+      Object.values(server).forEach((s) => {
+        const l = map[s.id];
+        if (!l || (s.updated_at || "") >= (l.updated_at || "")) map[s.id] = Object.assign({}, s, { _syncedAt: now });
+      });
+      saveLocal(map);
+      Object.values(map).forEach((l) => {
+        if (!l._syncedAt || (l.updated_at || "") > l._syncedAt) {
+          serverPut(l).then((rr) => { if (rr.ok) { l._syncedAt = l.updated_at; upsertLocal(l); } }).catch(() => {});
+        }
+      });
+    }
+  } catch (e) { /* offline — render from local only */ }
+  renderDrafts(map);
+}
+
+function renderDrafts(map) {
+  map = map || loadLocal();
+  const rows = Object.values(map).sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+  const card = $("#drafts-card"), list = $("#drafts-list");
+  if (!rows.length) { card.style.display = "none"; list.innerHTML = ""; return; }
+  card.style.display = "block"; list.innerHTML = "";
+  rows.forEach((r) => {
+    const synced = r._syncedAt && (r.updated_at || "") <= r._syncedAt;
+    const isActive = r.id === currentDraftId;
+    const div = document.createElement("div");
+    div.className = "draft-row" + (isActive ? " active" : "");
+    const by = r.updated_by && r.updated_by !== "(you)" ? " · " + r.updated_by : "";
+    div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(r.label || "Untitled invoice")}` +
+      (isActive ? `<span class="badge active">editing</span>` : "") +
+      (synced ? `<span class="badge synced">synced</span>` : `<span class="badge local">this device</span>`) +
+      `</div><div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div></div>`;
+    const resume = document.createElement("button");
+    resume.type = "button"; resume.className = "btn secondary small"; resume.textContent = isActive ? "Editing" : "Resume";
+    resume.disabled = isActive; resume.addEventListener("click", () => resumeDraft(r.id));
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "btn danger small"; del.textContent = "Delete";
+    del.addEventListener("click", () => deleteDraft(r.id));
+    div.appendChild(resume); div.appendChild(del); list.appendChild(div);
+  });
+}
+
+function resumeDraft(id) {
+  const rec = loadLocal()[id]; if (!rec) return;
+  applyData(rec.payload);
+  currentDraftId = id;
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
+  renderDrafts();
+  $("#invoice-form").scrollIntoView({ behavior: "smooth" });
+}
+async function deleteDraft(id) {
+  if (!confirm("Delete this draft? This can't be undone.")) return;
+  removeLocal(id);
+  if (id === currentDraftId) { currentDraftId = null; clearForm(); }
+  renderDrafts();
+  try { await fetch("/ui/api/invoice/drafts/" + encodeURIComponent(id), { method: "DELETE" }); } catch (e) {}
+}
+function startNewInvoice() { currentDraftId = null; clearForm(); setSaveState("", ""); renderDrafts(); }
+function deleteCurrentDraftAfterFinalize() {
+  const id = currentDraftId; if (!id) return;
+  removeLocal(id); currentDraftId = null; renderDrafts();
+  fetch("/ui/api/invoice/drafts/" + encodeURIComponent(id), { method: "DELETE" }).catch(() => {});
+}
+
+/* init */
+addLineItem();
+$("#add-line").addEventListener("click", () => addLineItem());
+$("[name=discount_amount]").addEventListener("input", recalcTotals);
+$("#commercial-toggle").addEventListener("change", (e) => $("#commercial-body").classList.toggle("show", e.target.checked));
+$("#retainage-toggle").addEventListener("change", (e) => { $("#retainage-body").style.display = e.target.checked ? "grid" : "none"; });
+$("#add-extra-pdf").addEventListener("click", () => extraPdfsEl.appendChild(extraPdfRow()));
+$("#btn-generate").addEventListener("click", () => run("dry-run"));
+$("#btn-accept").addEventListener("click", () => { if (confirm("Create a REAL Stripe invoice and a billing@ Gmail draft? This is the live step.")) run("live"); });
+$("#btn-new-invoice").addEventListener("click", () => {
+  const p = collectData();
+  if (!isEmptyPayload(p) && !confirm("Start a new invoice? Your current entry is saved as a draft you can resume.")) return;
+  startNewInvoice();
+});
+$("#invoice-form").addEventListener("input", () => { lastPreviewOk = false; $("#btn-accept").disabled = true; scheduleAutosave(); });
+$("#btn-prefill").addEventListener("click", lookupProject);
+$("[name=project_number_lookup]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookupProject(); } });
+$("[name=customer_search]").addEventListener("input", customerSearch);
+$("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
+checkHealth();
+refreshDrafts();
+</script>
+</body>
+</html>

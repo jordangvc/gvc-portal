@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Change Order</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; }
+  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+  .dot.ok { background: #4ade80; } .dot.bad { background: #f87171; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+  .card h2 .opt { text-transform: none; font-weight: 400; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label .opt { font-weight: 400; color: var(--muted); }
+  input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
+    font: inherit; color: var(--ink); background: #fff; }
+  input:focus, textarea:focus { outline: 2px solid var(--green); border-color: var(--green); }
+  textarea { resize: vertical; min-height: 64px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .row-link { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
+  .line-item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fafbfc; }
+  .line-item .row1 { display: grid; grid-template-columns: 1fr 150px auto; gap: 10px; align-items: end; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--green); color: #fff; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .btn.danger { background: #fff; color: #b91c1c; border: 1px solid var(--err-line); padding: 8px 12px; }
+  .btn.small { padding: 7px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .totals { margin-left: auto; text-align: right; font-size: 14px; color: var(--muted); }
+  .totals strong { color: var(--ink); font-size: 18px; }
+  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #link-state { font-size: 13px; margin-top: 8px; }
+  #link-state.ok { color: var(--green-dark); } #link-state.warn { color: #b45309; }
+  #preview-card { display: none; } #preview-card.show { display: block; }
+  iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
+  .result-line { padding: 4px 0; } .result-line a { color: var(--green-dark); font-weight: 600; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .spinner { display: none; } .spinner.show { display: inline; }
+  .save-state { font-size: 12px; color: var(--muted); margin-left: auto; align-self: center; }
+  .save-state.synced { color: var(--green-dark); }
+  .save-state.local { color: #b45309; }
+  .draft-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 8px; background: #fafbfc; }
+  .draft-row.active { border-color: var(--green); background: #f0f7f3; }
+  .draft-row .d-main { flex: 1; min-width: 0; }
+  .draft-row .d-label { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .draft-row .d-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .badge.synced { background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0; }
+  .badge.local { background: var(--warn-bg); color: #b45309; border: 1px solid var(--warn-line); }
+  .badge.active { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+  .badge.billed { background: var(--err-bg); color: #b91c1c; border: 1px solid var(--err-line); }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
+     visual fatigue on long forms. Calm green/slate alternation; overrides the
+     plain white .card above via source order. ── */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+  main form .card + .card { margin-top: 28px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>🧾 Change Order</h1>
+  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div id="status"></div>
+
+  <div class="card" id="find-project-card">
+    <h2>Find the Project <span class="opt">(paste a Monday Project link — or search by client, address, or project #/CO number — fills the form; projects with an existing CO load it for revision)</span></h2>
+    <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+      <div><label>Monday Project URL — or search</label>
+        <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
+      <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
+    </div>
+    <div id="search-results" style="margin-top:10px;"></div>
+    <div class="full" style="margin-top:12px;"><label>Drive folder URL <span class="opt">(backup — also where the CO PDF is filed)</span></label>
+      <input name="drive_folder_url" placeholder="https://drive.google.com/drive/folders/…" />
+      <div class="hint">If the Monday lookup fills everything, you can leave this blank — we'll file the CO into the project's Drive folder automatically.</div></div>
+    <div id="link-state"></div>
+    <div id="existing-cos" style="margin-top:10px;"></div>
+  </div>
+
+  <div class="card" id="drafts-card" style="display:none;">
+    <h2>Resume a draft <span class="opt">(autosaved in-progress change orders — yours and your teammates')</span></h2>
+    <div id="drafts-list"></div>
+  </div>
+
+  <form id="co-form" autocomplete="off">
+    <div class="card">
+      <h2>Prepared For (Client)</h2>
+      <div class="grid">
+        <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
+        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
+        <div><label>Email <span class="opt">(CO draft is sent here)</span></label><input name="client_email" type="email" required placeholder="dave@example.com" /></div>
+        <div><label>Phone <span class="opt">(optional)</span></label><input name="client_phone" placeholder="(812) 537-2200" /></div>
+        <div class="full"><label>Billing address <span class="opt">(optional)</span></label><input name="client_billing" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Project</h2>
+      <div class="grid">
+        <div><label>Project name</label><input name="job_name" required placeholder="Maxwell — Lawrenceburg Admin Bldg" /></div>
+        <div><label>Site address <span class="opt">(optional)</span></label><input name="site_address" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
+        <div><label>Estimate / Project #</label><input name="base_number" required placeholder="2026-0603-004" />
+          <div class="hint">The estimate number — the spine of the CO id <code>CO.{n}-{this}</code>. Auto-filled from Monday; edit if needed.</div></div>
+        <div><label>Date</label><input name="date" type="date" required /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Change Order</h2>
+      <div class="grid">
+        <div class="full"><label>Title</label><input name="title" required placeholder="Added soffit framing & finish at lobby bulkhead" /></div>
+        <div class="full"><label>Description <span class="opt">(what changed and why)</span></label>
+          <textarea name="description" placeholder="Owner-directed change: add framing, board, and Level 5 finish to the new lobby soffit not shown on the bid set. T&M per the current Standard Rate Sheet."></textarea></div>
+        <div><label>CO number <span class="opt">(leave blank — auto-assigned)</span></label><input name="co_number" placeholder="auto: CO.{n}-{project #}" />
+          <div class="hint">Only fill this to update an existing CO under its same number (or pick “Load for revision” above).</div></div>
+        <div class="full" id="revise-row" style="display:none;">
+          <label class="opt-row" style="font-weight:600; display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="revise-flag" style="width:auto;" />
+            Update this Change Order — revise under the same number
+          </label>
+          <div class="hint">The client sees the <strong>same CO number</strong>. The prior PDF is archived
+            in Drive with an <code>e1-</code>/<code>e2-</code>… prefix, the Monday CO item &amp; Operations
+            task are <strong>updated in place</strong> (Status resets to Drafted), and a fresh hello@ draft
+            + #change-orders notice go out with revision wording. Revising a <strong>Billed</strong> CO is
+            allowed but flagged — the invoice is never touched.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Breakdown <span class="opt">— labor / materials lines</span></h2>
+      <div id="line-items"></div>
+      <button type="button" class="btn secondary small" id="add-line">+ Add line</button>
+    </div>
+
+    <div class="card">
+      <h2>Approval note <span class="opt">(optional — printed in the sign-off block)</span></h2>
+      <textarea name="approval_note" placeholder="Rate and scope discussed on site 2026-06-12. Approval by reply authorizes GVC to proceed."></textarea>
+    </div>
+
+    <div class="card">
+      <div class="actions">
+        <button type="button" class="btn" id="btn-generate">Generate Preview</button>
+        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
+        <button type="button" class="btn secondary small" id="btn-new-co">Start new</button>
+        <span class="spinner" id="spinner">⏳ Working…</span>
+        <span id="save-state" class="save-state"></span>
+        <div class="totals">CO total<br /><strong id="t-total">$0.00</strong></div>
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        <strong>Generate Preview</strong> renders the CO PDF only.
+        <strong>Accept</strong> files it to the job's Drive folder, drafts it in <code>hello@</code> (PDF attached), posts to #change-orders, and creates/updates the Monday CO item + Operations task. Nothing is emailed until someone reviews the draft and clicks Send.
+      </div>
+    </div>
+  </form>
+
+  <div class="card" id="preview-card">
+    <h2>Preview</h2>
+    <iframe id="preview-frame" title="Change Order PDF preview"></iframe>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const lineItemsEl = $("#line-items");
+
+// Holds what the Monday lookup resolved, so finalize can write to the right
+// parent + number correctly. Cleared if the user edits the link fields.
+let linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [] };
+
+function lineItemRow(v = {}) {
+  const div = document.createElement("div");
+  div.className = "line-item";
+  div.innerHTML = `
+    <div class="row1">
+      <div><label>Description</label><input class="li-label" placeholder="Labor (38.5 hrs @ $70/hr)" value="${escapeHtml(v.label || "")}" /></div>
+      <div><label>Amount ($)</label><input class="li-amount" type="number" step="0.01" placeholder="2695.00" value="${v.amount ?? ""}" /></div>
+      <div><button type="button" class="btn danger li-remove">Remove</button></div>
+    </div>`;
+  div.querySelector(".li-remove").addEventListener("click", () => {
+    if (lineItemsEl.children.length > 1) div.remove();
+    recalc();
+  });
+  div.querySelectorAll("input").forEach((i) => i.addEventListener("input", recalc));
+  return div;
+}
+function addLineItem(v) { lineItemsEl.appendChild(lineItemRow(v)); recalc(); }
+function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function recalc() {
+  let total = 0;
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const amt = parseFloat(row.querySelector(".li-amount").value);
+    if (!isNaN(amt)) total += amt;
+  });
+  $("#t-total").textContent = money(total);
+}
+
+function val(n) { const e = $("#co-form").elements[n]; return e ? (e.value || "").trim() : ""; }
+function setField(name, value) { const el = $("#co-form").elements[name]; if (el) el.value = value == null ? "" : value; }
+
+function collectData() {
+  const client = { name: val("client_name"), email: val("client_email") };
+  if (val("contact_name")) client.contact_name = val("contact_name");
+  if (val("client_phone")) client.phone = val("client_phone");
+  if (val("client_billing")) client.billing_address = val("client_billing");
+
+  const job = { name: val("job_name") };
+  if (val("site_address")) job.site_address = val("site_address");
+
+  const breakdown = [];
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const label = row.querySelector(".li-label").value.trim();
+    const amount = parseFloat(row.querySelector(".li-amount").value);
+    if (!label && isNaN(amount)) return;
+    breakdown.push({ label, amount: isNaN(amount) ? null : amount });
+  });
+
+  const change_order = {
+    base_number: val("base_number"),
+    date: val("date"),
+    title: val("title"),
+    breakdown,
+  };
+  if (val("description")) change_order.description = val("description");
+  if (val("approval_note")) change_order.approval_note = val("approval_note");
+  if (val("co_number")) change_order.co_number = val("co_number");
+  if (linked.existing_co_identifiers && linked.existing_co_identifiers.length)
+    change_order.existing_co_identifiers = linked.existing_co_identifiers;
+
+  const _link = {};
+  if (linked.monday_item_id) _link.monday_item_id = linked.monday_item_id;
+  if (linked.gfolder_url) _link.gfolder_url = linked.gfolder_url;
+  if (val("drive_folder_url")) _link.drive_folder_url = val("drive_folder_url");
+
+  return { client, job, change_order, _link };
+}
+
+function validateData(d) {
+  const e = [];
+  if (!d.client.name) e.push("Client name is required.");
+  if (!d.client.email) e.push("Client email is required.");
+  if (!d.job.name) e.push("Project name is required.");
+  if (!d.change_order.base_number) e.push("Estimate / Project # is required.");
+  if (!d.change_order.title) e.push("Change order title is required.");
+  if (!d.change_order.date) e.push("Date is required.");
+  const lines = d.change_order.breakdown.filter((r) => r.label || r.amount != null);
+  if (!lines.length) e.push("At least one breakdown line is required.");
+  lines.forEach((r, i) => {
+    if (!r.label) e.push(`Breakdown line ${i + 1}: a label is required.`);
+    if (r.amount == null) e.push(`Breakdown line ${i + 1}: a numeric amount is required.`);
+  });
+  return e;
+}
+
+function setStatus(kind, html) { const el = $("#status"); el.className = "show " + kind; el.innerHTML = html; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function clearStatus() { $("#status").className = ""; }
+
+let lastPreviewOk = false;
+function showSpinner(on) {
+  $("#spinner").classList.toggle("show", on);
+  $("#btn-generate").disabled = on;
+  $("#btn-accept").disabled = on || !lastPreviewOk;
+}
+
+function isReviseMode() {
+  const box = $("#revise-flag");
+  const ident = val("co_number");
+  return !!(box && box.checked && ident);
+}
+function updateReviseUI() {
+  const ident = val("co_number");
+  const row = $("#revise-row");
+  row.style.display = ident ? "block" : "none";
+  if (!ident) $("#revise-flag").checked = false;
+  $("#btn-accept").textContent = isReviseMode()
+    ? "Update this Change Order (same number)"
+    : "Accept & Create Draft in hello@";
+}
+
+function applyData(p) {
+  p = p || {};
+  const c = p.client || {}, j = p.job || {}, co = p.change_order || {}, link = p._link || {};
+  setField("client_name", c.name); setField("contact_name", c.contact_name);
+  setField("client_email", c.email); setField("client_phone", c.phone);
+  setField("client_billing", c.billing_address);
+  setField("job_name", j.name); setField("site_address", j.site_address);
+  setField("base_number", co.base_number);
+  setField("date", co.date || new Date().toISOString().slice(0, 10));
+  setField("title", co.title); setField("description", co.description);
+  setField("approval_note", co.approval_note);
+  setField("co_number", co.co_number || "");
+  lineItemsEl.innerHTML = "";
+  const items = (co.breakdown && co.breakdown.length) ? co.breakdown : [{}];
+  items.forEach((li) => addLineItem(li));
+  recalc();
+  linked = {
+    monday_item_id: link.monday_item_id || null,
+    gfolder_url: link.gfolder_url || null,
+    existing_co_identifiers: co.existing_co_identifiers || [],
+  };
+  if (link.drive_folder_url) setField("drive_folder_url", link.drive_folder_url);
+  updateReviseUI();
+}
+
+async function run(mode) {
+  const data = collectData();
+  const errs = validateData(data);
+  const revise = isReviseMode();
+  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  showSpinner(true); clearStatus();
+  try {
+    const resp = await fetch("/ui/api/change-order/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data, mode, revise }),
+    });
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading…"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json();
+    if (!resp.ok) {
+      const d = body.detail || body;
+      setStatus("err", `<strong>${d.code || "Error"}</strong><br />${d.advice || d.detail || JSON.stringify(d)}`);
+      return;
+    }
+    const wb = body.writeback || {};
+    if (mode === "dry-run") {
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}`;
+      $("#preview-frame").src = url;
+      $("#preview-card").classList.add("show");
+      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      setStatus("info", `✅ Preview ready below (change order <strong>${wb.identifier}</strong>${revise ? "" : " — final number assigned at Accept"}). Review it, then click <strong>${revise ? "Update this Change Order" : "Accept & Create Draft in hello@"}</strong>.`);
+      $("#preview-card").scrollIntoView({ behavior: "smooth" });
+    } else {
+      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      let html = wb.revised
+        ? `<strong>✅ Change Order ${wb.identifier} UPDATED${wb.revision_version ? " (v" + wb.revision_version + ")" : ""} — same CO number${wb.total_pretty ? " — " + wb.total_pretty : ""}.</strong><br />`
+        : `<strong>✅ Change Order ${wb.identifier} created${wb.total_pretty ? " — " + wb.total_pretty : ""}.</strong><br />`;
+      if (wb.drive_archived && wb.drive_archived.length)
+        html += `<div class="result-line">🗂️ Prior version archived in Drive as <code>${wb.drive_archived.join("</code>, <code>")}</code></div>`;
+      if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
+      if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
+      if (wb.gmail_status) html += `<div class="result-line" style="color:#b45309">⚠️ ${wb.gmail_status}</div>`;
+      if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">CO PDF in Drive</a> (${wb.drive_folder_path || "Change Orders/"})</div>`;
+      if (wb.drive_status) html += `<div class="result-line" style="color:#b45309">⚠️ Drive: ${wb.drive_status}</div>`;
+      const coUrl = wb.monday_co_item_url || wb.monday_item_url;
+      if (coUrl) html += `<div class="result-line">📋 <a href="${coUrl}" target="_blank" rel="noopener">Monday CO item</a>${wb.monday_co_item_updated ? " updated" : " created"} (Drafted).</div>`;
+      if (wb.monday_ops_task_url) html += `<div class="result-line">🗓️ <a href="${wb.monday_ops_task_url}" target="_blank" rel="noopener">Operations task</a>${wb.monday_ops_task_updated ? " updated" : " created"}.</div>`;
+      if (wb.monday_billed_warning) html += `<div class="result-line" style="color:#b91c1c">⚠️ ${wb.monday_billed_warning}</div>`;
+      if (wb.monday_status) html += `<div class="result-line" style="color:#b45309">⚠️ Monday: ${wb.monday_status}</div>`;
+      if (wb.monday_ops_status) html += `<div class="result-line" style="color:#b45309">⚠️ Operations task: ${wb.monday_ops_status}</div>`;
+      html += `<div class="result-line">#change-orders Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
+      setStatus("warn", html);
+      deleteCurrentDraftAfterFinalize();  // CO is now real (in Monday) — drop the draft
+    }
+  } catch (e) {
+    setStatus("err", "Network/error: " + e.message);
+  } finally { showSpinner(false); }
+}
+
+/* ===================== Find the Project (search / URL / revision) ===================== */
+
+function looksLikeMondayRef(s) {
+  return /\/pulses\/\d+/.test(s) || /^\d{8,}$/.test(s.trim()) || s.includes("monday.com");
+}
+function looksLikeCoNumber(s) { return /^CO\.\d+-/i.test((s || "").trim()); }
+
+async function lookupFromMonday() {
+  const q = ($("#monday-url").value || "").trim();
+  const note = $("#link-state");
+  $("#search-results").innerHTML = ""; $("#existing-cos").innerHTML = "";
+  if (!q) { setLinkState("warn", "Enter a Monday Project URL (or item id) — or type a client, address, project #, or CO number to search."); return; }
+  if (looksLikeMondayRef(q)) return loadProject(q);
+  if (looksLikeCoNumber(q)) return loadForRevision(q);
+  return searchProjects(q);
+}
+
+async function searchProjects(q) {
+  setLinkState("", "Searching Monday…");
+  $("#btn-prefill").disabled = true;
+  let r;
+  try { r = await fetch("/ui/api/change-order/search?q=" + encodeURIComponent(q)); }
+  catch (e) { $("#btn-prefill").disabled = false; setLinkState("warn", "Network error."); return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    setLinkState("warn", (data.detail && (data.detail.detail || data.detail.advice)) ||
+      ("Search failed (HTTP " + r.status + ").")); return;
+  }
+  const rows = data.results || [];
+  if (!rows.length) { setLinkState("warn", `No projects matched “${escapeHtml(q)}”. Try fewer words, or paste the Monday URL.`); return; }
+  setLinkState("ok", `${rows.length} match${rows.length === 1 ? "" : "es"} — pick one:`);
+  const list = $("#search-results");
+  rows.forEach((row) => {
+    const div = document.createElement("div");
+    div.className = "draft-row";
+    const isCo = looksLikeCoNumber(row.project_number || "");
+    const pn = row.project_number ? `<span class="badge ${isCo ? "active" : "synced"}">${escapeHtml(row.project_number)}</span>` : "";
+    const grp = row.group ? `<span class="badge local">${escapeHtml(row.group)}</span>` : "";
+    div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(row.name)}${pn}${grp}</div></div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small";
+    btn.textContent = isCo ? "Load for revision" : "Load";
+    btn.addEventListener("click", () => {
+      $("#search-results").innerHTML = "";
+      if (isCo) loadForRevision(row.project_number); else loadProject(String(row.item_id));
+    });
+    div.appendChild(btn);
+    list.appendChild(div);
+  });
+}
+
+async function loadProject(ref) {
+  setLinkState("", "Looking up…");
+  $("#btn-prefill").disabled = true;
+  let r;
+  try { r = await fetch("/ui/api/change-order/lookup?monday_url=" + encodeURIComponent(ref)); }
+  catch (e) { $("#btn-prefill").disabled = false; setLinkState("warn", "Network error during lookup: " + e.message); return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) { const d = body.detail || body; setLinkState("warn", (d.advice || d.detail || "Lookup failed.")); return; }
+  const c = body.context || {};
+  currentDraftId = null;
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  if (c.client_name) setField("client_name", c.client_name);
+  if (c.client_email) setField("client_email", c.client_email);
+  if (c.client_phone) setField("client_phone", c.client_phone);
+  if (c.client_billing_address) setField("client_billing", c.client_billing_address);
+  if (c.contact_name) setField("contact_name", c.contact_name);
+  if (c.job_name) setField("job_name", c.job_name);
+  if (c.site_address) setField("site_address", c.site_address);
+  if (c.project_number) setField("base_number", c.project_number);
+  linked = {
+    monday_item_id: c.monday_item_id || null,
+    gfolder_url: c.gfolder_url || null,
+    existing_co_identifiers: (c.existing_co_identifiers || []).filter((x) => /^CO\./.test(x)),
+  };
+  let msg = `✅ Linked to Monday project <strong>${escapeHtml(c.job_name || c.monday_item_id)}</strong>.`;
+  if (c.gfolder_url) msg += " Drive folder found — the CO PDF will be filed there.";
+  else msg += " ⚠️ No Drive folder on this project — paste a Drive folder URL above so the PDF gets filed.";
+  setLinkState("ok", msg);
+  renderExistingCos(c.existing_cos || []);
+  scheduleAutosave();
+  $("#co-form").scrollIntoView({ behavior: "smooth" });
+}
+
+function renderExistingCos(cos) {
+  const wrap = $("#existing-cos");
+  wrap.innerHTML = "";
+  if (!cos.length) return;
+  const heading = document.createElement("div");
+  heading.className = "hint";
+  heading.style.marginBottom = "6px";
+  heading.textContent = `${cos.length} existing CO(s) on this project:`;
+  wrap.appendChild(heading);
+  cos.forEach((co) => {
+    const div = document.createElement("div");
+    div.className = "draft-row";
+    const billed = (co.status || "").toLowerCase() === "billed";
+    const badge = co.status ? `<span class="badge ${billed ? "billed" : "synced"}">${escapeHtml(co.status)}</span>` : "";
+    div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(co.identifier)}${badge}</div></div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small"; btn.textContent = "Load for revision";
+    btn.addEventListener("click", () => loadForRevision(co.identifier));
+    div.appendChild(btn);
+    wrap.appendChild(div);
+  });
+}
+
+async function loadForRevision(identifier) {
+  setLinkState("", `Loading ${escapeHtml(identifier)} for revision…`);
+  $("#btn-prefill").disabled = true;
+  let r;
+  try { r = await fetch("/ui/api/change-order/original?identifier=" + encodeURIComponent(identifier)); }
+  catch (e) { $("#btn-prefill").disabled = false; setLinkState("warn", "Network error."); return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    setLinkState("warn", (body.detail && (body.detail.detail || body.detail.advice)) || "Load failed.");
+    return;
+  }
+  const rev = body.revision || {};
+  currentDraftId = null;
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  if (body.prefill) {
+    applyData(body.prefill);
+    setField("co_number", identifier);
+    $("#revise-flag").checked = true;
+    updateReviseUI();
+    setLinkState("ok", `Loaded <strong>${escapeHtml(identifier)}</strong> — every field including the breakdown. ` +
+      `Make the customer's changes below, then <strong>Generate Preview</strong> → ` +
+      `<strong>Update this Change Order</strong>. Same CO number; the prior PDF is archived in Drive.`);
+  } else {
+    setField("co_number", identifier);
+    $("#revise-flag").checked = true;
+    updateReviseUI();
+    setLinkState("warn", `<strong>${escapeHtml(identifier)}</strong> was sent before revision tracking — ` +
+      `its breakdown couldn't be loaded. Re-enter the breakdown lines below to update it under the same ` +
+      `CO number (uncheck “Update this Change Order” to issue a brand-new CO instead).`);
+  }
+  scheduleAutosave();
+  $("#co-form").scrollIntoView({ behavior: "smooth" });
+}
+
+function setLinkState(kind, html) { const el = $("#link-state"); el.className = kind; el.innerHTML = html; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+/* ===================== Draft autosave + sync =====================
+   Two layers:
+   - localStorage: the working copy. Autosaves on every edit, so a session
+     timeout, dropped connection, or closed tab never loses data.
+   - server (GCS, shared): synced best-effort. Anyone with the change_order
+     grant sees the team's drafts and can resume or delete from any device.
+   Server is authoritative when reachable (handles cross-device deletes);
+   local wins while offline. Drafts are deleted on a successful finalize.   */
+const LS_KEY = "gvc_co_drafts_v1";
+let currentDraftId = null;
+let autosaveTimer = null;
+
+function genDraftId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "d-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+function saveLocal(map) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch (e) {}
+}
+function upsertLocal(rec) { const m = loadLocal(); m[rec.id] = rec; saveLocal(m); return m; }
+function removeLocal(id) { const m = loadLocal(); delete m[id]; saveLocal(m); return m; }
+
+function deriveLabel(p) {
+  const client = ((p.client || {}).name || "").trim();
+  const job = ((p.job || {}).name || "").trim();
+  return [client, job].filter(Boolean).join(" — ") || "Untitled change order";
+}
+function isEmptyPayload(p) {
+  const c = p.client || {}, j = p.job || {}, co = p.change_order || {};
+  const hasHeader = (c.name || c.email || j.name || "").trim();
+  const hasLine = (co.breakdown || []).some((li) => (li.label || "").trim() || li.amount != null);
+  return !hasHeader && !hasLine;
+}
+function relTime(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime(); if (isNaN(t)) return "";
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.round(s / 60); if (m < 60) return m + " min ago";
+  const h = Math.round(m / 60); if (h < 24) return h + (h === 1 ? " hr ago" : " hrs ago");
+  const d = Math.round(h / 24); return d + (d === 1 ? " day ago" : " days ago");
+}
+function setSaveState(kind, text) {
+  const el = $("#save-state"); el.className = "save-state " + (kind || ""); el.textContent = text || "";
+}
+
+async function serverPut(rec) {
+  const resp = await fetch("/ui/api/change-order/drafts/" + encodeURIComponent(rec.id), {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: rec.payload, label: rec.label, updated_at: rec.updated_at }),
+  });
+  return resp;
+}
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(doAutosave, 800);
+}
+async function doAutosave() {
+  const payload = collectData();
+  if (!currentDraftId && isEmptyPayload(payload)) return;  // don't create empty drafts
+  if (!currentDraftId) currentDraftId = genDraftId();
+  const rec = {
+    id: currentDraftId, label: deriveLabel(payload), payload,
+    updated_at: new Date().toISOString(), updated_by: "(you)",
+  };
+  const existing = loadLocal()[currentDraftId] || {};
+  rec._syncedAt = existing._syncedAt;     // preserve last sync marker
+  upsertLocal(rec);
+  setSaveState("local", "Saving…");
+  try {
+    const resp = await serverPut(rec);
+    if (resp.ok) {
+      rec._syncedAt = rec.updated_at; upsertLocal(rec);
+      setSaveState("synced", "Saved · synced ✓");
+    } else if (resp.status === 401 || resp.status === 403) {
+      setSaveState("local", "Saved on this device · sign in to sync");
+    } else {
+      setSaveState("local", "Saved on this device");
+    }
+  } catch (e) {
+    setSaveState("local", "Saved on this device (offline)");
+  }
+}
+
+async function refreshDrafts() {
+  let map = loadLocal();
+  try {
+    const resp = await fetch("/ui/api/change-order/drafts");
+    if (resp.ok) {
+      const body = await resp.json();
+      const server = {}; (body.drafts || []).forEach((d) => { server[d.id] = d; });
+      const now = new Date().toISOString();
+      Object.keys(map).forEach((id) => {
+        if (!server[id]) {
+          const l = map[id];
+          const dirty = !l._syncedAt || (l.updated_at || "") > l._syncedAt;
+          if (!dirty) delete map[id];
+        }
+      });
+      Object.values(server).forEach((s) => {
+        const l = map[s.id];
+        if (!l || (s.updated_at || "") >= (l.updated_at || "")) {
+          map[s.id] = Object.assign({}, s, { _syncedAt: now });
+        }
+      });
+      saveLocal(map);
+      Object.values(map).forEach((l) => {
+        if (!l._syncedAt || (l.updated_at || "") > l._syncedAt) {
+          serverPut(l).then((r) => { if (r.ok) { l._syncedAt = l.updated_at; upsertLocal(l); } }).catch(() => {});
+        }
+      });
+    }
+  } catch (e) { /* offline — render from local only */ }
+  renderDrafts(map);
+}
+
+function renderDrafts(map) {
+  map = map || loadLocal();
+  const rows = Object.values(map).sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+  const card = $("#drafts-card"), list = $("#drafts-list");
+  if (!rows.length) { card.style.display = "none"; list.innerHTML = ""; return; }
+  card.style.display = "block";
+  list.innerHTML = "";
+  rows.forEach((r) => {
+    const synced = r._syncedAt && (r.updated_at || "") <= r._syncedAt;
+    const isActive = r.id === currentDraftId;
+    const div = document.createElement("div");
+    div.className = "draft-row" + (isActive ? " active" : "");
+    const by = r.updated_by && r.updated_by !== "(you)" ? " · " + r.updated_by : "";
+    div.innerHTML =
+      `<div class="d-main">
+         <div class="d-label">${escapeHtml(r.label || "Untitled change order")}` +
+         (isActive ? `<span class="badge active">editing</span>` : "") +
+         (synced ? `<span class="badge synced">synced</span>` : `<span class="badge local">this device</span>`) +
+       `</div>
+         <div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div>
+       </div>`;
+    const resume = document.createElement("button");
+    resume.type = "button"; resume.className = "btn secondary small"; resume.textContent = isActive ? "Editing" : "Resume";
+    resume.disabled = isActive;
+    resume.addEventListener("click", () => resumeDraft(r.id));
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "btn danger small"; del.textContent = "Delete";
+    del.addEventListener("click", () => deleteDraft(r.id));
+    div.appendChild(resume); div.appendChild(del);
+    list.appendChild(div);
+  });
+}
+
+function resumeDraft(id) {
+  const rec = loadLocal()[id]; if (!rec) return;
+  applyData(rec.payload);
+  currentDraftId = id;
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
+  renderDrafts();
+  $("#co-form").scrollIntoView({ behavior: "smooth" });
+}
+
+async function deleteDraft(id) {
+  if (!confirm("Delete this draft? This can't be undone.")) return;
+  removeLocal(id);
+  if (id === currentDraftId) { currentDraftId = null; clearForm(); }
+  renderDrafts();
+  try { await fetch("/ui/api/change-order/drafts/" + encodeURIComponent(id), { method: "DELETE" }); } catch (e) {}
+}
+
+function clearForm() {
+  $("#co-form").reset();
+  lineItemsEl.innerHTML = ""; addLineItem();
+  $("[name=date]").value = new Date().toISOString().slice(0, 10);
+  linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [] };
+  $("#existing-cos").innerHTML = ""; $("#search-results").innerHTML = "";
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  recalc();
+  updateReviseUI();
+}
+
+function startNewChangeOrder() {
+  currentDraftId = null;
+  clearForm();
+  setSaveState("", "");
+  setLinkState("", "");
+  renderDrafts();
+}
+
+function deleteCurrentDraftAfterFinalize() {
+  const id = currentDraftId; if (!id) return;
+  removeLocal(id); currentDraftId = null;
+  renderDrafts();
+  fetch("/ui/api/change-order/drafts/" + encodeURIComponent(id), { method: "DELETE" }).catch(() => {});
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML =
+      `<span>${dot(h.gmail_ready)} Gmail (hello@)</span>` +
+      `<span>${dot(h.preview_bucket_configured)} Preview</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+addLineItem();
+$("#add-line").addEventListener("click", () => addLineItem());
+$("#btn-prefill").addEventListener("click", lookupFromMonday);
+$("#btn-generate").addEventListener("click", () => run("dry-run"));
+$("#btn-accept").addEventListener("click", () => {
+  const msg = isReviseMode()
+    ? "Update this change order under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), the Monday CO item + Operations task are updated in place, and a fresh hello@ draft + #change-orders notice go out."
+    : "Create the change order draft in hello@, file it to Drive, and add the Monday CO item + Operations task?";
+  if (confirm(msg)) run("finalize");
+});
+$("#co-form").addEventListener("input", (ev) => {
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  if (ev.target && (ev.target.name === "co_number" || ev.target.id === "revise-flag")) updateReviseUI();
+  scheduleAutosave();
+});
+$("#btn-new-co").addEventListener("click", () => {
+  const p = collectData();
+  if (!isEmptyPayload(p) && !confirm("Start a new change order? Your current entry is saved as a draft you can resume.")) return;
+  startNewChangeOrder();
+});
+$("[name=date]").value = new Date().toISOString().slice(0, 10);
+updateReviseUI();
+checkHealth();
+refreshDrafts();
+</script>
+</body>
+</html>

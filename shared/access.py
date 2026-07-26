@@ -1,0 +1,110 @@
+"""
+Portal access control — "is this person provisioned, and what can they open?"
+=========================================================================
+Separation of concerns:
+  - auth.py   = "is this a valid, unexpired Google session?" (cookie crypto)
+  - access.py = "is this email provisioned, and which features does it hold?"
+  - portal_store.py = where the grant data physically lives (GCS JSON)
+
+Backends (env var GVC_GRANTS_BACKEND):
+  - "env"  (default, today/transition): the only provisioned users are those in
+    GVC_PORTAL_ALLOWED_EMAILS, and they get ALL features. This reproduces current
+    production behavior exactly (joe@ has everything), so nothing changes until we
+    deliberately flip the flag.
+  - "gcs": provisioned = superadmins (GVC_PORTAL_ALLOWED_EMAILS, break-glass) OR
+    anyone in the portal store. Superadmins always get all features — that's the
+    lockout-proof path so Joe can never accidentally revoke his own admin access.
+
+Features are the unit of access. `timeoff` is the baseline every provisioned
+(non-superadmin) store user receives automatically. `admin` unlocks the admin page.
+A user record may hold the wildcard "*" to mean all features.
+
+Deny-by-default everywhere: unknown email, empty store, or a backend error all
+resolve to "no access".
+"""
+from __future__ import annotations
+
+import os
+
+# Canonical feature set. Order is display order on the hub.
+FEATURES: tuple[str, ...] = (
+    "estimate", "change_order", "invoice", "check",
+    "coi", "takeoff", "timeoff", "activity", "admin",
+)
+ALL_FEATURES = frozenset(FEATURES)
+BASELINE = frozenset({"timeoff"})  # every provisioned store user gets this
+WILDCARD = "*"
+
+# Backward-compatible implications: when a tool graduates to its own feature,
+# the broader grant that USED to cover it keeps working, so no existing user
+# loses access on the day the new permission ships. Admins can still grant the
+# new feature on its own (e.g. the audit view without full admin).
+#   estimate ⇒ change_order   (Change Order app, formerly under `estimate`)
+#   invoice  ⇒ check          (Paid by Check, formerly under `invoice`)
+#   admin    ⇒ activity       (Activity audit view, formerly under `admin`)
+IMPLIES: dict[str, frozenset] = {
+    "estimate": frozenset({"change_order"}),
+    "invoice": frozenset({"check"}),
+    "admin": frozenset({"activity"}),
+}
+
+
+def backend() -> str:
+    return (os.environ.get("GVC_GRANTS_BACKEND") or "env").strip().lower()
+
+
+def superadmin_emails() -> set[str]:
+    """Break-glass admins from GVC_PORTAL_ALLOWED_EMAILS — always full access."""
+    raw = os.environ.get("GVC_PORTAL_ALLOWED_EMAILS") or ""
+    return {e.strip().lower() for e in raw.split(",") if e.strip()}
+
+
+def _expand(features) -> set[str]:
+    """Turn a stored feature list into the effective set (wildcard + baseline +
+    backward-compatible implications)."""
+    f = {str(x).strip().lower() for x in (features or []) if str(x).strip()}
+    if WILDCARD in f:
+        return set(ALL_FEATURES)
+    base = (f & ALL_FEATURES) | set(BASELINE)
+    for feat in list(base):
+        base |= IMPLIES.get(feat, frozenset())
+    return base & ALL_FEATURES
+
+
+def is_provisioned(email: str) -> bool:
+    """True if this email may use the portal at all (the new 'allowlist')."""
+    email = (email or "").strip().lower()
+    if not email:
+        return False
+    if email in superadmin_emails():
+        return True
+    if backend() == "gcs":
+        try:
+            from shared import portal_store as portal_store
+            return portal_store.has_user(email)
+        except Exception:  # noqa: BLE001 — store error ⇒ deny (fail closed)
+            return False
+    return False
+
+
+def effective_features(email: str) -> set[str]:
+    """The set of features this email can currently use. Empty ⇒ no access."""
+    email = (email or "").strip().lower()
+    if not email:
+        return set()
+    if email in superadmin_emails():
+        return set(ALL_FEATURES)
+    if backend() == "gcs":
+        try:
+            from shared import portal_store as portal_store
+            rec = portal_store.get_user(email)
+        except Exception:  # noqa: BLE001 — fail closed
+            return set()
+        if not rec:
+            return set()
+        return _expand(rec.get("features"))
+    return set()  # env backend, non-superadmin
+
+
+def has_feature(email: str, feature: str) -> bool:
+    return feature in effective_features(email)

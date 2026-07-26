@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Estimate {{ estimate.identifier }}</title>
+<style>
+  @page {
+    size: letter;
+    margin: 0.38in 0.55in 0.5in 0.55in;
+    @bottom-left {
+      content: "Green Valley Contractors, Inc.  ·  hello@greenvalleycontractors.com  ·  DRYWALL EXPERTS SINCE 1987";
+      font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+      font-size: 7.5pt;
+      color: #6B7280;
+      padding-top: 4pt;
+      border-top: 0.5pt solid #E5E7EB;
+      width: 100%;
+    }
+  }
+
+  :root {
+    --gvc-green: #5BB833;
+    --gvc-green-dark: #2D5A1F;
+    --gvc-black: #111111;
+    --gvc-text: #1F2937;
+    --gvc-muted: #6B7280;
+    --gvc-line: #E5E7EB;
+    --gvc-soft: #F7F8F6;
+  }
+
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt; color: var(--gvc-text); line-height: 1.45;
+  }
+  table { border-collapse: collapse; width: 100%; }
+  h1, h2, h3, h4 { margin: 0; font-weight: 700; color: var(--gvc-black); }
+
+  .top-band {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-bottom: 10pt; border-bottom: 3pt solid var(--gvc-green); margin-bottom: 12pt;
+  }
+  .brand { display: flex; flex-direction: column; align-items: flex-start; gap: 4pt; }
+  .brand img { width: 100pt; height: 100pt; object-fit: contain; }
+  .brand .tag { font-size: 8pt; color: var(--gvc-muted); letter-spacing: 0.05em; text-transform: uppercase; }
+  .doc-title { text-align: right; }
+  .doc-title h1 { font-size: 24pt; letter-spacing: 0.08em; color: var(--gvc-black); }
+  .doc-title .from-block { font-size: 8.5pt; color: var(--gvc-text); line-height: 1.35; margin-top: 6pt; }
+  .doc-title .from-block .from-name { font-weight: 700; color: var(--gvc-black); }
+  .doc-title .meta-line {
+    font-size: 9pt; color: var(--gvc-muted); margin-top: 6pt; padding-top: 4pt;
+    border-top: 0.5pt solid var(--gvc-line);
+  }
+
+  .meta-grid { display: flex; gap: 24pt; margin-bottom: 14pt; }
+  .meta-block { flex: 1; }
+  .meta-block .label {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin-bottom: 4pt;
+  }
+  .meta-block .value { color: var(--gvc-text); white-space: pre-line; }
+  .meta-block .value.name { font-weight: 700; color: var(--gvc-black); font-size: 11pt; }
+  .meta-kv { width: 100%; }
+  .meta-kv td { padding: 2pt 0; font-size: 10pt; }
+  .meta-kv td.k { color: var(--gvc-muted); width: 48%; }
+  .meta-kv td.v { text-align: right; color: var(--gvc-text); font-weight: 600; }
+
+  .scope-summary { margin-bottom: 14pt; }
+  .scope-summary .label {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin-bottom: 4pt;
+  }
+  .scope-summary .value { white-space: pre-line; }
+
+  .section-head {
+    font-size: 10pt; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--gvc-green-dark); font-weight: 800; margin: 12pt 0 5pt;
+  }
+  .section-head.optional { color: var(--gvc-muted); }
+
+  .items { margin-bottom: 6pt; }
+  .items thead th {
+    background: var(--gvc-black); color: #FFF; text-align: left; padding: 6pt 10pt;
+    font-size: 9pt; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+  }
+  .items thead th.num { text-align: right; }
+  .items thead th.qty { text-align: center; width: 9%; }
+  .items thead th.price, .items thead th.total { width: 16%; }
+  .items tbody td {
+    padding: 5pt 10pt; border-bottom: 1pt solid var(--gvc-line);
+    vertical-align: top; font-size: 10pt;
+  }
+  .items tbody td.num { text-align: right; }
+  .items tbody td.qty { text-align: center; }
+  .items tbody tr:nth-child(even) td { background: var(--gvc-soft); }
+  .items .desc { width: 59%; }
+  .items .item-desc-sub { color: var(--gvc-muted); font-size: 9pt; margin-top: 2pt; white-space: pre-line; }
+  .items tfoot td {
+    padding: 6pt 10pt; font-weight: 800; color: var(--gvc-black);
+    border-top: 1.5pt solid var(--gvc-black);
+  }
+  .items tfoot td.num { text-align: right; color: var(--gvc-green-dark); }
+  .items.optional thead th { background: var(--gvc-green-dark); }
+
+  .totals-wrap { display: flex; justify-content: flex-end; margin: 8pt 0 4pt; }
+  .totals { width: 52%; }
+  .totals td { padding: 3pt 10pt; font-size: 10.5pt; }
+  .totals td.k { color: var(--gvc-muted); text-align: left; }
+  .totals td.v { text-align: right; font-weight: 600; }
+  .totals tr.total td {
+    border-top: 2pt solid var(--gvc-black); padding-top: 8pt; padding-bottom: 4pt;
+    font-size: 13pt; font-weight: 800; color: var(--gvc-black);
+  }
+  .totals tr.total td.v { color: var(--gvc-green-dark); }
+  .totals tr.withopt td { font-size: 10pt; color: var(--gvc-muted); }
+
+  .special {
+    margin-top: 14pt; padding: 11pt 14pt; background: #FFF7ED;
+    border-left: 4pt solid #FDBA74; page-break-inside: avoid;
+  }
+  .special .label {
+    font-size: 9pt; text-transform: uppercase; letter-spacing: 0.06em;
+    color: #7C2D12; font-weight: 800; margin-bottom: 5pt;
+  }
+  .special ul { margin: 0 0 6pt; padding-left: 16pt; }
+  .special li { margin-bottom: 3pt; }
+  .special .fine { font-size: 8pt; color: var(--gvc-muted); font-style: italic; }
+
+  .terms { page-break-before: always; padding-top: 4pt; }
+  .terms .terms-title {
+    font-size: 13pt; font-weight: 800; color: var(--gvc-black);
+    border-bottom: 2pt solid var(--gvc-green); padding-bottom: 5pt; margin-bottom: 10pt;
+    letter-spacing: 0.04em;
+  }
+  .terms .block { margin-bottom: 11pt; page-break-inside: avoid; }
+  .terms .block .label {
+    font-size: 9pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-green-dark); font-weight: 800; margin-bottom: 4pt;
+  }
+  .terms ul { margin: 0; padding-left: 16pt; }
+  .terms li { margin-bottom: 4pt; font-size: 9.5pt; }
+
+  .notes { margin-top: 10pt; font-size: 9.5pt; page-break-inside: avoid; }
+  .notes .label {
+    font-size: 8pt; text-transform: uppercase; letter-spacing: 0.08em;
+    color: var(--gvc-muted); font-weight: 700; margin-bottom: 4pt;
+  }
+  .notes .value { white-space: pre-line; }
+
+  /* Scope Details flows right below the Special Notes / Notes area (NOT its
+     own page) with ~2 lines of separation, to tighten the document. The
+     Standard Deliverables page that follows (.terms) keeps its own
+     page-break-before, so there is always a clean page break after Scope
+     Details. Additional Services still starts its own page.
+     The 3-level bullet hierarchy (trade -> scope -> descriptor) is drawn with
+     absolutely-positioned ::before glyphs at fixed indents so WeasyPrint
+     renders it predictably regardless of list nesting. */
+  .services { page-break-before: always; padding-top: 4pt; }
+  .scope-details { margin-top: 30pt; }
+  .scope-details .page-title, .services .page-title {
+    font-size: 13pt; font-weight: 800; color: var(--gvc-black);
+    border-bottom: 2pt solid var(--gvc-green); padding-bottom: 5pt;
+    margin-bottom: 10pt; letter-spacing: 0.04em;
+  }
+  /* Keep the "Scope Details" heading from being stranded at a page bottom. */
+  .scope-details .page-title { page-break-after: avoid; }
+  .services .page-intro { font-size: 9.5pt; color: var(--gvc-muted); margin: 0 0 12pt; }
+
+  ul.scope-tree, ul.scope-tree ul { list-style: none; margin: 0; padding: 0; }
+  ul.scope-tree li { position: relative; }
+  ul.scope-tree > li.trade {
+    font-size: 11pt; font-weight: 800; color: var(--gvc-green-dark);
+    margin: 12pt 0 3pt; padding-left: 15pt; page-break-inside: avoid;
+  }
+  ul.scope-tree > li.trade:first-child { margin-top: 2pt; }
+  ul.scope-tree > li.trade::before {
+    content: "\25CF"; position: absolute; left: 0; top: 1.5pt;
+    color: var(--gvc-green); font-size: 8pt;
+  }
+  ul.scope-tree li.scope {
+    font-size: 10.5pt; font-weight: 700; color: var(--gvc-black);
+    margin: 5pt 0 2pt; padding-left: 31pt; page-break-inside: avoid;
+  }
+  ul.scope-tree li.scope::before {
+    content: "\25AA"; position: absolute; left: 16pt; top: 0.5pt;
+    color: var(--gvc-green); font-size: 9pt;
+  }
+  ul.scope-tree li.descriptor {
+    font-size: 9.5pt; font-weight: 400; color: var(--gvc-text);
+    margin: 2pt 0; padding-left: 47pt; line-height: 1.42;
+  }
+  ul.scope-tree li.descriptor::before {
+    content: "\2013"; position: absolute; left: 33pt; color: var(--gvc-muted);
+  }
+  ul.scope-tree.services-tree li.scope { margin: 4pt 0; }
+  ul.scope-tree.services-tree .svc-summary { font-weight: 400; color: var(--gvc-muted); }
+</style>
+</head>
+<body>
+
+  <!-- Top band: logo + ESTIMATE + company block -->
+  <div class="top-band">
+    <div class="brand">
+      <img src="{{ logo_data_uri }}" alt="Green Valley Contractors">
+      <div class="tag">{{ company.tagline }}</div>
+    </div>
+    <div class="doc-title">
+      <h1>ESTIMATE</h1>
+      <div class="from-block">
+        <div class="from-name">{{ company.name }}</div>
+        <div style="white-space:pre-line;">{{ company.address }}</div>
+        <div>{{ company.phone }}</div>
+        <div>{{ company.email }}</div>
+        <div>{{ company.website }}</div>
+      </div>
+      <div class="meta-line">{{ estimate.identifier }} &middot; {{ estimate.date_pretty }} &middot; Valid through {{ estimate.expiry_pretty }}</div>
+    </div>
+  </div>
+
+  <!-- Prepared For + Project + key dates / bid contact -->
+  <div class="meta-grid">
+    <div class="meta-block">
+      <div class="label">Prepared For</div>
+      <div class="value name">{{ client.name }}</div>
+      {% if client.contact_name %}<div class="value">Attn: {{ client.contact_name }}</div>{% endif %}
+      {% if client.email %}<div class="value">{{ client.email }}</div>{% endif %}
+      {% if client.phone %}<div class="value">{{ client.phone }}</div>{% endif %}
+    </div>
+
+    <div class="meta-block">
+      <div class="label">Project</div>
+      <div class="value name">{{ job.name }}</div>
+      {% if job.location %}<div class="value">{{ job.location }}</div>{% endif %}
+    </div>
+
+    <div class="meta-block">
+      <table class="meta-kv">
+        <tr><td class="k">Estimate #</td><td class="v">{{ estimate.identifier }}</td></tr>
+        <tr><td class="k">Date</td><td class="v">{{ estimate.date_pretty }}</td></tr>
+        <tr><td class="k">Valid Through</td><td class="v">{{ estimate.expiry_pretty }}</td></tr>
+      </table>
+      {% if prepared_by.name %}
+      <table class="meta-kv" style="margin-top:6pt;border-top:0.5pt solid var(--gvc-line);">
+        <tr><td class="k" style="vertical-align:top;">Your Bid Contact</td>
+            <td class="v">{{ prepared_by.name }}{% if prepared_by.email %}<br>{{ prepared_by.email }}{% endif %}{% if prepared_by.phone %}<br>{{ prepared_by.phone }}{% endif %}</td></tr>
+      </table>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if estimate.scope_summary %}
+  <div class="scope-summary">
+    <div class="label">Scope of Work Summary</div>
+    <div class="value">{{ estimate.scope_summary }}</div>
+  </div>
+  {% endif %}
+
+  <!-- Main scope pricing -->
+  <div class="section-head">Main Scope of Work</div>
+  <table class="items">
+    <thead>
+      <tr>
+        <th class="desc">Description</th>
+        <th class="price num">Price</th>
+        <th class="qty">Qty</th>
+        <th class="total num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for li in estimate.main_items %}
+      <tr>
+        <td class="desc">
+          <strong>{{ li.description }}</strong>
+          {% if li.detail %}<div class="item-desc-sub">{{ li.detail }}</div>{% endif %}
+        </td>
+        <td class="num">{{ li.unit_price_pretty }}</td>
+        <td class="qty">{{ li.quantity }}</td>
+        <td class="num">{{ li.line_total_pretty }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3">Main Scope of Work Total</td><td class="num">{{ estimate.main_total_pretty }}</td></tr>
+    </tfoot>
+  </table>
+
+  {% if estimate.has_optional %}
+  <!-- Optional add-ons -->
+  <div class="section-head optional">Optional Add-ons (select any you'd like included)</div>
+  <table class="items optional">
+    <thead>
+      <tr>
+        <th class="desc">Description</th>
+        <th class="price num">Price</th>
+        <th class="qty">Qty</th>
+        <th class="total num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for li in estimate.optional_items %}
+      <tr>
+        <td class="desc">
+          <strong>{{ li.description }}</strong>
+          {% if li.detail %}<div class="item-desc-sub">{{ li.detail }}</div>{% endif %}
+        </td>
+        <td class="num">{{ li.unit_price_pretty }}</td>
+        <td class="qty">{{ li.quantity }}</td>
+        <td class="num">{{ li.line_total_pretty }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3">Optional Add-ons Total</td><td class="num">{{ estimate.options_total_pretty }}</td></tr>
+    </tfoot>
+  </table>
+  {% endif %}
+
+  <!-- Totals -->
+  <div class="totals-wrap">
+    <table class="totals">
+      <tr class="total">
+        <td class="k">Estimate Total</td>
+        <td class="v">{{ estimate.main_total_pretty }}</td>
+      </tr>
+      {% if estimate.has_optional %}
+      <tr class="withopt">
+        <td class="k">With all optional add-ons selected</td>
+        <td class="v">{{ estimate.total_with_options_pretty }}</td>
+      </tr>
+      {% endif %}
+    </table>
+  </div>
+
+  {% if estimate.special_notes %}
+  <div class="special">
+    <div class="label">Special Notes for This Project</div>
+    <ul>
+      {% for note in estimate.special_notes %}<li>{{ note }}</li>{% endfor %}
+    </ul>
+    <div class="fine">These special notes supersede the standard deliverables and clarifications below and are reflected in the estimate price above.</div>
+  </div>
+  {% endif %}
+
+  {% if estimate.notes %}
+  <div class="notes">
+    <div class="label">Notes</div>
+    <div class="value">{{ estimate.notes }}</div>
+  </div>
+  {% endif %}
+
+  {% if estimate.has_scope_details %}
+  <!-- Scope Details (own page) — trade -> selected scope -> descriptor bullets -->
+  <div class="scope-details">
+    <div class="page-title">Scope Details</div>
+    <ul class="scope-tree">
+      {% for grp in estimate.scope_details %}
+      <li class="trade">{{ grp.trade }}
+        <ul>
+          {% for sc in grp.scopes %}
+          <li class="scope">{{ sc.title }}
+            {% if sc.bullets %}
+            <ul>
+              {% for b in sc.bullets %}<li class="descriptor">{{ b }}</li>{% endfor %}
+            </ul>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <!-- Standard deliverables / terms (own page) -->
+  <div class="terms">
+    <div class="terms-title">Standard Deliverables &amp; Terms</div>
+    <div class="block">
+      <div class="label">Inclusions</div>
+      <ul>{% for item in boilerplate.inclusions %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+    <div class="block">
+      <div class="label">Exclusions</div>
+      <ul>{% for item in boilerplate.exclusions %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+    <div class="block">
+      <div class="label">Clarifications</div>
+      <ul>{% for item in boilerplate.clarifications %}<li>{{ item }}</li>{% endfor %}</ul>
+    </div>
+    {% if boilerplate.payment %}
+    <div class="block">
+      <div class="label">Payment</div>
+      <div>{{ boilerplate.payment }}</div>
+    </div>
+    {% endif %}
+    {% if boilerplate.warranty %}
+    <div class="block">
+      <div class="label">Warranty</div>
+      <div>{{ boilerplate.warranty }}</div>
+    </div>
+    {% endif %}
+    {% if boilerplate.insurance %}
+    <div class="block">
+      <div class="label">Insurance</div>
+      <div>{{ boilerplate.insurance }}</div>
+    </div>
+    {% endif %}
+    {% if estimate.special_notes %}
+    <div class="block">
+      <div class="label" style="color:#7C2D12;">Project-Specific Overrides</div>
+      <ul>{% for note in estimate.special_notes %}<li>{{ note }}</li>{% endfor %}</ul>
+      <div style="font-size:8pt;color:var(--gvc-muted);font-style:italic;">The above supersede the standard deliverables and clarifications where they conflict.</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if additional_services %}
+  <!-- Additional Services (own page) — the full GVC offerings menu -->
+  <div class="services">
+    <div class="page-title">Additional Services</div>
+    <p class="page-intro">Green Valley Contractors self-performs the scopes below. Ask your bid contact to add any of these to your project.</p>
+    <ul class="scope-tree services-tree">
+      {% for svc in additional_services %}
+      <li class="trade">{{ svc.trade }}
+        <ul>
+          {% for sc in svc.scopes %}
+          <li class="scope">{{ sc.title }}{% if sc.summary %}<span class="svc-summary"> &mdash; {{ sc.summary }}</span>{% endif %}</li>
+          {% endfor %}
+        </ul>
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+</body>
+</html>

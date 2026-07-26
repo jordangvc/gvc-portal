@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+.env.*
+creds/
+credentials/
+*.pem
+token*.json
+service-account*.json
+.DS_Store

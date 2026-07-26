@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Portal — Admin</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  input[type=text], input[type=email] { width: 100%; padding: 9px 10px; border: 1px solid var(--line);
+    border-radius: 7px; font: inherit; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .feats { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 10px 0; }
+  .feats label { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin: 0; }
+  .feats input { width: auto; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--green); color: #fff; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .btn.danger { background: #fff; color: #b91c1c; border: 1px solid var(--err-line); }
+  .btn.small { padding: 6px 10px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
+  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px;
+    background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0; margin: 1px 2px; }
+  .chip.env { background: #eef2ff; color: #3730a3; border-color: #c7d2fe; }
+  .muted { color: var(--muted); font-size: 12px; }
+  #banner { padding: 12px 14px; border-radius: 8px; background: var(--warn-bg); border: 1px solid var(--warn-line);
+    font-size: 14px; display: none; }
+  #banner.show { display: block; }
+  #status { padding: 10px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.ok { background: #ecfdf5; border: 1px solid #a7f3d0; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  .actions { display: flex; gap: 8px; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
+     visual fatigue on long forms. Calm green/slate alternation; overrides the
+     plain white .card above via source order. ── */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>🔐 Admin</h1>
+  <div class="who"><span>{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div id="banner"></div>
+  <div id="status"></div>
+
+  <div class="card">
+    <h2 id="form-title">Add / update user</h2>
+    <div class="row">
+      <div><label>Work email</label><input id="f-email" type="email" placeholder="name@greenvalleycontractors.com" /></div>
+      <div><label>Name <span class="muted">(optional)</span></label><input id="f-name" type="text" placeholder="John Smith" /></div>
+      <div><label>Position <span class="muted">(optional)</span></label><input id="f-position" type="text" placeholder="Estimator" /></div>
+      <div><label>Phone <span class="muted">(optional — shown as Bid Contact on estimates)</span></label><input id="f-phone" type="text" placeholder="(812) 290-1093" /></div>
+    </div>
+    <label style="margin-top:12px;">Access</label>
+    <div class="feats" id="f-feats"></div>
+    <p class="muted">Everyone with portal access automatically gets <strong>timeoff</strong> as a baseline. Check <strong>All access (*)</strong> to grant every current and future tool.</p>
+    <div class="actions" style="margin-top:8px;">
+      <button class="btn" id="f-save">Save user</button>
+      <button class="btn secondary" id="f-clear">Clear</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Users with portal access</h2>
+    <table>
+      <thead><tr><th>Email</th><th>Access</th><th>Managed</th><th>Updated</th><th></th></tr></thead>
+      <tbody id="rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>COI blank template</h2>
+    <p class="muted" style="margin-top:0;">The agent-issued blank ACORD 25 that the COI Generator
+      stamps. Replace it here at annual renewal — the generator page only reads it, so nobody can
+      change the file by accident from there. Prior versions stay recoverable (bucket versioning).</p>
+    <div id="coi-tmpl-state" class="muted">Loading template info…</div>
+    <div class="row" style="margin-top:12px; grid-template-columns: 1fr 220px auto; align-items: end;">
+      <div><label>New blank (PDF)</label><input type="file" id="coi-tmpl-file" accept="application/pdf" /></div>
+      <div><label>Expiry label <span class="muted">(used in filenames)</span></label>
+        <input id="coi-tmpl-expiry" type="text" placeholder="expMay_2027" /></div>
+      <div><button class="btn secondary" id="coi-tmpl-upload">Replace template</button></div>
+    </div>
+  </div>
+</main>
+
+<script>
+  const $ = s => document.querySelector(s);
+  let FEATURES = [];
+  let BACKEND = "env";
+
+  function setStatus(kind, msg) {
+    const el = $("#status");
+    el.className = "show " + kind;
+    el.textContent = msg;
+    if (kind === "ok") setTimeout(() => { el.className = ""; }, 4000);
+  }
+
+  function renderFeatureChecks() {
+    const box = $("#f-feats");
+    box.innerHTML = "";
+    // master "All access (*)"
+    box.insertAdjacentHTML("beforeend",
+      `<label><input type="checkbox" id="feat-all" /> All access (*)</label>`);
+    FEATURES.forEach(f => {
+      box.insertAdjacentHTML("beforeend",
+        `<label><input type="checkbox" class="feat" value="${f}" /> ${f}</label>`);
+    });
+    $("#feat-all").addEventListener("change", e => {
+      document.querySelectorAll(".feat").forEach(c => { c.disabled = e.target.checked; });
+    });
+  }
+
+  function selectedFeatures() {
+    if ($("#feat-all").checked) return ["*"];
+    return [...document.querySelectorAll(".feat:checked")].map(c => c.value);
+  }
+
+  function setForm(email, features) {
+    $("#f-email").value = email || "";
+    const all = (features || []).includes("*");
+    $("#feat-all").checked = all;
+    document.querySelectorAll(".feat").forEach(c => {
+      c.checked = all || (features || []).includes(c.value);
+      c.disabled = all;
+    });
+  }
+
+  function clearForm() {
+    setForm("", []);
+    $("#f-name").value = ""; $("#f-position").value = ""; $("#f-phone").value = "";
+    $("#f-email").focus();
+  }
+
+  async function load() {
+    let r;
+    try { r = await fetch("/ui/api/admin/users"); }
+    catch (e) { setStatus("err", "Network error loading users."); return; }
+    if (r.status === 401) { location.reload(); return; }
+    if (!r.ok) { setStatus("err", "Could not load users (HTTP " + r.status + ")."); return; }
+    const data = await r.json();
+    FEATURES = data.features || [];
+    BACKEND = data.backend;
+    renderFeatureChecks();
+
+    const banner = $("#banner");
+    if (BACKEND !== "gcs") {
+      banner.className = "show";
+      banner.innerHTML = "<strong>Read-only:</strong> grant editing needs the GCS backend. " +
+        "Set <code>GVC_GRANTS_BACKEND=gcs</code> on the service and redeploy. " +
+        "Superadmins below come from the env allowlist.";
+      $("#f-save").disabled = true;
+    }
+    renderRows(data.users || []);
+  }
+
+  function renderRows(users) {
+    const tb = $("#rows");
+    if (!users.length) { tb.innerHTML = `<tr><td colspan="5" class="muted">No users yet.</td></tr>`; return; }
+    tb.innerHTML = "";
+    users.forEach(u => {
+      const isEnv = u.managed_by === "env";
+      const chips = (u.effective || []).map(f =>
+        `<span class="chip${isEnv ? ' env' : ''}">${f}</span>`).join("");
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td>${u.email}</td>
+         <td>${chips || '<span class="muted">none</span>'}</td>
+         <td>${isEnv ? '<span class="chip env">superadmin (env)</span>' : 'store'}</td>
+         <td class="muted">${u.updated_at ? new Date(u.updated_at).toLocaleString() : '—'}${u.updated_by ? '<br>by ' + u.updated_by : ''}</td>
+         <td><div class="actions"></div></td>`;
+      const acts = tr.querySelector(".actions");
+      if (isEnv) {
+        acts.innerHTML = '<span class="muted">env-managed</span>';
+      } else {
+        const edit = document.createElement("button");
+        edit.className = "btn secondary small"; edit.textContent = "Edit";
+        edit.onclick = () => { setForm(u.email, u.features); $("#f-name").value = (u.person||{}).name||""; $("#f-position").value = (u.person||{}).position||""; $("#f-phone").value = (u.person||{}).phone||""; window.scrollTo(0,0); };
+        const rm = document.createElement("button");
+        rm.className = "btn danger small"; rm.textContent = "Remove";
+        rm.onclick = () => removeUser(u.email);
+        rm.disabled = BACKEND !== "gcs";
+        acts.append(edit, rm);
+      }
+      tb.appendChild(tr);
+    });
+  }
+
+  async function save() {
+    const email = $("#f-email").value.trim();
+    if (!email) { setStatus("err", "Enter a work email."); return; }
+    const body = {
+      email,
+      features: selectedFeatures(),
+      person: { name: $("#f-name").value.trim(), position: $("#f-position").value.trim(), phone: $("#f-phone").value.trim() },
+    };
+    const r = await fetch("/ui/api/admin/users", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) { setStatus("ok", `Saved ${email}.`); clearForm(); load(); }
+    else { setStatus("err", (data.detail && data.detail.detail) || ("Save failed (HTTP " + r.status + ").")); }
+  }
+
+  async function removeUser(email) {
+    if (!confirm(`Remove ${email} from the portal? They lose all access.`)) return;
+    const r = await fetch("/ui/api/admin/users/remove", {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
+    });
+    const data = await r.json().catch(() => ({}));
+    if (r.ok) { setStatus("ok", `Removed ${email}.`); load(); }
+    else { setStatus("err", (data.detail && data.detail.detail) || ("Remove failed (HTTP " + r.status + ").")); }
+  }
+
+  // ---- COI blank template management (moved here from /ui/coi, 2026-07-14 —
+  // the generator page is read-only so the file can't be changed by accident).
+  async function loadCoiTemplate() {
+    const el = $("#coi-tmpl-state");
+    try {
+      const r = await fetch("/ui/api/coi/template");
+      if (r.status === 401) { location.reload(); return; }
+      const data = await r.json();
+      if (!r.ok) {
+        const d = data.detail || data;
+        el.textContent = "⚠️ " + (d.advice || d.detail || "Template store unavailable.");
+        return;
+      }
+      const t = data.template;
+      if (t) {
+        el.innerHTML = `✅ Current: <strong>${t.expiry_label || "(no expiry label)"}</strong>` +
+          ` — uploaded ${(t.uploaded_at || "").slice(0, 10)} by ${t.uploaded_by || "?"}` +
+          ` (${Math.round((t.size_bytes || 0) / 1024)}KB, ${t.page_count} page${t.page_count === 1 ? "" : "s"}).`;
+        if (t.expiry_label) $("#coi-tmpl-expiry").value = t.expiry_label;
+      } else {
+        el.textContent = "⚠️ No blank uploaded yet — the COI Generator can't run until one is stored.";
+      }
+    } catch (e) { el.textContent = "Template info unavailable: " + e.message; }
+  }
+
+  async function uploadCoiTemplate() {
+    const fileEl = $("#coi-tmpl-file");
+    if (!fileEl.files.length) { setStatus("err", "Choose the blank COI PDF first."); return; }
+    const fd = new FormData();
+    fd.append("file", fileEl.files[0]);
+    fd.append("expiry_label", $("#coi-tmpl-expiry").value.trim());
+    $("#coi-tmpl-upload").disabled = true;
+    try {
+      const r = await fetch("/ui/api/coi/template", { method: "POST", body: fd });
+      if (r.status === 401) { location.reload(); return; }
+      const data = await r.json().catch(() => ({}));
+      if (r.ok) { setStatus("ok", "COI template replaced."); fileEl.value = ""; loadCoiTemplate(); }
+      else {
+        const d = data.detail || data;
+        setStatus("err", d.detail || d.advice || ("Upload failed (HTTP " + r.status + ")."));
+      }
+    } catch (e) { setStatus("err", "Network error during upload: " + e.message); }
+    finally { $("#coi-tmpl-upload").disabled = false; }
+  }
+
+  $("#coi-tmpl-upload").addEventListener("click", uploadCoiTemplate);
+
+  $("#f-save").addEventListener("click", save);
+  $("#f-clear").addEventListener("click", clearForm);
+  load();
+  loadCoiTemplate();
+</script>
+</body>
+</html>

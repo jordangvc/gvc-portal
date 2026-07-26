@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Activity · GVC Portal</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  header a.back { color: #fff; text-decoration: none; opacity: .9; font-size: 13px; }
+  header a.back:hover { opacity: 1; text-decoration: underline; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; opacity: .9; }
+  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
+  .intro h2 { font-size: 22px; margin: 0 0 4px; }
+  .intro p { margin: 0 0 20px; color: var(--muted); }
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+  .field { display: flex; flex-direction: column; gap: 4px; }
+  .field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
+  .field input, .field select { font: inherit; padding: 7px 9px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; color: var(--ink); min-width: 150px; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--green); }
+  .spacer { flex: 1 1 auto; }
+  button { font: inherit; font-weight: 600; border: 1px solid var(--green); background: var(--green);
+    color: #fff; padding: 8px 14px; border-radius: 8px; cursor: pointer; transition: background .12s; }
+  button:hover { background: var(--green-dark); }
+  button.ghost { background: #fff; color: var(--green-dark); }
+  button.ghost:hover { background: #f0f6f2; }
+  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
+  .toggle input { width: 16px; height: 16px; }
+  .banner { display: none; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+  .banner.warn { display: block; background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
+  .meta { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
+  table { width: 100%; border-collapse: collapse; background: #fff;
+    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #fafbfc; }
+  td { font-size: 13px; }
+  td.ts { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+  td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+  td.extra { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; word-break: break-word; }
+  tr:last-child td { border-bottom: none; }
+  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
+  .pill.ok { background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0; }
+  .pill.denied { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .pill.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+  .pill.other { background: #f3f4f6; color: var(--muted); border: 1px solid var(--line); }
+  .footer-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
+  .empty { display: none; color: var(--muted); padding: 24px; text-align: center; }
+  .loading { color: var(--muted); font-size: 13px; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
+     visual fatigue on long forms. Calm green/slate alternation; overrides the
+     plain white .card above via source order. ── */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>📊 Activity</h1>
+  <div class="who"><span>{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div class="intro">
+    <h2>Portal activity</h2>
+    <p>Audit trail of who did what — sign-ins, tool opens, finalizes, and access denials. Read live from Cloud Logging.</p>
+  </div>
+
+  <div id="banner" class="banner warn"></div>
+
+  <div class="controls">
+    <div class="field">
+      <label for="f-actor">Actor (email)</label>
+      <input id="f-actor" type="text" placeholder="anyone" autocomplete="off" />
+    </div>
+    <div class="field">
+      <label for="f-action">Action</label>
+      <input id="f-action" type="text" list="actions" placeholder="any action" autocomplete="off" />
+      <datalist id="actions">
+        <option value="signin"></option>
+        <option value="hub.open"></option>
+        <option value="tool.open"></option>
+        <option value="invoice.run"></option>
+        <option value="estimate.run"></option>
+        <option value="estimate.draft.save"></option>
+        <option value="estimate.draft.delete"></option>
+        <option value="change_order.run"></option>
+        <option value="check.extract"></option>
+        <option value="check.commit"></option>
+        <option value="admin.grant.update"></option>
+        <option value="admin.user.remove"></option>
+        <option value="access.denied"></option>
+        <option value="activity.view"></option>
+        <option value="activity.export"></option>
+      </datalist>
+    </div>
+    <div class="field">
+      <label for="f-result">Result</label>
+      <select id="f-result">
+        <option value="">any</option>
+        <option value="ok">ok</option>
+        <option value="denied">denied</option>
+        <option value="error">error</option>
+        <option value="noop">noop</option>
+      </select>
+    </div>
+    <div class="field">
+      <label for="f-range">Range</label>
+      <select id="f-range">
+        <option value="24h">Last 24 hours</option>
+        <option value="7d" selected>Last 7 days</option>
+        <option value="30d">Last 30 days</option>
+        <option value="90d">Last 90 days</option>
+        <option value="all">All</option>
+      </select>
+    </div>
+    <button id="apply">Apply</button>
+    <button id="refresh" class="ghost">↻ Refresh</button>
+    <div class="spacer"></div>
+    <label class="toggle"><input id="auto" type="checkbox" /> Auto-refresh (30s)</label>
+    <button id="export" class="ghost">⬇ CSV</button>
+  </div>
+
+  <p class="meta" id="meta"></p>
+
+  <table id="table">
+    <thead>
+      <tr><th>Time (UTC)</th><th>Action</th><th>Actor</th><th>Target</th><th>Result</th><th>Detail</th></tr>
+    </thead>
+    <tbody id="rows"></tbody>
+  </table>
+  <div class="empty" id="empty">No activity matches these filters.</div>
+
+  <div class="footer-row">
+    <button id="more" class="ghost" style="display:none;">Load more</button>
+    <span class="loading" id="loading"></span>
+  </div>
+</main>
+
+<script>
+  const $ = (id) => document.getElementById(id);
+  let nextToken = null;
+  let autoTimer = null;
+
+  function filters() {
+    const p = new URLSearchParams();
+    const actor = $('f-actor').value.trim();
+    const action = $('f-action').value.trim();
+    const result = $('f-result').value;
+    const range = $('f-range').value;
+    if (actor) p.set('actor', actor);
+    if (action) p.set('action', action);
+    if (result) p.set('result', result);
+    p.set('range', range);
+    return p;
+  }
+
+  function pill(result) {
+    const r = (result || '').toLowerCase();
+    const cls = (r === 'ok') ? 'ok' : (r === 'denied' || r === 'error') ? r : 'other';
+    return `<span class="pill ${cls}">${result || '—'}</span>`;
+  }
+
+  function esc(s) {
+    return (s == null ? '' : String(s)).replace(/[&<>"]/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+
+  function fmtExtra(extra) {
+    if (!extra || !Object.keys(extra).length) return '';
+    return Object.entries(extra).map(([k, v]) => `${k}=${v}`).join('  ');
+  }
+
+  function addRows(events) {
+    const tbody = $('rows');
+    for (const ev of events) {
+      const tr = document.createElement('tr');
+      tr.innerHTML =
+        `<td class="ts">${esc((ev.ts || '').replace('T', ' ').replace(/\..*$/, '').replace('Z',''))}</td>` +
+        `<td class="mono">${esc(ev.action)}</td>` +
+        `<td>${esc(ev.actor)}</td>` +
+        `<td>${esc(ev.target)}</td>` +
+        `<td>${pill(ev.result)}</td>` +
+        `<td class="extra">${esc(fmtExtra(ev.extra))}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
+
+  async function load(reset) {
+    if (reset) { nextToken = null; $('rows').innerHTML = ''; }
+    $('loading').textContent = 'Loading…';
+    $('banner').style.display = 'none';
+    const p = filters();
+    if (nextToken) p.set('page_token', nextToken);
+    try {
+      const res = await fetch('/ui/api/activity/events?' + p.toString());
+      if (res.status === 401) { location.reload(); return; }
+      const body = await res.json();
+      if (!res.ok) {
+        const d = body.detail || {};
+        $('banner').textContent = (d.detail || 'Could not load activity.') +
+          (d.advice ? '  ' + d.advice : '');
+        $('banner').style.display = 'block';
+        $('loading').textContent = '';
+        return;
+      }
+      addRows(body.events || []);
+      nextToken = body.next_page_token || null;
+      $('more').style.display = nextToken ? 'inline-block' : 'none';
+      const count = $('rows').children.length;
+      $('empty').style.display = count ? 'none' : 'block';
+      $('meta').textContent = count
+        ? `Showing ${count} event${count === 1 ? '' : 's'}${nextToken ? ' (more available)' : ''}.`
+        : '';
+      $('loading').textContent = '';
+    } catch (e) {
+      $('banner').textContent = 'Network error loading activity. Try Refresh.';
+      $('banner').style.display = 'block';
+      $('loading').textContent = '';
+    }
+  }
+
+  $('apply').addEventListener('click', () => load(true));
+  $('refresh').addEventListener('click', () => load(true));
+  $('more').addEventListener('click', () => load(false));
+  $('f-result').addEventListener('change', () => load(true));
+  $('f-range').addEventListener('change', () => load(true));
+  $('f-actor').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(true); });
+  $('f-action').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(true); });
+
+  $('export').addEventListener('click', () => {
+    window.location = '/ui/api/activity/export.csv?' + filters().toString();
+  });
+
+  $('auto').addEventListener('change', (e) => {
+    if (e.target.checked) { autoTimer = setInterval(() => load(true), 30000); }
+    else { clearInterval(autoTimer); autoTimer = null; }
+  });
+
+  load(true);
+</script>
+</body>
+</html>

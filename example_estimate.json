@@ -1,0 +1,48 @@
+{
+  "prepared_by": {
+    "name": "John Smith",
+    "email": "john@greenvalleycontractors.com",
+    "phone": "(812) 290-1093"
+  },
+  "client": {
+    "name": "Maxwell Construction",
+    "contact_name": "Dave Sehlhorst",
+    "email": "dsehlhorst@maxwellbuilds.com",
+    "phone": "(812) 537-2200"
+  },
+  "job": {
+    "name": "Maxwell — Lawrenceburg Admin Bldg Reno & Addition",
+    "location": "300 Tiger Blvd, Lawrenceburg IN 47025",
+    "scope_summary": "Drywall and ACT ceilings for the admin building renovation and addition per plans and schedule."
+  },
+  "estimate": {
+    "identifier": "EST-2026-1103",
+    "date": "2026-06-03",
+    "line_items": [
+      {
+        "description": "Acoustic Ceiling Tile & Grid (ACT)",
+        "detail": "Furnish and install three (3) ceiling types per plans and schedule:\nAPC-A: Armstrong Fine Fissured 2x2, 15/16\" white grid\nAPC-B: Armstrong Clean Room VL 2x2, 15/16\" white grid\nAPC-C: Armstrong Ultima High NRC 2x2 beveled tegular, 9/16\" white grid",
+        "unit_price": 15200.00,
+        "quantity": 1
+      },
+      {
+        "description": "Drywall Hang and Finish",
+        "detail": "5/8\" gypsum board at all new interior partitions; Type X at fire-rated assemblies; moisture-resistant board at restrooms; gypsum ceilings, soffits, and bulkheads. All surfaces finished to Level 5.",
+        "unit_price": 18300.00,
+        "quantity": 1
+      },
+      {
+        "description": "Interior Painting",
+        "detail": "Prime and paint all new gypsum surfaces, two finish coats.",
+        "unit_price": 6400.00,
+        "quantity": 1,
+        "optional": true
+      }
+    ],
+    "special_notes": [
+      "Use 5/8\" drywall throughout (supersedes our standard 1/2\" deliverable).",
+      "All fire-rated assemblies per the life safety plan (1-hour and 2-hour)."
+    ],
+    "notes": "Lead time on ACT grid is approximately 3 weeks from approved submittals."
+  }
+}

@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Portal</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; opacity: .9; }
+  .who a:hover { opacity: 1; }
+  main { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
+  .intro { margin: 0 0 24px; }
+  .intro h2 { font-size: 22px; margin: 0 0 4px; }
+  .intro p { margin: 0; color: var(--muted); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
+  .tile { display: flex; flex-direction: column; gap: 8px; background: #fff;
+    border: 1px solid var(--line); border-radius: 12px; padding: 20px; text-decoration: none;
+    color: var(--ink); transition: border-color .12s, box-shadow .12s, transform .12s; }
+  a.tile:hover { border-color: var(--green); box-shadow: 0 4px 16px rgba(47,111,79,.12); transform: translateY(-2px); }
+  .tile .icon { font-size: 28px; line-height: 1; }
+  .tile .name { font-size: 16px; font-weight: 600; }
+  .tile .desc { font-size: 13px; color: var(--muted); }
+  .tile.soon { opacity: .6; cursor: default; }
+  .badge { align-self: flex-start; font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
+  .badge.live { background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0; }
+  .badge.soon { background: #f3f4f6; color: var(--muted); border: 1px solid var(--line); }
+  footer { max-width: 1000px; margin: 0 auto; padding: 0 24px 40px; color: var(--muted); font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>🏠 GVC Portal</h1>
+  <div class="who"><span id="email">{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div class="intro">
+    <h2>Internal tools</h2>
+    <p>Green Valley Contractors employee hub. Pick a tool to get started.</p>
+  </div>
+
+  <div class="tiles" id="tiles">
+    <a class="tile" data-feature="estimate" href="/ui/estimate">
+      <div class="icon">📐</div>
+      <span class="badge live">Live</span>
+      <div class="name">Estimate Generator</div>
+      <div class="desc">Build a priced estimate, preview the PDF, and draft it to the client from hello@.</div>
+    </a>
+
+    <a class="tile" data-feature="change_order" href="/ui/change-order">
+      <div class="icon">🧾</div>
+      <span class="badge live">Live</span>
+      <div class="name">Change Order</div>
+      <div class="desc">Link a job, price the change, preview the PDF, and draft it to the client from hello@.</div>
+    </a>
+
+    <a class="tile" data-feature="invoice" href="/ui/invoice">
+      <div class="icon">🏗️</div>
+      <span class="badge live">Live</span>
+      <div class="name">Invoice Generator</div>
+      <div class="desc">Turn a job into a Stripe invoice + billing@ draft, logged to the Monday ledger.</div>
+    </a>
+
+    <a class="tile" data-feature="admin" href="/ui/admin">
+      <div class="icon">🔐</div>
+      <span class="badge live">Live</span>
+      <div class="name">Admin</div>
+      <div class="desc">Manage company users and which tools each person can access.</div>
+    </a>
+
+    <a class="tile" data-feature="activity" href="/ui/activity">
+      <div class="icon">📊</div>
+      <span class="badge live">Live</span>
+      <div class="name">Activity</div>
+      <div class="desc">Audit trail of portal activity — sign-ins, tool opens, finalizes, and access denials.</div>
+    </a>
+
+    <div class="tile soon" data-feature="takeoff">
+      <div class="icon">📏</div>
+      <span class="badge soon">Coming soon</span>
+      <div class="name">Takeoff</div>
+      <div class="desc">Quantity takeoff from blueprints for estimators and PMs.</div>
+    </div>
+
+    <a class="tile" data-feature="timeoff" href="/ui/timeoff">
+      <div class="icon">🌴</div>
+      <span class="badge live">Live</span>
+      <div class="name">Time Off</div>
+      <div class="desc">Submit a time-off request.</div>
+    </a>
+
+    <a class="tile" data-feature="check" href="/ui/check">
+      <div class="icon">🧾</div>
+      <span class="badge live">Live</span>
+      <div class="name">Paid by Check</div>
+      <div class="desc">Upload a check image to match it to an open invoice (preview).</div>
+    </a>
+
+    <a class="tile" data-feature="coi" href="/ui/coi">
+      <div class="icon">📜</div>
+      <span class="badge live">Live</span>
+      <div class="name">COI Generator</div>
+      <div class="desc">Stamp a Certificate of Insurance for a new builder or project and draft it from hello@.</div>
+    </a>
+  </div>
+
+  <p id="empty" style="display:none;color:var(--muted);">
+    You don't have any tools enabled yet. Ask Joe or an admin to grant access.
+  </p>
+</main>
+
+<footer>Signed in via your @greenvalleycontractors.com account. Need access to a tool? Ask Joe.</footer>
+
+<script>
+  // The / route injects the signed-in user's granted features. Tiles whose
+  // data-feature isn't granted are removed. (The real enforcement is server-side
+  // on each route; this just keeps the hub honest.)
+  const granted = new Set({{FEATURES_JSON}});
+  let shown = 0;
+  document.querySelectorAll('#tiles [data-feature]').forEach(el => {
+    if (granted.has(el.getAttribute('data-feature'))) { shown++; }
+    else { el.remove(); }
+  });
+  if (shown === 0) {
+    document.getElementById('tiles').style.display = 'none';
+    document.getElementById('empty').style.display = 'block';
+  }
+</script>
+</body>
+</html>

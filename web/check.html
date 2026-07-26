@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Portal — Paid by Check</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5; --ok-bg: #ecfdf5; --ok-line: #a7f3d0;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; }
+  main { max-width: 760px; margin: 0 auto; padding: 24px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  input, select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; font: inherit; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; background: var(--green); color: #fff; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  #status { padding: 10px 14px; border-radius: 8px; font-size: 14px; display: none; margin-bottom: 16px; }
+  #status.show { display: block; }
+  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status.ok { background: var(--ok-bg); border: 1px solid var(--ok-line); }
+  .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow: auto; }
+  .overlay.show { display: flex; }
+  .modal { background: #fff; border-radius: 12px; max-width: 640px; width: 100%; padding: 22px; }
+  .modal h3 { margin: 0 0 4px; }
+  .check-img { display: none; width: 100%; max-height: 280px; object-fit: contain;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--bg); margin: 12px 0 4px; }
+  .match { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 12px 0; background: #fafbfc; }
+  .match.hi { border-color: var(--ok-line); background: var(--ok-bg); }
+  .pill { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; }
+  .muted { color: var(--muted); font-size: 13px; }
+  #m-list { max-height: 190px; overflow: auto; border: 1px solid var(--line);
+    border-radius: 7px; margin-top: 6px; display: none; }
+  #m-list.show { display: block; }
+  .inv-row { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .inv-row:last-child { border-bottom: 0; }
+  .inv-row:hover { background: #f3f4f6; }
+  .inv-row.sel { background: var(--ok-bg); }
+  .inv-row .id { font-weight: 600; }
+  .inv-empty { padding: 10px; color: var(--muted); font-size: 13px; }
+  .modal .actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
+     visual fatigue on long forms. Calm green/slate alternation; overrides the
+     plain white .card above via source order. ── */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>🧾 Paid by Check</h1>
+  <div class="who"><span>{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div id="status"></div>
+  <div class="card">
+    <h2>Upload a check</h2>
+    <p class="muted">Snap or upload a photo of the check. We'll read it, match it to an open invoice, and show you everything to confirm before anything is recorded.</p>
+    <div style="margin:14px 0;"><input type="file" id="file" accept="image/*" /></div>
+    <button class="btn" id="extract">Read check</button>
+  </div>
+</main>
+
+<div class="overlay" id="overlay">
+  <div class="modal">
+    <h3>Confirm check details</h3>
+    <p class="muted">Edit anything OCR got wrong. Use the image below for reference. Nothing is recorded until you confirm.</p>
+    <img id="m-image" class="check-img" alt="Uploaded check" />
+    <div id="multi-warn" style="display:none; background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px;"></div>
+    <div class="grid" style="margin-top:12px;">
+      <div><label>Payer</label><input id="m-payer" /></div>
+      <div><label>Amount</label><input id="m-amount" /></div>
+      <div><label>Check #</label><input id="m-check_no" /></div>
+      <div><label>Date</label><input id="m-date" /></div>
+      <div class="full"><label>Reference / memo</label><input id="m-reference" /></div>
+    </div>
+
+    <div class="match" id="match-box">
+      <label style="margin-bottom:6px;">Matched invoice(s)</label>
+      <div id="match-detail" class="muted">—</div>
+      <div class="full" style="margin-top:10px;">
+        <label>Search &amp; pick the open invoice(s) this check pays</label>
+        <p class="muted" style="margin:2px 0 6px;">One check can pay several invoices — click to select each one. Each invoice is prefilled with its remaining balance; lower an amount to record a <strong>partial payment</strong> (the invoice stays open with the new balance).</p>
+        <input id="m-search" placeholder="Filter by invoice #, customer, or amount…" autocomplete="off" />
+        <div id="m-list"></div>
+        <div id="m-picked" class="muted" style="margin-top:6px;">No invoice selected.</div>
+        <div id="m-total" class="muted" style="margin-top:4px;"></div>
+        <div id="m-mismatch" style="display:none; background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px; padding:8px 12px; margin-top:8px; font-size:13px;">
+          <div id="m-mismatch-text"></div>
+          <button type="button" class="btn secondary" id="m-autosplit" style="margin-top:6px; font-size:13px; padding:4px 10px;">Auto-split the check (oldest first)</button>
+          <label id="m-override-row" style="display:flex; align-items:center; gap:8px; margin-top:6px; font-weight:600; cursor:pointer;">
+            <input type="checkbox" id="m-override" style="width:auto;" /> Record anyway — the difference is intentional
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button class="btn secondary" id="cancel">Cancel</button>
+      <button class="btn" id="confirm">Confirm &amp; record</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const $ = s => document.querySelector(s);
+  function setStatus(kind, msg) { const e = $("#status"); e.className = "show " + kind; e.innerHTML = msg; }
+  function clearStatus() { $("#status").className = ""; }
+
+  let OPEN_ROWS = [];
+  let SELECTED = [];   // monday_item_ids as strings, in pick order — one check can pay several invoices
+
+  async function extract() {
+    const f = $("#file").files[0];
+    if (!f) { setStatus("err", "Choose a check image first."); return; }
+    setStatus("info", "Reading check…");
+    const fd = new FormData(); fd.append("file", f);
+    let r;
+    try { r = await fetch("/ui/api/check/extract", { method: "POST", body: fd }); }
+    catch (e) { setStatus("err", "Network error."); return; }
+    if (r.status === 401) { location.reload(); return; }
+    const data = await r.json().catch(() => ({}));
+    if (!r.ok) { setStatus("err", (data.detail && data.detail.detail) || ("Extract failed (HTTP " + r.status + ").")); return; }
+    clearStatus();
+    fillModal(data);
+  }
+
+  function fillModal(data) {
+    // Show the uploaded check at the top of the modal for reference while editing.
+    const img = $("#m-image"), f = $("#file").files[0];
+    if (img.src) { URL.revokeObjectURL(img.src); }
+    if (f) { img.src = URL.createObjectURL(f); img.style.display = "block"; }
+    else { img.removeAttribute("src"); img.style.display = "none"; }
+
+    const warn = $("#multi-warn");
+    if (data.multi_check && data.multi_check > 1) {
+      warn.style.display = "block";
+      warn.innerHTML = `⚠️ <strong>${data.multi_check} checks detected</strong> in this photo. ` +
+        `The fields below describe only one of them. For accurate matching, photograph and upload one check at a time.`;
+    } else { warn.style.display = "none"; }
+    const p = data.parsed || {};
+    $("#m-payer").value = p.payer || "";
+    $("#m-amount").value = p.amount || "";
+    $("#m-check_no").value = p.check_no || "";
+    $("#m-date").value = p.date || "";
+    $("#m-reference").value = p.reference || p.memo || "";
+
+    OPEN_ROWS = data.open_rows || [];
+    renderList("");
+
+    const box = $("#match-box"), det = $("#match-detail");
+    const matches = data.matches || (data.match ? [data.match] : []);
+    ALLOC = {};  // never carry allocations over from a previous check
+    if (matches.length) {
+      box.classList.toggle("hi", data.confidence === "high");
+      det.innerHTML = matches.map(m =>
+        `<strong>${m.identifier}</strong> — ${m.customer || "?"} — $${m.amount} (${m.status})`
+      ).join("<br>") +
+        ` <span class="pill">${data.confidence} confidence</span><br><span class="muted">${data.reason || ""}</span>`;
+      setSelection(matches.map(m => String(m.monday_item_id)));
+      // Server-suggested oldest-first split (only when it covers the whole check).
+      const sug = data.suggested_allocations;
+      if (sug && sug.unallocated_cents === 0 && (sug.allocations || []).some(a => a.partial)) {
+        (sug.allocations || []).forEach(a => {
+          if (a.monday_item_id != null) ALLOC[String(a.monday_item_id)] = a.alloc_cents;
+        });
+        renderPicked();
+        updateTotals();
+      }
+    } else {
+      box.classList.remove("hi");
+      det.innerHTML = `<span class="muted">No automatic match — ${data.reason || ""} Search and pick below.</span>`;
+      setSelection([]);
+    }
+    $("#m-override").checked = false;
+    $("#overlay").classList.add("show");
+  }
+
+  // ----- Searchable open-invoice picker (multi-select) -----
+  function rowLabel(row) {
+    const bal = row.balance_due != null && toCents(row.balance_due) > 0
+      ? ` — balance $${row.balance_due}` : "";
+    return `${row.identifier} — ${row.customer || "?"} — $${row.amount}${bal} (${row.status})`;
+  }
+  function renderList(filter) {
+    const list = $("#m-list");
+    const q = (filter || "").trim().toLowerCase();
+    const rows = q
+      ? OPEN_ROWS.filter(r => rowLabel(r).toLowerCase().includes(q))
+      : OPEN_ROWS;
+    list.innerHTML = "";
+    if (!OPEN_ROWS.length) {
+      list.innerHTML = '<div class="inv-empty">No open invoices on the ledger.</div>';
+    } else if (!rows.length) {
+      list.innerHTML = '<div class="inv-empty">No invoices match that search.</div>';
+    } else {
+      rows.forEach(row => {
+        const div = document.createElement("div");
+        div.className = "inv-row" + (SELECTED.includes(String(row.monday_item_id)) ? " sel" : "");
+        div.dataset.id = row.monday_item_id;
+        div.innerHTML = `<span class="id">${row.identifier}</span> — ${row.customer || "?"} — $${row.amount} <span class="muted">(${row.status})</span>`;
+        div.addEventListener("click", () => toggleInvoice(String(row.monday_item_id)));
+        list.appendChild(div);
+      });
+    }
+    list.classList.add("show");
+  }
+  function toggleInvoice(id) {
+    setSelection(SELECTED.includes(id) ? SELECTED.filter(x => x !== id) : SELECTED.concat([id]));
+  }
+  function toCents(v) {
+    const n = parseFloat(String(v == null ? "" : v).replace(/[$,\s]/g, ""));
+    return isNaN(n) ? null : Math.round(n * 100);
+  }
+  const fmt = c => "$" + (c / 100).toLocaleString("en-US", { minimumFractionDigits: 2 });
+  // Remaining balance for a row: Balance Due (set by a prior partial) else Amount.
+  function effectiveCents(row) {
+    if (row.effective_cents != null) return row.effective_cents;
+    const b = toCents(row.balance_due);
+    return (b != null && b > 0) ? b : toCents(row.amount);
+  }
+
+  let ALLOC = {};  // monday_item_id -> cents applied from THIS check
+
+  function setSelection(ids) {
+    SELECTED = ids || [];
+    // Keep existing allocation edits; init newly-selected rows at full balance.
+    const next = {};
+    SELECTED.forEach(id => {
+      const row = OPEN_ROWS.find(r => String(r.monday_item_id) === id);
+      next[id] = (id in ALLOC) ? ALLOC[id] : (row ? (effectiveCents(row) || 0) : 0);
+    });
+    ALLOC = next;
+    renderPicked();
+    document.querySelectorAll("#m-list .inv-row").forEach(el => {
+      el.classList.toggle("sel", SELECTED.includes(el.dataset.id));
+    });
+    updateTotals();
+  }
+
+  // Per-invoice allocation editor: prefilled with each invoice's remaining
+  // balance; lowering an amount records a PARTIAL payment on that invoice.
+  function renderPicked() {
+    const box = $("#m-picked");
+    const rows = SELECTED.map(id => OPEN_ROWS.find(r => String(r.monday_item_id) === id)).filter(Boolean);
+    if (!rows.length) { box.innerHTML = "No invoice selected."; return; }
+    box.innerHTML = rows.map(r => {
+      const id = String(r.monday_item_id);
+      const bal = effectiveCents(r) || 0;
+      const val = ((ALLOC[id] != null ? ALLOC[id] : bal) / 100).toFixed(2);
+      const partial = ALLOC[id] != null && ALLOC[id] > 0 && ALLOC[id] < bal;
+      return `<div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+        <strong>${r.identifier}</strong>
+        <span class="muted">balance ${fmt(bal)}</span>
+        <span style="margin-left:auto;">apply $</span>
+        <input class="alloc" data-id="${id}" value="${val}" style="width:110px; text-align:right;" />
+        ${partial ? `<span class="pill">partial — ${fmt(bal - ALLOC[id])} will remain</span>` : ""}
+      </div>`;
+    }).join("");
+    box.querySelectorAll("input.alloc").forEach(inp => {
+      inp.addEventListener("input", () => {
+        const c = toCents(inp.value);
+        ALLOC[inp.dataset.id] = c == null ? 0 : c;
+        updateTotals();
+      });
+      inp.addEventListener("change", renderPicked);  // refresh partial badges
+    });
+  }
+
+  // Oldest-first fill: give each selected invoice up to its balance until the
+  // check runs out (mirrors the server's suggest_allocations).
+  function autoSplit() {
+    let left = toCents($("#m-amount").value) || 0;
+    SELECTED.forEach(id => {
+      const row = OPEN_ROWS.find(r => String(r.monday_item_id) === id);
+      const bal = row ? (effectiveCents(row) || 0) : 0;
+      const take = Math.min(bal, Math.max(left, 0));
+      ALLOC[id] = take;
+      left -= take;
+    });
+    renderPicked();
+    updateTotals();
+  }
+
+  // Allocation gate mirror — the server enforces the same rules
+  // (ALLOCATION_INVALID / SUM_MISMATCH); this just surfaces them early.
+  function updateTotals() {
+    const total = $("#m-total"), mism = $("#m-mismatch");
+    const rows = SELECTED.map(id => OPEN_ROWS.find(r => String(r.monday_item_id) === id)).filter(Boolean);
+    if (!rows.length) { total.textContent = ""; mism.style.display = "none"; return; }
+    const balCents = rows.reduce((s, r) => s + (effectiveCents(r) || 0), 0);
+    const allocCents = SELECTED.reduce((s, id) => s + (ALLOC[id] || 0), 0);
+    const chkCents = toCents($("#m-amount").value);
+    const anyPartial = rows.some(r => {
+      const a = ALLOC[String(r.monday_item_id)];
+      return a != null && a > 0 && a < (effectiveCents(r) || 0);
+    });
+    total.innerHTML = `${rows.length} invoice${rows.length > 1 ? "s" : ""} selected — balances <strong>${fmt(balCents)}</strong>` +
+      ` · applied <strong>${fmt(allocCents)}</strong>` +
+      (chkCents != null ? ` · check amount <strong>${fmt(chkCents)}</strong>` : "");
+    const over = rows.find(r => (ALLOC[String(r.monday_item_id)] || 0) > (effectiveCents(r) || 0));
+    if (over) {
+      mism.style.display = "block";
+      $("#m-mismatch-text").innerHTML = `⚠️ The amount applied to <strong>${over.identifier}</strong> exceeds its remaining balance. Lower it — an invoice can't be over-paid here.`;
+      $("#m-override-row").style.display = "none";
+      $("#m-autosplit").style.display = "none";
+    } else if (chkCents != null && chkCents !== allocCents) {
+      mism.style.display = "block";
+      $("#m-mismatch-text").innerHTML = `⚠️ The amounts applied total <strong>${fmt(allocCents)}</strong> but the check is ` +
+        `<strong>${fmt(chkCents)}</strong> (difference ${fmt(Math.abs(chkCents - allocCents))}). ` +
+        (anyPartial
+          ? `Every dollar of the check must be assigned when splitting — adjust the per-invoice amounts.`
+          : `For a short-paid check, lower the per-invoice amounts (partial payments are supported) or use auto-split.`);
+      $("#m-autosplit").style.display = chkCents < balCents ? "inline-block" : "none";
+      // The blanket override only applies in full-pay mode (no partial edits).
+      $("#m-override-row").style.display = anyPartial ? "none" : "flex";
+    } else {
+      mism.style.display = "none";
+      $("#m-override").checked = false;
+    }
+  }
+
+  // Results are keyed per invoice: {identifier: {stripe, monday, drive}}.
+  // (A legacy flat {step: msg} object renders fine through the same code.)
+  function stepsHtml(results) {
+    if (!results) return "";
+    const lines = Object.entries(results).map(([k, v]) => {
+      if (v && typeof v === "object") {
+        const inner = Object.entries(v).map(([s, m]) => `${s}: ${m}`).join(" · ");
+        return `<li><strong>${k}</strong> — ${inner}</li>`;
+      }
+      return `<li><strong>${k}:</strong> ${v}</li>`;
+    }).join("");
+    return `<ul style="margin:6px 0 0 18px;">${lines}</ul>`;
+  }
+
+  async function confirm() {
+    if (!SELECTED.length) { setStatus("err", "Pick the invoice(s) this check pays before recording."); return; }
+    const f = $("#file").files[0];
+    if (!f) { setStatus("err", "The check image is missing — re-upload and read it again."); return; }
+
+    // Partial mode when any applied amount is below its invoice's balance;
+    // otherwise this is the legacy full-pay flow (no allocations sent).
+    const rows = SELECTED.map(id => OPEN_ROWS.find(r => String(r.monday_item_id) === id)).filter(Boolean);
+    const anyPartial = rows.some(r => {
+      const a = ALLOC[String(r.monday_item_id)];
+      return a != null && a > 0 && a < (effectiveCents(r) || 0);
+    });
+    const over = rows.find(r => (ALLOC[String(r.monday_item_id)] || 0) > (effectiveCents(r) || 0));
+    if (over) { setStatus("err", `The amount applied to ${over.identifier} exceeds its remaining balance — lower it first.`); return; }
+    const allocCents = SELECTED.reduce((s, id) => s + (ALLOC[id] || 0), 0);
+    const chkCents = toCents($("#m-amount").value);
+    if (anyPartial) {
+      if (SELECTED.some(id => !(ALLOC[id] > 0))) {
+        setStatus("err", "Every selected invoice needs a positive amount applied — deselect the ones this check doesn't pay.");
+        return;
+      }
+      if (chkCents != null && chkCents !== allocCents) {
+        setStatus("err", "When splitting a check, the applied amounts must add up to the check amount exactly.");
+        return;
+      }
+    } else {
+      const mismatchShown = $("#m-mismatch").style.display !== "none";
+      if (mismatchShown && !$("#m-override").checked) {
+        setStatus("err", "The invoice total doesn't match the check amount. Lower per-invoice amounts for a partial payment, fix the selection, or tick “Record anyway” if the difference is intentional.");
+        return;
+      }
+    }
+
+    const fd = new FormData();
+    fd.append("file", f);
+    fd.append("monday_item_ids", SELECTED.join(","));
+    fd.append("payer", $("#m-payer").value);
+    fd.append("amount", $("#m-amount").value);
+    fd.append("check_no", $("#m-check_no").value);
+    fd.append("date", $("#m-date").value);
+    fd.append("reference", $("#m-reference").value);
+    if (anyPartial) {
+      const alloc = {};
+      SELECTED.forEach(id => { alloc[id] = ALLOC[id]; });
+      fd.append("allocations", JSON.stringify(alloc));
+    } else if ($("#m-mismatch").style.display !== "none" && $("#m-override").checked) {
+      fd.append("allow_mismatch", "1");
+    }
+
+    $("#confirm").disabled = true;
+    let r;
+    try { r = await fetch("/ui/api/check/commit", { method: "POST", body: fd }); }
+    catch (e) { $("#confirm").disabled = false; setStatus("err", "Network error — nothing recorded."); return; }
+    $("#confirm").disabled = false;
+    if (r.status === 401) { location.reload(); return; }
+    const data = await r.json().catch(() => ({}));
+    $("#overlay").classList.remove("show");
+
+    if (r.ok && data.already_deposited) {
+      setStatus("info", data.message || "This check was already deposited.");
+      return;
+    }
+    if (r.ok) {
+      setStatus("ok", `Recorded against <strong>${data.invoice || SELECTED.join(", ")}</strong>.` + stepsHtml(data.results));
+    } else {
+      const d = data.detail || {};
+      setStatus("err", (d.detail || ("Not recorded (HTTP " + r.status + ").")) +
+        stepsHtml(d.results) +
+        (d.advice ? `<br><span class="muted">${d.advice}</span>` : ""));
+    }
+  }
+
+  $("#m-search") && $("#m-search").addEventListener("input", e => renderList(e.target.value));
+  $("#m-amount").addEventListener("input", updateTotals);
+  $("#m-autosplit").addEventListener("click", autoSplit);
+  $("#extract").addEventListener("click", extract);
+  $("#cancel").addEventListener("click", () => {
+    const img = $("#m-image");
+    if (img.src) { URL.revokeObjectURL(img.src); img.removeAttribute("src"); }
+    $("#overlay").classList.remove("show");
+  });
+  $("#confirm").addEventListener("click", confirm);
+</script>
+</body>
+</html>

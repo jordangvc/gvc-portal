@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Invoice {{ invoice.identifier }}</title>
+<style>
+  /* ---- Page setup ---- */
+  @page {
+    size: letter;
+    margin: 0.38in 0.55in 0.5in 0.55in;
+    @bottom-left {
+      content: "Green Valley Contractors, Inc.  ·  billing@greenvalleycontractors.com  ·  DRYWALL EXPERTS SINCE 1987";
+      font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+      font-size: 7.5pt;
+      color: #6B7280;
+      padding-top: 4pt;
+      border-top: 0.5pt solid #E5E7EB;
+      width: 100%;
+    }
+  }
+
+  /* ---- Brand tokens (from GVC logo) ---- */
+  :root {
+    --gvc-green: #5BB833;
+    --gvc-green-dark: #2D5A1F;
+    --gvc-black: #111111;
+    --gvc-text: #1F2937;
+    --gvc-muted: #6B7280;
+    --gvc-line: #E5E7EB;
+    --gvc-soft: #F7F8F6;
+    --gvc-amber: #B45309; /* for past-due flag */
+  }
+
+  /* ---- Base ---- */
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    font-size: 10.5pt;
+    color: var(--gvc-text);
+    line-height: 1.45;
+  }
+  table { border-collapse: collapse; width: 100%; }
+  h1, h2, h3, h4 { margin: 0; font-weight: 700; color: var(--gvc-black); }
+
+  /* ---- Top band ---- */
+  .top-band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 10pt;
+    border-bottom: 3pt solid var(--gvc-green);
+    margin-bottom: 12pt;
+  }
+  .brand {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4pt;
+  }
+  .brand img {
+    width: 100pt;
+    height: 100pt;
+    object-fit: contain;
+  }
+  .brand .tag {
+    font-size: 8pt;
+    color: var(--gvc-muted);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+  .doc-title {
+    text-align: right;
+  }
+  .doc-title h1 {
+    font-size: 24pt;
+    letter-spacing: 0.08em;
+    color: var(--gvc-black);
+  }
+  .doc-title .from-block {
+    font-size: 8.5pt;
+    color: var(--gvc-text);
+    line-height: 1.35;
+    margin-top: 6pt;
+  }
+  .doc-title .from-block .from-name {
+    font-weight: 700;
+    color: var(--gvc-black);
+  }
+  .doc-title .meta-line {
+    font-size: 9pt;
+    color: var(--gvc-muted);
+    margin-top: 6pt;
+    padding-top: 4pt;
+    border-top: 0.5pt solid var(--gvc-line);
+  }
+  .doc-title .past-due {
+    display: inline-block;
+    margin-top: 6pt;
+    padding: 2pt 8pt;
+    background: #FEF3C7;
+    color: var(--gvc-amber);
+    font-size: 8.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-radius: 2pt;
+  }
+
+  /* ---- Meta grid (Bill To / Invoice details) ---- */
+  .meta-grid {
+    display: flex;
+    gap: 24pt;
+    margin-bottom: 14pt;
+  }
+  .meta-block {
+    flex: 1;
+  }
+  .meta-block .label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gvc-muted);
+    font-weight: 700;
+    margin-bottom: 4pt;
+  }
+  .meta-block .value {
+    color: var(--gvc-text);
+    white-space: pre-line;
+  }
+  .meta-block .value.name {
+    font-weight: 700;
+    color: var(--gvc-black);
+    font-size: 11pt;
+  }
+  .meta-kv {
+    width: 100%;
+  }
+  .meta-kv td {
+    padding: 2pt 0;
+    font-size: 10pt;
+  }
+  .meta-kv td.k {
+    color: var(--gvc-muted);
+    width: 42%;
+  }
+  .meta-kv td.v {
+    text-align: right;
+    color: var(--gvc-text);
+    font-weight: 600;
+  }
+
+  /* ---- Line items ---- */
+  .items {
+    margin-bottom: 14pt;
+  }
+  .items thead th {
+    background: var(--gvc-black);
+    color: #FFF;
+    text-align: left;
+    padding: 6pt 10pt;
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .items thead th.num { text-align: right; }
+  .items tbody td {
+    padding: 5pt 10pt;
+    border-bottom: 1pt solid var(--gvc-line);
+    vertical-align: top;
+    font-size: 10pt;
+  }
+  .items tbody td.num { text-align: right; }
+  .items tbody tr:nth-child(even) td { background: var(--gvc-soft); }
+  .items .desc { width: 80%; }
+  .items .amt  { width: 20%; }
+  .items .item-desc-sub {
+    color: var(--gvc-muted);
+    font-size: 9pt;
+    margin-top: 2pt;
+  }
+  .items tr.discount td {
+    color: var(--gvc-green-dark);
+    font-style: italic;
+  }
+  .items tr.co-line td {
+    background: #FFF7ED;
+    border-top: 1pt solid #FDBA74;
+  }
+  .items tr.co-line:nth-child(even) td {
+    background: #FFF7ED;
+  }
+  .items .co-tag {
+    display: inline-block;
+    background: #FDBA74;
+    color: #7C2D12;
+    font-size: 8pt;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 1.5pt 6pt;
+    border-radius: 2pt;
+    margin-bottom: 4pt;
+  }
+
+  /* ---- Totals stack ---- */
+  .totals-wrap {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8pt;
+  }
+  .totals {
+    width: 48%;
+  }
+  .totals td {
+    padding: 3pt 10pt;
+    font-size: 10.5pt;
+  }
+  .totals td.k {
+    color: var(--gvc-muted);
+    text-align: left;
+  }
+  .totals td.v {
+    text-align: right;
+    font-weight: 600;
+  }
+  .totals tr.total td {
+    border-top: 2pt solid var(--gvc-black);
+    padding-top: 8pt;
+    padding-bottom: 8pt;
+    font-size: 13pt;
+    font-weight: 800;
+    color: var(--gvc-black);
+  }
+  .totals tr.total td.v {
+    color: var(--gvc-green-dark);
+  }
+
+  /* ---- Payment section ---- */
+  .pay-section {
+    margin-top: 2pt;
+    padding: 12pt 14pt;
+    background: var(--gvc-soft);
+    border-left: 4pt solid var(--gvc-green);
+    display: flex;
+    gap: 18pt;
+    align-items: center;
+    page-break-inside: avoid;
+  }
+  .pay-cta {
+    flex: 1;
+  }
+  .pay-cta .pay-label {
+    font-size: 9pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gvc-muted);
+    font-weight: 700;
+  }
+  .pay-cta h3 {
+    font-size: 16pt;
+    margin: 3pt 0 6pt;
+  }
+  .pay-cta .pay-sub {
+    font-size: 9.5pt;
+    color: var(--gvc-muted);
+    margin-bottom: 10pt;
+  }
+  .pay-cta .pay-btn {
+    display: inline-block;
+    background: var(--gvc-green);
+    color: #FFF;
+    padding: 9pt 18pt;
+    font-weight: 800;
+    font-size: 11pt;
+    text-decoration: none;
+    letter-spacing: 0.03em;
+    border-radius: 3pt;
+  }
+  .pay-cta .pay-url {
+    display: block;
+    margin-top: 8pt;
+    font-size: 8pt;
+    color: var(--gvc-muted);
+    word-break: break-all;
+  }
+  .qr-wrap {
+    text-align: center;
+  }
+  .qr-wrap img {
+    width: 88pt;
+    height: 88pt;
+    display: block;
+  }
+  .qr-wrap .qr-label {
+    font-size: 8pt;
+    color: var(--gvc-muted);
+    margin-top: 4pt;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  /* ---- Notes ---- */
+  .notes {
+    margin-top: 8pt;
+    font-size: 9.5pt;
+    color: var(--gvc-text);
+    page-break-inside: avoid;
+  }
+  .notes .label {
+    font-size: 8pt;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--gvc-muted);
+    font-weight: 700;
+    margin-bottom: 4pt;
+  }
+  .notes .value {
+    white-space: pre-line;
+  }
+
+  /* (Footer rendered in @page bottom margin via CSS content strings) */
+  .footer .footer-tag {
+    color: var(--gvc-green-dark);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Top band: logo + INVOICE -->
+  <div class="top-band">
+    <div class="brand">
+      <img src="{{ logo_data_uri }}" alt="Green Valley Contractors">
+      <div class="tag">Drywall Experts Since 1987</div>
+    </div>
+    <div class="doc-title">
+      <h1>INVOICE</h1>
+      <div class="from-block">
+        <div class="from-name">Green Valley Contractors, Inc.</div>
+        <div>5121 Highland Center Rd</div>
+        <div>Brookville, IN 47012</div>
+        <div>(513) 912-2235</div>
+        <div>billing@greenvalleycontractors.com</div>
+        <div>www.greenvalleycontractors.com</div>
+      </div>
+      <div class="meta-line">{{ invoice.identifier }} &middot; {{ invoice.issue_date_pretty }}</div>
+      {% if is_past_due %}<div class="past-due">Past Due</div>{% endif %}
+    </div>
+  </div>
+
+  <!-- Bill To + Invoice meta -->
+  <div class="meta-grid">
+    <div class="meta-block">
+      <div class="label">Bill To</div>
+      <div class="value name">{{ client.name }}</div>
+      {% if client.contact_name %}<div class="value">Attn: {{ client.contact_name }}</div>{% endif %}
+      <div class="value">{{ client.billing_address }}</div>
+      {% if client.email %}<div class="value" style="margin-top:4pt;">{{ client.email }}</div>{% endif %}
+    </div>
+
+    {% if job.site_address and job.site_address != client.billing_address %}
+    <div class="meta-block">
+      <div class="label">Job Site</div>
+      <div class="value name">{{ job.name }}</div>
+      <div class="value">{{ job.site_address }}</div>
+    </div>
+    {% else %}
+    <div class="meta-block">
+      <div class="label">Project</div>
+      <div class="value name">{{ job.name }}</div>
+    </div>
+    {% endif %}
+
+    <div class="meta-block">
+      <table class="meta-kv">
+        <tr><td class="k">Invoice #</td><td class="v">{{ invoice.identifier }}</td></tr>
+        <tr><td class="k">Issue date</td><td class="v">{{ invoice.issue_date_pretty }}</td></tr>
+        <tr><td class="k">Due date</td><td class="v">{{ invoice.due_date_pretty }}</td></tr>
+        <tr><td class="k">Terms</td><td class="v">{{ invoice.payment_terms }}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <!-- Line items -->
+  <table class="items">
+    <thead>
+      <tr>
+        <th class="desc">Description</th>
+        <th class="amt num">Amount</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for li in invoice.line_items %}
+      <tr class="{% if li._is_co %}co-line{% endif %}">
+        <td class="desc">
+          {% if li._is_co %}<div class="co-tag">Change Order{% if li.co_number %} · {{ li.co_number }}{% endif %}</div>{% endif %}
+          <strong>{{ li.description }}</strong>
+          {% if li.detail %}<div class="item-desc-sub">{{ li.detail }}</div>{% endif %}
+        </td>
+        <td class="amt num">{{ li.amount_pretty }}</td>
+      </tr>
+      {% endfor %}
+
+      {% if invoice.discount %}
+      <tr class="discount">
+        <td class="desc">
+          <strong>{{ invoice.discount.description }}</strong>
+        </td>
+        <td class="amt num">{{ invoice.discount.amount_pretty }}</td>
+      </tr>
+      {% endif %}
+    </tbody>
+  </table>
+
+  <!-- Totals -->
+  <div class="totals-wrap">
+    <table class="totals">
+      {% if invoice.has_co %}
+      <tr>
+        <td class="k">{{ 'Work Completed This Period' if invoice.retainage else 'Base Contract' }}</td>
+        <td class="v">{{ invoice.subtotal_work_pretty }}</td>
+      </tr>
+      <tr>
+        <td class="k">Change Orders</td>
+        <td class="v">{{ invoice.subtotal_co_pretty }}</td>
+      </tr>
+      {% else %}
+      <tr>
+        <td class="k">{{ 'Work Completed This Period' if invoice.retainage else 'Subtotal' }}</td>
+        <td class="v">{{ invoice.subtotal_pretty }}</td>
+      </tr>
+      {% endif %}
+      {% if invoice.discount %}
+      <tr>
+        <td class="k">{{ invoice.discount.label if invoice.discount.label is defined else 'Discount' }}</td>
+        <td class="v">{{ invoice.discount.amount_pretty }}</td>
+      </tr>
+      {% endif %}
+      {% if invoice.retainage %}
+      <tr>
+        <td class="k">Retainage{% if invoice.retainage.percentage_pretty %} ({{ invoice.retainage.percentage_pretty }}){% endif %} — held{% if invoice.retainage.scope == 'all' %} on this application{% else %} on base contract{% endif %}</td>
+        <td class="v">{{ invoice.retainage.amount_pretty }}</td>
+      </tr>
+      {% endif %}
+      <tr class="total">
+        <td class="k">{{ 'Amount Due This Application' if invoice.retainage else 'Total Due' }}</td>
+        <td class="v">{{ invoice.total_pretty }}</td>
+      </tr>
+    </table>
+  </div>
+
+  <!-- Payment section -->
+  <div class="pay-section">
+    <div class="pay-cta">
+      <div class="pay-label">Pay Online &middot; Secure</div>
+      <h3>{{ invoice.total_pretty }} due {{ invoice.due_date_pretty }}</h3>
+      <div class="pay-sub">Pay by ACH or credit card. Receipt sent automatically on payment.</div>
+      <a href="{{ hosted_payment_url }}" class="pay-btn">Pay Now &rarr;</a>
+      <span class="pay-url">{{ hosted_payment_url }}</span>
+    </div>
+    <div class="qr-wrap">
+      <img src="{{ qr_data_uri }}" alt="Pay">
+      <div class="qr-label">Scan to Pay</div>
+    </div>
+  </div>
+
+  {% if invoice.notes %}
+  <div class="notes">
+    <div class="label">Notes</div>
+    <div class="value">{{ invoice.notes }}</div>
+  </div>
+  {% endif %}
+
+</body>
+</html>

@@ -1,0 +1,22 @@
+stripe>=10.0,<16.0
+weasyprint>=60.0
+jinja2>=3.1
+qrcode[pil]>=7.4
+python-dotenv>=1.0
+google-api-python-client>=2.100
+google-auth>=2.30
+google-auth-oauthlib>=1.2
+google-cloud-storage>=2.10
+google-cloud-vision>=3.4
+google-cloud-logging>=3.8
+openpyxl>=3.1
+pypdf>=4.0
+reportlab>=4.0
+requests>=2.31
+fastapi>=0.110
+python-multipart>=0.0.9
+uvicorn[standard]>=0.27
+pytest>=8.0
+
+# zoneinfo data for slim containers without a system tz db (sent-watcher Slack timestamps)
+tzdata>=2024.1

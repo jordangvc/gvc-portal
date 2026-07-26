@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC COI Generator</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; }
+  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+  .dot.ok { background: #4ade80; } .dot.bad { background: #f87171; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+  .card h2 .opt { text-transform: none; font-weight: 400; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label .opt { font-weight: 400; color: var(--muted); }
+  input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
+    font: inherit; color: var(--ink); background: #fff; }
+  input:focus, textarea:focus { outline: 2px solid var(--green); border-color: var(--green); }
+  textarea { resize: vertical; min-height: 64px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--green); color: #fff; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .btn.small { padding: 7px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #preview-card { display: none; } #preview-card.show { display: block; }
+  iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
+  .result-line { padding: 4px 0; } .result-line a { color: var(--green-dark); font-weight: 600; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .spinner { display: none; } .spinner.show { display: inline; }
+  #tmpl-state { font-size: 13px; margin-top: 4px; }
+  #tmpl-state.ok { color: var(--green-dark); } #tmpl-state.warn { color: #b45309; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* Section color (2026-06-24 standard) — tinted cards + accent bars. */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+  main form .card + .card { margin-top: 28px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>📜 COI Generator</h1>
+  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div id="status"></div>
+
+  <form id="coi-form" autocomplete="off">
+    <div class="card">
+      <h2>Certificate holder <span class="opt">— printed in the COI's holder box, exactly as entered</span></h2>
+      <div class="grid">
+        <div class="full"><label>Name / Project Name</label>
+          <input name="holder_name" required placeholder="CMsquared LLC" /></div>
+        <div class="full"><label>Address <span class="opt">(one line per address line)</span></label>
+          <textarea name="holder_address" required placeholder="5777 Kellogg Ave&#10;Cincinnati, OH 45230"></textarea>
+          <div class="hint">Line breaks are kept — enter it the way it should read on the certificate.</div></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Send to <span class="opt">— the hello@ draft is addressed here</span></h2>
+      <div class="grid">
+        <div><label>Contact name</label><input name="contact_name" required placeholder="Jane Smith" /></div>
+        <div><label>Contact email</label><input name="contact_email" type="email" required placeholder="jane@cm2builders.com" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="actions">
+        <button type="button" class="btn" id="btn-generate">Generate Preview</button>
+        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
+        <span class="spinner" id="spinner">⏳ Working…</span>
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        <strong>Generate Preview</strong> stamps the holder box onto the current blank and shows the PDF.
+        <strong>Accept</strong> files it to Drive (<code>COIs Sent/&lt;year&gt;/</code>), drafts it in <code>hello@</code> (PDF attached),
+        posts the COI Slack notice, and logs it to Monday. Nothing is emailed until someone reviews the draft and clicks Send.
+      </div>
+    </div>
+  </form>
+
+  <div class="card">
+    <h2>Bulk <span class="opt">— annual COI run from the mailing-list sheet</span></h2>
+    <label style="display:inline-flex;align-items:center;gap:8px;font-weight:600;">
+      <input type="checkbox" id="bulk-toggle" style="width:auto;" />
+      Doing bulk annual COIs? Check this box.
+    </label>
+    <div id="bulk-panel" style="display:none;margin-top:14px;">
+      <div class="row-link">
+        <div><label>Google Sheet link <span class="opt">(Annual COI List)</span></label>
+          <input id="bulk-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" /></div>
+        <div><button type="button" class="btn secondary" id="btn-bulk-review">Load &amp; review</button></div>
+      </div>
+      <div class="hint">Columns: Client/Builder Name · Mailing Address · Contact Name · Contact Email · Sent.
+        The sheet must be shared (Editor) with <code>gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com</code>.
+        Rows already marked <strong>YES</strong> are skipped; each drafted row is written back <strong>YES</strong> (or <strong>NO</strong> on failure).</div>
+      <div id="bulk-review" style="display:none;margin-top:14px;">
+        <div id="bulk-summary" style="font-weight:600;"></div>
+        <div class="actions" style="margin:10px 0;">
+          <button type="button" class="btn" id="btn-bulk-run" disabled>Create drafts</button>
+          <span class="spinner" id="bulk-spinner">⏳ Working…</span>
+          <span id="bulk-progress" class="hint"></span>
+        </div>
+        <div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+          <table id="bulk-table" style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">Row</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">Builder / Name</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">Contact</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">State</th>
+            </tr></thead>
+            <tbody id="bulk-rows"></tbody>
+          </table>
+        </div>
+        <div id="bulk-result" style="margin-top:10px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Blank template <span class="opt">— the agent-issued COI everything is stamped onto</span></h2>
+    <div id="tmpl-state">Loading template info…</div>
+    <div class="hint" style="margin-top:8px;">Read-only here. The template is managed on the
+      <a href="/ui/admin">Admin page</a> (annual renewal) so it can't be changed by accident.</div>
+  </div>
+
+  <div class="card" id="preview-card">
+    <h2>Preview</h2>
+    <iframe id="preview-frame" title="COI PDF preview"></iframe>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+
+function val(n) { const e = $("#coi-form").elements[n]; return e ? (e.value || "").trim() : ""; }
+
+function collectData() {
+  return {
+    holder: { name: val("holder_name"), address: ($("#coi-form").elements["holder_address"].value || "").trim() },
+    contact: { name: val("contact_name"), email: val("contact_email") },
+  };
+}
+
+function validateData(d) {
+  const e = [];
+  if (!d.holder.name) e.push("Name / Project Name is required.");
+  if (!d.holder.address) e.push("Address is required.");
+  if (!d.contact.name) e.push("Contact name is required.");
+  if (!d.contact.email || d.contact.email.indexOf("@") < 0) e.push("A valid contact email is required.");
+  return e;
+}
+
+function setStatus(kind, html) { const el = $("#status"); el.className = "show " + kind; el.innerHTML = html; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function clearStatus() { $("#status").className = ""; }
+function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
+
+let lastPreviewOk = false;
+function showSpinner(on) {
+  $("#spinner").classList.toggle("show", on);
+  $("#btn-generate").disabled = on;
+  $("#btn-accept").disabled = on || !lastPreviewOk;
+}
+
+async function run(mode) {
+  const data = collectData();
+  const errs = validateData(data);
+  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  showSpinner(true); clearStatus();
+  try {
+    const resp = await fetch("/ui/api/coi/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data, mode }),
+    });
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json();
+    if (!resp.ok) {
+      const d = body.detail || body;
+      setStatus("err", `<strong>${d.code || "Error"}</strong><br />${d.advice || d.detail || JSON.stringify(d)}`);
+      return;
+    }
+    const wb = body.writeback || {};
+    if (mode === "dry-run") {
+      if (wb.preview_pdf_url) {
+        $("#preview-frame").src = wb.preview_pdf_url;
+        $("#preview-card").classList.add("show");
+        $("#preview-card").scrollIntoView({ behavior: "smooth" });
+      }
+      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      setStatus("info", `✅ Preview ready${wb.preview_pdf_url ? " below" : ""} (<strong>${escapeHtml(wb.filename || wb.identifier)}</strong>). Review the holder box, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
+    } else {
+      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      let html = `<strong>✅ COI created for ${escapeHtml(wb.holder_name || "")}.</strong><br />`;
+      if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
+      if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
+      if (wb.gmail_status) html += `<div class="result-line" style="color:#b45309">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
+      if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">COI in Drive</a> (${escapeHtml(wb.drive_folder_path || "COIs Sent/")})</div>`;
+      if (wb.drive_status) html += `<div class="result-line" style="color:#b45309">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
+      html += `<div class="result-line">Slack notice: ${wb.slack_notified ? "posted ✅" : escapeHtml(wb.slack_status || wb.slack_error || "not sent")}</div>`;
+      if (wb.monday_status) html += `<div class="result-line">Monday: ${escapeHtml(wb.monday_status)}</div>`;
+      setStatus("warn", html);
+    }
+  } catch (e) {
+    setStatus("err", "Network/error: " + e.message);
+  } finally { showSpinner(false); }
+}
+
+async function loadTemplateInfo() {
+  try {
+    const resp = await fetch("/ui/api/coi/template");
+    if (resp.status === 401) { location.reload(); return; }
+    const body = await resp.json();
+    if (!resp.ok) {
+      const d = body.detail || body;
+      $("#tmpl-state").className = "warn";
+      $("#tmpl-state").innerHTML = "⚠️ " + escapeHtml(d.advice || d.detail || "Template store unavailable.");
+      return;
+    }
+    const t = body.template;
+    if (t) {
+      $("#tmpl-state").className = "ok";
+      $("#tmpl-state").innerHTML = `✅ Current template: <strong>${escapeHtml(t.expiry_label || "(no expiry label)")}</strong>` +
+        ` — uploaded ${escapeHtml((t.uploaded_at || "").slice(0, 10))} by ${escapeHtml(t.uploaded_by || "?")}.`;
+    } else {
+      $("#tmpl-state").className = "warn";
+      $("#tmpl-state").innerHTML = "⚠️ No blank COI uploaded yet — an admin needs to upload one on the Admin page before the generator can run.";
+    }
+  } catch (e) {
+    $("#tmpl-state").className = "warn";
+    $("#tmpl-state").textContent = "Template info unavailable: " + e.message;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bulk annual run — dry-run review, then chunked finalize BATCHES (the server
+// processes ~15 rows per call and returns a cursor). Batches are explicit:
+// after each one the page shows "Batch {n} complete" + a Continue button
+// (no auto-loop — a dropped response mid-loop used to surface as a scary
+// "Network error" even though the server had finished the batch). YES rows
+// always skip server-side, so continuing after a drop is always safe.
+// ---------------------------------------------------------------------------
+let bulkReady = 0;
+let bulkState = null; // active run: {url, afterRow, batch, done, failed}
+
+function bulkSpinner(on) {
+  $("#bulk-spinner").classList.toggle("show", on);
+  $("#btn-bulk-review").disabled = on || !!bulkState;
+  $("#btn-bulk-run").disabled = on || bulkReady === 0 || !!bulkState;
+}
+
+function stateBadge(e) {
+  if (e.state === "ready") {
+    return e.duplicate_of
+      ? `<span style="color:#b45309">ready ⚠ dup of row ${e.duplicate_of}</span>`
+      : `<span style="color:var(--green-dark)">ready</span>`;
+  }
+  if (e.state === "skip_sent") return `<span class="opt" style="color:var(--muted)">already sent (YES)</span>`;
+  return `<span style="color:#b91c1c">needs attention — ${escapeHtml((e.reasons || []).join("; "))}</span>`;
+}
+
+async function bulkReview() {
+  const url = $("#bulk-sheet-url").value.trim();
+  if (!url) { setStatus("err", "Paste the Annual COI List sheet link first."); return; }
+  bulkSpinner(true); clearStatus(); $("#bulk-result").innerHTML = "";
+  try {
+    const resp = await fetch("/ui/api/coi/bulk/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheet_url: url, mode: "dry-run" }),
+    });
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading…"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json();
+    if (!resp.ok) {
+      const d = body.detail || body;
+      setStatus("err", `<strong>${d.code || "Error"}</strong><br />${escapeHtml(d.advice || d.detail || "")}`);
+      return;
+    }
+    const r = body.review || {};
+    const c = r.counts || {};
+    bulkReady = c.ready || 0;
+    $("#bulk-review").style.display = "block";
+    $("#bulk-summary").textContent =
+      `${c.total || 0} rows — ${c.ready || 0} ready, ${c.skip_sent || 0} already sent (skipped), ${c.invalid || 0} need attention.`;
+    const tb = $("#bulk-rows");
+    tb.innerHTML = "";
+    (r.entries || []).forEach((e) => {
+      const tr = document.createElement("tr");
+      tr.id = "bulk-row-" + e.row_number;
+      tr.innerHTML =
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);">${e.row_number}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);">${escapeHtml(e.name || "—")}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);">${escapeHtml(e.contact_name || "")} ${escapeHtml(e.contact_email ? "<" + e.contact_email + ">" : "")}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);" class="bulk-state">${stateBadge(e)}</td>`;
+      tb.appendChild(tr);
+    });
+    $("#btn-bulk-run").textContent = `Create ${bulkReady} draft${bulkReady === 1 ? "" : "s"}`;
+    $("#btn-bulk-run").disabled = bulkReady === 0;
+    if (r.sample_preview_url) {
+      $("#preview-frame").src = r.sample_preview_url;
+      $("#preview-card").classList.add("show");
+      setStatus("info", `✅ Review loaded. Sample preview below is row ${r.sample_row_number} (${escapeHtml(r.sample_filename || "")}). Check the table, then click <strong>Create ${bulkReady} drafts</strong>.`);
+    } else {
+      setStatus("info", `✅ Review loaded${r.sample_error ? " (sample preview unavailable: " + escapeHtml(r.sample_error) + ")" : ""}. Check the table, then create the drafts.`);
+    }
+  } catch (e) {
+    setStatus("err", "Network/error: " + e.message);
+  } finally { bulkSpinner(false); }
+}
+
+function markRowResult(res) {
+  const tr = document.getElementById("bulk-row-" + res.row_number);
+  if (!tr) return;
+  const cell = tr.querySelector(".bulk-state");
+  if (res.ok) {
+    let html = `<span style="color:var(--green-dark)">✅ drafted</span>`;
+    if (res.gmail_draft_url) html += ` <a href="${res.gmail_draft_url}" target="_blank" rel="noopener">draft</a>`;
+    if (res.drive_pdf_url) html += ` · <a href="${res.drive_pdf_url}" target="_blank" rel="noopener">Drive</a>`;
+    if (res.writeback_error) html += ` <span style="color:#b45309">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
+    cell.innerHTML = html;
+  } else {
+    cell.innerHTML = `<span style="color:#b91c1c">❌ NO — ${escapeHtml(res.error || "failed")}</span>`;
+  }
+}
+
+function markInvalidRowsSkipped(marked) {
+  (marked || []).forEach((m) => {
+    const tr = document.getElementById("bulk-row-" + m.row_number);
+    if (!tr) return;
+    const cell = tr.querySelector(".bulk-state");
+    let html = `<span style="color:#b45309">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
+    if (m.writeback_error) html += ` <span style="color:#b91c1c">⚠ NO not written: ${escapeHtml(m.writeback_error)}</span>`;
+    cell.innerHTML = html;
+  });
+}
+
+function bulkShowContinue(message, cls) {
+  $("#bulk-progress").textContent = "";
+  $("#bulk-result").innerHTML =
+    `<div class="result-line">${message}</div>` +
+    `<button type="button" class="btn" id="btn-bulk-continue">Continue the run ▸</button>`;
+  document.getElementById("btn-bulk-continue").addEventListener("click", () => {
+    $("#bulk-result").innerHTML = "";
+    bulkRunBatch();
+  });
+  setStatus(cls || "info", message);
+}
+
+function bulkFinish(b) {
+  const st = bulkState;
+  const t = b.sheet_totals || null;
+  let html = `<strong>✅ Bulk run finished — ${st.done} draft${st.done === 1 ? "" : "s"} created this run` +
+             (st.failed ? `, ${st.failed} failed` : "") + `.</strong>`;
+  if (t) {
+    const noTotal = (t.no || 0) + (t.invalid || 0);
+    html += `<div class="result-line">Sheet ledger: <strong>${t.yes || 0} YES</strong> · <strong>${noTotal} NO</strong>` +
+            (noTotal ? ` (${t.no || 0} draft error${(t.no || 0) === 1 ? "" : "s"}, ${t.invalid || 0} skipped for missing info)` : "") + `.</div>`;
+  }
+  html += `<div class="result-line">Drafts are waiting in hello@ — review and send.</div>`;
+  if (b.slack_notified) html += `<div class="result-line">Slack summary posted ✅</div>`;
+  else if (b.slack_status || b.slack_error) html += `<div class="result-line" style="color:#b45309">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
+  $("#bulk-result").innerHTML = html;
+  setStatus(st.failed ? "warn" : "info",
+    `Bulk run finished — ${st.done} drafted this run${st.failed ? `, ${st.failed} failed (marked NO; they retry on the next run)` : ""}.` +
+    (t ? ` Sheet now: ${t.yes || 0} YES · ${(t.no || 0) + (t.invalid || 0)} NO.` : ""));
+  bulkState = null;
+  bulkSpinner(false); // re-enable buttons now the run is over
+}
+
+async function bulkRunBatch() {
+  const st = bulkState;
+  if (!st) return;
+  bulkSpinner(true);
+  const batchNo = st.batch + 1;
+  $("#bulk-progress").textContent = `Batch ${batchNo} running… (${st.done} drafted so far)`;
+  try {
+    const resp = await fetch("/ui/api/coi/bulk/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ sheet_url: st.url, mode: "finalize", after_row: st.afterRow }),
+    });
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading…"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json();
+    if (!resp.ok) {
+      const d = body.detail || body;
+      bulkShowContinue(
+        `<strong>${d.code || "Error"}</strong> in batch ${batchNo} — ${escapeHtml(d.advice || d.detail || "")}<br />` +
+        `Rows already drafted are marked YES and will be skipped. Fix the issue if needed, then continue.`, "err");
+      return;
+    }
+    st.batch = batchNo;
+    const b = body.batch || {};
+    (b.results || []).forEach((res) => { markRowResult(res); res.ok ? st.done++ : st.failed++; });
+    st.afterRow = b.next_after_row || st.afterRow;
+    markInvalidRowsSkipped(b.invalid_marked);
+    if (b.remaining) {
+      bulkShowContinue(
+        `✅ Batch ${batchNo} complete — ${st.done} drafted so far` +
+        (st.failed ? ` (${st.failed} failed)` : "") +
+        `, ${b.remaining} row${b.remaining === 1 ? "" : "s"} remaining. Click Continue to run the next batch.`);
+    } else {
+      bulkFinish(b);
+    }
+  } catch (e) {
+    // A dropped response is NOT a failed batch — the server almost always
+    // finished it (rows get marked YES as they complete). Never dead-end.
+    bulkShowContinue(
+      `⚠️ The connection dropped during batch ${batchNo} — the server usually finishes the batch anyway, ` +
+      `and every drafted row is marked YES and will be skipped. Click Continue to pick the run back up.`, "warn");
+  } finally { bulkSpinner(false); }
+}
+
+async function bulkRun() {
+  const url = $("#bulk-sheet-url").value.trim();
+  if (!url || !bulkReady || bulkState) return;
+  if (!confirm(`Create hello@ drafts for ${bulkReady} builders, file the PDFs to Drive, and write YES/NO back to the sheet?`)) return;
+  clearStatus(); $("#bulk-result").innerHTML = "";
+  bulkState = { url: url, afterRow: 0, batch: 0, done: 0, failed: 0 };
+  bulkRunBatch();
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML =
+      `<span>${dot(h.gmail_ready)} Gmail (hello@)</span>` +
+      `<span>${dot(h.preview_bucket_configured)} Preview</span>` +
+      `<span>${dot(h.slack_configured)} Slack</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+$("#btn-generate").addEventListener("click", () => run("dry-run"));
+$("#btn-accept").addEventListener("click", () => {
+  if (confirm("File the COI to Drive and create the draft in hello@?")) run("finalize");
+});
+$("#coi-form").addEventListener("input", () => { lastPreviewOk = false; $("#btn-accept").disabled = true; });
+$("#bulk-toggle").addEventListener("change", (e) => {
+  $("#bulk-panel").style.display = e.target.checked ? "block" : "none";
+});
+$("#btn-bulk-review").addEventListener("click", bulkReview);
+$("#btn-bulk-run").addEventListener("click", bulkRun);
+$("#bulk-sheet-url").addEventListener("input", () => {
+  bulkReady = 0; $("#btn-bulk-run").disabled = true; $("#bulk-review").style.display = "none";
+});
+checkHealth();
+loadTemplateInfo();
+</script>
+</body>
+</html>

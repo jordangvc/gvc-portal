@@ -1,0 +1,33 @@
+{
+  "prepared_by": {
+    "name": "Jake Faulkner",
+    "email": "jake@greenvalleycontractors.com",
+    "phone": "(812) 290-1093"
+  },
+  "client": {
+    "name": "Maxwell Construction",
+    "contact_name": "Dave Sehlhorst",
+    "email": "dsehlhorst@maxwellbuilds.com",
+    "billing_address": "300 Tiger Blvd\nLawrenceburg, IN 47025"
+  },
+  "job": {
+    "name": "Maxwell — Lawrenceburg Admin Bldg Reno & Addition",
+    "site_address": "300 Tiger Blvd, Lawrenceburg IN 47025",
+    "project_type": "commercial"
+  },
+  "change_order": {
+    "base_number": "2026-0603-004",
+    "date": "2026-06-16",
+    "title": "Added soffit framing & finish at lobby bulkhead",
+    "description": "Owner-directed change: add framing, board, and Level 5 finish to the new lobby soffit/bulkhead not shown on the bid set. Time-and-materials per the current Standard Rate Sheet.",
+    "breakdown": [
+      { "label": "Labor (38.5 hrs @ $70/hr)", "amount": 2695.00 },
+      { "label": "Materials (metal stud, board, finishing)", "amount": 412.50 }
+    ],
+    "approval_note": "Rate and scope discussed on site 2026-06-12. Approval by reply authorizes GVC to proceed."
+  },
+  "_link": {
+    "monday_item_id": null,
+    "drive_folder_url": "https://drive.google.com/drive/folders/EXAMPLE_FOLDER_ID"
+  }
+}

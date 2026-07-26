@@ -1,0 +1,31 @@
+{
+  "client": {
+    "name": "Henderson Residence",
+    "contact_name": "Mark Henderson",
+    "email": "mark.henderson@example.com",
+    "billing_address": "4821 Walnut Hills Drive\nCincinnati, OH 45208",
+    "stripe_customer_id": null
+  },
+  "job": {
+    "name": "Henderson Kitchen Remodel",
+    "site_address": "4821 Walnut Hills Drive\nCincinnati, OH 45208"
+  },
+  "invoice": {
+    "identifier": "GVC-2026-0142",
+    "issue_date": "2026-04-12",
+    "due_date": "2026-05-12",
+    "payment_terms": "Net 30",
+    "notes": "Thank you for your business. ACH preferred — no processing fee. Credit card payments incur a 3% processing fee.",
+    "line_items": [
+      {
+        "description": "Drywall hang and finish — Henderson Kitchen Remodel",
+        "detail": "Kitchen, dining nook, ceiling repair, and moisture-resistant board behind sink wall and dishwasher run.",
+        "amount": 4298.00
+      }
+    ],
+    "discount": {
+      "description": "Repeat client courtesy (10% finishing labor)",
+      "amount": 185.00
+    }
+  }
+}

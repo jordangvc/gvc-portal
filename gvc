@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+# Convenience wrapper: handles the DYLD env var and the venv-Python path
+# so you can type `./gvc invoice.py ...` instead of the long-form command.
+#
+# Examples:
+#   ./gvc invoice.py --monday-item 2604923561 --preflight
+#   ./gvc gmail.py setup
+#   ./gvc gmail.py test-draft
+set -e
+cd "$(dirname "$0")"
+DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib exec ~/.venv/bin/python "$@"

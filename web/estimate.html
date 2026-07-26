@@ -1,0 +1,1178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Estimate Generator</title>
+<style>
+  :root {
+    --green: #2f6f4f; --green-dark: #245a40; --ink: #1f2933; --muted: #6b7280;
+    --line: #e2e6ea; --bg: #f6f7f8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); color: #fff; padding: 16px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
+  #health span { display: inline-flex; align-items: center; gap: 4px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+  .dot.ok { background: #4ade80; }
+  .dot.bad { background: #f87171; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
+  .card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 20px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
+  .grid .full { grid-column: 1 / -1; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label .opt { font-weight: 400; color: var(--muted); }
+  input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
+    font: inherit; color: var(--ink); background: #fff; }
+  input:focus, textarea:focus { outline: 2px solid var(--green); border-color: var(--green); }
+  textarea { resize: vertical; min-height: 64px; }
+  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .line-item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fafbfc; }
+  .line-item .row1 { display: grid; grid-template-columns: 1fr 130px 70px auto; gap: 10px; align-items: end; }
+  .line-item .detail { margin-top: 8px; }
+  .line-item .opt-row { margin-top: 8px; font-size: 13px; color: #374151; display: flex; align-items: center; gap: 6px; }
+  .line-item .opt-row input { width: auto; }
+  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
+    background: var(--green); color: #fff; }
+  .btn:hover { background: var(--green-dark); }
+  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
+  .btn.danger { background: #fff; color: #b91c1c; border: 1px solid var(--err-line); padding: 8px 12px; }
+  .btn.small { padding: 7px 12px; font-size: 13px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .totals { margin-left: auto; text-align: right; font-size: 14px; color: var(--muted); }
+  .totals strong { color: var(--ink); font-size: 16px; }
+  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #preview-card { display: none; }
+  #preview-card.show { display: block; }
+  iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
+  .result-line { padding: 4px 0; }
+  .result-line a { color: var(--green-dark); font-weight: 600; }
+  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
+  .spinner { display: none; }
+  .spinner.show { display: inline; }
+  .save-state { font-size: 12px; color: var(--muted); margin-left: auto; align-self: center; }
+  .save-state.synced { color: var(--green-dark); }
+  .save-state.local { color: #b45309; }
+  .draft-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line);
+    border-radius: 8px; margin-bottom: 8px; background: #fafbfc; }
+  .draft-row.active { border-color: var(--green); background: #f0f7f3; }
+  .draft-row .d-main { flex: 1; min-width: 0; }
+  .draft-row .d-label { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .draft-row .d-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
+  .badge.synced { background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0; }
+  .badge.local { background: var(--warn-bg); color: #b45309; border: 1px solid var(--warn-line); }
+  .badge.active { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
+     visual fatigue on long forms. Calm green/slate alternation; overrides the
+     plain white .card above via source order. ── */
+  :root {
+    --sec-tint-a: #f2f7f4; --sec-bar-a: #2f6f4f; --sec-band-a: #e7f1ec; --sec-band-a-ink: #245a40;
+    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+  }
+  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
+    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
+  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
+    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
+  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
+    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
+  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
+  main form .card + .card { margin-top: 28px; }
+
+  /* ── Scope Selection ── */
+  .scope-trade { margin-bottom: 12px; }
+  .scope-trade + .scope-trade { border-top: 1px dashed var(--line); padding-top: 12px; }
+  .scope-trade-name { font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--green-dark); margin-bottom: 6px; }
+  .scope-item { padding: 5px 0; }
+  .scope-check { display: flex; align-items: center; gap: 8px; font-weight: 600;
+    color: #374151; cursor: pointer; margin: 0; }
+  .scope-check input { width: auto; }
+  .scope-editor { margin: 8px 0 4px 26px; padding: 10px 12px; border: 1px solid var(--line);
+    border-left: 3px solid var(--green); border-radius: 8px; background: #fff; }
+  .scope-editor label { font-size: 12px; }
+  .scope-editor textarea { min-height: 92px; margin-top: 4px; }
+  .scope-editor-row { display: flex; align-items: end; gap: 12px; margin-top: 8px; flex-wrap: wrap; }
+  .scope-editor-row .price-wrap { width: 150px; }
+  .scope-editor-row label { margin: 0; }
+  .sc-state { font-size: 12px; color: var(--muted); }
+  .sc-state.ok { color: var(--green-dark); font-weight: 600; }
+  .sc-state.err { color: #b91c1c; font-weight: 600; }
+  .scope-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .li-scope-badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px;
+    margin-left: 6px; background: #ecfdf5; color: var(--green-dark); border: 1px solid #a7f3d0;
+    font-weight: 600; }
+  /* Admin catalog editor */
+  #scope-admin { margin-top: 12px; padding: 12px; border: 1px dashed var(--green);
+    border-radius: 8px; background: #fff; }
+  .cat-trade { border: 1px solid var(--line); border-radius: 8px; padding: 10px; margin-bottom: 10px; background: #fafbfc; }
+  .cat-trade-head { display: flex; gap: 8px; align-items: end; margin-bottom: 8px; }
+  .cat-trade-head .grow { flex: 1; }
+  .cat-scope { border-top: 1px dashed var(--line); padding: 8px 0; margin-top: 4px; }
+  .cat-scope .row { display: flex; gap: 8px; align-items: end; }
+  .cat-scope .row .grow { flex: 1; }
+  .cat-scope .row .price { width: 120px; }
+  .cat-scope textarea { min-height: 70px; margin-top: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>📐 Estimate Generator</h1>
+  <div id="health">Checking service…</div>
+</header>
+
+<main>
+  <div id="status"></div>
+
+  <div class="card" id="monday-prefill-card">
+    <h2>Find the Bid <span class="opt" style="text-transform:none;font-weight:400;">(paste a Monday Bid Board link — or search by client, address, or estimate # — fills the form and links the estimate to that bid; bids with a sent estimate load for revision)</span></h2>
+    <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+      <div><label>Monday Bid URL — or search</label>
+        <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
+      <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
+    </div>
+    <div id="search-results" style="margin-top:10px;"></div>
+    <div id="dup-guard" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid #d9a300;background:#fff8e1;border-radius:8px;">
+      <div style="font-weight:600;margin-bottom:6px;">⚠ This bid already has an estimate</div>
+      <div id="dup-guard-msg" style="font-size:14px;line-height:1.45;"></div>
+      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+        <button type="button" class="btn secondary small" id="dup-guard-revise">Update this existing estimate</button>
+        <button type="button" class="btn secondary small" id="dup-guard-new">New estimate for a different customer</button>
+      </div>
+    </div>
+    <div id="prefill-note" class="hint" style="margin-top:8px;"></div>
+  </div>
+
+  <div class="card" id="drafts-card" style="display:none;">
+    <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress estimates — yours and your teammates')</span></h2>
+    <div id="drafts-list"></div>
+  </div>
+
+  <form id="estimate-form" autocomplete="off">
+    <input type="hidden" name="job_monday_item_id" />
+    <div class="card">
+      <h2>Your Bid Contact <span class="opt" style="text-transform:none;font-weight:400;">(salesperson shown on the estimate as “Your Bid Contact”)</span></h2>
+      <div style="margin-bottom:12px;"><label>Choose salesperson <span class="opt">(autofills the fields below — or type manually)</span></label>
+        <select id="salesperson-select"><option value="">— select a salesperson —</option></select></div>
+      <div class="grid">
+        <div><label>Name</label><input name="pb_name" placeholder="John Smith" /></div>
+        <div><label>Email <span class="opt">(optional)</span></label><input name="pb_email" type="email" placeholder="john@greenvalleycontractors.com" /></div>
+        <div><label>Phone <span class="opt">(optional)</span></label><input name="pb_phone" placeholder="(812) 290-1093" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Prepared For (Client)</h2>
+      <div class="grid">
+        <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
+        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
+        <div><label>Email <span class="opt">(estimate draft is sent here)</span></label><input name="client_email" type="email" required placeholder="dave@example.com" /></div>
+        <div><label>Phone <span class="opt">(optional)</span></label><input name="client_phone" placeholder="(812) 537-2200" /></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Project</h2>
+      <div class="grid">
+        <div><label>Project name</label><input name="job_name" required placeholder="Lawrenceburg Admin Bldg Reno & Addition" /></div>
+        <div><label>Job location <span class="opt">(optional)</span></label><input name="job_location" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
+        <div><label>Project type</label>
+          <select name="project_type">
+            <option value="residential" selected>Residential</option>
+            <option value="commercial">Commercial</option>
+          </select>
+          <div class="hint">Sets the Drive folder branch and the Monday Project Type.</div></div>
+        <div class="full"><label>Scope of Work Summary <span class="opt">(optional — a short narrative)</span></label>
+          <textarea name="scope_summary" placeholder="Drywall and ACT ceilings for the renovation and addition per plans and schedule."></textarea></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Estimate details</h2>
+      <div class="grid">
+        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned)</span></label><input name="identifier" placeholder="auto: YYYY-MMDD-NNN" />
+          <div class="hint">Assigned by the service as <code>{year}-{monthday}-{NNN}</code> (e.g. <code>2026-0611-001</code>). Only fill this to re-issue a specific number.</div></div>
+        <div><label>Date</label><input name="date" type="date" required /></div>
+        <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input name="expiry_date" type="date" /></div>
+        <div class="full" id="revise-row" style="display:none;">
+          <label class="opt-row" style="font-weight:600;">
+            <input type="checkbox" id="revise-flag" />
+            Update this Estimate — revise under the same number
+          </label>
+          <div class="hint">The client sees the <strong>same estimate number</strong>. The prior PDF is archived
+            in Drive with an <code>e1-</code>/<code>e2-</code>… prefix (original preserved for bid tracking),
+            Monday's scope, dates &amp; total are <strong>updated</strong>, and a fresh hello@ draft + #bids
+            notice go out with revision wording.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="scope-card">
+      <h2>Scope Selection <span class="opt" style="text-transform:none;font-weight:400;">(check a standard scope, edit its text &amp; price, then Save — it becomes a “Trade - Scope” line item and a Scope Details block)</span></h2>
+      <div id="scope-groups" class="hint">Loading standard scopes…</div>
+      <div id="scope-admin-wrap" style="display:none;margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
+        <button type="button" class="btn secondary small" id="scope-admin-toggle">⚙︎ Manage standard scopes (admin)</button>
+        <div id="scope-admin" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Line items <span class="opt" style="text-transform:none;font-weight:400;">(scopes you saved above appear here; add any extra lines manually — check “Optional add-on” to move a line to the optional section)</span></h2>
+      <div id="line-items"></div>
+      <button type="button" class="btn secondary small" id="add-line">+ Add line item</button>
+    </div>
+
+    <div class="card">
+      <h2>Special notes <span class="opt" style="text-transform:none;font-weight:400;">(per-job overrides — one per line; these supersede standard deliverables)</span></h2>
+      <textarea name="special_notes" placeholder="Use 5/8&quot; drywall throughout (supersedes our standard 1/2&quot;).&#10;All fire-rated assemblies per the life safety plan."></textarea>
+    </div>
+
+    <div class="card">
+      <h2>Notes <span class="opt" style="text-transform:none;font-weight:400;">(optional — printed near the bottom of the estimate)</span></h2>
+      <textarea name="notes" placeholder="Lead time on ACT grid is approximately 3 weeks from approved submittals."></textarea>
+    </div>
+
+    <div class="card">
+      <div class="actions">
+        <button type="button" class="btn" id="btn-generate">Generate Preview</button>
+        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
+        <button type="button" class="btn secondary small" id="btn-new-estimate">Start new</button>
+        <span class="spinner" id="spinner">⏳ Working…</span>
+        <span id="save-state" class="save-state"></span>
+        <div class="totals">
+          Main scope <span id="t-main">$0.00</span> &nbsp;·&nbsp; Options <span id="t-options">$0.00</span><br />
+          <strong>With options <span id="t-withopt">$0.00</span></strong>
+        </div>
+      </div>
+      <div class="hint" style="margin-top:10px;">
+        <strong>Generate Preview</strong> renders the estimate PDF only.
+        <strong>Accept</strong> creates a draft in <code>hello@</code> with the PDF attached (and posts to #estimates). Nothing is emailed until someone reviews the draft and clicks Send.
+      </div>
+    </div>
+  </form>
+
+  <div class="card" id="preview-card">
+    <h2>Preview</h2>
+    <iframe id="preview-frame" title="Estimate PDF preview"></iframe>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const lineItemsEl = $("#line-items");
+
+function lineItemRow(v = {}) {
+  const div = document.createElement("div");
+  div.className = "line-item";
+  const isScope = !!(v.scope_key || v.scope_trade || v.scope_detail);
+  if (v.scope_key) div.dataset.scopeKey = v.scope_key;
+  if (v.scope_trade) div.dataset.scopeTrade = v.scope_trade;
+  if (v.scope_title) div.dataset.scopeTitle = v.scope_title;
+  const badge = isScope
+    ? `<span class="li-scope-badge">Scope${v.scope_trade ? " · " + escapeHtml(v.scope_trade) : ""}</span>`
+    : "";
+  div.innerHTML = `
+    <div class="row1">
+      <div><label>Description ${badge}</label><input class="li-desc" placeholder="Drywall Hang and Finish" value="${escapeHtml(v.description || "")}" /></div>
+      <div><label>Unit price ($)</label><input class="li-price" type="number" step="0.01" min="0" placeholder="18300.00" value="${v.unit_price ?? ""}" /></div>
+      <div><label>Qty</label><input class="li-qty" type="number" step="1" min="1" value="${v.quantity ?? 1}" /></div>
+      <div><button type="button" class="btn danger li-remove">Remove</button></div>
+    </div>
+    <div class="detail"><label>Detail / scope <span class="opt">(optional short line under the title)</span></label>
+      <input class="li-detail" placeholder="5/8&quot; gypsum board at all new partitions; Level 5 finish." value="${escapeHtml(v.detail || "")}" /></div>
+    <input type="hidden" class="li-scope-detail" value="${escapeHtml(v.scope_detail || "")}" />
+    <label class="opt-row"><input type="checkbox" class="li-optional" ${v.optional ? "checked" : ""}/> Optional add-on</label>`;
+  div.querySelector(".li-remove").addEventListener("click", () => {
+    const key = div.dataset.scopeKey;
+    if (lineItemsEl.children.length > 1) div.remove();
+    if (key) uncheckScope(key);   // scope line removed here → untick its box
+    recalc();
+  });
+  div.querySelectorAll("input").forEach((i) => i.addEventListener("input", recalc));
+  return div;
+}
+function addLineItem(v) { lineItemsEl.appendChild(lineItemRow(v)); recalc(); }
+
+function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+function recalc() {
+  let main = 0, opt = 0;
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const price = parseFloat(row.querySelector(".li-price").value);
+    const qty = parseFloat(row.querySelector(".li-qty").value) || 1;
+    if (isNaN(price)) return;
+    const total = price * qty;
+    if (row.querySelector(".li-optional").checked) opt += total; else main += total;
+  });
+  $("#t-main").textContent = money(main);
+  $("#t-options").textContent = money(opt);
+  $("#t-withopt").textContent = money(main + opt);
+}
+
+function collectData() {
+  const f = $("#estimate-form");
+  const val = (n) => (f.elements[n].value || "").trim();
+
+  const prepared_by = {};
+  if (val("pb_name")) prepared_by.name = val("pb_name");
+  if (val("pb_email")) prepared_by.email = val("pb_email");
+  if (val("pb_phone")) prepared_by.phone = val("pb_phone");
+
+  const client = { name: val("client_name"), email: val("client_email") };
+  if (val("contact_name")) client.contact_name = val("contact_name");
+  if (val("client_phone")) client.phone = val("client_phone");
+
+  const job = { name: val("job_name"), project_type: val("project_type") || "residential" };
+  if (val("job_location")) job.location = val("job_location");
+  if (val("scope_summary")) job.scope_summary = val("scope_summary");
+  // Carried from a Monday Bid Board prefill so finalize writes back to that
+  // exact item instead of name-matching (Monday = source of truth).
+  if (val("job_monday_item_id")) job.monday_item_id = Number(val("job_monday_item_id"));
+
+  const line_items = [];
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const description = row.querySelector(".li-desc").value.trim();
+    const unit_price = parseFloat(row.querySelector(".li-price").value);
+    if (!description && isNaN(unit_price)) return;
+    const li = { description, unit_price: isNaN(unit_price) ? null : unit_price };
+    const qty = parseFloat(row.querySelector(".li-qty").value);
+    li.quantity = isNaN(qty) ? 1 : qty;
+    const detail = row.querySelector(".li-detail").value.trim();
+    if (detail) li.detail = detail;
+    if (row.querySelector(".li-optional").checked) li.optional = true;
+    // Scope-selection provenance (drives the PDF's Scope Details page).
+    const sd = row.querySelector(".li-scope-detail");
+    if (sd && sd.value.trim()) li.scope_detail = sd.value.trim();
+    if (row.dataset.scopeTrade) li.scope_trade = row.dataset.scopeTrade;
+    if (row.dataset.scopeTitle) li.scope_title = row.dataset.scopeTitle;
+    if (row.dataset.scopeKey) li.scope_key = row.dataset.scopeKey;
+    line_items.push(li);
+  });
+
+  const estimate = { date: val("date"), line_items };
+  if (val("identifier")) estimate.identifier = val("identifier");
+  if (val("expiry_date")) estimate.expiry_date = val("expiry_date");
+  const sn = val("special_notes");
+  if (sn) estimate.special_notes = sn.split("\n").map((s) => s.trim()).filter(Boolean);
+  if (val("notes")) estimate.notes = val("notes");
+
+  const data = { client, job, estimate };
+  if (Object.keys(prepared_by).length) data.prepared_by = prepared_by;
+  return data;
+}
+
+function validateData(d) {
+  const e = [];
+  if (!d.client.name) e.push("Client name is required.");
+  if (!d.client.email) e.push("Client email is required.");
+  if (!d.job.name) e.push("Project name is required.");
+  if (!d.estimate.date) e.push("Date is required.");
+  if (!d.estimate.line_items.length) e.push("At least one line item is required.");
+  d.estimate.line_items.forEach((li, i) => {
+    if (!li.description) e.push(`Line item ${i + 1}: description is required.`);
+    if (li.unit_price === null || li.unit_price === undefined) e.push(`Line item ${i + 1}: a numeric unit price is required.`);
+  });
+  return e;
+}
+
+function setStatus(kind, html) { const el = $("#status"); el.className = "show " + kind; el.innerHTML = html; window.scrollTo({ top: 0, behavior: "smooth" }); }
+function clearStatus() { $("#status").className = ""; }
+
+let lastPreviewOk = false;
+function showSpinner(on) {
+  $("#spinner").classList.toggle("show", on);
+  $("#btn-generate").disabled = on;
+  $("#btn-accept").disabled = on || !lastPreviewOk;
+}
+
+function isReviseMode() {
+  const box = $("#revise-flag");
+  const ident = ($("#estimate-form").elements["identifier"].value || "").trim();
+  return !!(box && box.checked && ident);
+}
+function updateReviseUI() {
+  const ident = ($("#estimate-form").elements["identifier"].value || "").trim();
+  const row = $("#revise-row");
+  row.style.display = ident ? "block" : "none";
+  if (!ident) $("#revise-flag").checked = false;
+  $("#btn-accept").textContent = isReviseMode()
+    ? "Update this Estimate (same number)"
+    : "Accept & Create Draft in hello@";
+}
+
+async function run(mode) {
+  const data = collectData();
+  const errs = validateData(data);
+  const revise = isReviseMode();
+  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  showSpinner(true); clearStatus();
+  try {
+    const resp = await fetch("/ui/api/estimate/run", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ data, mode, revise }),
+    });
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json();
+    if (!resp.ok) {
+      const d = body.detail || body;
+      setStatus("err", `<strong>${d.code || "Error"}</strong><br />${d.advice || d.detail || JSON.stringify(d)}`);
+      return;
+    }
+    const wb = body.writeback || {};
+    if (mode === "dry-run") {
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}`;
+      $("#preview-frame").src = url;
+      $("#preview-card").classList.add("show");
+      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      setStatus("info", `✅ Preview ready below (estimate <strong>${wb.identifier}</strong> — final number assigned at Accept). Review it, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
+      $("#preview-card").scrollIntoView({ behavior: "smooth" });
+    } else {
+      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      let html = wb.revised
+        ? `<strong>✅ Estimate ${wb.identifier} UPDATED${wb.revision_version ? " (v" + wb.revision_version + ")" : ""} — same outbound number.</strong><br />`
+        : `<strong>✅ Estimate ${wb.identifier} created.</strong><br />`;
+      if (wb.drive_archived && wb.drive_archived.length)
+        html += `<div class="result-line">🗂️ Prior version archived in Drive as <code>${wb.drive_archived.join("</code>, <code>")}</code></div>`;
+      if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
+      if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
+      if (wb.gmail_status) html += `<div class="result-line" style="color:#b45309">⚠️ ${wb.gmail_status}</div>`;
+      if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">PDF in Drive</a> (${wb.drive_folder_path || "project folder"})</div>`;
+      if (wb.drive_status) html += `<div class="result-line" style="color:#b45309">⚠️ Drive: ${wb.drive_status}</div>`;
+      if (wb.monday_item_url) html += `<div class="result-line">📋 <a href="${wb.monday_item_url}" target="_blank" rel="noopener">Monday item</a> — Stage set to "Sent to Client"${wb.monday_item_created ? " (new item created)" : ""}</div>`;
+      if (wb.monday_status) html += `<div class="result-line" style="color:#b45309">⚠️ Monday: ${wb.monday_status}</div>`;
+      html += `<div class="result-line">#estimates Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
+      setStatus("warn", html);
+      deleteCurrentDraftAfterFinalize();  // estimate is now real (in Monday) — drop the draft
+    }
+  } catch (e) {
+    setStatus("err", "Network/error: " + e.message);
+  } finally { showSpinner(false); }
+}
+
+/* ===================== Scope Selection =====================
+   A GCS-backed, admin-editable catalog of GVC's standard scopes drives a
+   checkbox menu grouped by trade. Checking a scope reveals an editable
+   textarea (prefilled with the standard scope) + a price; Save adds/updates a
+   line item named "<Trade> - <Scope>" carrying the full scope text
+   (scope_detail) that prints on the PDF's Scope Details page. Unchecking (or
+   removing the line) drops that line. Edits are cached per scope so a toggle
+   doesn't lose work. Admins can edit the catalog in-place (no redeploy).      */
+let SCOPE_CATALOG = null;        // {trades:[{id,name,scopes:[{id,title,default_scope,default_price}]}]}
+let SCOPE_CAN_MANAGE = false;
+const scopeEdits = {};           // scopeKey -> {text, price}
+
+function scopeKey(tradeId, scopeId) { return String(tradeId) + "::" + String(scopeId); }
+
+async function loadScopes() {
+  let r;
+  try { r = await fetch("/ui/api/estimate/scopes"); }
+  catch (e) { $("#scope-groups").textContent = "Couldn't load standard scopes (offline)."; return; }
+  if (r.status === 401) { location.reload(); return; }
+  if (!r.ok) { $("#scope-groups").textContent = "Couldn't load standard scopes."; return; }
+  const data = await r.json().catch(() => ({}));
+  SCOPE_CATALOG = data.catalog || { trades: [] };
+  SCOPE_CAN_MANAGE = !!data.can_manage;
+  renderScopes();
+  if (SCOPE_CAN_MANAGE) $("#scope-admin-wrap").style.display = "block";
+}
+
+function renderScopes() {
+  const wrap = $("#scope-groups");
+  const trades = (SCOPE_CATALOG && SCOPE_CATALOG.trades) || [];
+  wrap.classList.remove("hint");
+  wrap.innerHTML = "";
+  if (!trades.length) { wrap.innerHTML = '<div class="hint">No standard scopes defined yet.</div>'; return; }
+  trades.forEach((trade) => {
+    const g = document.createElement("div");
+    g.className = "scope-trade";
+    const nm = document.createElement("div");
+    nm.className = "scope-trade-name"; nm.textContent = trade.name || "";
+    g.appendChild(nm);
+    (trade.scopes || []).forEach((scope) => g.appendChild(scopeItem(trade, scope)));
+    wrap.appendChild(g);
+  });
+  syncScopeSelectionFromLineItems();
+}
+
+function scopeItem(trade, scope) {
+  const key = scopeKey(trade.id, scope.id);
+  const item = document.createElement("div");
+  item.className = "scope-item";
+  item.dataset.scopeKey = key;
+  item.dataset.tradeName = trade.name || "";
+  item.dataset.scopeTitle = scope.title || "";
+  item.innerHTML =
+    `<label class="scope-check"><input type="checkbox" class="sc-box"> ${escapeHtml(scope.title || "")}</label>
+     <div class="scope-editor" style="display:none">
+       <label>Scope description <span class="opt">(edit for this job — each sentence becomes a bullet; press Enter to force a new bullet)</span></label>
+       <textarea class="sc-text"></textarea>
+       <div class="scope-editor-row">
+         <div class="price-wrap"><label>Price ($)</label><input type="number" step="0.01" min="0" class="sc-price" placeholder="0.00" /></div>
+         <button type="button" class="btn small sc-save">Save to line items</button>
+         <span class="sc-state"></span>
+       </div>
+       <div class="scope-hint">Adds line item “<strong>${escapeHtml(trade.name || "")} - ${escapeHtml(scope.title || "")}</strong>”; the full text prints on the Scope Details page.</div>
+     </div>`;
+  const box = item.querySelector(".sc-box");
+  const editor = item.querySelector(".scope-editor");
+  const text = item.querySelector(".sc-text");
+  const price = item.querySelector(".sc-price");
+  const state = item.querySelector(".sc-state");
+
+  function prefill() {
+    const cached = scopeEdits[key];
+    if (cached) { text.value = cached.text || ""; if (cached.price != null && cached.price !== "") price.value = cached.price; }
+    else {
+      text.value = scope.default_scope || "";
+      if (scope.default_price != null) price.value = scope.default_price;
+    }
+  }
+  box.addEventListener("change", () => {
+    if (box.checked) {
+      prefill(); editor.style.display = "block";
+      state.className = "sc-state"; state.textContent = "";
+    } else {
+      editor.style.display = "none";
+      removeScopeRow(key);
+      state.textContent = "";
+      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      scheduleAutosave();
+    }
+  });
+  const cache = () => { scopeEdits[key] = { text: text.value, price: price.value }; };
+  text.addEventListener("input", cache);
+  price.addEventListener("input", cache);
+  item.querySelector(".sc-save").addEventListener("click", () => {
+    const p = parseFloat(price.value);
+    if (isNaN(p)) { state.className = "sc-state err"; state.textContent = "Enter a price first."; return; }
+    cache();
+    const existed = !!lineItemsEl.querySelector('.line-item[data-scope-key="' + key + '"]');
+    upsertScopeLine(key, item.dataset.tradeName, item.dataset.scopeTitle, text.value, p);
+    state.className = "sc-state ok"; state.textContent = existed ? "Updated ✓" : "Saved to line items ✓";
+    lastPreviewOk = false; $("#btn-accept").disabled = true;
+    scheduleAutosave();
+  });
+  return item;
+}
+
+function isLineEmpty(row) {
+  return !row.querySelector(".li-desc").value.trim() &&
+         !row.querySelector(".li-price").value.trim() &&
+         !row.dataset.scopeKey;
+}
+
+function upsertScopeLine(key, trade, title, detail, price) {
+  const desc = trade ? (trade + " - " + title) : title;
+  const row = lineItemsEl.querySelector('.line-item[data-scope-key="' + key + '"]');
+  if (row) {
+    row.querySelector(".li-desc").value = desc;
+    row.querySelector(".li-price").value = price;
+    const sd = row.querySelector(".li-scope-detail"); if (sd) sd.value = detail;
+  } else {
+    const rows = [...lineItemsEl.querySelectorAll(".line-item")];
+    if (rows.length === 1 && isLineEmpty(rows[0])) rows[0].remove();
+    addLineItem({ description: desc, unit_price: price, quantity: 1,
+      scope_key: key, scope_trade: trade, scope_title: title, scope_detail: detail });
+  }
+  recalc();
+}
+
+function removeScopeRow(key) {
+  const row = lineItemsEl.querySelector('.line-item[data-scope-key="' + key + '"]');
+  if (!row) return;
+  row.remove();
+  if (!lineItemsEl.children.length) addLineItem();
+  recalc();
+}
+
+function uncheckScope(key) {
+  const groups = $("#scope-groups"); if (!groups) return;
+  const item = groups.querySelector('.scope-item[data-scope-key="' + key + '"]');
+  if (!item) return;
+  const box = item.querySelector(".sc-box");
+  if (box) box.checked = false;
+  item.querySelector(".scope-editor").style.display = "none";
+}
+
+// After a draft/Monday prefill loads line items, tick + fill the matching
+// catalog checkboxes so the Scope Selection UI reflects what's already there.
+function syncScopeSelectionFromLineItems() {
+  const groups = $("#scope-groups");
+  if (!SCOPE_CATALOG || !groups) return;
+  lineItemsEl.querySelectorAll(".line-item[data-scope-key]").forEach((row) => {
+    const key = row.dataset.scopeKey;
+    const sdEl = row.querySelector(".li-scope-detail");
+    const detail = sdEl ? sdEl.value : "";
+    const price = row.querySelector(".li-price").value;
+    scopeEdits[key] = { text: detail, price: price };
+    const item = groups.querySelector('.scope-item[data-scope-key="' + key + '"]');
+    if (!item) return;
+    item.querySelector(".sc-box").checked = true;
+    item.querySelector(".scope-editor").style.display = "block";
+    item.querySelector(".sc-text").value = detail;
+    if (price !== "") item.querySelector(".sc-price").value = price;
+  });
+}
+
+/* ---- Admin catalog editor (admins only) ---- */
+function openScopeAdmin() {
+  const panel = $("#scope-admin");
+  if (panel.style.display === "block") { panel.style.display = "none"; return; }
+  renderScopeAdmin();
+  panel.style.display = "block";
+}
+
+function renderScopeAdmin() {
+  const panel = $("#scope-admin");
+  panel.innerHTML = "";
+  const list = document.createElement("div"); list.className = "cat-list";
+  ((SCOPE_CATALOG && SCOPE_CATALOG.trades) || []).forEach((t) => list.appendChild(catTradeEl(t)));
+  panel.appendChild(list);
+  const bar = document.createElement("div"); bar.style.marginTop = "10px";
+  const addTrade = document.createElement("button");
+  addTrade.type = "button"; addTrade.className = "btn secondary small"; addTrade.textContent = "+ Add trade";
+  addTrade.addEventListener("click", () =>
+    list.appendChild(catTradeEl({ name: "", scopes: [{ title: "", default_scope: "", default_price: null }] })));
+  const save = document.createElement("button");
+  save.type = "button"; save.className = "btn"; save.textContent = "Save catalog"; save.style.marginLeft = "8px";
+  save.addEventListener("click", saveScopeAdmin);
+  const st = document.createElement("span"); st.id = "scope-admin-state"; st.className = "sc-state"; st.style.marginLeft = "10px";
+  bar.appendChild(addTrade); bar.appendChild(save); bar.appendChild(st);
+  panel.appendChild(bar);
+}
+
+function catTradeEl(t) {
+  const el = document.createElement("div"); el.className = "cat-trade";
+  const head = document.createElement("div"); head.className = "cat-trade-head";
+  head.innerHTML = `<div class="grow"><label>Trade name</label><input class="ct-name" value="${escapeHtml(t.name || "")}" /></div>`;
+  const rm = document.createElement("button");
+  rm.type = "button"; rm.className = "btn danger small"; rm.textContent = "Remove trade";
+  rm.addEventListener("click", () => el.remove());
+  head.appendChild(rm); el.appendChild(head);
+  const scopes = document.createElement("div"); scopes.className = "ct-scopes";
+  (t.scopes || []).forEach((s) => scopes.appendChild(catScopeEl(s)));
+  el.appendChild(scopes);
+  const addScope = document.createElement("button");
+  addScope.type = "button"; addScope.className = "btn secondary small"; addScope.textContent = "+ Add scope";
+  addScope.addEventListener("click", () => scopes.appendChild(catScopeEl({ title: "", default_scope: "", default_price: null })));
+  el.appendChild(addScope);
+  return el;
+}
+
+function catScopeEl(s) {
+  const el = document.createElement("div"); el.className = "cat-scope";
+  el.innerHTML =
+    `<div class="row">
+       <div class="grow"><label>Scope title</label><input class="cs-title" value="${escapeHtml(s.title || "")}" /></div>
+       <div class="price"><label>Default price ($)</label><input class="cs-price" type="number" step="0.01" min="0" value="${s.default_price ?? ""}" /></div>
+     </div>
+     <label>Default scope text</label>
+     <textarea class="cs-text">${escapeHtml(s.default_scope || "")}</textarea>`;
+  const rm = document.createElement("button");
+  rm.type = "button"; rm.className = "btn danger small"; rm.textContent = "Remove scope";
+  rm.addEventListener("click", () => el.remove());
+  el.appendChild(rm);
+  return el;
+}
+
+async function saveScopeAdmin() {
+  const st = $("#scope-admin-state");
+  const trades = [];
+  $("#scope-admin").querySelectorAll(".cat-trade").forEach((te) => {
+    const name = te.querySelector(".ct-name").value.trim();
+    const scopes = [];
+    te.querySelectorAll(".cat-scope").forEach((se) => {
+      const title = se.querySelector(".cs-title").value.trim();
+      const priceRaw = se.querySelector(".cs-price").value;
+      const default_price = priceRaw === "" ? null : parseFloat(priceRaw);
+      const default_scope = se.querySelector(".cs-text").value.trim();
+      if (title) scopes.push({ title, default_scope, default_price });
+    });
+    if (name && scopes.length) trades.push({ name, scopes });
+  });
+  st.className = "sc-state"; st.textContent = "Saving…";
+  let r;
+  try {
+    r = await fetch("/ui/api/estimate/scopes", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ catalog: { trades } }),
+    });
+  } catch (e) { st.className = "sc-state err"; st.textContent = "Network error."; return; }
+  if (r.status === 401) { location.reload(); return; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = data.detail || data;
+    st.className = "sc-state err"; st.textContent = (d.detail || d.advice || "Save failed.");
+    return;
+  }
+  SCOPE_CATALOG = data.catalog || { trades };
+  st.className = "sc-state ok"; st.textContent = "Catalog saved ✓";
+  renderScopes();       // rebuild the checkbox menu from the saved catalog
+  renderScopeAdmin();   // refresh editor (server normalized ids)
+}
+
+/* ===================== Draft autosave + sync =====================
+   Two layers:
+   - localStorage: the working copy. Autosaves on every edit, so a session
+     timeout, dropped connection, or closed tab never loses data.
+   - server (GCS, shared): synced best-effort. Anyone with the estimate grant
+     sees the team's drafts and can resume or delete from any device.
+   Server is authoritative when reachable (handles cross-device deletes);
+   local wins while offline. Drafts are deleted on a successful finalize.   */
+const LS_KEY = "gvc_estimate_drafts_v1";
+let currentDraftId = null;
+let autosaveTimer = null;
+let pendingBidGuard = null;  // {rev, m} held while the duplicate-bid guard is shown
+
+function genDraftId() {
+  if (window.crypto && crypto.randomUUID) return crypto.randomUUID();
+  return "d-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+function loadLocal() {
+  try { return JSON.parse(localStorage.getItem(LS_KEY) || "{}") || {}; }
+  catch (e) { return {}; }
+}
+function saveLocal(map) {
+  try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch (e) {}
+}
+function upsertLocal(rec) { const m = loadLocal(); m[rec.id] = rec; saveLocal(m); return m; }
+function removeLocal(id) { const m = loadLocal(); delete m[id]; saveLocal(m); return m; }
+
+function deriveLabel(p) {
+  const client = ((p.client || {}).name || "").trim();
+  const job = ((p.job || {}).name || "").trim();
+  return [client, job].filter(Boolean).join(" — ") || "Untitled estimate";
+}
+function isEmptyPayload(p) {
+  const c = p.client || {}, j = p.job || {};
+  const hasHeader = (c.name || c.email || j.name || "").trim();
+  const hasLine = (p.estimate.line_items || []).some((li) => (li.description || "").trim() || li.unit_price != null);
+  return !hasHeader && !hasLine;
+}
+function relTime(iso) {
+  if (!iso) return "";
+  const t = new Date(iso).getTime(); if (isNaN(t)) return "";
+  const s = Math.round((Date.now() - t) / 1000);
+  if (s < 60) return "just now";
+  const m = Math.round(s / 60); if (m < 60) return m + " min ago";
+  const h = Math.round(m / 60); if (h < 24) return h + (h === 1 ? " hr ago" : " hrs ago");
+  const d = Math.round(h / 24); return d + (d === 1 ? " day ago" : " days ago");
+}
+function setSaveState(kind, text) {
+  const el = $("#save-state"); el.className = "save-state " + (kind || ""); el.textContent = text || "";
+}
+
+function setField(name, value) {
+  const el = $("#estimate-form").elements[name];
+  if (el) el.value = value == null ? "" : value;
+}
+function applyData(p) {
+  p = p || {}; const pb = p.prepared_by || {}, c = p.client || {}, j = p.job || {}, e = p.estimate || {};
+  setField("pb_name", pb.name); setField("pb_email", pb.email); setField("pb_phone", pb.phone);
+  setField("client_name", c.name); setField("contact_name", c.contact_name);
+  setField("client_email", c.email); setField("client_phone", c.phone);
+  setField("job_name", j.name); setField("job_location", j.location);
+  setField("job_monday_item_id", j.monday_item_id);
+  setField("project_type", j.project_type || "residential"); setField("scope_summary", j.scope_summary);
+  setField("identifier", e.identifier); setField("date", e.date || new Date().toISOString().slice(0, 10));
+  setField("expiry_date", e.expiry_date);
+  setField("special_notes", Array.isArray(e.special_notes) ? e.special_notes.join("\n") : (e.special_notes || ""));
+  setField("notes", e.notes);
+  lineItemsEl.innerHTML = "";
+  const items = (e.line_items && e.line_items.length) ? e.line_items : [{}];
+  items.forEach((li) => addLineItem(li));
+  recalc();
+  updateReviseUI();
+  syncScopeSelectionFromLineItems();
+}
+
+async function serverPut(rec) {
+  const resp = await fetch("/ui/api/estimate/drafts/" + encodeURIComponent(rec.id), {
+    method: "PUT", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ payload: rec.payload, label: rec.label, updated_at: rec.updated_at }),
+  });
+  return resp;
+}
+
+function scheduleAutosave() {
+  clearTimeout(autosaveTimer);
+  autosaveTimer = setTimeout(doAutosave, 800);
+}
+async function doAutosave() {
+  const payload = collectData();
+  if (!currentDraftId && isEmptyPayload(payload)) return;  // don't create empty drafts
+  if (!currentDraftId) currentDraftId = genDraftId();
+  const rec = {
+    id: currentDraftId, label: deriveLabel(payload), payload,
+    updated_at: new Date().toISOString(), updated_by: "(you)",
+  };
+  const existing = loadLocal()[currentDraftId] || {};
+  rec._syncedAt = existing._syncedAt;     // preserve last sync marker
+  upsertLocal(rec);
+  setSaveState("local", "Saving…");
+  try {
+    const resp = await serverPut(rec);
+    if (resp.ok) {
+      rec._syncedAt = rec.updated_at; upsertLocal(rec);
+      setSaveState("synced", "Saved · synced ✓");
+    } else if (resp.status === 401 || resp.status === 403) {
+      setSaveState("local", "Saved on this device · sign in to sync");
+    } else {
+      setSaveState("local", "Saved on this device");
+    }
+  } catch (e) {
+    setSaveState("local", "Saved on this device (offline)");
+  }
+}
+
+async function refreshDrafts() {
+  let map = loadLocal();
+  try {
+    const resp = await fetch("/ui/api/estimate/drafts");
+    if (resp.ok) {
+      const body = await resp.json();
+      const server = {}; (body.drafts || []).forEach((d) => { server[d.id] = d; });
+      const now = new Date().toISOString();
+      // Local drafts missing from the server: keep if they have unsynced edits,
+      // otherwise they were deleted elsewhere — drop them.
+      Object.keys(map).forEach((id) => {
+        if (!server[id]) {
+          const l = map[id];
+          const dirty = !l._syncedAt || (l.updated_at || "") > l._syncedAt;
+          if (!dirty) delete map[id];
+        }
+      });
+      // Merge server drafts in (server wins on equal-or-newer timestamp).
+      Object.values(server).forEach((s) => {
+        const l = map[s.id];
+        if (!l || (s.updated_at || "") >= (l.updated_at || "")) {
+          map[s.id] = Object.assign({}, s, { _syncedAt: now });
+        }
+      });
+      saveLocal(map);
+      // Push any locally-newer (unsynced) drafts up.
+      Object.values(map).forEach((l) => {
+        if (!l._syncedAt || (l.updated_at || "") > l._syncedAt) {
+          serverPut(l).then((r) => { if (r.ok) { l._syncedAt = l.updated_at; upsertLocal(l); } }).catch(() => {});
+        }
+      });
+    }
+  } catch (e) { /* offline — render from local only */ }
+  renderDrafts(map);
+}
+
+function renderDrafts(map) {
+  map = map || loadLocal();
+  const rows = Object.values(map).sort((a, b) => (b.updated_at || "").localeCompare(a.updated_at || ""));
+  const card = $("#drafts-card"), list = $("#drafts-list");
+  if (!rows.length) { card.style.display = "none"; list.innerHTML = ""; return; }
+  card.style.display = "block";
+  list.innerHTML = "";
+  rows.forEach((r) => {
+    const synced = r._syncedAt && (r.updated_at || "") <= r._syncedAt;
+    const isActive = r.id === currentDraftId;
+    const div = document.createElement("div");
+    div.className = "draft-row" + (isActive ? " active" : "");
+    const by = r.updated_by && r.updated_by !== "(you)" ? " · " + r.updated_by : "";
+    div.innerHTML =
+      `<div class="d-main">
+         <div class="d-label">${escapeHtml(r.label || "Untitled estimate")}` +
+         (isActive ? `<span class="badge active">editing</span>` : "") +
+         (synced ? `<span class="badge synced">synced</span>` : `<span class="badge local">this device</span>`) +
+       `</div>
+         <div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div>
+       </div>`;
+    const resume = document.createElement("button");
+    resume.type = "button"; resume.className = "btn secondary small"; resume.textContent = isActive ? "Editing" : "Resume";
+    resume.disabled = isActive;
+    resume.addEventListener("click", () => resumeDraft(r.id));
+    const del = document.createElement("button");
+    del.type = "button"; del.className = "btn danger small"; del.textContent = "Delete";
+    del.addEventListener("click", () => deleteDraft(r.id));
+    div.appendChild(resume); div.appendChild(del);
+    list.appendChild(div);
+  });
+}
+
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+
+function resumeDraft(id) {
+  const rec = loadLocal()[id]; if (!rec) return;
+  $("#dup-guard").style.display = "none"; pendingBidGuard = null;
+  applyData(rec.payload);
+  currentDraftId = id;
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
+  renderDrafts();
+  $("#estimate-form").scrollIntoView({ behavior: "smooth" });
+}
+
+function looksLikeMondayRef(s) {
+  return /\/pulses\/\d+/.test(s) || /^\d{8,}$/.test(s.trim()) || s.includes("monday.com");
+}
+
+async function lookupFromMonday() {
+  const val = ($("#monday-url").value || "").trim();
+  const note = $("#prefill-note");
+  $("#search-results").innerHTML = "";
+  if (!val) { note.textContent = "Paste a Monday Bid Board URL — or type a client, address, or estimate # to search."; return; }
+  if (looksLikeMondayRef(val)) return loadBid(val);
+  return searchBids(val);
+}
+
+async function searchBids(q) {
+  const note = $("#prefill-note");
+  $("#btn-prefill").disabled = true;
+  note.textContent = "Searching Monday…";
+  let r;
+  try { r = await fetch("/ui/api/estimate/search?q=" + encodeURIComponent(q)); }
+  catch (e) { $("#btn-prefill").disabled = false; note.textContent = "Network error."; return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    note.textContent = (data.detail && (data.detail.detail || data.detail.advice)) ||
+      ("Search failed (HTTP " + r.status + ").");
+    return;
+  }
+  const rows = data.results || [];
+  if (!rows.length) { note.textContent = `No bids matched “${q}”. Try fewer words, or paste the Monday URL.`; return; }
+  note.textContent = `${rows.length} match${rows.length === 1 ? "" : "es"} — pick the bid:`;
+  const list = $("#search-results");
+  rows.forEach((row) => {
+    const div = document.createElement("div");
+    div.className = "draft-row";
+    const est = row.estimate_number
+      ? `<span class="badge synced">Est ${escapeHtml(row.estimate_number)}</span>` : "";
+    const stage = row.stage ? `<span class="badge active">${escapeHtml(row.stage)}</span>` : "";
+    div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(row.name)}${est}${stage}</div></div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small";
+    btn.textContent = row.estimate_number ? "Load for revision" : "Load";
+    btn.addEventListener("click", () => { $("#search-results").innerHTML = ""; loadBid(String(row.item_id)); });
+    div.appendChild(btn);
+    list.appendChild(div);
+  });
+}
+
+async function loadBid(ref) {
+  const note = $("#prefill-note");
+  $("#btn-prefill").disabled = true;
+  note.textContent = "Looking up…";
+  let r;
+  try { r = await fetch("/ui/api/estimate/lookup?monday_url=" + encodeURIComponent(ref)); }
+  catch (e) { $("#btn-prefill").disabled = false; note.textContent = "Network error."; return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    note.textContent = (data.detail && (data.detail.detail || data.detail.advice)) ||
+      ("Lookup failed (HTTP " + r.status + ").");
+    return;
+  }
+  const pf = data.prefill || {};
+  const rev = data.revision || null;
+  // Treat a prefill as a new estimate (don't overwrite an in-progress draft id).
+  currentDraftId = null;
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  applyData(pf);
+  const m = pf._matched || {};
+  $("#dup-guard").style.display = "none";
+  if (rev) {
+    // The bid already carries an Estimate # — which, on a DUPLICATED bid, was
+    // copied from the original along with the Customer link (so the mirrored
+    // contact info + the estimate number both silently belong to the old deal).
+    // Do NOT auto-arm revision: make the estimator choose, and name the customer
+    // whose contact info would be reused so a stale copy gets caught here.
+    pendingBidGuard = { rev, m };
+    const cust = (rev.customer_name || "").trim();
+    const custBit = cust
+      ? `linked to customer <strong>${escapeHtml(cust)}</strong> and `
+      : "";
+    const sidecarBit = rev.sidecar_found
+      ? "Its full as-sent data (including line items and that customer's contact info) is loaded below."
+      : "It was sent before revision tracking, so its line items couldn't be loaded.";
+    $("#dup-guard-msg").innerHTML =
+      `<strong>${escapeHtml(m.item_name || "This bid")}</strong> is ${custBit}already carries ` +
+      `<strong>Estimate ${escapeHtml(rev.estimate_number)}</strong>. ${sidecarBit}<br><br>` +
+      `If you <em>duplicated</em> this bid for a different general contractor, that link and ` +
+      `estimate number came along with the copy — updating it would reuse ${cust ? escapeHtml(cust) + "'s" : "the old"} ` +
+      `contact info and the same number. Choose how to proceed:`;
+    $("#dup-guard").style.display = "block";
+    // Hold the form neutral until they pick.
+    setField("identifier", "");
+    $("#revise-flag").checked = false;
+    updateReviseUI();
+    note.innerHTML = `Loaded from <strong>${escapeHtml(m.item_name || "the bid")}</strong> — ` +
+      `see the notice above before continuing.`;
+  } else {
+    updateReviseUI();
+    const notes = (pf._notes || []).join(" ");
+    note.innerHTML = `Filled from <strong>${escapeHtml(m.item_name || "the bid")}</strong>. ` +
+      `${notes} Review every field, then add line items below.`;
+  }
+  scheduleAutosave();
+  $("#estimate-form").scrollIntoView({ behavior: "smooth" });
+}
+
+async function deleteDraft(id) {
+  if (!confirm("Delete this draft? This can't be undone.")) return;
+  removeLocal(id);
+  if (id === currentDraftId) { currentDraftId = null; clearForm(); }
+  renderDrafts();
+  try { await fetch("/ui/api/estimate/drafts/" + encodeURIComponent(id), { method: "DELETE" }); } catch (e) {}
+}
+
+function clearForm() {
+  $("#dup-guard").style.display = "none"; pendingBidGuard = null;
+  $("#estimate-form").reset();
+  lineItemsEl.innerHTML = ""; addLineItem();
+  $("[name=date]").value = new Date().toISOString().slice(0, 10);
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+  recalc();
+  updateReviseUI();
+}
+
+function startNewEstimate() {
+  currentDraftId = null;
+  clearForm();
+  setSaveState("", "");
+  renderDrafts();
+}
+
+function deleteCurrentDraftAfterFinalize() {
+  const id = currentDraftId; if (!id) return;
+  removeLocal(id); currentDraftId = null;
+  renderDrafts();
+  fetch("/ui/api/estimate/drafts/" + encodeURIComponent(id), { method: "DELETE" }).catch(() => {});
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML =
+      `<span>${dot(h.gmail_ready)} Gmail (billing@)</span>` +
+      `<span>${dot(h.preview_bucket_configured)} Preview</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+addLineItem();
+$("#btn-prefill").addEventListener("click", lookupFromMonday);
+
+// -- Duplicate-bid guard: the estimator explicitly chooses revise vs. new --
+$("#dup-guard-revise").addEventListener("click", () => {
+  const g = pendingBidGuard; if (!g) return;
+  setField("identifier", g.rev.estimate_number);
+  $("#revise-flag").checked = true;
+  updateReviseUI();
+  $("#dup-guard").style.display = "none";
+  pendingBidGuard = null;
+  const tail = g.rev.sidecar_found
+    ? "Every field including line items is loaded. Make the customer's changes, then Generate Preview → Update this Estimate."
+    : "It was sent before revision tracking — re-enter line items below to update it under the same number.";
+  $("#prefill-note").innerHTML =
+    `Revising <strong>Estimate ${escapeHtml(g.rev.estimate_number)}</strong> (same outbound number; prior PDF archived in Drive). ${tail}`;
+});
+$("#dup-guard-new").addEventListener("click", () => {
+  const g = pendingBidGuard; if (!g) return;
+  // Fresh estimate for a different GC: drop the identifier + revise, and CLEAR the
+  // carried-over customer contact fields so the old contact can't go out. Job
+  // scope/type + line items are kept (the bid itself didn't change).
+  setField("identifier", "");
+  $("#revise-flag").checked = false;
+  ["client_name", "contact_name", "client_email", "client_phone"].forEach(n => setField(n, ""));
+  updateReviseUI();
+  $("#dup-guard").style.display = "none";
+  pendingBidGuard = null;
+  $("#prefill-note").innerHTML =
+    `Starting a <strong>new estimate</strong> (fresh number). Enter the new customer's name, ` +
+    `contact, and email above — the previous customer's details were cleared. Line items and ` +
+    `scope were kept. <strong>Heads up:</strong> also re-point the Customer link on the Monday bid, ` +
+    `or the board will still show the old customer.`;
+});
+$("#add-line").addEventListener("click", () => addLineItem());
+$("#btn-generate").addEventListener("click", () => run("dry-run"));
+$("#btn-accept").addEventListener("click", () => {
+  const msg = isReviseMode()
+    ? "Update this estimate under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), Monday is updated, and a fresh hello@ draft + #bids notice go out."
+    : "Create the estimate draft in hello@ and post to #bids?";
+  if (confirm(msg)) run("finalize");
+});
+$("#estimate-form").addEventListener("input", (ev) => {
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  if (ev.target && (ev.target.name === "identifier" || ev.target.id === "revise-flag")) updateReviseUI();
+  scheduleAutosave();
+});
+$("#btn-new-estimate").addEventListener("click", () => {
+  const p = collectData();
+  if (!isEmptyPayload(p) && !confirm("Start a new estimate? Your current entry is saved as a draft you can resume.")) return;
+  startNewEstimate();
+});
+// ----- Salesperson (Bid contact) dropdown -----
+let SALESPEOPLE = [];
+async function loadSalespeople() {
+  const sel = $("#salesperson-select");
+  let r;
+  try { r = await fetch("/ui/api/estimate/salespeople"); } catch (e) { return; }
+  if (!r.ok) return;
+  const data = await r.json().catch(() => ({}));
+  SALESPEOPLE = data.salespeople || [];
+  sel.innerHTML = '<option value="">— select a salesperson —</option>';
+  SALESPEOPLE.forEach((p, i) => {
+    const o = document.createElement("option");
+    o.value = String(i);
+    o.textContent = p.name ? `${p.name}${p.email ? " (" + p.email + ")" : ""}` : p.email;
+    sel.appendChild(o);
+  });
+}
+$("#salesperson-select").addEventListener("change", (e) => {
+  const p = SALESPEOPLE[Number(e.target.value)];
+  if (!p) return;
+  setField("pb_name", p.name); setField("pb_email", p.email); setField("pb_phone", p.phone);
+  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  scheduleAutosave();
+});
+
+$("#scope-admin-toggle").addEventListener("click", openScopeAdmin);
+
+$("[name=date]").value = new Date().toISOString().slice(0, 10);
+updateReviseUI();
+checkHealth();
+refreshDrafts();
+loadSalespeople();
+loadScopes();
+</script>
+</body>
+</html>
