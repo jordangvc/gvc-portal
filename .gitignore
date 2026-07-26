@@ -1,11 +1,13 @@
+# Secrets and credentials — never commit (mirrors the developer's .gcloudignore rules)
+.env
+.google-oauth-client.json
+.google-service-account.json
+.gmail-token*.json
+*.token.json
+
+# Runtime artifacts
+output/
+logs/
 __pycache__/
 *.pyc
-.pytest_cache/
-.env
-.env.*
-creds/
-credentials/
-*.pem
-token*.json
-service-account*.json
 .DS_Store

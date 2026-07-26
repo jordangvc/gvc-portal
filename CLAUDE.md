@@ -70,6 +70,56 @@ importing each other's internals. Full guide: `GVC_Portal_System/AGENTS.md` +
 ---
 *Build history, locked decisions, board IDs, and the dated session log follow. Entries before 2026-06-25 reference the OLD flat module names — use the 'Old flat → new home' map above to translate.*
 
+## ✨ SENT-WATCHER (true "emailed to client" detection) — BUILT + DEPLOYED + LIVE 2026-07-26
+Context: Joe left GVC; this session was driven by Jordan (owner) + Claude on Jordan's Windows PC.
+The canonical repo was RECOVERED from the Cloud Run deploy bundle (gs://run-sources-…/1784748266…zip,
+the Jul-22 deploy) into `C:\Claude\GVC Invoice portal\portal-current\` — ~/Documents/GVC on Joe's Mac
+is unavailable. ⚠ tests/ is NOT in the deploy bundle (.gcloudignore), so the 441-test suite is LOST
+on this machine — verification for this deploy = py_compile + stubbed `import app.service` (58 routes)
++ live dry-run. Recovering tests from Joe's Mac or rebuilding them is an open item.
+PRECEDING INCIDENT (2026-07-24): hello@ password reset (post-Joe security sweep) revoked the Gmail
+refresh token → invalid_grant → no drafts since. Fixed by re-mint (new Desktop OAuth client
+"GVC Invoice CLI Win", client JSON kept at repo .google-oauth-client.json) + gmail-token secret v2/v3
++ revision bounce. The gotcha rediscovered: adding a secret VERSION does nothing until a new revision
+starts (min-instances=1 keeps the old token mounted).
+THE FEATURE — Andrea clicking Send in Gmail now produces a truthful signal (the old notices fired at
+DRAFT time; Monday automation "Bid Sent Notice" posts "sent to client" on item creation — still
+misleading, see OPEN):
+  • adapters/gmail.py: SCOPES += gmail.readonly; _load_credentials now loads the token with its OWN
+    granted scopes (scopes=None) so pre-readonly tokens keep refreshing (pinning SCOPES would have
+    broken drafts until re-auth); NEW GmailScopeMissing + find_sent_message(subject, newer_than_days)
+    — the portal's ONLY Gmail read (messages.list/get on in:sent).
+  • adapters/slack_notify.py: NEW notify_invoice_emailed (→ billing channel) + notify_estimate_emailed
+    (→ estimates channel), "📤 … emailed to client" wording.
+  • adapters/monday/client.py: INV_COL_EMAILED_ON = date_mm5kfwr8 (env GVC_MONDAY_INV_EMAILED_ON_COL;
+    column created 2026-07-26 via Monday MCP) fetched on every invoice row (+issue_date) ;
+    stamp_invoice_emailed() sets the date + flips Status "Draft Ready"→"Invoice Sent" ONLY from
+    Draft Ready (never regresses Paid/Void/Partially Paid/office-set states).
+  • adapters/monday/estimate.py: COL_EMAILED_ON = date_mm5kn8d2 (env GVC_MONDAY_BID_EMAILED_ON_COL;
+    created same day) + fetch_pending_estimates(mc) (Estimate # set, Emailed-on empty, paged) +
+    stamp_estimate_emailed(). NOTE: Stage "Sent to Client" at draft time is UNCHANGED (other
+    automations key off it) — Emailed-on is the truthful column.
+  • NEW orchestrators/sent_watch_flow.py check_sent(limit_days=45, notify_backfill_hours=48, dry_run):
+    work list = rows with no Emailed-on and issue/estimate date within limit_days (dateless = old =
+    skipped, keeps sweeps bounded); Gmail subject search "Invoice {id}" / "Estimate {id}"; per-item
+    graceful; state/dedup = the Emailed-on column itself; sends older than 48h stamp QUIETLY (no
+    Slack) — that's how the first sweep backfilled history without spamming; stamp-failure skips the
+    Slack ping so a retry can't double-post; GmailScopeMissing/NotConfigured aborts the sweep
+    (ok=false + code). Slack times rendered America/New_York; requirements += tzdata (slim image has
+    no tz db — caught by the Windows sandbox import test).
+  • app/service.py: POST /v1/tasks/check-sent (X-API-Key, CheckSentRequest {dry_run, limit_days}).
+LIVE STATE: deployed rev gvc-invoice-00064-54r (gcloud from Jordan's PC, hello@); gmail-token secret
+v3 = hello@ token WITH readonly (minted 2026-07-26); first live sweep: 37/37 invoices + 49/49
+estimates backfill-stamped, 2 fresh notices (est 2026-0724-002 — dup Bid rows ⇒ 2 pings, known),
+0 errors. Cloud Scheduler job **gvc-sent-watch** (us-central1, */10 min, America/New_York) POSTs the
+endpoint with X-API-Key from gvc-service-api-key. GOTCHA: Windows gcloud.cmd mangles quoted JSON in
+--message-body (stored {dry_run: false} unquoted → FastAPI 422 → scheduler FAILED_PRECONDITION);
+fixed via --message-body-from-file. If the key secret rotates, update the job's header.
+OPEN: retire/reword the Monday "Bid Sent Notice" automation (posts "sent" at creation; dev notes say
+1939926355 was OFF since 06-29 — something re-enabled it or a second automation exists); recover or
+rebuild tests/; off-machine backup of this repo; June 500/503s on /ui/api/activity + /ui/api/check
+unexplained; Owneradmin@ service account undocumented — review.
+
 ## 🔧 COI BULK REVISIONS — BUILT 2026-07-16 (the former GM's post-first-annual-run feedback), ships next --source . deploy
 The former GM ran the full annual list live 2026-07-15/16; three fixes from that run (SEMANTICS CHANGE
 included — supersedes part of the 07-14 locked ledger semantics):
