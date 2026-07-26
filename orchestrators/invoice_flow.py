@@ -437,7 +437,7 @@ def process_one(
     # Two paths: (a) JSON declares pre-existing PDFs via extra_pdfs, OR
     # (b) JSON declares the .xlsx + sheet names and we generate fresh PDFs
     # from the Excel via aia.py (the canonical path going forward).
-    # extra_pdfs may be local paths (Joe's CLI) or `drive:FILE_ID` refs (the
+    # extra_pdfs may be local paths (the legacy CLI) or `drive:FILE_ID` refs (the
     # web/commercial flow, where pre-made G702/G703 PDFs live in the job's
     # Drive folder). Resolve each the same way as the AIA workbook so a pasted
     # Drive link works without putting files on local disk.
@@ -453,7 +453,7 @@ def process_one(
     aia_pdfs_were_generated = False
     if not aia_pdfs and aia_excel_raw and g703_sheet:
         try:
-            # aia_excel_path may be either a local path (legacy / Joe's CLI)
+            # aia_excel_path may be either a local path (the legacy CLI)
             # or a `drive:FILE_ID` reference (Andrea's cloud commercial flow
             # — the xlsx lives in the job's Drive folder and Claude passes
             # the file ID through). resolve_local_or_drive_path() downloads
@@ -635,7 +635,7 @@ def _run(data: dict, *, mode: str, finalize: bool, source_label: str) -> dict:
                 "ok": False,
                 "code": "STRIPE_NOT_CONFIGURED",
                 "detail": "STRIPE_API_KEY env var not set on the service.",
-                "advice": "Ask Joe to set the STRIPE_API_KEY secret.",
+                "advice": "Ask an admin to set the STRIPE_API_KEY secret.",
             },
         )
 
@@ -671,7 +671,7 @@ def _run(data: dict, *, mode: str, finalize: bool, source_label: str) -> dict:
             wb["gmail_status"] = (
                 "FAILED — no Gmail draft was created. The Stripe invoice may "
                 "have been created (check `stripe_invoice_id`). Do NOT retry; "
-                "ask Joe to check `gmail_ready` on /health."
+                "ask an admin to check `gmail_ready` on /health."
             )
 
         # Change Order billing writeback: if this LIVE invoice bills one or more
@@ -730,7 +730,7 @@ def _run_correction(
             status_code=503,
             detail={"ok": False, "code": "STRIPE_NOT_CONFIGURED",
                     "detail": "STRIPE_API_KEY env var not set on the service.",
-                    "advice": "Ask Joe to set the STRIPE_API_KEY secret."},
+                    "advice": "Ask an admin to set the STRIPE_API_KEY secret."},
         )
 
     import stripe

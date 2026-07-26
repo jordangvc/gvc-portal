@@ -43,7 +43,7 @@ Projects board, that's a contract change → update both copies.
 
 ## Standing facts (Jul 26, 2026)
 
-- Joe Haas TERMINATED. His access to the takeoff app is blocklisted;
+- The former GM TERMINATED. His access to the takeoff app is blocklisted;
   audit any portal-side credentials/grants he held (access.py, Monday,
   Stripe, GCP IAM) — pending sweep.
 - This Windows copy is the CANONICAL portal codebase (Jordan's call);

@@ -197,7 +197,7 @@ def exchange_code(*, code: str, redirect_uri: str) -> str:
     # is active (env allowlist today, GCS grant store once flipped). Deny-by-default.
     if not access.is_provisioned(email):
         raise PermissionError(
-            f"{email} is not provisioned for the portal. Ask Joe to grant access."
+            f"{email} is not provisioned for the portal. Ask an admin to grant access."
         )
     return email
 

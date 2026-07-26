@@ -13,11 +13,11 @@ Layout — one object, default `portal/grants.json`:
     {
       "version": 1,
       "users": {
-        "joe@greenvalleycontractors.com": {
+        "jordan@greenvalleycontractors.com": {
           "features": ["*"],
           "person": {"name": "...", "position": "...", "start_date": null,
                      "stop_date": null, "birthday": null, "time_off_url": null},
-          "updated_by": "joe@greenvalleycontractors.com",
+          "updated_by": "jordan@greenvalleycontractors.com",
           "updated_at": "2026-06-15T13:00:00+00:00"
         }
       }

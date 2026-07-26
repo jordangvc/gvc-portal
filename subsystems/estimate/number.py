@@ -1,7 +1,7 @@
 """
 Estimate numbering — service-assigned `YYYY-MMDD-NNN`.
 =========================================================================
-Confirmed scheme (Joe, 2026-06-10): date of generation + a daily
+Confirmed scheme (decided 2026-06-10): date of generation + a daily
 incremental counter, zero-padded to 3. No prefixes. The date component is
 the *generation* date and never changes on revision.
 

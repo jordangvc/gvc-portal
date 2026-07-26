@@ -13,7 +13,7 @@ sheet (inspected 2026-07-14), which taught us:
   - addresses are single-line with commas, often suffixed ", USA",
   - real rows are missing addresses or emails, and some builders repeat.
 
-Row semantics (locked; invalid-row marking revised 2026-07-16 per Joe):
+Row semantics (locked; invalid-row marking revised 2026-07-16):
   - Sent/Status == YES  → already handled; SKIP (idempotent re-runs).
   - invalid (missing name/address/email) → NOT attempted, but marked NO on
     the final chunk of a finalize run so the ledger shows every unsent row

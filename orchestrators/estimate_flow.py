@@ -44,7 +44,7 @@ HELLO_FROM_ADDR = "hello@greenvalleycontractors.com"
 
 # Standard company block on every estimate. Overridable per-estimate via the
 # input JSON `company` object. NOTE: GVC_COMPANY_PHONE should be set to the
-# standard Quo company number (confirm with Joe — defaulting to the documented
+# standard Quo company number (confirm with Jordan — defaulting to the documented
 # main line for now).
 DEFAULT_COMPANY = {
     "name": "Green Valley Contractors, Inc.",
@@ -56,7 +56,7 @@ DEFAULT_COMPANY = {
 }
 
 # Standard estimate terms. Transcribed VERBATIM from the canonical GVC template
-# (GVC Estimate v01), with these deliberate edits — Joe/Andrea to bless:
+# (GVC Estimate v01), with these deliberate edits — Jordan/Andrea to bless:
 #   - "Table 1" -> "the pricing table above" (our doc has no 'Table 1' label).
 #   - "2024 Standard Rate Sheet" -> "current Standard Rate Sheet" (de-stale).
 #   - WARRANTY: dropped the unfilled "(list specific types of defects…)" template
@@ -311,7 +311,7 @@ def _compose_email_body(enriched: dict, *, revised: bool = False) -> str:
     greeting_name = (client.get("contact_name") or client.get("name") or "there").split()[0]
     closing_name = prepared_by.get("name") or "Green Valley Contractors"
 
-    # Follow-up copy is tied to the selected project type (Joe, 2026-07-22).
+    # Follow-up copy is tied to the selected project type (decided 2026-07-22).
     # Commercial estimates use a softer, relationship-oriented follow-up ask;
     # residential keeps the original "let us know if you'd like to proceed" line.
     is_commercial = (job.get("project_type") or "").strip().lower().startswith("commercial")
@@ -373,7 +373,7 @@ def process_estimate(
     Run the estimate flow. mode is "dry-run" or "finalize".
     Returns a writeback dict. Raises ValueError on validation problems.
 
-    revise=True — "Update this Estimate" (Joe, 2026-07-02): the OUTBOUND
+    revise=True — "Update this Estimate" (decided 2026-07-02): the OUTBOUND
     number is unchanged (estimate.identifier is REQUIRED and reused); the
     superseded PDF + sidecar in Drive are archived under an `e{n}-` prefix
     before the new versions land under the canonical names; the Monday

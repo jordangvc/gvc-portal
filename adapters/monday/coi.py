@@ -1,7 +1,7 @@
 """
 Monday write for outbound COIs — PLACEHOLDER (2026-07-14).
 =========================================================================
-Joe hasn't decided the destination board yet ("GC Billing Profiles" was
+The destination board hasn't been decided yet ("GC Billing Profiles" was
 considered and parked — it needs cleanup and may not be the right home; see
 docs/portal-coi-design.md §Monday). Per the standing rule we do NOT assume a
 board or columns. Until GVC_MONDAY_COI_BOARD_ID is set this module skips

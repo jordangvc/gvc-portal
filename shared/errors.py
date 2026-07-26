@@ -76,11 +76,11 @@ def _friendly_error(exc: Exception) -> tuple[int, str, str, str]:
     low = msg.lower()
 
     # Gmail OAuth refresh failure (token revoked, password reset on billing@,
-    # 6-month inactivity, admin revoke). Recovery: Joe re-runs `python
+    # 6-month inactivity, admin revoke). Recovery: an admin re-runs `python
     # gmail.py setup` locally and rotates the secret.
     if name == "RefreshError" or "invalid_grant" in low or "token has been expired" in low:
         return (503, "GMAIL_TOKEN_EXPIRED", msg,
-                "billing@ Gmail token expired or was revoked. Ask Joe to "
+                "billing@ Gmail token expired or was revoked. Ask an admin to "
                 "re-run `python gmail.py setup` locally and rotate the "
                 "`gmail-token` secret. Stripe invoice was NOT created.")
 
@@ -88,7 +88,7 @@ def _friendly_error(exc: Exception) -> tuple[int, str, str, str]:
     # (test vs live).
     if "authenticationerror" in name.lower() or "no api key provided" in low:
         return (503, "STRIPE_AUTH", msg,
-                "Stripe API key rejected. Ask Joe to check the STRIPE_API_KEY "
+                "Stripe API key rejected. Ask an admin to check the STRIPE_API_KEY "
                 "secret. Stripe invoice was NOT created.")
 
     # Stripe idempotency collision. CAUSE: a re-run reused an idempotency key
@@ -119,7 +119,7 @@ def _friendly_error(exc: Exception) -> tuple[int, str, str, str]:
     if name == "HttpError" and ("404" in msg or "file not found" in low or "notfound" in low.replace(" ", "")):
         return (422, "DRIVE_NOT_FOUND", msg,
                 "Drive folder or file not visible to the service account. "
-                "Ask Joe to share it with "
+                "Ask an admin to share it with "
                 "gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com "
                 "as Editor.")
 
@@ -134,5 +134,5 @@ def _friendly_error(exc: Exception) -> tuple[int, str, str, str]:
     # similar). Re-running on partial success is the footgun.
     return (500, "UNEXPECTED", f"{name}: {msg}",
             "Unexpected error. The invoice MAY have been partially created in "
-            "Stripe. Do NOT retry. Ask Joe to check the service logs and the "
+            "Stripe. Do NOT retry. Ask an admin to check the service logs and the "
             "Stripe dashboard.")

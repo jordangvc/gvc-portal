@@ -6,7 +6,7 @@ PDF out -> hello@ Gmail draft + #change-orders Slack + a Monday CO item under
 the parent $Project. NO Stripe (a CO is billed later through the invoice
 system as its own invoice `CO.{n}-{estimate#}`).
 
-Locked decisions (Joe):
+Locked decisions (original design):
   - The estimate number is the spine. CO id = `CO.{n}-{estimate#}`,
     service-assigned (co_number.py), n increments per job.
   - Prefer pulling the linked job from the Monday Project item (single source

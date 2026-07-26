@@ -1,7 +1,7 @@
 """
 Monday integration for the Change Order program.
 =========================================================================
-NEW CO MODEL (Joe 2026-07-16, supersedes subitems — Jordan rejected them;
+NEW CO MODEL (decided 2026-07-16, supersedes subitems — Jordan rejected them;
 docs/portal-co-parity-design.md): a finalized CO creates/updates
 
   1. a TOP-LEVEL item on the Projects board (1918846405), named
@@ -495,7 +495,7 @@ def _read_parent_for_copy(mc, parent_item_id: int) -> dict:
 
 
 def co_item_name(parent_name: str, co_identifier: str) -> str:
-    """PURE: the CO item/task title — `CO.{n} - {parent title}` (Joe: the
+    """PURE: the CO item/task title — `CO.{n} - {parent title}` (per the original design: the
     exact original title, prefixed). Falls back to the identifier alone."""
     from subsystems.change_order.number import parse_co_number
 

@@ -418,7 +418,7 @@ class DriveUploader:
         the standardized filename `<customer>_<street>_<invoice#>.pdf`.
 
         Used by the new directory structure (2026-05-20+) where Andrea +
-        Joe pre-create the Drive tree as:
+        an admin pre-create the Drive tree as:
             Projects/<year>/<Residential|Commercial>/<customer>/
                 <[Number Street] | [Builder/Client]>/Invoice/
         and pass the Invoice/ folder ID through the JSON as

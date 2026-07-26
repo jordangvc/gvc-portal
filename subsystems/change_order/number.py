@@ -1,7 +1,7 @@
 """
 Change Order numbering — `CO.{n}-{base_number}`.
 =========================================================================
-Confirmed scheme (Joe, 2026-06-15): a CO always follows a job already
+Confirmed scheme (decided 2026-06-15): a CO always follows a job already
 underway, so it REUSES that job's number (the `base_number`, taken from the
 linked estimate/project) and prefixes `CO.{n}-`, where `n` increments per
 job (CO.1-, CO.2-, …). Revisions keep the number + " Rev N" (same rule as

@@ -9,11 +9,11 @@ Separation of concerns:
 Backends (env var GVC_GRANTS_BACKEND):
   - "env"  (default, today/transition): the only provisioned users are those in
     GVC_PORTAL_ALLOWED_EMAILS, and they get ALL features. This reproduces current
-    production behavior exactly (joe@ has everything), so nothing changes until we
+    production behavior exactly (the env superadmin has everything), so nothing changes until we
     deliberately flip the flag.
   - "gcs": provisioned = superadmins (GVC_PORTAL_ALLOWED_EMAILS, break-glass) OR
     anyone in the portal store. Superadmins always get all features — that's the
-    lockout-proof path so Joe can never accidentally revoke his own admin access.
+    lockout-proof path so a superadmin can never accidentally revoke their own admin access.
 
 Features are the unit of access. `timeoff` is the baseline every provisioned
 (non-superadmin) store user receives automatically. `admin` unlocks the admin page.

@@ -419,7 +419,7 @@ def build_column_updates(current: dict, est: dict, job: dict,
     Default (new estimate): FILL-IF-EMPTY — existing Monday values are never
     overwritten (Monday stays canonical for manual edits).
 
-    revise=True (explicit "Update this Estimate", Joe 2026-07-02): the
+    revise=True (explicit "Update this Estimate", decided 2026-07-02): the
     revision IS the new truth — scope, dates, rounded total, and project
     type are OVERWRITTEN so the board reflects the estimate the client is
     actually looking at. Estimate # + Stage are always set in both modes.

@@ -110,7 +110,7 @@ def enrich_change_order(co: dict) -> dict:
             # Missing-or-unreadable appendix image is non-fatal: keep
             # building the CO PDF without this image rather than failing
             # the whole invoice. The other CO content (breakdown, totals,
-            # approval text) is still useful. Joe sees the warning on
+            # approval text) is still useful. The admin sees the warning on
             # stderr; Andrea sees the CO PDF without this page and can
             # attach the original to the Gmail draft if she needs to.
             print(

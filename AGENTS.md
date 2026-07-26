@@ -1,6 +1,6 @@
 # Notes for AI coding agents
 
-This is the **GVC internal portal** (invoicing started it; it now also does estimates, change orders, and paid-by-check, with more apps coming). Joe runs it; office staff use the web UI; Andrea reviews the resulting Gmail draft and clicks send. The big picture is in [README.md](README.md); the structure rationale is in [docs/portal-modularization-2026-06.md](docs/portal-modularization-2026-06.md) — this file is the agent-specific orientation.
+This is the **GVC internal portal** (invoicing started it; it now also does estimates, change orders, and paid-by-check, with more apps coming). An admin runs it; office staff use the web UI; Andrea reviews the resulting Gmail draft and clicks send. The big picture is in [README.md](README.md); the structure rationale is in [docs/portal-modularization-2026-06.md](docs/portal-modularization-2026-06.md) — this file is the agent-specific orientation.
 
 ## Repository layout (package structure, 2026-06)
 
@@ -53,7 +53,7 @@ If you must invoke Python directly (e.g. one-off heredoc), use:
 DYLD_FALLBACK_LIBRARY_PATH=/opt/homebrew/lib ~/.venv/bin/python ...
 ```
 
-And note: `load_dotenv()` with no args fails on Python 3.14 from heredocs (frame-walk assertion). Pass the path explicitly: `load_dotenv("/Users/joesmacmini/Documents/gvc_invoice/.env")`.
+And note: `load_dotenv()` with no args fails on Python 3.14 from heredocs (frame-walk assertion). Pass the path explicitly: `load_dotenv("/path/to/gvc_invoice/.env")`.
 
 ## Locked architecture — do not change without explicit ask
 
@@ -91,7 +91,7 @@ These rules are deliberate, not accidental:
 
 ## Drive permissions footgun
 
-Folders that live in Joe's personal Drive are NOT visible to the service account by default — only the GVC Shared Drive is. When a job's `drive_invoice_folder_id` (or its older alias `drive_source_folder_id`) points to a personal-Drive folder, the sentinel + invoice PDF + AIA + CO writebacks will 404 (gracefully — they're non-fatal) until that folder is shared with `gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com` as Editor. Folders inside the GVC Shared Drive don't need additional sharing. The core invoice flow (Stripe, GVC PDF generation, Gmail draft) succeeds regardless of Drive writeback status. If you see the 404 in stderr, tell Joe so he can share the folder.
+Folders that live in the former GM's personal Drive are NOT visible to the service account by default — only the GVC Shared Drive is. When a job's `drive_invoice_folder_id` (or its older alias `drive_source_folder_id`) points to a personal-Drive folder, the sentinel + invoice PDF + AIA + CO writebacks will 404 (gracefully — they're non-fatal) until that folder is shared with `gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com` as Editor. Folders inside the GVC Shared Drive don't need additional sharing. The core invoice flow (Stripe, GVC PDF generation, Gmail draft) succeeds regardless of Drive writeback status. If you see the 404 in stderr, tell an admin so they can share the folder.
 
 ## When the user asks for "a new invoice"
 
@@ -107,5 +107,5 @@ When the source folder contains an AIA workbook (.xlsx) or pre-made G702/G703 PD
 1. **Read the billing instructions doc first.** It usually lives in the same Drive folder and has the canonical numbers (contract value, retainage %, T&M total, recipient email, billing rules). Cross-check every number against the Excel before authoring the JSON.
 2. **Confirm retainage scope.** Some jobs apply retainage only to base contract (`scope: "base"`), some to all progress billings inclusive of T&M (`scope: "all"`). The billing rules will say. If they're ambiguous, ask before running.
 3. **Author the input JSON by hand for now.** Place per-job source assets (xlsx, TM approval images) under `inputs/<identifier>/` and reference them from the JSON. The JSON itself lives at `inputs/<identifier>-<slug>.json` per the existing convention.
-4. **For T&M on the AIA:** if the billing instructions say "this will be billed as an additional line on the AIA," the customer expects the AIA itself to include the T&M row. Have Joe add the row to the G703 tab (`"{N} - G703 - Schedule of Values"`) before exporting — don't ship a CO that's only on our invoice but missing from the G702/G703.
-5. **Always dry-run before live.** The CO Template + invoice PDF both render in dry-run; eyeball them and surface to Joe for sign-off before preflight/live.
+4. **For T&M on the AIA:** if the billing instructions say "this will be billed as an additional line on the AIA," the customer expects the AIA itself to include the T&M row. Have an admin add the row to the G703 tab (`"{N} - G703 - Schedule of Values"`) before exporting — don't ship a CO that's only on our invoice but missing from the G702/G703.
+5. **Always dry-run before live.** The CO Template + invoice PDF both render in dry-run; eyeball them and surface to Jordan for sign-off before preflight/live.

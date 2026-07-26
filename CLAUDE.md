@@ -14,7 +14,7 @@ See also: `AGENTS.md` (agent quickstart + how to add a module) and
 ## STANDING RULE — confirm before assuming (full rule in root CLAUDE.md)
 Never design/code against unconfirmed foundational facts: whether two accounts/logins
 are the same, which system owns which entity + sync direction, the auth model,
-board/column/project IDs, env/secret layout, deploy targets. Ask Joe a short question
+board/column/project IDs, env/secret layout, deploy targets. Ask Jordan a short question
 first. Gotcha already burned once: hello@ and billing@ are the SAME renamed Google
 account (ONE Gmail token). Monday is the source of truth; one-way sync Monday → all.
 
@@ -70,8 +70,8 @@ importing each other's internals. Full guide: `GVC_Portal_System/AGENTS.md` +
 ---
 *Build history, locked decisions, board IDs, and the dated session log follow. Entries before 2026-06-25 reference the OLD flat module names — use the 'Old flat → new home' map above to translate.*
 
-## 🔧 COI BULK REVISIONS — BUILT 2026-07-16 (Joe's post-first-annual-run feedback), ships next --source . deploy
-Joe ran the full annual list live 2026-07-15/16; three fixes from that run (SEMANTICS CHANGE
+## 🔧 COI BULK REVISIONS — BUILT 2026-07-16 (the former GM's post-first-annual-run feedback), ships next --source . deploy
+The former GM ran the full annual list live 2026-07-15/16; three fixes from that run (SEMANTICS CHANGE
 included — supersedes part of the 07-14 locked ledger semantics):
 (1) INVALID ROWS NOW MARKED NO — skipped rows (missing name/address/email) get NO written to the
 Sent column on the FINAL chunk of a finalize run (was: cell untouched → 21 skipped rows invisible
@@ -80,7 +80,7 @@ computed from the data columns, not the Sent cell). Returned as `invalid_marked`
 [{row_number,name,reasons,writeback_error?}]; per-row write failures loud but non-fatal.
 (2) BATCH-COMPLETE UX replaces the auto-loop — coi.html no longer loops chunks in one sitting
 (a dropped response mid-loop surfaced as "Network error" even though the server finished the
-batch — Joe's run hit this after every ~15). Now: run batch → "✅ Batch {n} complete — X drafted
+batch — the former GM's run hit this after every ~15). Now: run batch → "✅ Batch {n} complete — X drafted
 so far, Y remaining" + **Continue the run ▸** button; connection drop → same Continue path with
 "server usually finishes the batch; drafted rows are YES and will skip" (cursor kept at last
 CONFIRMED next_after_row — safe: YES rows skip by state, lost-chunk NO rows simply retry, Gmail
@@ -91,7 +91,7 @@ dedup-by-identifier prevents dupes). Counters (done/failed/batch#) persist acros
 attempts DISJOINT from invalid=skipped). UI final card shows "N drafted this run" + sheet ledger
 line. bulk_summary_message rewritten: "• {yes} succeeded (marked YES) · {no+invalid} failed
 (marked NO)" + separate lines "{no} draft attempt(s) errored — will retry…: row(s) …" and
-"{invalid} skipped — missing name/address/email…: row(s) …". ROOT CAUSE of Joe's "87 failed rows"
+"{invalid} skipped — missing name/address/email…: row(s) …". ROOT CAUSE of the former GM's "87 failed rows"
 confusion: the old message printed the NO ROW NUMBERS after a colon ("Failed rows (marked NO):
 87" = sheet row 87, count was 1) — row lists are now always prefixed "row(s)" and capped at 15
 w/ "(+N more)". Files: subsystems/coi/bulk.py (semantics doc + _row_list + new
@@ -112,14 +112,14 @@ now absorbs it; if drops persist, lower GVC_COI_BULK_CHUNK (env) or raise the Cl
 ---
 
 ## 🔶 CO APP PARITY (Find-the-Project search / drafts / revision) + NEW CO MONDAY MODEL — BUILT 2026-07-17, ships next --source . deploy
-Joe's ask: port the estimate app's customer-info logic, draft-save logic, and edit/revision logic
+The former GM's ask: port the estimate app's customer-info logic, draft-save logic, and edit/revision logic
 into the Change Order app. Design was locked + Monday columns created 2026-07-16 (see that session's
 notes below / docs/portal-co-parity-design.md for the original plan); THIS session built all of it.
 LOCKED (unchanged from 2026-07-16): "Find the Project" text search OR URL prefill (+phone mapping);
 drafts = exact estimate/invoice pattern; revision = same CO number forever, e{n}- Drive archive,
 Billed CO = WARN+allow; CO subitems dead — top-level Projects item `CO.{n} - {parent title}` in the
 parent's group + an Operations-board task. Legacy subitem COs: left untouched on revision (no
-migration) — CONFIRMED via AskUserQuestion this session (Joe picked "leave the subitem untouched"
+migration) — CONFIRMED via AskUserQuestion this session (the former GM picked "leave the subitem untouched"
 over voiding it, so mark_billed/list_billable_cos on the OLD subitem model still matter and are kept).
 BUILT: subsystems/change_order/drafts.py (NEW — sibling of estimate/invoice drafts, object
 portal/change-order-drafts.json, gate `change_order`, reuses the estimate pure helpers verbatim);
@@ -163,7 +163,7 @@ sidecar-persistence fix, Drive faked). Ran the FULL suite in a fresh venv with R
 (not stubbed) — **441 passed, 0 failed** (was 405 pre-session); `import app.service` OK (57 routes,
 up from 52); change-order.html JS parse-checked clean + a static id/field-name cross-check against
 the HTML (zero dangling references). Full runbook + column ids: docs/portal-co-parity-design.md.
-DEPLOY (Joe): run the full suite in the WeasyPrint venv once more on your machine → `--source .`
+DEPLOY (admin): run the full suite in the WeasyPrint venv once more on your machine → `--source .`
 deploy → smoke: paste a Monday Project URL → client/job/phone fill + any existing COs listed → Accept
 → Projects gets `CO.1 - {title}` in the parent's group + Operations gets a matching Upcoming task →
 search that same CO number → "Load for revision" → edit an amount → Update this Change Order → same
@@ -178,22 +178,22 @@ Historical record of the design-lock session — the plan below was fully implem
 kept for the column-id provenance and the reasoning behind each locked decision.
 
 ## ✨ ESTIMATE SCOPE SELECTION — new estimate section + 2 PDF pages, BUILT 2026-07-14, ships next --source . deploy
-Joe's ask: a "Scope Selection" section on the estimate form — checkboxes for GVC's standard offerings;
+The former GM's ask: a "Scope Selection" section on the estimate form — checkboxes for GVC's standard offerings;
 checking one reveals an EDITABLE textarea prefilled with our standard scope + a price input + a Save
 button; Save adds a line item AND appends the scope to a "Scope Details" section. Final PDF section
 order: Primary Estimate → Scope Details → Standard Deliverables (existing) → Additional Services (full
-offerings menu). LAYOUT TWEAK (Joe 2026-07-14, post-dry-run): Scope Details FLOWS below the Special
+offerings menu). LAYOUT TWEAK (decided 2026-07-14, post-dry-run): Scope Details FLOWS below the Special
 Notes/Notes area on the same page (~2-line gap, margin-top:30pt), NOT its own page — Standard Deliverables
 (.terms) keeps its page-break-before so there's always a clean page after Scope Details; Additional
 Services still its own page. Tightened a sample dry-run from 6→5 pages. Source content = the "GVC service offerings" Google Doc (1PnfnuVBF6P3UsszGhZBo6s94Kn9nFXXmCOW-WQjC0Ac).
-DESIGN LOCKED (Joe 2026-07-14): (1) catalog SoT = GCS state bucket portal/estimate/scope-catalog.json
+DESIGN LOCKED (decided 2026-07-14): (1) catalog SoT = GCS state bucket portal/estimate/scope-catalog.json
 w/ in-page ADMIN editor (COI-template pattern; edit wording/prices w/o deploy); (2) seed the 4 FILLED
 trades (Drywall/Metal Framing/ACT/Insulation) from the doc, STUB FRP/Door&Hardware/Tectum (title only,
 admin fills in-app) — "Edward Jones" in the doc is a project sample, omitted; (3) Scope Details bullets =
 auto-split scope prose into 1 sentence-per-bullet at render, hard newline = forced boundary; (4) checkbox
 granularity = NAMED SCOPES grouped by trade (select several per trade, each = own line item + own scope
 block); (5) line item name = "{Trade} - {Scope}" (e.g. "Drywall - 5/8\" Board"); Scope Details = 3-LEVEL
-hierarchy Trade→scope→descriptor bullets, multiple scopes group under one trade bullet (per Joe's mid-build
+hierarchy Trade→scope→descriptor bullets, multiple scopes group under one trade bullet (per the former GM's mid-build
 note).
 DATA MODEL (single-list, no 2nd SoT): scope lines carry extra fields scope_trade/scope_title/scope_detail
 (+scope_key for UI re-sync) ON the existing line_items list; enrich() keeps them, builds
@@ -223,7 +223,7 @@ services; default integrity 7 trades/9 scopes; enrich e2e). Sandbox: 26 pass (We
 installed); py_compile clean; template renders 4 pages IN ORDER w/ correct 3-level hierarchy (verified via
 Jinja render + structural asserts); estimate.html JS node --check clean. FULL suite in WeasyPrint venv
 NOT re-run here — run before deploy.
-DEPLOY (Joe): run full suite in WeasyPrint venv → `--source .` deploy (repo root, hello@) → smoke: open
+DEPLOY (admin): run full suite in WeasyPrint venv → `--source .` deploy (repo root, hello@) → smoke: open
 /ui/estimate → Scope Selection loads → check a scope → edit + price → Save → "{Trade} - {Scope}" line
 appears → Generate Preview → PDF shows Scope Details (trade→scope→bullets) + Additional Services (all 7
 trades), Standard Deliverables unchanged & in order → (admin) "Manage standard scopes" → fill FRP/Doors/
@@ -233,12 +233,12 @@ OPEN: fill the 3 stubbed trades w/ real scope text (in-app or --from-file); "Res
 combined w/ main by design (revisit if a separate subsection is wanted).
 
 ## ✨ COI GENERATOR — new portal app, BUILT 2026-07-14; PHASE 1 LIVE (smoke-tested), PHASE 2 (bulk) + revisions ship next --source . deploy
-Joe's ask: store the current blank COI (agent-issued ACORD 25, renews annually — exp May 2027),
+The former GM's ask: store the current blank COI (agent-issued ACORD 25, renews annually — exp May 2027),
 stamp the CERTIFICATE HOLDER box (Name/Project Name + address) per the CMsquared example, draft
 the email to a contact (name+email), Slack notice, Monday update (placeholder), then later a bulk
-"Annual COI List" run. DESIGN LOCKED (Joe 2026-07-14): template SoT = GCS STATE bucket
+"Annual COI List" run. DESIGN LOCKED (decided 2026-07-14): template SoT = GCS STATE bucket
 portal/coi/template.pdf(+ -meta.json) w/ ADMIN upload UI on the page (annual swap without deploy);
-Slack = a NEW annual-maintenance channel Joe is creating (env GVC_COI_SLACK_CHANNEL, ID-based, NO
+Slack = a NEW annual-maintenance channel the former GM was creating (env GVC_COI_SLACK_CHANNEL, ID-based, NO
 named fallback — unset ⇒ clean skip, never misroutes); access = NEW `coi` feature (access.py
 FEATURES, admins via *); Drive = dedicated "COIs Sent/<year>/" top-level tree (builder-level docs,
 often pre-project — deliberately NOT under Projects/). GEOMETRY calibrated to the real CM2 COI
@@ -252,7 +252,7 @@ overlays via pypdf+reportlab, preserves the 121 checkbox widget annots); orchest
 (dry-run = stamp+GCS preview; finalize = Drive→hello@ draft [dedup key COI-<slug>, re-finalize
 updates the unsent draft]→Slack notify_coi_drafted→Monday placeholder→notify_finalize_degraded,
 all graceful per-step); adapters/monday/coi.py = PLACEHOLDER (env GVC_MONDAY_COI_BOARD_ID unset ⇒
-SKIPPED; set ⇒ bare name-only item, NO columns assumed — Joe flagged GC Billing Profiles as a
+SKIPPED; set ⇒ bare name-only item, NO columns assumed — the former GM flagged GC Billing Profiles as a
 candidate but doesn't trust it; board decision open, see docs/portal-coi-design.md §4);
 drive.ensure_coi_folder; slack_notify._coi_message/notify_coi_drafted; app/service.py routes
 GET /ui/coi + POST /ui/api/coi/run + GET/POST /ui/api/coi/template (POST=admin replace, validates
@@ -264,13 +264,13 @@ TESTS: +39 (test_coi_stamp 13 / test_coi_template 8 / test_coi_flow 18 incl. fin
 Monday placeholder contract + Slack wording). Sandbox suite 356 passed / 1 failed =
 test_change_order_flow (KNOWN sandbox-only WeasyPrint stub). import app.service OK (49 routes,
 4 COI). coi.html JS node --check clean.
-DEPLOY (Joe, full runbook docs/portal-coi-design.md §6): 1) full suite in WeasyPrint venv (pip
+DEPLOY (admin, full runbook docs/portal-coi-design.md §6): 1) full suite in WeasyPrint venv (pip
 install pypdf reportlab there first) → 2) --source . deploy → 3) seed template (admin UI on
 /ui/coi OR scripts/seed_coi_template.py --file "~/Downloads/COI - BLANK - expMay_2027.pdf"
 --expiry-label expMay_2027) → 4) grant `coi` in /ui/admin → 5) create the maintenance channel +
 invite @gvc_reporting + --update-env-vars GVC_COI_SLACK_CHANNEL=<ID> → 6) smoke: dry-run preview
 → finalize → hello@ draft w/ attachment + Drive "COIs Sent/2026/" + a DELIVERED Slack message.
-PHASE 1 SMOKE-TESTED LIVE 2026-07-14 (Joe: "test flow for a single COI worked well"; deployed w/
+PHASE 1 SMOKE-TESTED LIVE 2026-07-14 (the former GM: "test flow for a single COI worked well"; deployed w/
 env GVC_COI_SLACK_CHANNEL=C0BHBDG49QS + the 07-06 pending envs; template seeded expMay_2027 via
 scripts/seed_coi_template.py — NOTE: local seed hit two rakes now fixed/documented: venv lacked
 google-cloud-storage [pip install -r requirements.txt] and the NEW repo never got the untracked
@@ -278,7 +278,7 @@ secrets from gvc_invoice — SA json restored via `gcloud secrets versions acces
 --secret=google-service-account > .google-service-account.json`; .gcloudignore now excludes
 .google-service-account.json/.gmail-token*.json/.google-oauth-client.json so local keys never ride
 --source . uploads).
-PHASE 2 + REVISIONS — BUILT 2026-07-14 same day (Joe's post-test asks), ships next --source .
+PHASE 2 + REVISIONS — BUILT 2026-07-14 same day (the former GM's post-test asks), ships next --source .
 deploy, NO new env/deps: (1) email subject "Green Valley Contractors — COI — {name}" (was
 "Certificate of Insurance") + closing "The Green Valley Team"; (2) template upload MOVED to
 /ui/admin ("COI blank template" card; /ui/coi = read-only status; GET /ui/api/coi/template gate
@@ -304,13 +304,13 @@ drafts w/ live per-row results + progress. Sheet-not-shared → clean 422 naming
 gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com (Editor needed for writeback).
 TESTS: suite now 405 passed / 1 known WeasyPrint-stub fail in sandbox (test_coi_bulk 24 new);
 import app.service OK (52 routes); coi.html + admin.html JS node --check clean.
-REMAINING (Joe): --source . redeploy → SHARE the sheet w/ gvc-invoice-bot@ as EDITOR → bulk smoke
+REMAINING (admin): --source . redeploy → SHARE the sheet w/ gvc-invoice-bot@ as EDITOR → bulk smoke
 per docs/portal-coi-design.md §6. OPEN: Monday board decision (then real column mapping in
 adapters/monday/coi.py + bulk logging); .xlsx-upload alternative deliberately dropped (list lives
 in Sheets).
 CHANNEL CREATED 2026-07-14: #team-annual-maintenance, id **C0BHBDG49QS**, PRIVATE (⇒ bot
 membership mandatory). @gvc_reporting INVITED + membership verified via Slack MCP 2026-07-14
-(members: joe/andrea/jordan/claude/gvc_reporting) — channel is post-ready. Env value:
+(members: [former-GM acct]/andrea/jordan/claude/gvc_reporting) — channel is post-ready. Env value:
 GVC_COI_SLACK_CHANNEL=C0BHBDG49QS (riding the deploy w/ the 07-06 pending envs — ops-alerts
 reroute C0BE9S4C3JT membership re-verified 2026-07-14: bot IS a member).
 
@@ -318,8 +318,8 @@ reroute C0BE9S4C3JT membership re-verified 2026-07-14: bot IS a member).
 INCIDENT: a builder's check partially paid several invoices; the flow's only options were
 full-pay or "Record anyway" — the override marked every invoice FULLY paid in Stripe+Monday
 (note "Out of band payment for invoice K1KNZJ6W-0002"). ⚠ Stripe CANNOT un-pay a paid invoice —
-those rows need manual cleanup (get identifiers from Joe; options: new balance-due invoice for
-the shortfall [recommended] or Monday-only correction). DESIGN LOCKED (Joe 2026-07-06, all three
+those rows need manual cleanup (get identifiers from Jordan; options: new balance-due invoice for
+the shortfall [recommended] or Monday-only correction). DESIGN LOCKED (decided 2026-07-06, all three
 recommended options accepted): (1) Stripe = NATIVE partial out-of-band — PaymentRecord.
 report_payment + Invoice.attach_payment (basil 2025-03-31+; shipped SDK stripe-python 15.3 pins
 2026-06-24.dahlia, both methods verified present); invoice stays open w/ accurate
@@ -344,7 +344,7 @@ suggested_allocations; service.py commit route +allocations JSON form field; che
 allocation editor (per-invoice apply-$ inputs, partial badges, auto-split button, over-alloc
 guard; override checkbox hidden in split mode). scripts/add_balance_due_column.py creates the
 column + prints the id (idempotent).
-DEPLOY ORDER (Joe): 1. ✅ DONE 2026-07-06 — "Balance Due" column created on 1931784889 via the
+DEPLOY ORDER (admin): 1. ✅ DONE 2026-07-06 — "Balance Due" column created on 1931784889 via the
 Monday MCP: id **numeric_mm50nvjq** (scripts/add_balance_due_column.py kept as idempotent
 verify) → 2. --source . deploy WITH --update-env-vars
 GVC_MONDAY_BALANCE_DUE_COL=numeric_mm50nvjq (rides the same deploy as the ops-alerts reroute +
@@ -361,7 +361,7 @@ could double-credit on re-run (idempotency window) — note-line dedupe covers t
 (b) hosted invoice page doesn't accept partial ONLINE payments (Stripe limitation) — partials
 are check-side only; (c) the wrongly-full-paid invoices from the incident need manual cleanup.
 
-## 🔁 RENAME — Slack "#leads" channel is now "#bids" (2026-07-06, Joe)
+## 🔁 RENAME — Slack "#leads" channel is now "#bids" (2026-07-06)
 SAME channel id C0B562L3PTR — the portal posts by ID (GVC_ESTIMATES_SLACK_CHANNEL=C0B562L3PTR),
 so NO env/code/deploy change; bot membership survives a rename. Estimate + revision notices
 keep landing. Dated entries below say "#leads" — same channel. Pairs with the 07-02 "Bid Board"
@@ -377,7 +377,7 @@ ROOT CAUSE: the Monday row's Stripe Invoice ID (text_mm3qse5f) still pointed at 
 invoice — the bill predates the server-side ledger write (~06-25), so the void+re-bill never
 repointed the row. (User-confusion note: Stripe's Customers→Payments tab shows PAYMENTINTENT
 states — "Incomplete"=abandoned pay page, "Canceled"=PI auto-canceled when its invoice was
-voided. Invoice status lives on the Invoices tab.) Joe fixed the row by hand 2026-07-06; retry OK.
+voided. Invoice status lives on the Invoices tab.) The former GM fixed the row by hand 2026-07-06; retry OK.
 CONFIRMED: the "correction must update the board" core is ALREADY covered since the 07-03 deploy
 (write_invoice_ledger upserts on Document # on EVERY live run — same-number re-bills repoint the
 row; correction revisions void the old row + create the Rev-N row). What was missing = healing
@@ -405,7 +405,7 @@ TESTS: NEW tests/test_check_void_fallback.py (9: ranking x4 + commit fallback x5
 Suite 306 passed in sandbox (was 297). SMOKE after deploy: record a check against a row pointing
 at a voided invoice → expect payment on the replacement + "row Stripe id fixed: in_old → in_new"
 step + row's Stripe ID column updated.
-ALSO PENDING (Joe, 2026-07-06): REROUTE portal error alerts #gvc-ops-alerts → the NEW
+ALSO PENDING (decided 2026-07-06): REROUTE portal error alerts #gvc-ops-alerts → the NEW
 #portal-bugs-and-improvements (PRIVATE, id C0BE9S4C3JT, created by Andrea 07-02). Env-only:
 --update-env-vars GVC_OPS_ALERTS_CHANNEL=C0BE9S4C3JT (moves the 5xx handler + degraded-finalize
 + grants-tripwire alerts; estimate/CO/billing notices unmoved; the report system's webhook posts
@@ -415,7 +415,7 @@ presence. Once verified, update the channel table in the 06-29 CURRENT STATE ent
 
 ## ✨ MULTI-INVOICE CHECKS (Paid by Check) — DEPLOYED + VERIFIED LIVE 2026-07-03
 Andrea's ask: one check + stub covering SEVERAL invoices — record it against ALL of them.
-DESIGN LOCKED (Joe 2026-07-03): each selected invoice is paid IN FULL (Stripe
+DESIGN LOCKED (decided 2026-07-03): each selected invoice is paid IN FULL (Stripe
 pay(paid_out_of_band) is all-or-nothing per invoice; partials/short-pays = manual, out of
 scope); sum gate = selected invoices must total the check amount, WARN + explicit
 "Record anyway" override (server enforces via 409 SUM_MISMATCH unless allow_mismatch=1 —
@@ -439,7 +439,7 @@ one Slack notify_payment_recorded for the batch. monday/client.py set_invoice_pa
 matches pre-selected, per-invoice step results. TESTS: tests/test_check_deposit.py 34 green
 (+11); FULL suite 297 green in sandbox (all deps installed); import app.service OK; check.html
 JS node --check clean. NO new deps/env/Dockerfile change.
-✅ DEPLOYED + VERIFIED LIVE 2026-07-03 (Joe: "everything worked without a hitch") — the
+✅ DEPLOYED + VERIFIED LIVE 2026-07-03 (the former GM: "everything worked without a hitch") — the
 multi-invoice flow works in prod end-to-end. ⚠ NOTE: this `--source .` deploy ALSO shipped the
 pending 2026-07-02 payloads (grants missing-store tripwire, /health live Slack token probe,
 estimate revision, Bid Board rename) — those are now LIVE but each still needs its OWN
@@ -447,7 +447,7 @@ smoke test per its entry below (esp. /health slack_token_ok + slack_bot_user=gvc
 after the token fix, and the estimate-revision e{n}- archive flow).
 
 ## 🚨 INCIDENT — grants wiped by preview-bucket lifecycle rule (2026-07-02)
-Team locked out; /ui/admin showed zero users; joe@ fine (env superadmin). ROOT CAUSE:
+Team locked out; /ui/admin showed zero users; [former-GM acct] fine (env superadmin). ROOT CAUSE:
 `portal/grants.json` lives in the PREVIEW bucket (GVC_PORTAL_STATE_BUCKET never set) and the
 bucket-wide `{Delete, age:7}` lifecycle rule from docs/cloud-run-deploy.md §4b deleted it 7 days
 after the last admin write (each write resets the object's age; edits stopped → clock ran out
@@ -455,7 +455,7 @@ overnight Jul 1→2). `_read_object` treats NotFound as an empty doc + access.py
 → silent org-wide lockout, no alert. Ruled out: env-var wipe (live /health showed all current
 Slack env intact) and backend flip (empty user list, not the read-only banner). Same-bucket
 exposure: estimate-drafts.json (survives only via frequent rewrites) + hr_private.json.
-FIX (Joe, gcloud via hello@ — full runbook docs/incident-2026-07-02-grants-lifecycle-wipe.md):
+FIX (the former GM, gcloud via hello@ — full runbook docs/incident-2026-07-02-grants-lifecycle-wipe.md):
 restore via GCS soft delete (7-day window; deletion was <24h old) → create dedicated
 `gs://gvc-portal-state` (versioning ON, NO lifecycle) → copy portal/* over → set env
 GVC_PORTAL_STATE_BUCKET=gvc-portal-state (--update-env-vars; portal_store AND estimate drafts
@@ -471,7 +471,7 @@ change. STANDING RULE: ephemeral + durable objects NEVER share a lifecycle-ruled
 portal state goes in the state bucket via portal_store.
 
 ## 🔴 ROOT CAUSE — portal Slack notices NEVER posted: placeholder token in the secret (2026-07-02)
-Joe: "portal updates not writing to Slack." Channel evidence: @gvc_reporting has NEVER posted in ANY
+The former GM: "portal updates not writing to Slack." Channel evidence: @gvc_reporting has NEVER posted in ANY
 of the 4 portal channels (#leads's last real post = the Monday automation, 2026-06-23; #change-orders /
 #billing / #gvc-ops-alerts: zero bot posts ever) — while the report system's daily brief posts every
 morning through the SAME bot + chat.postMessage (confirmed Jul 2 07:00). So app/scopes/membership are
@@ -482,13 +482,13 @@ real token. auth.test on it → invalid_auth → post_message fail-fast RuntimeE
 on every finalize since 06-23. The 06-23 "VERIFIED via /health" note only ever proved CONFIG PRESENCE
 (third instance of this trap: #leads membership 06-26, "LIVE" 06-29, this). The report project's copy
 (gvc-report-system/slack-bot-token) is the real 59-byte token, no trailing newline — the known-good source.
-FIX (Joe): `printf %s "$RTOKEN" | gcloud secrets versions add slack-bot-token --data-file=-` on
+FIX (the former GM): `printf %s "$RTOKEN" | gcloud secrets versions add slack-bot-token --data-file=-` on
 gvc-invoice-system (printf %s = byte-exact, no trailing newline), then the pending `--source .` deploy
 (same one shipping the grants tripwire) rolls the revision that picks it up. SMOKE: estimate → #bids ·
 live invoice → #billing · CO → #change-orders · forced 5xx → #gvc-ops-alerts.
 STANDING RULES: (1) NEVER seed a secret from a doc value — docs redact; pull from the source system or
 api.slack.com. (2) A Slack notice is verified ONLY by a delivered message, never by config presence.
-BUILT 2026-07-02 (AFTER Joe's token-fix deploy kicked off → needs ONE MORE `--source .` deploy):
+BUILT 2026-07-02 (AFTER the former GM's token-fix deploy kicked off → needs ONE MORE `--source .` deploy):
 /health live token probe — slack_notify.auth_test() + probe_token() (cached, env
 GVC_SLACK_AUTH_PROBE_TTL default 300s; transport errors incl. corrupt-token header breakage never
 raise, come back as "network: ..."). /health: slack_configured NOW MEANS "token WORKS" (auth.test ok),
@@ -498,7 +498,7 @@ POST-DEPLOY CHECK: /health → slack_configured=true + slack_bot_user=gvc_report
 slack_auth_error=invalid_auth the secret fix didn't take.
 
 ## 🔁 RENAME — "Opportunities" board is now "Bid Board" (2026-07-02, code updated)
-Joe renamed board 1918846027 in Monday; SAME board id, no column/group changes. Code renamed to
+The former GM renamed board 1918846027 in Monday; SAME board id, no column/group changes. Code renamed to
 match: shared/boards.py `BID_BOARD_ID` (env `GVC_MONDAY_BID_BOARD_ID`; legacy
 `GVC_OPPORTUNITIES_BOARD_ID` override STILL HONORED — no prod env change needed);
 monday/estimate.py `lookup_bid` (was lookup_opportunity) + `search_bids` (was
@@ -509,8 +509,8 @@ left as historical record. ⚠ Root `~/Documents/GVC/CLAUDE.md` + the report sys
 "Opportunities" — outside this repo, update on next touch.
 
 ## ✨ ESTIMATE REVISION ("Update this Estimate") — BUILT 2026-07-02, ships next --source . deploy
-Joe's ask: customer requests a change → find the sent estimate, prefill EVERYTHING, one action
-updates it. DESIGN LOCKED (Joe 2026-07-02): the OUTBOUND estimate number NEVER changes on revision
+The former GM's ask: customer requests a change → find the sent estimate, prefill EVERYTHING, one action
+updates it. DESIGN LOCKED (decided 2026-07-02): the OUTBOUND estimate number NEVER changes on revision
 (client always sees the same YYYY-MMDD-NNN; once agreed it propagates through COs/invoices);
 prior versions archived in the project's Estimate/ Drive folder by RENAME with `e{n}-` prefix
 (e1- = original; live file = canonical name; file IDs/links preserved); Monday columns OVERWRITTEN
@@ -569,14 +569,14 @@ Read this first for deploy status; the dated entries below have the detail.
   **`color_mm4sy4eq`** (fill-if-empty); company account ("Green Valley Contractors") is in the dropdown.
 - Estimate finalize promotes **New Deals → Open Deals** (`new_group__1`→`topics`).
 
-**CONFIRM POST-DEPLOY (Joe):** finalize an estimate → #bids post + Stage=Sent + moved to Open Deals +
+**CONFIRM POST-DEPLOY (admin):** finalize an estimate → #bids post + Stage=Sent + moved to Open Deals +
 Commission Recipient filled; a CO → #change-orders; a live invoice → #billing; force a 5xx → #gvc-ops-alerts.
 
 **OPEN / NOT BUILT:**
 - Simplified "Sales Team" admin — reps still added via /ui/admin; the company account is built-in.
 - Commission **payout report** (phase 2): commission earned when the invoice is **PAID** (cash basis);
   the "Green Valley Contractors" recipient's accrual = the team bonus pool. Belongs in the report system;
-  needs per-rep rates/rules from Joe. Join: recipient on the Opportunity ↔ paid status on Invoices.
+  needs per-rep rates/rules from Jordan. Join: recipient on the Opportunity ↔ paid status on Invoices.
 - Coverage gap: the portal posts/promotes only on portal-driven finalizes; a manual Monday stage move
   won't fire them.
 
@@ -592,11 +592,11 @@ door (in-app OAuth, free path — NOT IAP/LB). Vision: one hub page listing ever
 employee tool. MCP keeps X-API-Key on the run.app URL, untouched.
 
 ### ⚠ ARCHITECTURE PIVOT (2026-06-18) — CO subitems are OUT, read FIRST
-Joe (2026-06-18): Jordan does NOT want to use Monday subitems at all — a prior
-attempt (before Joe joined) went south. This REVERSES the locked "CO HOME = subitems
+Note (2026-06-18): Jordan does NOT want to use Monday subitems at all — a prior
+attempt (before the former GM joined) went south. This REVERSES the locked "CO HOME = subitems
 of Projects board" decision. The Change Order program currently writes COs as subitems
 of Projects (board 1918846408) and the CO-billing writeback flips a subitem Status —
-BOTH are now on hold pending an alternative org model. Joe is meeting Jordan NEXT WEEK
+BOTH are now on hold pending an alternative org model. The former GM was to meet Jordan NEXT WEEK
 to decide the replacement (candidate options NOT yet chosen — e.g. COs as top-level
 items on a dedicated CO board, or columns on the parent Project item — do NOT assume).
 DO NOT build more on subitems or deploy subitem-dependent CO code until that meeting
@@ -637,13 +637,13 @@ FIXES (all in gvc_invoice/; sandbox tests green; design doc: docs/portal-invoice
     process_one(from_invoice_id=). New primitives: invoice.void_stripe_invoice (refuses to
     auto-void paid/uncollectible), gmail.delete_draft_by_invoice_id, monday.find_invoice_row_by_
     document + monday.set_invoice_void. service._run_correction orchestrates (intent auto|recipient).
-  • AS-BILLED JSON PERSISTENCE (Joe's call: Drive, NOT a GCS cache): process_one live writes
+  • AS-BILLED JSON PERSISTENCE (the former GM's call: Drive, NOT a GCS cache): process_one live writes
     "<identifier>.gvc.json" (the exact input `data`) NEXT TO the PDF (same Completed-Invoices
     subfolder) via DriveUploader.upload_or_replace_file (idempotent, non-fatal; writeback
     drive_json_file_id). Read back via DriveUploader.find_file_anywhere + download_json → GET
     /ui/api/invoice/original?identifier=. So a correction pulls the TRUE original from Drive.
     (Only invoices billed AFTER this deploys have a sidecar; older ones fall back to Rev N reissue.)
-  • UI — corrections live INSIDE the invoice generator (Joe: NOT a separate tile/interface).
+  • UI — corrections live INSIDE the invoice generator (decided: NOT a separate tile/interface).
     REMOVED the standalone GET /ui/correct route + hub tile. web/correct.html is now ORPHANED on
     disk (sandbox blocked the delete — delete it in the repo). web/invoice.html has a MODAL
     (openCorrectionFlow): loads the saved original from Drive → auto-diff/route/apply; if no saved
@@ -672,12 +672,12 @@ BACKLOG (next, none scheduled): (1) MONDAY-LEDGER FALLBACK for reuse detection �
   (3) Pre-existing creation-side ORPHAN-DRAFT gap (separate 2026-06-18 finding) still open.
 
 ### SLACK NOTICES EXPANDED + #leads ROOT CAUSE FOUND (2026-06-26, built; needs deploy + channel invites)
-Joe turned off the Monday "Bid Sent Notice" automation (1939926355) believing the portal
+The former GM turned off the Monday "Bid Sent Notice" automation (1939926355) believing the portal
 had taken over #leads. It hadn't been posting: the portal's estimate notice was *configured*
 (/health slack_configured=true, channel C0B562L3PTR) but the GVC Reporting bot (@gvc_reporting,
 the SLACK_BOT_TOKEN identity) was **not a member of #leads**, so every chat.postMessage failed
 `not_in_channel` and was swallowed non-fatally → zero portal-format posts ever landed. The 2026-06-23
-"VERIFIED" note below only confirmed CONFIG, never a delivered post. FIX (Joe, done): invited
+"VERIFIED" note below only confirmed CONFIG, never a delivered post. FIX (the former GM, done): invited
 @gvc_reporting to #leads. **Operating rule: this bot needs explicit channel membership for every
 channel it posts to — chat:write.public is NOT carrying it.**
 NEW notices built this session (adapters/slack_notify.py + orchestrator/app wiring; stdlib urllib,
@@ -698,8 +698,8 @@ NO new deps → plain `--source .` deploy):
 ENV (set via hello@ `--update-env-vars`; channel IDs preferred, rename-safe):
   GVC_OPS_ALERTS_CHANNEL (=#gvc-ops-alerts, id C0B7BM3FBCY) · GVC_BILLING_SLACK_CHANNEL (=#billing, id
   C0BDCL2V10W, **PRIVATE** — @gvc_reporting confirmed member + Andrea/Jordan present, 2026-06-26).
-  REMAINING (Joe): **invite @gvc_reporting to #gvc-ops-alerts** — as of 2026-06-26 the bot is NOT a
-  member (only @joe, @andrea), so the portal's BOT-posted failure alerts will silently drop until it's
+  REMAINING (admin): **invite @gvc_reporting to #gvc-ops-alerts** — as of 2026-06-26 the bot is NOT a
+  member (only the former GM and @andrea), so the portal's BOT-posted failure alerts will silently drop until it's
   added. (NB: the report system posts to that channel via an incoming WEBHOOK, which needs no membership;
   the portal posts via chat.postMessage, which does.) Then deploy + smoke-test (finalize an estimate →
   #leads post; create a live invoice → #billing post; force a 5xx → #gvc-ops-alerts post). Tests:
@@ -708,9 +708,9 @@ ENV (set via hello@ `--update-env-vars`; channel IDs preferred, rename-safe):
   moves won't post (the old automation caught those).
 
 ### COMMISSION CAPTURE + estimate group fix (2026-06-29, built; ships next --source . deploy)
-Commission tracking — CAPTURE layer (payout report = phase 2). Decisions (Joe + Jordan): commission is
+Commission tracking — CAPTURE layer (payout report = phase 2). Decisions (the former GM + Jordan): commission is
 earned when the related invoice is **PAID** (cash basis); recipient == salesperson == bid contact (ONE
-field — Joe is folding Jordan's bid-contact identity into a company account to decouple him).
+field — the former GM was folding Jordan's bid-contact identity into a company account to decouple him).
   • **New Monday column "Commission Recipient"** (status) on Opportunities 1918846027 = **`color_mm4sy4eq`**,
     seeded label "Green Valley Contractors". Created via the Monday API 2026-06-29.
   • **`monday/estimate.py` write_back** persists it FILL-IF-EMPTY (first attribution wins; never clobbers) =
@@ -724,11 +724,11 @@ field — Joe is folding Jordan's bid-contact identity into a company account to
     + name/phone); the company account is built-in. Proposed as the next increment.
   • **Payout report (phase 2, NOT built):** sum commissions per recipient from PAID invoices, treating the
     "Green Valley Contractors" recipient's accrual as the team bonus pool. Lives naturally in the report
-    system; needs the per-rep rate/rules from Joe. Note the join: recipient is on the Opportunity, paid
+    system; needs the per-rep rate/rules from Jordan. Note the join: recipient is on the Opportunity, paid
     status is on the Invoices board.
 
 ### NEW DEALS → OPEN DEALS on estimate finalize (2026-06-29) — retired-automation parity
-Joe: finalized estimates were landing in "New Deals (For Estimate)" not "Open Deals". Root cause: turning
+The former GM: finalized estimates were landing in "New Deals (For Estimate)" not "Open Deals". Root cause: turning
 OFF automation 1939926355 (earlier this session) also killed its "move to Open Deals" action. Portal now
 owns it: `_create_item` creates in **Open Deals** (`topics`) — the portal only creates at finalize, i.e.
 estimate already sent — and `_promote_to_open_deals` moves an EXISTING item from New Deals (`new_group__1`)
@@ -771,7 +771,7 @@ Three fixes batched with the notices above:
 CANONICAL: the "estimate sent → #leads" Slack notice is fired by the PORTAL
 (slack_notify.notify_estimate_drafted, on every estimate finalize), NOT by Monday.
 Bug that triggered this: an estimate finalized on an ALREADY-"Sent to Client"
-opportunity (a 2nd estimate reusing the same Opportunity — Joe's painting bid on a deal
+opportunity (a 2nd estimate reusing the same Opportunity — the former GM's painting bid on a deal
 that already had a drywall estimate) did NOT post to #leads, while new-opportunity
 estimates did. ROOT CAUSE: the notice was really posted by Monday automation 1939926355
 ("Bid Sent Notice", board 1918846027) whose trigger is "when Stage (deal_stage) CHANGES
@@ -780,7 +780,7 @@ to 'Sent to Client' (id 7)". The portal's monday_estimate.write_back ALWAYS sets
 status-CHANGE trigger never fired → no notice. The portal's OWN slack_notify was inert in
 prod the whole time (no SLACK_BOT_TOKEN env), so it silently SlackNotConfigured-skipped on
 every finalize (that's why NO finalize ever logged a Slack line).
-FIX (decided by Joe: portal owns the notice; Monday notify retired to avoid dupes):
+FIX (decided: portal owns the notice; Monday notify retired to avoid dupes):
   • slack_notify.post_message: added bounded retry/backoff (429 honoring Retry-After capped
     at MAX_BACKOFF_SECONDS=4, 5xx, network, ok=false ratelimited-class) + fail-fast on
     config/data errors (channel_not_found/invalid_auth). tests/test_slack_notify.py (9 green).
@@ -794,7 +794,7 @@ DEPLOYED 2026-06-23 (`--source .` via hello@) with NEW prod config:
   - Secret `slack-bot-token` → env SLACK_BOT_TOKEN (valueFrom secretKeyRef).
   - env GVC_ESTIMATES_SLACK_CHANNEL=C0B562L3PTR  (#leads channel ID; ID not name = rename-safe).
   VERIFIED via /health (invoice_health): slack_configured=true, slack_estimate_channel=C0B562L3PTR.
-REMAINING (Joe, Monday UI): on automation 1939926355 remove ONLY the "Notify in channel"
+REMAINING (admin, Monday UI): on automation 1939926355 remove ONLY the "Notify in channel"
   action (KEEP its "move to Open Deals" + "set Estimate Date") so new opportunities don't
   double-post (portal + Monday). Then smoke-test: finalize an estimate on an EXISTING
   already-"Sent to Client" opportunity → expect a #leads post + activity `estimate.slack
@@ -807,7 +807,7 @@ REMAINING (Joe, Monday UI): on automation 1939926355 remove ONLY the "Notify in 
 ✅ RESOLVED 2026-06-18: roles/logging.viewer granted to the portal SA
 gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com (confirmed in the project IAM
 policy). Root cause of the earlier failed attempts: the grant was run against the wrong
-principal (joe@ the human user, which also needs a "user:" prefix, not "serviceAccount:").
+principal ([former-GM acct] the human user, which also needs a "user:" prefix, not "serviceAccount:").
 KEY FACT confirmed: gvc-invoice-bot@ is BOTH the Cloud Run runtime SA AND the SA JSON
 identity (Secret Manager secret `google-service-account`) — same identity. To re-derive the
 SA email without dumping the key: `gcloud secrets versions access latest
@@ -827,7 +827,7 @@ default — 30s). hub.html: +Activity tile (data-feature=admin). requirements.tx
 +google-cloud-logging>=3.8. Dockerfile COPY += activity_read.py. tests/test_activity_read.py
 (14 green). `import service` OK (all 3 routes register). NO new env vars (GVC_SERVICE_NAME
 defaults to "gvc-invoice"; query uses the existing SA JSON, not the runtime SA).
-REMAINING (Joe, manual):
+REMAINING (admin, manual):
   1. IAM GRANT (one-time) — the portal SA (client_email in .google-service-account.json /
      GVC_DRIVE_CREDENTIALS) needs roles/logging.viewer on gvc-invoice-system, else the
      events endpoint returns a clean 503 ACTIVITY_NOT_CONFIGURED ("grant roles/logging.viewer").
@@ -849,7 +849,7 @@ REMAINING (Joe, manual):
 
 ### ACTIVITY MONTHLY BACKUP + 60d RETENTION — DEPLOYED + VERIFIED 2026-06-18
 ✅ LIVE + END-TO-END VERIFIED 2026-06-18. Deployed via `gcloud run deploy --source .`
-from the repo root (first attempt 404'd because Joe deployed from the wrong dir — the
+from the repo root (first attempt 404'd because the former GM deployed from the wrong dir — the
 home dir, not ~/Documents/GVC/gvc_invoice; ALWAYS deploy from the repo root). Seed run
 `POST /v1/activity/export-month {"month":"2026-06"}` returned ok=246 events, wrote BOTH
 "Portal Activity Log 062026.json" (file 1V0NMIhLhYJf02Ejq0gxFiDsYK1vkRF4G) + ".csv"
@@ -857,7 +857,7 @@ home dir, not ~/Documents/GVC/gvc_invoice; ALWAYS deploy from the repo root). Se
 gvc-invoice-bot@ IS already a member of the Office shared drive (no extra sharing needed).
 GVC_ACTIVITY_BACKUP_FOLDER_ID=1p9IoS1HiXuu9k_KVhgwTFg2LQ8BDlm21 env is SET (rev 00033+).
 SERVICE_URL = https://gvc-invoice-633452847397.us-central1.run.app.
-REMAINING (Joe, optional/automation): (a) `gcloud logging buckets update _Default
+REMAINING (admin, optional/automation): (a) `gcloud logging buckets update _Default
 --location=global --retention-days=60` if not yet done; (b) create the Cloud Scheduler
 monthly job `gvc-activity-monthly-backup` (`0 6 1 * *` America/New_York → POST export-month
 with X-API-Key; defaults to previous month). Cloud Scheduler API already enabled
@@ -883,7 +883,7 @@ is a member of). service.py (+ActivityExportRequest +POST /v1/activity/export-mo
 reads GVC_ACTIVITY_BACKUP_FOLDER_ID env). tests/test_activity_read.py 22 green (14+8).
 py_compile clean on all 3; symbols resolve. Full 143+ suite NOT re-run here (needs
 WeasyPrint venv) — run before deploy.
-REMAINING (Joe, manual — full runbook: docs/portal-activity-backup-design.md):
+REMAINING (admin, manual — full runbook: docs/portal-activity-backup-design.md):
   1. `gcloud logging buckets update _Default --location=global --retention-days=60`.
   2. Confirm SA has roles/logging.viewer (SAME grant as the /ui/activity 503 fix —
      if that's done, skip).
@@ -902,7 +902,7 @@ A `gcloud run deploy --source .` (via hello@) SUCCEEDED today (after one fix: co
 was missing from the Dockerfile COPY → added). Because `--source .` ships everything
 then on disk, that deploy made LIVE: the **Change Order CREATE program**, the **estimate-
 draft autosave**, the **hello@ Gmail fix**, and the **check-image confirm modal** (all
-previously "on disk, not deployed"). Joe ran a real CO end-to-end (subitem + hello@ draft
+previously "on disk, not deployed"). The former GM ran a real CO end-to-end (subitem + hello@ draft
 worked).
 
 LIVE REVISION (checked 2026-06-18) = gvc-invoice-00030-nph (built 06-16 20:53Z), the
@@ -918,7 +918,7 @@ is all subitem-dependent CO behavior, which is PAUSED per the 06-18 pivot above.
 ONE REDEPLOY STILL PENDING (same one command ships both) — built + tested AFTER today's
 deploy, so NOT yet live:
   1. CO numbering BUGFIX — normalize_base_number() (kills the doubled-prefix
-     CO.1-CO.3-… seen in Joe's test run).
+     CO.1-CO.3-… seen in the former GM's test run).
   2. CO BILLING writeback core — invoice.billed_change_orders → CO subitem Status=Billed
      + "CO Billed Invoice" link (link_mm4cb2wm). invoice_type-agnostic.
 Redeploy cmd: `cd .../gvc_invoice && gcloud run deploy gvc-invoice --source . --region
@@ -932,7 +932,7 @@ ENV STILL TO SET (NOT shipped by a code deploy — need --update-env-vars via he
 
 NEXT (CO billing): build the two FRONT-END assemblers — CO-tool "Bill this CO" (independent,
 prefill from subitem, invoice_type/AIA selectable) + invoice-tool CO picker (list_billable_cos,
-bundled). Confirm AIA-standalone UX w/ Joe first. (Details in item 7 + docs/portal-change-
+bundled). Confirm AIA-standalone UX w/ Jordan first. (Details in item 7 + docs/portal-change-
 order-billing-design.md.)
 
 ### DONE this session (2026-06-16) — estimate drafts + hello@ Gmail fix + Change Order program
@@ -960,7 +960,7 @@ Files: NEW estimate_drafts.py (pure upsert/remove/cap/stale helpers + generation
   start estimate → reload mid-fill → resume; check a draft is visible on a 2nd login;
   finalize clears it.
 
-HELLO@ GMAIL DRAFT — FIXED IN CODE (no OAuth needed). KEY FACT (Joe 2026-06-16):
+HELLO@ GMAIL DRAFT — FIXED IN CODE (no OAuth needed). KEY FACT (decided 2026-06-16):
 hello@ and billing@ are the SAME Google account — billing@ was renamed/aliased to
 hello@. So there is ONE authorized Gmail token (the existing gmail-token secret,
 already working for invoices). The original code wrongly assumed two separate
@@ -975,7 +975,7 @@ prod TOKEN_PATH = /app/.gmail-token.json (existing gmail-token secret), so the
 estimate draft uses the existing token, From: hello@ (valid send-as on the same
 account). NO browser OAuth, NO new client JSON, NO new secret/env. DEPLOYED 2026-06-16
 (rode the CO deploy; shipped gmail.py fix + estimate-draft autosave + check-image modal).
-Confirmed working: Joe's real CO run produced a hello@ draft. Runbook: docs/gmail-hello-setup.md.
+Confirmed working: the former GM's real CO run produced a hello@ draft. Runbook: docs/gmail-hello-setup.md.
 
 ### Status (end of session 2026-06-15)
 
@@ -988,9 +988,9 @@ DEPLOY STATUS (read before assuming what's live):
   notes below are historical.
 - LAST DEPLOYED revision (as of 06-15) = gvc-invoice-00022-8mm (access control v1 +
   GCS grants flipped on; Andrea + Jordan = admins). Estimate + Invoice + Admin live.
-- DEPLOYED since 00022-8mm (confirmed via Joe's screenshot 2026-06-15): Paid-by-
+- DEPLOYED since 00022-8mm (confirmed via the former GM's screenshot 2026-06-15): Paid-by-
   Check READ-ONLY path is LIVE at /ui/check (Time Off page + estimate "John Smith"
-  fixes rode the same deploy). Joe tested the NorthSide cashier's check — extract
+  fixes rode the same deploy). The former GM tested the NorthSide cashier's check — extract
   worked; payer parsed as "AND TRUST COMPANY" (rotated cashier's check OCR is
   messy) but it's editable, so fine.
 - DEPLOYED 2026-06-16 (rode the CO deploy): check confirm modal now shows the uploaded
@@ -1013,13 +1013,13 @@ DONE this session (2026-06-15):
   frontend was answering 404. `domain-mappings create` now done; conditions Ready /
   CertificateProvisioned / DomainRoutable all True; CNAME portal→ghs.googlehosted.com
   resolves; root-domain ownership verified (via hello@).
-- Estimate form example bid-contact made consistent: "Jordan Haas"/"jordan@" →
+- Estimate form example bid-contact made consistent: "Jordan"/"jordan@" →
   "John Smith"/"john@greenvalleycontractors.com" (web/estimate.html + example_
   estimate.json). Confirmed: prepared_by.email is display-only on the PDF "Your
   Bid Contact" block; never the email sender/reply-to (that's hello@).
 - ACCESS CONTROL v1 — DEPLOYED + LIVE (rev gvc-invoice-00022-8mm; flipped to
   GVC_GRANTS_BACKEND=gcs). Grants seeded via /ui/admin: Andrea `*`, Jordan `*`
-  (both admins). joe@ = break-glass superadmin via allowlist. portal/grants.json
+  (both admins). [former-GM acct] = break-glass superadmin via allowlist. portal/grants.json
   created in the preview bucket. STILL TO GRANT: Jake estimate+takeoff. Details:
   - New modules: access.py (grants resolver: features estimate/invoice/takeoff/
     timeoff/admin, `*`=all, timeoff baseline; backend env|gcs), portal_store.py
@@ -1048,7 +1048,7 @@ DONE earlier (revision gvc-invoice-00019-pvn):
   draft, Slack #estimates, auto-numbering, Drive save, Monday write-back.
 - Auth: `auth.py` + /auth/* routes, signed-cookie sessions (1h TTL, silent
   re-auth), hd-claim check + `GVC_PORTAL_ALLOWED_EMAILS` allowlist re-checked
-  per request. Currently allowlisted: joe@ only.
+  per request. Currently allowlisted: [former-GM acct] only.
 - /health all green in prod: Stripe, Drive, Monday, GCS bucket, Gmail.
 - Tests: 54 passing (24 new: tests/test_auth.py, tests/test_estimate_number.py).
 - Dockerfile gotcha fixed: COPY lists modules EXPLICITLY — new .py files must be
@@ -1059,11 +1059,11 @@ OAuth/secrets (unchanged, working): client `gvc-portal` in gvc-invoice-system
 Redirect URI registered = portal.greenvalleycontractors.com/auth/callback (so
 signing in via the run.app host throws redirect_uri_mismatch — expected).
 
-STILL PENDING (Joe, manual):
+STILL PENDING (admin, manual):
 - OAuth consent branding: "Potato App" no longer appears at sign-in (2026-06-15) —
   treated as stale/resolved.
-- Extra project `gvcportal` (created by mistake) → Joe deleting it.
-- Only joe@ currently allowlisted (GVC_PORTAL_ALLOWED_EMAILS); add others as part
+- Extra project `gvcportal` (created by mistake) → an admin to delete it.
+- Only [former-GM acct] currently allowlisted (GVC_PORTAL_ALLOWED_EMAILS); add others as part
   of the grants work (queue #1 below).
 
 ### Locked decisions (estimate system)
@@ -1091,18 +1091,18 @@ FUTURE BACKLOG (logged 2026-06-17, not yet scheduled): docs/portal-feature-backl
   — estimate edit/revision from Drive (+ARCHIVE- prefix, updates BOTH Monday + Slack);
   non-MCP Claude form fill (Est/Inv/CO); customer search + Monday-board CSV backup;
   invoice + CO draft autosave; GCP Cloud-audit-log admin viewer. Promote items into
-  this queue when picked up. Several ★ OPEN architecture Qs to confirm w/ Joe first.
-DONE ~~Confirm portal live + smoke-test~~ (live; hub confirmed by Joe).
+  this queue when picked up. Several ★ OPEN architecture Qs to confirm w/ Jordan first.
+DONE ~~Confirm portal live + smoke-test~~ (live; hub confirmed by the former GM).
 DONE ~~Hub landing page at `/`~~ (web/hub.html shipped; tiles currently STATIC,
   become grant-driven in #1 below).
 
 1. (IN PROGRESS — built, needs deploy + flip) Access control + admin + people.
-   Code shipped this session (see status block). REMAINING for Joe:
+   Code shipped this session (see status block). REMAINING for an admin:
    a. Run full test suite in venv, then redeploy via hello@ (Dockerfile COPY now
       includes the 3 new modules; estimate-form name fixes ride along).
    b. Service account already has objectAdmin on the preview bucket; the store
       reuses GVC_GCS_PREVIEW_BUCKET unless GVC_PORTAL_STATE_BUCKET is set.
-   c. Flip on: set GVC_GRANTS_BACKEND=gcs (joe@ stays superadmin via
+   c. Flip on: set GVC_GRANTS_BACKEND=gcs ([former-GM acct] stays superadmin via
       GVC_PORTAL_ALLOWED_EMAILS → never locked out). Missing store object is fine
       (first admin upsert creates it).
    d. In /ui/admin, grant: Andrea `*`; Jake estimate+takeoff; others as needed.
@@ -1153,11 +1153,11 @@ DONE ~~Hub landing page at `/`~~ (web/hub.html shipped; tiles currently STATIC,
    MICR line → auto-segment feasible, but cut at MIDPOINT between MICR lines (amount
    can trail MICR) + stub attaches to preceding check.
    ✅ COMMIT/WRITE PATH + SEARCHABLE MATCH — BUILT 2026-06-18, NOT YET DEPLOYED.
-   Use case confirmed (Joe 2026-06-18): "check stub" = the COUNTERFOIL retained when a
+   Use case confirmed (decided 2026-06-18): "check stub" = the COUNTERFOIL retained when a
    check is written — carries the SAME single-payment fields as the check face, used when
    the physical check went to the bank. So it's just an alternate single-document input;
    the 1:1 "one check/stub = one invoice" model HOLDS (no multi-invoice work). Existing
-   parser handles stubs fine (Joe tested one on the portal).
+   parser handles stubs fine (the former GM tested one on the portal).
    SHIPPED: (a) check_deposit.py +deposit_plan(stripe_paid,monday_paid) [already-deposited
    guard w/ EXACT message ALREADY_DEPOSITED_MESSAGE; idempotent partial-retry: runs only
    missing steps] +drive_folder_id(url) [pure, /folders/<id> regex]. (b) monday.py
@@ -1183,7 +1183,7 @@ DONE ~~Hub landing page at `/`~~ (web/hub.html shipped; tiles currently STATIC,
    (out of band), Monday row=Paid + note, image filed in the invoice's Drive folder; re-run
    the SAME check → expect the already-deposited message (no writes). ⚠ VERIFY the long_text
    note actually lands (the {"text":...} format) on the first real run.
-   🐞 BUGFIX 2026-06-18 (root cause of Joe's "search shows no options"): the open-invoice
+   🐞 BUGFIX 2026-06-18 (root cause of the former GM's "search shows no options"): the open-invoice
    filter used an allowlist {"draft","sent","overdue"} but the Invoices board 1931784889
    status labels are actually "Invoice Sent" (the active/open label), "Paid", "Void". So
    open_only filtered out EVERY row → empty picker AND auto-match never had candidates.
@@ -1195,14 +1195,14 @@ DONE ~~Hub landing page at `/`~~ (web/hub.html shipped; tiles currently STATIC,
    Dorothy Lane | Terraces Senior Apartments" — stripe=marked paid (out of band),
    monday=Paid (+note) [confirms long_text {"text":...} writes], drive=image filed. The
    searchable picker + matching fix + commit path + stub parsing all work in prod.
-   FINALIZE SAFETY NET added (service.py commit, Joe chose "commit-only" scope 2026-06-18):
+   FINALIZE SAFETY NET added (service.py commit, the former GM chose "commit-only" scope 2026-06-18):
    if the matched invoice's Stripe status is "draft", commit now finalizes it BEFORE
    pay(paid_out_of_band) (which requires an open invoice) → recording never breaks on a
    stray/legacy draft. Result string shows "finalized draft + marked paid (out of band)".
    py_compile clean; ships with the same redeploy.
 
 ### INVOICE FINALIZE FINDING (2026-06-18) — creation DOES finalize; orphan-draft gap logged
-Checked invoice.py per Joe's "do we create drafts or finalize?" Q. ANSWER: the flow
+Checked invoice.py per the former GM's "do we create drafts or finalize?" Q. ANSWER: the flow
 FINALIZES and does NOT send from Stripe. create_stripe_invoice() = create draft → attach
 InvoiceItems → stripe.Invoice.finalize_invoice() (status->open); deliberately NO
 send_invoice (Gmail sends the GVC PDF; Stripe only gives hosted_invoice_url).
@@ -1213,15 +1213,15 @@ are OPEN and payable via paid_out_of_band.
 is left, AND the live reuse/idempotency check (invoice.py ~816) only treats status in
 ("open","paid") as "already exists" → it IGNORES drafts and creates a DUPLICATE next run,
 orphaning the draft; (2) CLI --no-finalize; (3) legacy voided v2 invoices.
-NOT YET FIXED (Joe deferred — chose commit-safety-net only): the creation-side gap (B) —
+NOT YET FIXED (the former GM deferred — chose commit-safety-net only): the creation-side gap (B) —
 make the reuse check also recognize a "draft" and finalize-and-reuse it instead of
 duplicating. Also deferred: a read-only Stripe DRAFT audit to find/clean existing orphans
-(can't query Stripe from the cowork sandbox — Joe checks Stripe dashboard: Invoices→Draft).
+(can't query Stripe from the cowork sandbox — an admin checks Stripe dashboard: Invoices→Draft).
 
 ### CLAUDE PORTAL CAPABILITIES — Phase 2 (estimate API path) BUILT 2026-06-18, NOT DEPLOYED
 Track = docs/portal-claude-access-and-automation-design.md (remote MCP fronted by per-user
 tokens so Jake/Jordan/Andrea drive estimates+invoices via Claude — Cowork desktop + web
-claude.ai — no local .mcpb; grant-checked + audited). Joe picked phase 2 first (2026-06-18).
+claude.ai — no local .mcpb; grant-checked + audited). The former GM picked phase 2 first (2026-06-18).
 SHIPPED: service.py +POST /v1/estimate/from-json (reuses EstimateRunRequest {data, mode:
 dry-run|finalize}; X-API-Key gated like /v1/invoice/from-json; wraps process_estimate with
 the SAME dry-run→finalize gate + _friendly_error envelope as /ui/api/estimate/run; no Stripe;
@@ -1231,7 +1231,7 @@ NEXT phases (design §6): 3 = per-user token layer (portal/claude-tokens.json st
 mint/revoke UI, per-request validate→email→grants→audit) — SECURITY-SENSITIVE, review the
 doc first; 4 = remote MCP endpoint (/mcp on the FastAPI app) exposing estimate_dry_run/
 estimate_finalize over this endpoint, token-gated, connect Jordan as test user; 5 = canonical
-bid-sheet tab + GVC estimate skill; 6 = grant Jake `estimate`. OPEN §7 decisions for Joe:
+bid-sheet tab + GVC estimate skill; 6 = grant Jake `estimate`. OPEN §7 decisions for Jordan:
 salespeople list scope, canonical bid tab vs adapter, claude.ai connector auth, token expiry.
 Phase-1 quick win — DONE 2026-06-18 (NOT yet deployed): salesperson dropdown + `phone`.
 portal_store.PERSON_FIELDS +"phone"; admin.html +Phone input (clear/edit/save person);
@@ -1239,12 +1239,12 @@ service.py +GET /ui/api/estimate/salespeople (require_feature "estimate" → sto
 effective_features include `estimate`, incl. `*` admins → [{name,email,phone}] sorted).
 estimate.html: "Choose salesperson" <select> above the Bid Contact fields, loaded on init,
 autofills pb_name/email/phone (still editable). Existing 20 store/access tests green; JS +
-py_compile clean. Salespeople list scope DECIDED (Joe deferred §7): = anyone with effective
+py_compile clean. Salespeople list scope DECIDED (the former GM deferred §7): = anyone with effective
 `estimate` (covers admins). NOTE: env-only superadmins not in the GCS store won't appear (no
 person record) — add them via /ui/admin with a name+phone if they should be pickable.
 
 ### ESTIMATE PREFILL FROM MONDAY OPPORTUNITY — BUILT 2026-06-18, NOT DEPLOYED
-Joe's ask: paste a Monday Opportunity item link → autofill the estimate form (Monday→SoT).
+The former GM's ask: paste a Monday Opportunity item link → autofill the estimate form (Monday→SoT).
 Mirrors the CO "paste Monday URL → autofill" pattern. SHIPPED:
 - monday_estimate.py: +lookup_opportunity(mc, item_id) + PURE build_prefill(item_id, name, cols)
   + _read_columns_full (resolves text / mirror display_value / board_relation linked names)
@@ -1271,7 +1271,7 @@ job/scope/type/salesperson populate, line items still blank → add lines → fi
 write-back landed on the SAME Opportunity item (job.monday_item_id path, not a new "New Deals" item).
    AUTO-SEGMENTATION of multi-check photos still deferred (v1 still FAIL-SAFE: multi_check
    warning, one at a time). --- original build spec (now implemented) below ---
-   >>> NEXT (decided 2026-06-15, Joe): BUILD THE COMMIT / WRITE PATH (single check;
+   >>> NEXT (decided 2026-06-15): BUILD THE COMMIT / WRITE PATH (single check;
        auto-segmentation comes AFTER). Read-only path stays as-is. Replace the 501
        stub at /ui/api/check/commit. Build spec (APIs already mapped):
        • Make commit MULTIPART: re-send the image file + confirmed fields (payer,
@@ -1303,9 +1303,9 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
        • check.html confirm(): send multipart; render already-deposited message vs
          success per-step. Add commit tests for deposit_plan + drive_folder_id (pure).
 4. Programmatic Invoices-board logging in invoice live step (replace skill).
-5. Pending from Joe: logo assets (vector/PNG) for estimate/about branding.
+5. Pending from Jordan: logo assets (vector/PNG) for estimate/about branding.
 6. TIME OFF → Monday + Calendar + reports — DESIGNED (docs/portal-timeoff-monday-
-   design.md). Locked (Joe 2026-06-15): portal-NATIVE form replaces the Google Form
+   design.md). Locked (decided 2026-06-15): portal-NATIVE form replaces the Google Form
    + writes to a NEW Monday "Time Off" board (SoT); calendar in TWO places — a Monday
    Calendar view (to create) AND a portal /ui/calendar section open to all (time off
    + holidays + company events); weekly brief shows who's off + how long. Approval
@@ -1331,7 +1331,7 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
    change_order_drafted), service.py (ChangeOrderRunRequest + GET /ui/change-order,
    GET /ui/api/change-order/lookup, POST /ui/api/change-order/run; gated by
    `estimate`), Dockerfile (COPY += change_order_flow.py monday_co.py).
-   DECISIONS CONFIRMED (Joe 2026-06-16, supersede the 06-15 locks below):
+   DECISIONS CONFIRMED (decided 2026-06-16, supersede the 06-15 locks below):
    (a) BASE = the ESTIMATE NUMBER (it's becoming the sole project# for all docs),
        so CO.{n}-{estimate#}. (b) Linking is MONDAY-PRIMARY: paste/look-up the
        Monday Project URL → autofill + that item is the subitem parent; Drive
@@ -1340,14 +1340,14 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
        GVC_CHANGE_ORDERS_SLACK_CHANNEL, falls back to #estimates).
    TESTS: full suite 131 green in clean venv; `import service` OK; standalone vs
    embedded template branches verified.
-   REMAINING (Joe, manual): deploy via hello@ (cmd in docs/portal-change-order-
+   REMAINING (admin, manual): deploy via hello@ (cmd in docs/portal-change-order-
    design.md "## Deploy"): `gcloud run deploy gvc-invoice --source . --region
    us-central1 --project gvc-invoice-system --account=hello@greenvalleycontractors.com`.
    Then smoke-test (lookup → preview → accept; check Drive subfolder + Monday
    subitem + hello@ draft). OPTIONAL: create #change-orders + add bot, then set
    GVC_CHANGE_ORDERS_SLACK_CHANNEL=#change-orders. Jake already has `estimate`.
    PHASE 2 — CO BILLING: design docs/portal-change-order-billing-design.md.
-   DECISIONS (Joe 2026-06-16): billing a CO IS invoice generation (no separate
+   DECISIONS (decided 2026-06-16): billing a CO IS invoice generation (no separate
    engine) — the invoice engine already bills a CO as a line via kind:"co"
    (segregated subtotal_co, retainage-excluded, distinct PDF section). So
    "independent" = an invoice whose identifier is the CO id (CO.{n}-{estimate#})
@@ -1366,7 +1366,7 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
    (7 green); full suite 138 green; import service OK. REMAINING: deploy via
    hello@ (no new modules/env), then build the two FRONT-END assemblers — CO-tool
    "Bill this CO" (prefill from subitem; AIA selectable) + invoice-tool CO picker
-   (list_billable_cos) — confirm AIA-standalone UX w/ Joe first. Also deferred:
+   (list_billable_cos) — confirm AIA-standalone UX w/ Jordan first. Also deferred:
    auto-read estimate PDF on the CO-create backup path; appendix field tickets.
    BUGFIX 2026-06-16 (on disk, ships w/ same redeploy): doubled CO prefix —
    a real run produced CO.1-CO.3-2026-0616-B2 because the base/estimate-number
@@ -1374,13 +1374,13 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
    CO.{n}- wrapper off the base (used in assign_co_number + _build_co_payload),
    so a CO-id-as-base yields CO.1-2026-0616-B2. +5 tests (143 green). NOTE: that
    test run left a stray subitem "CO.1-CO.3-2026-0616-B2" under Projects pulse
-   2548570589 + a hello@ draft — Joe can delete (test data, "B2").
+   2548570589 + a hello@ draft — an admin can delete (test data, "B2").
    --- original 06-15 design notes (kept for reference) ---
    CHANGE ORDER program — DESIGNED (docs/portal-change-order-design.md). Locked
-   (Joe 2026-06-15): reuse estimate PROJECT NUMBER as spine; CO id =
+   (decided 2026-06-15): reuse estimate PROJECT NUMBER as spine; CO id =
    "CO.{n}-{project_number}" (n increments per job, service-assigned); user LINKS
    existing estimate/job → CO inherits client/job/project#/Drive dir; PDF filed in
-   the original estimate's Drive folder. CO HOME (Joe 2026-06-15, CORRECTED): NOT a
+   the original estimate's Drive folder. CO HOME (decided 2026-06-15, CORRECTED): NOT a
    new board — COs are SUBITEMS of existing $Project items on the Projects board
    1918846405 (that board already tracks the project; subitem IS the SoT, no dual
    SoT). Subitem cols: Amount, Status (Drafted/Sent/Approved/Billed/Void), Issue
@@ -1393,7 +1393,7 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
    creation core (link→pull→PDF→Drive) → hello@ draft + Slack → Monday CO board
    write + status → /ui/change-order form → billing integration.
    OPEN: Time Off (#6) needs a NEW Monday board created. CO (#7) needs the
-   "Subitems of Projects" columns inspected + any missing ones added (Joe's domain).
+   "Subitems of Projects" columns inspected + any missing ones added (the former GM's domain).
    Confirm where project_number + estimate Drive folder id are read from
    (Opportunities/Projects/estimate writeback). CO BUILD PROGRESS: co_number.py
    DONE + tested (7 green; pure CO.{n}-{base}, format-agnostic base, increments per
@@ -1410,7 +1410,7 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
    COs id'd by "CO." name prefix. (Projects board has
    link_mkwr6ef9 GFolder Link + board_relation_mm40rg52 Linked Opportunity +
    lookup_mm40txvs Contract Value for future Monday verification.)
-   LINKING source DECIDED (Joe 2026-06-15): user pastes a GOOGLE DRIVE FOLDER URL
+   LINKING source DECIDED (decided 2026-06-15): user pastes a GOOGLE DRIVE FOLDER URL
    holding the original estimate PDF; read that PDF to pull project number/client/job;
    file the CO PDF back into the same folder; Monday verify later.
    NEXT CO BUILD (once columns added): creation core (link→read estimate PDF→pull
@@ -1433,13 +1433,12 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
   only (superseded by WeasyPrint).
 
 ### People
-- Jordan Faulkner (owner) and Joe Haas (GM) are DIFFERENT people — there is no
-  "Jordan Haas". Andrea (office mgr — billing/estimates, Windows PC), Jake (sales),
-  Melvin (estimator, Philippines). Andrea's PC = why the portal + future remote MCP
-  matter (kills .mcpb installs).
+- Jordan Faulkner (owner). Andrea (office mgr — billing/estimates, Windows PC),
+  Jake (sales), Melvin (estimator, Philippines). Andrea's PC = why the portal +
+  future remote MCP matter (kills .mcpb installs).
 
 ### 2026-07-26 — Canonical + git + takeoff integration (written from the takeoff project)
-- Joe Haas TERMINATED (Jordan, Jul 26). Pending: audit portal-side grants he
+- The former GM TERMINATED (Jordan, Jul 26). Pending: audit portal-side grants he
   held (access.py entries, Monday/Stripe/GCP IAM). Takeoff app already blocklists him.
 - This Windows copy (`C:\Claude\GVC Invoice portal\portal-current`) is CANONICAL
   per Jordan; Mac-era paths in docs above are historical.
@@ -1451,3 +1450,28 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
   Seam 2: takeoff reads win/loss + invoiced $ from Monday (Monday stays the bus).
 - Cross-project rule: sessions in the takeoff Claude Code project may read this
   repo; any write from over there appends a dated note here (like this one).
+
+### 2026-07-26 — r2: GVC rebrand + version count + former-GM purge (from the takeoff project)
+- VERSION COUNT now lives in web/hub.html's footer ("Portal rN · date"). RULE:
+  bump rN + date on every user-visible portal change, same commit.  r1 = the
+  pre-rebrand snapshot (commit 5769329); r2 = this batch.
+- REBRAND (Jordan-approved mockup): all ten web/*.html pages moved to the GVC
+  brand kit — forest #235339 / deep #1A3E2B, gold #C9A24B/#96763B, warm stone
+  neutrals (#1C1917/#78716C/#E7E0CE/#FAFAF8), gold header rule, serif h1 with
+  CSS "G" monogram (::before — h1 emojis removed), gold Live badges, #B9954E
+  card top-edges, gold .btn.gold on commitment CTAs (Generate Preview /
+  Confirm & record / Create drafts). Skin only — no structural/JS changes;
+  python compileall clean. Customer-facing PDF templates (templates/*.j2)
+  deliberately NOT touched — awaiting brand SVG sources.
+- FORMER-GM PURGE (Jordan's directive): every reference to the former GM
+  removed from all tracked text files (~195 replacements, 31 files). Do not
+  reintroduce the name in code, comments, docs, or UI. His account identifiers
+  live ONLY with Jordan and in the takeoff app's auth blocklist.
+- ⚠️ ACCESS REVOCATION STILL PENDING (needs Jordan / gcloud auth):
+  1. Cloud Run env GVC_PORTAL_ALLOWED_EMAILS currently lists ONLY the former
+     GM's account as break-glass superadmin — swap to jordan@ (+ andrea@ if
+     wanted) and redeploy/update the service.
+  2. Remove the former GM's row from portal/grants.json via /ui/admin.
+  3. Audit Monday, Stripe, and GCP IAM for grants he held.
+  4. Suspend his Google Workspace account (kills portal OAuth sign-in at the root).
+  Delete this block once all four are done.

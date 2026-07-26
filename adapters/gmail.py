@@ -12,7 +12,7 @@ architecture: admin-approved send via Gmail.
 One-time setup: run `python gmail.py setup`. See docs/gmail-setup.md.
 
 For Cloud Run: the refresh token from .gmail-token.json moves to Secret
-Manager, loaded at startup. The OAuth flow happens once on Joe's Mac.
+Manager, loaded at startup. The OAuth flow happens once on the original dev Mac.
 """
 from __future__ import annotations
 

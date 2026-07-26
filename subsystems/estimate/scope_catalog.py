@@ -24,7 +24,7 @@ Object shape:
 
     {
       "version": 1,
-      "updated_by": "joe@greenvalleycontractors.com",
+      "updated_by": "jordan@greenvalleycontractors.com",
       "updated_at": "2026-07-14T15:00:00+00:00",
       "trades": [
         {"id": "drywall", "name": "Drywall", "scopes": [

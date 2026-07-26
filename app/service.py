@@ -85,7 +85,7 @@ WEB_DIR = paths.WEB_DIR
 UI_DEV_BYPASS = os.environ.get("GVC_UI_DEV_BYPASS") == "1"
 
 # Startup environment audit — surface missing optional integrations to the
-# Cloud Run logs so Joe can spot misconfiguration without waiting for the
+# Cloud Run logs so an admin can spot misconfiguration without waiting for the
 # first request to fail. Assume live mode for the audit (worst case).
 _startup_warnings, _startup_errors = validate_environment(
     mode="live", needs_stripe=True, monday_source=True,
@@ -170,7 +170,7 @@ def require_api_key(x_api_key: Optional[str]) -> None:
                 "ok": False,
                 "code": "SERVICE_MISCONFIGURED",
                 "detail": "GVC_SERVICE_API_KEY env var not set on the service.",
-                "advice": "Ask Joe to set the GVC_SERVICE_API_KEY secret.",
+                "advice": "Ask an admin to set the GVC_SERVICE_API_KEY secret.",
             },
         )
     if not x_api_key or x_api_key != API_KEY:
@@ -383,7 +383,7 @@ def from_monday(
                 "ok": False,
                 "code": "MONDAY_NOT_CONFIGURED",
                 "detail": str(e),
-                "advice": "Ask Joe to set the MONDAY_API_TOKEN secret.",
+                "advice": "Ask an admin to set the MONDAY_API_TOKEN secret.",
             },
         )
     except MondayInsufficientData as e:
@@ -672,7 +672,7 @@ def require_feature(request: Request, feature: str) -> str:
             "ok": False,
             "code": "FEATURE_NOT_GRANTED",
             "detail": f"Your account isn't granted '{feature}'.",
-            "advice": "Ask Joe or an admin to grant you access on the Admin page.",
+            "advice": "Ask an admin to grant you access on the Admin page.",
         },
     )
 
@@ -696,7 +696,7 @@ def auth_login(request: Request, next: str = "/") -> RedirectResponse:
             status_code=503,
             detail={"ok": False, "code": "AUTH_NOT_CONFIGURED",
                     "detail": str(e),
-                    "advice": "Ask Joe — the OAuth secrets aren't mounted yet "
+                    "advice": "Ask an admin — the OAuth secrets aren't mounted yet "
                               "(portal-deploy-plan.md Phase 1)."},
         )
     return RedirectResponse(url, status_code=303)
@@ -714,14 +714,14 @@ def auth_callback(request: Request, code: str = "", state: str = "") -> Redirect
             status_code=403,
             detail={"ok": False, "code": "SIGN_IN_DENIED", "detail": str(e),
                     "advice": "Use your @greenvalleycontractors.com account. "
-                              "If you should have access, ask Joe to add you "
+                              "If you should have access, ask an admin to add you "
                               "to the allowlist."},
         )
     except portal_auth.AuthNotConfigured as e:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "AUTH_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe — OAuth secrets missing."},
+                    "advice": "Ask an admin — OAuth secrets missing."},
         )
     resp = RedirectResponse(next_path, status_code=303)
     resp.set_cookie(
@@ -755,7 +755,7 @@ def portal_home(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     feats = sorted(access.effective_features(email))
     activity.log_event("hub.open", actor=email, target=",".join(feats) or "none")
@@ -778,7 +778,7 @@ def ui_invoice_form(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8"))
 
@@ -836,7 +836,7 @@ def ui_invoice_original(request: Request, identifier: str = "") -> dict:
     except DriveNotConfigured as e:
         raise HTTPException(status_code=503, detail={
             "ok": False, "code": "DRIVE_NOT_CONFIGURED", "detail": str(e),
-            "advice": "Ask Joe to confirm the Drive service-account credentials."})
+            "advice": "Ask an admin to confirm the Drive service-account credentials."})
     except Exception as e:  # noqa: BLE001
         raise HTTPException(status_code=502, detail={
             "ok": False, "code": "ORIGINAL_LOAD_FAILED",
@@ -881,7 +881,7 @@ def ui_invoice_lookup(request: Request, project_number: str = "") -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001 — bad id / not found / API error → friendly 422
         raise HTTPException(
@@ -911,7 +911,7 @@ def ui_invoice_customer_search(request: Request, q: str = "") -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(
@@ -1015,7 +1015,7 @@ def ui_estimate_form(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8"))
 
@@ -1084,7 +1084,7 @@ def ui_estimate_lookup(request: Request, monday_url: str = "") -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001 — bad id / not found / API error → friendly 422
         raise HTTPException(
@@ -1161,7 +1161,7 @@ def ui_estimate_search(request: Request, q: str = "") -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(
@@ -1220,7 +1220,7 @@ def _store_unconfigured(e: Exception) -> HTTPException:
     return HTTPException(
         status_code=503,
         detail={"ok": False, "code": "STORE_NOT_CONFIGURED", "detail": str(e),
-                "advice": "Ask Joe to set GVC_PORTAL_STATE_BUCKET (or reuse "
+                "advice": "Ask an admin to set GVC_PORTAL_STATE_BUCKET (or reuse "
                           "GVC_GCS_PREVIEW_BUCKET) + the service-account JSON."},
     )
 
@@ -1317,7 +1317,7 @@ def ui_estimate_scopes_save(req: EstimateScopeCatalogRequest, request: Request) 
             status_code=503,
             detail={"ok": False, "code": "SCOPE_STORE_NOT_CONFIGURED",
                     "detail": str(e),
-                    "advice": "Ask Joe — the portal state bucket isn't configured."},
+                    "advice": "Ask an admin — the portal state bucket isn't configured."},
         )
     n_trades, n_scopes = scope_catalog.catalog_counts(catalog)
     activity.log_event("estimate.scopes.save", actor=admin_email,
@@ -1330,7 +1330,7 @@ def ui_timeoff(request: Request) -> HTMLResponse:
     """
     Time-off page: embeds the company Google Form. Everyone provisioned holds the
     `timeoff` baseline grant, so all signed-in employees can reach it. The form
-    URL is config (GVC_TIMEOFF_FORM_URL) so Joe can set/rotate it without a code
+    URL is config (GVC_TIMEOFF_FORM_URL) so an admin can set/rotate it without a code
     change; use the Form's 'Send → <> embed' URL.
     """
     email = require_feature(request, "timeoff")
@@ -1341,7 +1341,7 @@ def ui_timeoff(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     form_url = (os.environ.get("GVC_TIMEOFF_FORM_URL") or "").strip()
     if form_url.startswith("https://"):
@@ -1351,7 +1351,7 @@ def ui_timeoff(request: Request) -> HTMLResponse:
         body = (
             '<div class="notice"><h2>Time Off form not configured yet</h2>'
             '<p class="muted">The form link hasn\'t been set on the service. '
-            'Ask Joe to set <code>GVC_TIMEOFF_FORM_URL</code> to the Google Form '
+            'Ask an admin to set <code>GVC_TIMEOFF_FORM_URL</code> to the Google Form '
             'embed URL.</p></div>'
         )
     html = path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)).replace("{{FORM_IFRAME}}", body)
@@ -1390,7 +1390,7 @@ def ui_change_order_form(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
 
@@ -1420,7 +1420,7 @@ def ui_change_order_lookup(request: Request, monday_url: str = "") -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001 — item not found / API error → friendly 422
         raise HTTPException(
@@ -1448,7 +1448,7 @@ def ui_change_order_search(request: Request, q: str = "") -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001
         raise HTTPException(
@@ -1608,7 +1608,7 @@ def ui_coi_form(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
 
@@ -1624,7 +1624,7 @@ def _coi_template_unavailable(e: Exception) -> HTTPException:
     return HTTPException(
         status_code=503,
         detail={"ok": False, "code": "COI_STORE_NOT_CONFIGURED", "detail": str(e),
-                "advice": "Ask Joe — the portal state bucket isn't configured."},
+                "advice": "Ask an admin — the portal state bucket isn't configured."},
     )
 
 
@@ -1702,7 +1702,7 @@ def ui_coi_bulk_run(req: CoiBulkRunRequest, request: Request) -> dict:
         status, code, detail, advice = _friendly_error(e)
         if type(e).__name__ == "SheetsNotConfigured":
             status, code = 503, "SHEETS_NOT_CONFIGURED"
-            detail, advice = str(e), "Ask Joe — the service-account JSON isn't mounted."
+            detail, advice = str(e), "Ask an admin — the service-account JSON isn't mounted."
         raise HTTPException(
             status_code=status,
             detail={"ok": False, "code": code, "detail": detail, "advice": advice},
@@ -1721,7 +1721,7 @@ def ui_coi_template_info(request: Request) -> dict:
             status_code=403,
             detail={"ok": False, "code": "FEATURE_NOT_GRANTED",
                     "detail": "Your account isn't granted 'coi' or 'admin'.",
-                    "advice": "Ask Joe or an admin to grant you access on the Admin page."},
+                    "advice": "Ask an admin to grant you access on the Admin page."},
         )
     try:
         info = coi_template.template_info()
@@ -1777,7 +1777,7 @@ def ui_check_page(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
 
@@ -1859,7 +1859,7 @@ async def ui_check_commit(
 
 @app.get("/ui/admin", response_class=HTMLResponse)
 def ui_admin_page(request: Request) -> HTMLResponse:
-    """Serve the admin page (Joe/Jordan/Andrea — anyone with the `admin` grant)."""
+    """Serve the admin page (Jordan/Andrea — anyone with the `admin` grant)."""
     email = require_admin(request)
     activity.log_event("tool.open", actor=email, target="admin")
     path = WEB_DIR / "admin.html"
@@ -1868,7 +1868,7 @@ def ui_admin_page(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
 
@@ -1897,7 +1897,7 @@ def ui_admin_list_users(request: Request) -> dict:
             raise HTTPException(
                 status_code=503,
                 detail={"ok": False, "code": "STORE_NOT_CONFIGURED", "detail": str(e),
-                        "advice": "Ask Joe to set GVC_PORTAL_STATE_BUCKET / service-account JSON."},
+                        "advice": "Ask an admin to set GVC_PORTAL_STATE_BUCKET / service-account JSON."},
             )
 
     # Break-glass superadmins (env allowlist) — always shown, can't be edited here.
@@ -1956,7 +1956,7 @@ def ui_admin_upsert_user(req: AdminUpsertRequest, request: Request) -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "STORE_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to configure the portal store bucket."},
+                    "advice": "Ask an admin to configure the portal store bucket."},
         )
     activity.log_event("admin.grant.update", actor=actor, target=target,
                        features=",".join(features))
@@ -1989,7 +1989,7 @@ def ui_admin_remove_user(req: AdminRemoveRequest, request: Request) -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "STORE_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to configure the portal store bucket."},
+                    "advice": "Ask an admin to configure the portal store bucket."},
         )
     activity.log_event("admin.user.remove", actor=actor, target=target,
                        result="ok" if existed else "noop")
@@ -2011,7 +2011,7 @@ def ui_activity_page(request: Request) -> HTMLResponse:
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
                     "detail": f"{path} not found in the deployed image.",
-                    "advice": "Ask Joe to confirm web/ was COPYed in the Dockerfile."},
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
 

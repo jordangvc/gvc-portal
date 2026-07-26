@@ -40,7 +40,7 @@ def main() -> int:
     ap.add_argument("--file", required=True, help="Path to the blank COI PDF")
     ap.add_argument("--expiry-label", default="",
                     help="e.g. expMay_2027 — appears in generated filenames")
-    ap.add_argument("--actor", default="joe@greenvalleycontractors.com",
+    ap.add_argument("--actor", default="jordan@greenvalleycontractors.com",
                     help="Recorded as uploaded_by in the template metadata")
     args = ap.parse_args()
 

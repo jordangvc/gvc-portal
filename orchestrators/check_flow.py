@@ -44,7 +44,7 @@ def extract_check(image_bytes: bytes, *, email: str) -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "VISION_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe — Vision API / credentials aren't set up on the service."},
+                    "advice": "Ask an admin — Vision API / credentials aren't set up on the service."},
         )
 
     parsed = check_deposit.parse_check_ocr(text)
@@ -55,7 +55,7 @@ def extract_check(image_bytes: bytes, *, email: str) -> dict:
         raise HTTPException(
             status_code=503,
             detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
-                    "advice": "Ask Joe to set MONDAY_API_TOKEN."},
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     res = check_deposit.match_invoices(parsed.as_dict(), rows)
     activity.log_event("check.extract", actor=email,
@@ -157,7 +157,7 @@ def commit_check(*, monday_item_ids: list[int], image_bytes: bytes, content_type
             rows.append(row)
     except MondayNotConfigured as e:
         raise HTTPException(status_code=503, detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED",
-            "detail": str(e), "advice": "Ask Joe to set MONDAY_API_TOKEN."})
+            "detail": str(e), "advice": "Ask an admin to set MONDAY_API_TOKEN."})
 
     identifiers = [r.get("identifier") or str(i) for r, i in zip(rows, ids)]
     covers = identifiers if len(identifiers) > 1 else None
@@ -166,7 +166,7 @@ def commit_check(*, monday_item_ids: list[int], image_bytes: bytes, content_type
     api_key = os.environ.get("STRIPE_API_KEY")
     if not api_key:
         raise HTTPException(status_code=503, detail={"ok": False, "code": "STRIPE_NOT_CONFIGURED",
-            "detail": "STRIPE_API_KEY is not set.", "advice": "Ask Joe to set the STRIPE_API_KEY secret."})
+            "detail": "STRIPE_API_KEY is not set.", "advice": "Ask an admin to set the STRIPE_API_KEY secret."})
     stripe.api_key = api_key
 
     states: list[dict] = []
@@ -227,7 +227,7 @@ def commit_check(*, monday_item_ids: list[int], image_bytes: bytes, content_type
         partial_ids = set(gate["partial_ids"])
     else:
         # FULL mode (legacy) — sum gate over remaining balances. Warn-and-
-        # override per Joe 2026-07-03: a mismatch blocks unless allow_mismatch.
+        # override (decided 2026-07-03): a mismatch blocks unless allow_mismatch.
         sums = check_deposit.sum_check(amount, rows)
         if sums["matched"] is False and not allow_mismatch:
             raise HTTPException(status_code=409, detail={"ok": False, "code": "SUM_MISMATCH",
@@ -376,7 +376,7 @@ def commit_check(*, monday_item_ids: list[int], image_bytes: bytes, content_type
         elif not inv_plan["do_monday"]:
             res["monday"] = "already Paid"
 
-        # 3c) Drive — file the check/stub image in EACH invoice's folder (Joe
+        # 3c) Drive — file the check/stub image in EACH invoice's folder (decided
         #     2026-07-03: every project keeps its own payment record). Best-effort.
         folder_id = check_deposit.drive_folder_id(row.get("drive_folder_url"))
         if folder_id and not inv_errors:

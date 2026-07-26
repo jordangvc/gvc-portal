@@ -199,7 +199,7 @@ def process_coi(
             print(f"[finalize {identifier}] Gmail draft FAILED: {e}", file=sys.stderr)
 
         # 3) Slack notice. Channel comes ONLY from GVC_COI_SLACK_CHANNEL —
-        #    until Joe creates the channel and sets the env var this SKIPS
+        #    until someone creates the channel and sets the env var this SKIPS
         #    cleanly (no post attempt, no degraded alert). Non-fatal always.
         try:
             from adapters.slack_notify import SlackNotConfigured, notify_coi_drafted
@@ -222,7 +222,7 @@ def process_coi(
             print(f"[finalize {identifier}] Slack notice failed (non-fatal): {e}",
                   file=sys.stderr)
 
-        # 4) Monday log — PLACEHOLDER (Joe, 2026-07-14): the destination board
+        # 4) Monday log — PLACEHOLDER (decided 2026-07-14): the destination board
         #    is undecided (GC Billing Profiles was considered and parked).
         #    log_coi skips cleanly until GVC_MONDAY_COI_BOARD_ID is set.
         try:
@@ -462,7 +462,7 @@ def process_coi_bulk(
     # Batch complete → close out the ledger + report the accurate totals.
     if not rest:
         # (a) Mark every invalid (skipped, missing-info) row NO so the sheet
-        #     shows each unsent row (Joe 2026-07-16 — was: cell untouched,
+        #     shows each unsent row (decided 2026-07-16 — was: cell untouched,
         #     which hid skipped rows from the counts). Idempotent: cells
         #     already NO are left alone. Never fatal.
         invalid_marked: list[dict] = []

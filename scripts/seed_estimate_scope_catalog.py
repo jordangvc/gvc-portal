@@ -38,7 +38,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--from-file", default="",
                     help="Path to a catalog JSON to seed (defaults to the shipped catalog)")
-    ap.add_argument("--actor", default="joe@greenvalleycontractors.com",
+    ap.add_argument("--actor", default="jordan@greenvalleycontractors.com",
                     help="Recorded as updated_by in the catalog")
     ap.add_argument("--force", action="store_true",
                     help="Overwrite even if a catalog is already stored")

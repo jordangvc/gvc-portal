@@ -330,7 +330,7 @@ def _coi_message(info: dict) -> str:
 def notify_coi_drafted(info: dict, *, channel: Optional[str] = None) -> dict:
     """
     Post a notice that a COI was drafted in hello@. Channel comes ONLY from
-    GVC_COI_SLACK_CHANNEL (set it to the channel ID once Joe creates the
+    GVC_COI_SLACK_CHANNEL (set it to the channel ID once someone creates the
     annual-maintenance channel; the @gvc_reporting bot must be a MEMBER).
     Deliberately NO named-channel fallback: until the env var is set this
     raises SlackNotConfigured, which callers treat as a clean skip — a COI

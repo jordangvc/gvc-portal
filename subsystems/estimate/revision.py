@@ -1,7 +1,7 @@
 """
 Estimate revision — pure helpers.
 =========================================================================
-Confirmed design (Joe, 2026-07-02):
+Confirmed design (decided 2026-07-02):
 
   * The OUTBOUND estimate number never changes on revision. The client
     always sees the same `YYYY-MMDD-NNN`; once a client agrees, that number

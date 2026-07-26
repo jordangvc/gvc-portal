@@ -1,7 +1,7 @@
 """
 Change Order revision — pure helpers.
 =========================================================================
-Confirmed design (Joe, 2026-07-16 — docs/portal-co-parity-design.md):
+Confirmed design (decided 2026-07-16 — docs/portal-co-parity-design.md):
 
   * The CO NUMBER never changes on revision. The client always sees the same
     `CO.{n}-{base}`; the revision replaces the document under that id.

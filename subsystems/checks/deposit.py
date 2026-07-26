@@ -12,7 +12,7 @@ touching Google Vision, Stripe, Monday, or Drive:
                              grounded in the "Invoices Sent" board schema.
 
 The live path (Vision call lives in vision.py; Stripe paid_out_of_band, Monday
-Status→Paid, Drive upload) is a 3-stage gate that mutates money state. Per Joe:
+Status→Paid, Drive upload) is a 3-stage gate that mutates money state. Per the original design:
 the already-deposited check is caught AFTER the confirm modal, when we pull the
 matched invoice's status from Stripe. See docs/portal-check-deposit-design.md.
 """
@@ -338,7 +338,7 @@ def match_invoice(check: dict, rows: list[dict]) -> MatchResult:
 # ---------------------------------------------------------------------------
 # Multi-invoice matching — one check pays SEVERAL open invoices, each IN FULL
 # (Stripe's paid_out_of_band is all-or-nothing per invoice; partials are out of
-# scope by design — Joe 2026-07-03). Signals, strongest first:
+# scope by design — decided 2026-07-03). Signals, strongest first:
 #   1. invoice identifiers listed on the stub (memo/reference) — ALL hits match.
 #   2. the single-invoice rules (exact amount, payer narrowing).
 #   3. amount COMBINATION: exactly one subset of the payer's open invoices sums

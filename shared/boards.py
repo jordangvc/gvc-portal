@@ -18,5 +18,5 @@ BID_BOARD_ID = int(os.environ.get("GVC_MONDAY_BID_BOARD_ID")
                    or os.environ.get("GVC_OPPORTUNITIES_BOARD_ID")
                    or 1918846027)
 # Operations board — crew/office task tracking. A finalized Change Order adds a
-# task here (new CO Monday model, Joe 2026-07-16).
+# task here (new CO Monday model, decided 2026-07-16).
 OPERATIONS_BOARD_ID = int(os.environ.get("GVC_MONDAY_OPERATIONS_BOARD_ID", "1920364853"))
