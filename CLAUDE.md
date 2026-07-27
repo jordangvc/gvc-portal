@@ -1590,3 +1590,10 @@ are OFF until Jordan — and only Jordan — sets GVC_LIEN_ALERTS_ENABLED to exa
   "public work" isn't representable on the board (no Project Type label) so public rules never
   fire yet; alert dedup state before Jordan ever flips GVC_LIEN_ALERTS_ENABLED; Slack channel for
   lien pings undecided (env GVC_LIEN_SLACK_CHANNEL unset).
+
+### 2026-07-27 — Job Check designed (from the takeoff project; Jordan priority "right away")
+- Field crew picks an active Monday project in the portal, checks boxes /
+  fills columns, one Save writes back via change_item_column_values. The
+  portal's FIRST Monday write surface. Design: docs/portal-job-check-design.md.
+  Column allowlist in shared/boards.py (money columns excluded); saves are
+  explicit-tap only, audit-logged to the activity store; grant key `jobcheck`.
