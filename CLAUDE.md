@@ -1656,3 +1656,11 @@ Per the design above. Column ids/types verified LIVE against Projects board 1918
   column on the Projects board today (the form supports the type if one is added); (4) the
   deal_stage labels literally include "Complete Job Check Form" — flipping deal_stage after a
   completed check pass could be a v2 automation, but v1 leaves deal_stage read-only.
+
+### 2026-07-27 — DEPLOYED: r4 live + superadmin swapped (from the takeoff project)
+- Cloud Run revisions 00065 (r4 code: rebrand + Lien Watch + Job Check) and
+  00066 (env: GVC_PORTAL_ALLOWED_EMAILS = jordan@ ONLY — the former GM's
+  break-glass superadmin is revoked at the service level). Deployed via
+  Jordan's fresh hello@ gcloud auth, Jul 27. Remaining revocation items:
+  grants.json row via /ui/admin, Monday/Stripe/GCP IAM audit, Workspace
+  suspension.
