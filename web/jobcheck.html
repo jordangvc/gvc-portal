@@ -7,8 +7,8 @@
 <style>
   :root {
     --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #fff7ed; --warn-line: #fdba74;
-    --err-bg: #fef2f2; --err-line: #fca5a5; --ok-bg: #e7f1ec; --ok-line: #bcd6c8;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
+    --err-bg: #FEE7E7; --err-line: #DC2626; --ok-bg: #F2F7EE; --ok-line: #bcd6c8;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -18,8 +18,8 @@
   .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
   .who a { color: #fff; text-decoration: underline; }
   #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
-  .dot.ok { background: #4ade80; } .dot.bad { background: #f87171; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
+  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
   main { max-width: 760px; margin: 0 auto; padding: 20px 16px 120px; display: grid; gap: 16px; }
   .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 18px; }
   .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
@@ -49,9 +49,9 @@
   /* Job Check page */
   #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
   #status.show { display: block; }
-  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
   #status.ok  { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
   #status ul { margin: 6px 0 0; padding-left: 20px; }
 
   #search { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
@@ -83,7 +83,7 @@
   .field.dirty > label::after { content: " •"; color: var(--gold-dark); }
   .chip-btn { min-height: 48px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line);
     font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; text-align: center; }
-  .chip-btn.unset { background: #f3f4f6; color: var(--muted); font-weight: 600; }
+  .chip-btn.unset { background: #F6F5F0; color: var(--muted); font-weight: 600; }
   .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
     width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
     border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
@@ -235,7 +235,7 @@ function statusChipHtml(col) {
     return `<button class="chip-btn unset" type="button" data-col="${esc(col.id)}">(not set) — tap to set</button>`;
   }
   const lab = (statusSeq[col.id] || []).find((l) => l && l.label === val);
-  const bg = lab && lab.hex ? lab.hex : "#f3f4f6";
+  const bg = lab && lab.hex ? lab.hex : "#F6F5F0";
   return `<button class="chip-btn" type="button" data-col="${esc(col.id)}"
     style="background:${esc(bg)};color:${textColorFor(bg)};border-color:${esc(bg)};">${esc(val)}</button>`;
 }

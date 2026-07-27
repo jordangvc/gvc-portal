@@ -7,8 +7,8 @@
 <style>
   :root {
     --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #fff7ed; --warn-line: #fdba74;
-    --err-bg: #fef2f2; --err-line: #fca5a5; --ok-bg: #FBF3E1; --ok-line: #E3CFA0;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
+    --err-bg: #FEE7E7; --err-line: #DC2626; --ok-bg: #FBF3E1; --ok-line: #E3CFA0;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -21,7 +21,7 @@
   main { max-width: 760px; margin: 0 auto; padding: 24px; }
   .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 20px; }
   .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #44403C; }
   input, select { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; font: inherit; }
   .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; background: var(--green); color: #fff; }
   .btn:hover { background: var(--green-dark); }
@@ -31,8 +31,8 @@
   .grid .full { grid-column: 1 / -1; }
   #status { padding: 10px 14px; border-radius: 8px; font-size: 14px; display: none; margin-bottom: 16px; }
   #status.show { display: block; }
-  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
   #status.ok { background: var(--ok-bg); border: 1px solid var(--ok-line); }
   .overlay { position: fixed; inset: 0; background: rgba(0,0,0,.4); display: none; align-items: flex-start; justify-content: center; padding: 32px 16px; overflow: auto; }
   .overlay.show { display: flex; }
@@ -40,7 +40,7 @@
   .modal h3 { margin: 0 0 4px; }
   .check-img { display: none; width: 100%; max-height: 280px; object-fit: contain;
     border: 1px solid var(--line); border-radius: 8px; background: var(--bg); margin: 12px 0 4px; }
-  .match { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 12px 0; background: #fafbfc; }
+  .match { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin: 12px 0; background: #FAFAF8; }
   .match.hi { border-color: var(--ok-line); background: var(--ok-bg); }
   .pill { font-size: 12px; font-weight: 600; padding: 1px 8px; border-radius: 999px; background: #eef2ff; color: #3730a3; }
   .muted { color: var(--muted); font-size: 13px; }
@@ -49,7 +49,7 @@
   #m-list.show { display: block; }
   .inv-row { padding: 8px 10px; cursor: pointer; border-bottom: 1px solid var(--line); font-size: 14px; }
   .inv-row:last-child { border-bottom: 0; }
-  .inv-row:hover { background: #f3f4f6; }
+  .inv-row:hover { background: #F6F5F0; }
   .inv-row.sel { background: var(--ok-bg); }
   .inv-row .id { font-weight: 600; }
   .inv-empty { padding: 10px; color: var(--muted); font-size: 13px; }
@@ -72,8 +72,8 @@
      visual fatigue on long forms. Calm green/slate alternation; overrides the
      plain white .card above via source order. ── */
   :root {
-    --sec-tint-a: #f2f7f4; --sec-bar-a: #235339; --sec-band-a: #e7f1ec; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
+    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
   }
   .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
     box-shadow: 0 4px 0 0 var(--sec-bar-a); }

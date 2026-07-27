@@ -7,8 +7,8 @@
 <style>
   :root {
     --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #fff7ed; --warn-line: #fdba74;
-    --err-bg: #fef2f2; --err-line: #fca5a5;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
+    --err-bg: #FEE7E7; --err-line: #DC2626;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -18,15 +18,15 @@
   .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
   .who a { color: #fff; text-decoration: underline; }
   #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
-  .dot.ok { background: #4ade80; } .dot.bad { background: #f87171; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
+  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
   main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
   .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 20px; }
   .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
   .card h2 .opt { text-transform: none; font-weight: 400; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
   .grid .full { grid-column: 1 / -1; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #44403C; }
   label .opt { font-weight: 400; color: var(--muted); }
   input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
     font: inherit; color: var(--ink); background: #fff; }
@@ -42,16 +42,16 @@
   .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
   #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
   #status.show { display: block; }
-  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
   #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
   #preview-card { display: none; } #preview-card.show { display: block; }
   iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
   .result-line { padding: 4px 0; } .result-line a { color: var(--green-dark); font-weight: 600; }
   code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
   .spinner { display: none; } .spinner.show { display: inline; }
   #tmpl-state { font-size: 13px; margin-top: 4px; }
-  #tmpl-state.ok { color: var(--green-dark); } #tmpl-state.warn { color: #b45309; }
+  #tmpl-state.ok { color: var(--green-dark); } #tmpl-state.warn { color: #96763B; }
   /* Standard GVC Portal header (shared across all tool pages) */
   header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
   header h1 { text-align: center; }
@@ -68,8 +68,8 @@
   }
   /* Section color (2026-06-24 standard) — tinted cards + accent bars. */
   :root {
-    --sec-tint-a: #f2f7f4; --sec-bar-a: #235339; --sec-band-a: #e7f1ec; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
+    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
   }
   .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
     box-shadow: 0 4px 0 0 var(--sec-bar-a); }
@@ -249,9 +249,9 @@ async function run(mode) {
       let html = `<strong>✅ COI created for ${escapeHtml(wb.holder_name || "")}.</strong><br />`;
       if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
       if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
-      if (wb.gmail_status) html += `<div class="result-line" style="color:#b45309">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
+      if (wb.gmail_status) html += `<div class="result-line" style="color:#96763B">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
       if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">COI in Drive</a> (${escapeHtml(wb.drive_folder_path || "COIs Sent/")})</div>`;
-      if (wb.drive_status) html += `<div class="result-line" style="color:#b45309">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
+      if (wb.drive_status) html += `<div class="result-line" style="color:#96763B">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
       html += `<div class="result-line">Slack notice: ${wb.slack_notified ? "posted ✅" : escapeHtml(wb.slack_status || wb.slack_error || "not sent")}</div>`;
       if (wb.monday_status) html += `<div class="result-line">Monday: ${escapeHtml(wb.monday_status)}</div>`;
       setStatus("warn", html);
@@ -307,7 +307,7 @@ function bulkSpinner(on) {
 function stateBadge(e) {
   if (e.state === "ready") {
     return e.duplicate_of
-      ? `<span style="color:#b45309">ready ⚠ dup of row ${e.duplicate_of}</span>`
+      ? `<span style="color:#96763B">ready ⚠ dup of row ${e.duplicate_of}</span>`
       : `<span style="color:var(--green-dark)">ready</span>`;
   }
   if (e.state === "skip_sent") return `<span class="opt" style="color:var(--muted)">already sent (YES)</span>`;
@@ -370,7 +370,7 @@ function markRowResult(res) {
     let html = `<span style="color:var(--green-dark)">✅ drafted</span>`;
     if (res.gmail_draft_url) html += ` <a href="${res.gmail_draft_url}" target="_blank" rel="noopener">draft</a>`;
     if (res.drive_pdf_url) html += ` · <a href="${res.drive_pdf_url}" target="_blank" rel="noopener">Drive</a>`;
-    if (res.writeback_error) html += ` <span style="color:#b45309">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
+    if (res.writeback_error) html += ` <span style="color:#96763B">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
     cell.innerHTML = html;
   } else {
     cell.innerHTML = `<span style="color:#b91c1c">❌ NO — ${escapeHtml(res.error || "failed")}</span>`;
@@ -382,7 +382,7 @@ function markInvalidRowsSkipped(marked) {
     const tr = document.getElementById("bulk-row-" + m.row_number);
     if (!tr) return;
     const cell = tr.querySelector(".bulk-state");
-    let html = `<span style="color:#b45309">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
+    let html = `<span style="color:#96763B">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
     if (m.writeback_error) html += ` <span style="color:#b91c1c">⚠ NO not written: ${escapeHtml(m.writeback_error)}</span>`;
     cell.innerHTML = html;
   });
@@ -412,7 +412,7 @@ function bulkFinish(b) {
   }
   html += `<div class="result-line">Drafts are waiting in hello@ — review and send.</div>`;
   if (b.slack_notified) html += `<div class="result-line">Slack summary posted ✅</div>`;
-  else if (b.slack_status || b.slack_error) html += `<div class="result-line" style="color:#b45309">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
+  else if (b.slack_status || b.slack_error) html += `<div class="result-line" style="color:#96763B">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
   $("#bulk-result").innerHTML = html;
   setStatus(st.failed ? "warn" : "info",
     `Bulk run finished — ${st.done} drafted this run${st.failed ? `, ${st.failed} failed (marked NO; they retry on the next run)` : ""}.` +

@@ -129,10 +129,23 @@ def _friendly_error(exc: Exception) -> tuple[int, str, str, str]:
     if name == "ValueError":
         return (422, "INVALID_INPUT", msg, humanize_validation_message(msg))
 
-    # Catch-all. CRITICAL: tell Andrea not to retry on this path — a 500 can
-    # mean partial success (Stripe invoice created but Gmail draft failed, or
-    # similar). Re-running on partial success is the footgun.
+    # Monday auth death (r4): a 401 from api.monday.com means the portal's
+    # MONDAY_API_TOKEN is invalid or was revoked — tokens die with their
+    # creator's Monday account. Read-only pages (Job Check, Lien Watch) hit
+    # this too, and telling THEM about Stripe is wrong and scary.
+    if "401" in msg and "monday.com" in low:
+        return (502, "MONDAY_AUTH", msg,
+                "The portal's Monday.com access token is invalid or was revoked "
+                "(this happens when the token's creator leaves the company). "
+                "An admin needs to create a new Monday API token and update the "
+                "MONDAY_API_TOKEN secret on the service. Nothing was written.")
+
+    # Catch-all. CRITICAL: the no-retry warning is for the INVOICE path — a
+    # 500 there can mean partial success (Stripe invoice created but Gmail
+    # draft failed). Other tools shouldn't be threatened with Stripe.
     return (500, "UNEXPECTED", f"{name}: {msg}",
-            "Unexpected error. The invoice MAY have been partially created in "
-            "Stripe. Do NOT retry. Ask an admin to check the service logs and the "
-            "Stripe dashboard.")
+            "Unexpected error. If this happened while creating an INVOICE, it "
+            "may have partially completed in Stripe — do NOT retry that invoice; "
+            "ask an admin to check the service logs and the Stripe dashboard. "
+            "For read-only pages (Job Check, Lien Watch, Activity) it is safe "
+            "to reload.")

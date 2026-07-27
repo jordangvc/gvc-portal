@@ -43,7 +43,7 @@
   table { width: 100%; border-collapse: collapse; background: #fff;
     border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
   th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #fafbfc; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #FAFAF8; }
   td { font-size: 13px; }
   td.ts { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
   td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
@@ -51,9 +51,9 @@
   tr:last-child td { border-bottom: none; }
   .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
   .pill.ok { background: #FBF3E1; color: var(--green-dark); border: 1px solid #E3CFA0; }
-  .pill.denied { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-  .pill.error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
-  .pill.other { background: #f3f4f6; color: var(--muted); border: 1px solid var(--line); }
+  .pill.denied { background: #FEE7E7; color: #b91c1c; border: 1px solid #fecaca; }
+  .pill.error { background: #FEE7E7; color: #b91c1c; border: 1px solid #fecaca; }
+  .pill.other { background: #F6F5F0; color: var(--muted); border: 1px solid var(--line); }
   .footer-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
   .empty { display: none; color: var(--muted); padding: 24px; text-align: center; }
   .loading { color: var(--muted); font-size: 13px; }
@@ -75,8 +75,8 @@
      visual fatigue on long forms. Calm green/slate alternation; overrides the
      plain white .card above via source order. ── */
   :root {
-    --sec-tint-a: #f2f7f4; --sec-bar-a: #235339; --sec-band-a: #e7f1ec; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
+    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
   }
   .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
     box-shadow: 0 4px 0 0 var(--sec-bar-a); }

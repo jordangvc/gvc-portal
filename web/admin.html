@@ -7,8 +7,8 @@
 <style>
   :root {
     --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #fff7ed; --warn-line: #fdba74;
-    --err-bg: #fef2f2; --err-line: #fca5a5;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
+    --err-bg: #FEE7E7; --err-line: #DC2626;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -21,7 +21,7 @@
   main { max-width: 1000px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
   .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 20px; }
   .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #44403C; }
   input[type=text], input[type=email] { width: 100%; padding: 9px 10px; border: 1px solid var(--line);
     border-radius: 7px; font: inherit; }
   .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
@@ -48,7 +48,7 @@
   #status { padding: 10px 14px; border-radius: 8px; font-size: 14px; display: none; }
   #status.show { display: block; }
   #status.ok { background: #FBF3E1; border: 1px solid #E3CFA0; }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
   .actions { display: flex; gap: 8px; }
   /* Standard GVC Portal header (shared across all tool pages) */
   header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
@@ -68,8 +68,8 @@
      visual fatigue on long forms. Calm green/slate alternation; overrides the
      plain white .card above via source order. ── */
   :root {
-    --sec-tint-a: #f2f7f4; --sec-bar-a: #235339; --sec-band-a: #e7f1ec; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
+    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
   }
   .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
     box-shadow: 0 4px 0 0 var(--sec-bar-a); }

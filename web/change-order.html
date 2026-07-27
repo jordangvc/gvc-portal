@@ -7,8 +7,8 @@
 <style>
   :root {
     --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #fff7ed; --warn-line: #fdba74;
-    --err-bg: #fef2f2; --err-line: #fca5a5;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
+    --err-bg: #FEE7E7; --err-line: #DC2626;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
@@ -19,15 +19,15 @@
   .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
   .who a { color: #fff; text-decoration: underline; }
   #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
-  .dot.ok { background: #4ade80; } .dot.bad { background: #f87171; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
+  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
   main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
   .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 20px; }
   .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
   .card h2 .opt { text-transform: none; font-weight: 400; }
   .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
   .grid .full { grid-column: 1 / -1; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #374151; }
+  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #44403C; }
   label .opt { font-weight: 400; color: var(--muted); }
   input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
     font: inherit; color: var(--ink); background: #fff; }
@@ -35,7 +35,7 @@
   textarea { resize: vertical; min-height: 64px; }
   .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
   .row-link { display: grid; grid-template-columns: 1fr auto; gap: 10px; align-items: end; }
-  .line-item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #fafbfc; }
+  .line-item { border: 1px solid var(--line); border-radius: 8px; padding: 12px; margin-bottom: 10px; background: #FAFAF8; }
   .line-item .row1 { display: grid; grid-template-columns: 1fr 150px auto; gap: 10px; align-items: end; }
   .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
     background: var(--green); color: #fff; }
@@ -49,11 +49,11 @@
   .totals strong { color: var(--ink); font-size: 18px; }
   #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
   #status.show { display: block; }
-  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
   #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
   #link-state { font-size: 13px; margin-top: 8px; }
-  #link-state.ok { color: var(--green-dark); } #link-state.warn { color: #b45309; }
+  #link-state.ok { color: var(--green-dark); } #link-state.warn { color: #96763B; }
   #preview-card { display: none; } #preview-card.show { display: block; }
   iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
   .result-line { padding: 4px 0; } .result-line a { color: var(--green-dark); font-weight: 600; }
@@ -61,16 +61,16 @@
   .spinner { display: none; } .spinner.show { display: inline; }
   .save-state { font-size: 12px; color: var(--muted); margin-left: auto; align-self: center; }
   .save-state.synced { color: var(--green-dark); }
-  .save-state.local { color: #b45309; }
+  .save-state.local { color: #96763B; }
   .draft-row { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border: 1px solid var(--line);
-    border-radius: 8px; margin-bottom: 8px; background: #fafbfc; }
+    border-radius: 8px; margin-bottom: 8px; background: #FAFAF8; }
   .draft-row.active { border-color: var(--green); background: #f0f7f3; }
   .draft-row .d-main { flex: 1; min-width: 0; }
   .draft-row .d-label { font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .draft-row .d-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
   .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
   .badge.synced { background: #FBF3E1; color: var(--green-dark); border: 1px solid #E3CFA0; }
-  .badge.local { background: var(--warn-bg); color: #b45309; border: 1px solid var(--warn-line); }
+  .badge.local { background: var(--warn-bg); color: #96763B; border: 1px solid var(--warn-line); }
   .badge.active { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
   .badge.billed { background: var(--err-bg); color: #b91c1c; border: 1px solid var(--err-line); }
   /* Standard GVC Portal header (shared across all tool pages) */
@@ -91,8 +91,8 @@
      visual fatigue on long forms. Calm green/slate alternation; overrides the
      plain white .card above via source order. ── */
   :root {
-    --sec-tint-a: #f2f7f4; --sec-bar-a: #235339; --sec-band-a: #e7f1ec; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #dbe4ed; --sec-bar-b: #5b7a99; --sec-band-b: #dbe4ed; --sec-band-b-ink: #34495e;
+    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
+    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
   }
   .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
     box-shadow: 0 4px 0 0 var(--sec-bar-a); }
@@ -400,15 +400,15 @@ async function run(mode) {
         html += `<div class="result-line">🗂️ Prior version archived in Drive as <code>${wb.drive_archived.join("</code>, <code>")}</code></div>`;
       if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
       if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
-      if (wb.gmail_status) html += `<div class="result-line" style="color:#b45309">⚠️ ${wb.gmail_status}</div>`;
+      if (wb.gmail_status) html += `<div class="result-line" style="color:#96763B">⚠️ ${wb.gmail_status}</div>`;
       if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">CO PDF in Drive</a> (${wb.drive_folder_path || "Change Orders/"})</div>`;
-      if (wb.drive_status) html += `<div class="result-line" style="color:#b45309">⚠️ Drive: ${wb.drive_status}</div>`;
+      if (wb.drive_status) html += `<div class="result-line" style="color:#96763B">⚠️ Drive: ${wb.drive_status}</div>`;
       const coUrl = wb.monday_co_item_url || wb.monday_item_url;
       if (coUrl) html += `<div class="result-line">📋 <a href="${coUrl}" target="_blank" rel="noopener">Monday CO item</a>${wb.monday_co_item_updated ? " updated" : " created"} (Drafted).</div>`;
       if (wb.monday_ops_task_url) html += `<div class="result-line">🗓️ <a href="${wb.monday_ops_task_url}" target="_blank" rel="noopener">Operations task</a>${wb.monday_ops_task_updated ? " updated" : " created"}.</div>`;
       if (wb.monday_billed_warning) html += `<div class="result-line" style="color:#b91c1c">⚠️ ${wb.monday_billed_warning}</div>`;
-      if (wb.monday_status) html += `<div class="result-line" style="color:#b45309">⚠️ Monday: ${wb.monday_status}</div>`;
-      if (wb.monday_ops_status) html += `<div class="result-line" style="color:#b45309">⚠️ Operations task: ${wb.monday_ops_status}</div>`;
+      if (wb.monday_status) html += `<div class="result-line" style="color:#96763B">⚠️ Monday: ${wb.monday_status}</div>`;
+      if (wb.monday_ops_status) html += `<div class="result-line" style="color:#96763B">⚠️ Operations task: ${wb.monday_ops_status}</div>`;
       html += `<div class="result-line">#change-orders Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // CO is now real (in Monday) — drop the draft
