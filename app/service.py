@@ -73,6 +73,7 @@ from subsystems.checks import deposit as check_deposit
 from orchestrators import change_order_flow as change_order_flow
 from orchestrators import check_flow
 from orchestrators import coi_flow
+from orchestrators import lien_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
@@ -1759,6 +1760,59 @@ async def ui_coi_template_upload(
                        target=meta.get("expiry_label") or "(no label)",
                        result="ok")
     return {"ok": True, "template": meta}
+
+
+# ---------------------------------------------------------------------------
+# Lien Watch routes (P1). Gated by the `lien` grant. Mirrors /ui/estimate's
+# page pattern. READ-ONLY against Monday: the status page lists every active
+# job's notice/lien/retainage deadlines from shared/lien_rules.json. Slack
+# alerts are BUILT DARK in orchestrators/lien_flow.py behind
+# GVC_LIEN_ALERTS_ENABLED (only Jordan enables it) — deliberately NO route,
+# NO scheduler, NO wiring here.
+# ---------------------------------------------------------------------------
+
+@app.get("/ui/lien", response_class=HTMLResponse)
+def ui_lien_page(request: Request) -> HTMLResponse:
+    """Serve the Lien Watch status page."""
+    email = require_feature(request, "lien")
+    activity.log_event("tool.open", actor=email, target="lien")
+    path = WEB_DIR / "lien.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+
+
+@app.get("/ui/api/lien/status")
+def ui_lien_status(request: Request) -> dict:
+    """
+    The full tracker payload: every active Projects-board job with its state,
+    first-furnishing basis, and computed deadline set, most-urgent first.
+    Read-only sweep — one Monday board read per call, no writebacks.
+    """
+    email = require_feature(request, "lien")
+    activity.log_event("lien.status", actor=email, target="tracker")
+    try:
+        return lien_flow.build_tracker()
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:lien] error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
 
 
 # ---------------------------------------------------------------------------

@@ -1534,3 +1534,59 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
   never auto-send), P3 mail-service leg. Rule source: validated tri-state legal
   pack (10/10 statute spot-checks Jul 26; validation report in the takeoff repo).
   Monday stays the bus; notice status writes back as Projects-board columns.
+
+### 2026-07-26 — ✨ LIEN WATCH (P1) BUILT — tracker LIVE-ready, alerts BUILT DARK (from the takeoff project)
+P1 of the lien-rights tracker, per the design + the build-dark amendment (LAW: alerts exist but
+are OFF until Jordan — and only Jordan — sets GVC_LIEN_ALERTS_ENABLED to exactly "true").
+- shared/lien_rules.json — 15 deadline-relevant lien/retainage entries filtered from the validated
+  Codex tri-state pack (wage/licensing/insurance/dispute dropped), version "2026-07-26", per-entry
+  attorney_reviewed:false + source citations, plus GVC-authored `computed` blocks (kind / anchor /
+  per-project-type day counts) that counsel must bless in P0 before this is anyone's only safeguard.
+- subsystems/lien_watch/deadlines.py — PURE math: compute_deadlines(state, project_type,
+  first_furnishing) → deadline rows w/ severity (ok >14d / warn 4–14 / critical ≤3 / missed <0 /
+  unknown). Unknown project_type ⇒ BOTH private variants, marked ambiguous (identical windows
+  collapse to variant "either"); public is never guessed. KEY HONESTY RULE: P1 only knows FIRST
+  furnishing, so last-furnishing/event-anchored deadlines (lien filings, KY notice, retainage)
+  surface with their statutory window but NO fabricated due date (severity "unknown") — computing
+  them from the start date would manufacture false "missed" alarms. parse_state() reads OH/IN/KY
+  from Job Location then item name (bare "IN" matched case-sensitively so the English word can't
+  classify a job); normalize_project_type maps the board's labels (Residential/Commercial map,
+  Repair/Standard/Specialty ⇒ unknown).
+- adapters/monday/lien.py — READ-ONLY Projects-board (1918846405) fetch, paged 200. Columns
+  (inspected live via get_board_info 2026-07-26): `date` "Start Date" EXISTS but is sparsely
+  filled ⇒ first-furnishing = Start Date (basis "start_date") else item created_at (basis
+  "assumed"), EXCEPT rows still in "New Projects (Not Started)" (new_group25317__1) with no Start
+  Date get NO clock (nothing furnished yet). Active = every group except `closed` (Completed and
+  Paid) — completed-but-UNPAID groups deliberately stay in; skips top-level "CO." rows + deal_stage
+  "Project Lost/canceled". FUN FACT: the board's Project Status labels already include "Send Notice
+  of Furnishing" — the team was tracking this by hand.
+- orchestrators/lien_flow.py — build_tracker() (jobs sorted most-urgent-first + severity counts +
+  per-job notes incl. assumed-basis and state-unknown nudges) and send_lien_alerts() — T-14/7/3/1
+  Slack pings via slack_notify.post_message, channel ONLY from GVC_LIEN_SLACK_CHANNEL (COI
+  pattern, no named fallback), GATE AT TOP of the function: env not exactly "true" ⇒ logs "lien
+  alerts disabled" and returns. NO scheduler, NO route, NO wiring into any loop — deliberately
+  unreachable in prod. ⚠ Before anyone enables: there's no sent-marker state, so >1 run/day would
+  re-ping the same marks — build dedup (or the Monday writeback phase) first.
+- app/service.py — GET /ui/lien (page) + GET /ui/api/lien/status (tracker JSON), both gated by the
+  NEW `lien` feature (added to access.FEATURES; admins/superadmins get it via *; grant others in
+  /ui/admin). web/lien.html — header standard + r2 brand tokens, counsel-unverified banner
+  ("Deadline math is unverified by counsel — attorney review pending (P0). This page informs; it
+  does not replace legal advice."), summary chips, per-job cards w/ severity chips, days-remaining,
+  statute links, first-furnishing basis chip. hub.html: Lien Watch tile (Live, ⏳,
+  "Notice-of-furnishing and lien deadlines per job — tracker only, alerts off.") + footer r2 → r3
+  same commit.
+- TESTS: tests/test_lien_watch.py — 22 pure/env-gated tests (deadline math per state, severity
+  bands, ambiguous variants, month-end clamping for KY's 6-month filing, first-furnishing basis
+  rules, Monday row normalization, the dark gate incl. near-true values like "1"/"yes"/"TRUE"
+  staying dark). First file of the REBUILT tests/ tree (pre-recovery suite is still lost). No
+  pytest on this box — file runs standalone: `python tests/test_lien_watch.py` (all pass).
+  python -m compileall clean; stubbed `import app.service` OK (60 routes, was 58); lien.html JS
+  node --check clean; pipeline smoke-tested against 7 real sampled board rows (CO row skipped,
+  sorting + severities correct).
+- NOT DEPLOYED (gcloud auth dead post-Joe). DEPLOY (admin): --source . deploy → grant `lien` in
+  /ui/admin → open /ui/lien → expect every active job listed w/ the banner. OPEN: P0 attorney
+  review of shared/lien_rules.json's computed blocks; a real "First Furnishing"/stocking-date
+  column (Start Date is mostly empty — takeoff's Send-to-Office stock date is the natural feed);
+  "public work" isn't representable on the board (no Project Type label) so public rules never
+  fire yet; alert dedup state before Jordan ever flips GVC_LIEN_ALERTS_ENABLED; Slack channel for
+  lien pings undecided (env GVC_LIEN_SLACK_CHANNEL unset).

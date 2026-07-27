@@ -1,0 +1,344 @@
+{
+  "schema_version": "1.0.0",
+  "version": "2026-07-26",
+  "title": "GVC lien/notice/retainage deadline rules — OH / IN / KY",
+  "provenance": "Filtered from ChatGPT's tri-state legal-ops pack (legal_ops_clause_map.json, Codex 2026-07-26; 10/10 statute spot-checks validated against primary sources on 2026-07-26). Only notice/lien/retainage entries relevant to computing job deadlines are kept; wage, licensing, insurance, and dispute entries were deliberately dropped. The `computed` blocks are GVC's machine-readable rendering of each rule and MUST be attorney-blessed (P0) before this tracker is anyone's only safeguard.",
+  "disclaimer": "Operational reference only; not legal advice. Calendar conservatively from first and last furnishing, preserve proof of service, and have licensed construction counsel approve forms and project-specific conclusions.",
+  "computed_schema": {
+    "anchor": "first_furnishing | last_furnishing | event — what starts the clock. P1 tracks first_furnishing only; other anchors surface with severity 'unknown'.",
+    "days": "map of project_type (residential|commercial|public) -> integer days, or {\"months\": n} for calendar months. A missing key means the deadline does not apply to that project type.",
+    "event": "human description of the triggering event when anchor == 'event'."
+  },
+  "entries": [
+    {
+      "id": "OH-LIEN-PRIVATE-NOF",
+      "state": "OH",
+      "category": "lien",
+      "clause_variant": "oh_private_notice_of_furnishing",
+      "project_type": "private commercial / non-home-construction",
+      "rule": "A subcontractor or material supplier generally serves a statutory Notice of Furnishing within 21 days after first furnishing. Serve the owner's designee named in the recorded Notice of Commencement and the original contractor. A late notice preserves lien rights only for labor/material furnished during the 21 days before service and afterward. If no Notice of Commencement was recorded, the Notice of Furnishing is not required.",
+      "trigger_or_deadline": "21 days after first labor or material; send immediately if late.",
+      "required_form": "Use the form in Ohio Rev. Code § 1311.05(B), with certified-mail/service proof.",
+      "statute": "Ohio Rev. Code § 1311.05",
+      "sources": [{"authority": "Ohio Rev. Code § 1311.05", "url": "https://codes.ohio.gov/ohio-revised-code/section-1311.05"}],
+      "effective_or_verified": "Ohio Rev. Code § 1311.05 effective 2007-03-30; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Whether the project is a home construction contract under § 1311.011.", "Service method, content, and claimant tier for the specific job."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "notice_of_furnishing", "label": "Notice of Furnishing",
+         "anchor": "first_furnishing", "days": {"commercial": 21},
+         "note": "Not required for home-construction contracts (§ 1311.011) or when no Notice of Commencement was recorded."}
+      ]
+    },
+    {
+      "id": "OH-LIEN-PRIVATE-FILE",
+      "state": "OH",
+      "category": "lien",
+      "clause_variant": "oh_private_lien_deadline",
+      "project_type": "private",
+      "rule": "Record the mechanics-lien affidavit in the county where the property is located within 60 days after last furnishing for a one- or two-family dwelling or condominium unit, and within 75 days for other private improvements. The affidavit must contain the statutory information; a copy is then served as required by § 1311.07.",
+      "trigger_or_deadline": "60 days residential; 75 days other private work, measured from claimant's last labor/work/material.",
+      "required_form": "Affidavit form in Ohio Rev. Code § 1311.06(C).",
+      "statute": "Ohio Rev. Code § 1311.06",
+      "sources": [
+        {"authority": "Ohio Rev. Code § 1311.06", "url": "https://codes.ohio.gov/ohio-revised-code/section-1311.06"},
+        {"authority": "Ohio Rev. Code § 1311.07", "url": "https://codes.ohio.gov/ohio-revised-code/section-1311.07"}
+      ],
+      "effective_or_verified": "Ohio Rev. Code § 1311.06 effective 2014-01-30; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Whether punch-list or corrective work counts as last furnishing.", "Property description, owner identity, amount, service, and foreclosure deadline."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "lien_filing", "label": "Mechanics-lien affidavit",
+         "anchor": "last_furnishing", "days": {"residential": 60, "commercial": 75},
+         "note": "60 days for a 1–2 family dwelling/condominium; 75 days for other private improvements."}
+      ]
+    },
+    {
+      "id": "OH-LIEN-HOME",
+      "state": "OH",
+      "category": "lien",
+      "clause_variant": "oh_owner_occupied_home",
+      "project_type": "owner-occupied single/double-family or condominium home construction",
+      "rule": "The ordinary Notice-of-Furnishing section does not apply to a home construction contract, but special protections in § 1311.011 apply. If the owner paid the original contractor in full before receiving a copy of the lien affidavit, the lien can be defeated. Treat owner-occupied residential work as a counsel-managed exception.",
+      "trigger_or_deadline": "File within the 60-day § 1311.06 period; early warning is essential because owner payment can cut off rights.",
+      "required_form": "Lien affidavit under § 1311.06; no § 1311.05 Notice of Furnishing for a home construction contract.",
+      "statute": "Ohio Rev. Code § 1311.011",
+      "sources": [{"authority": "Ohio Rev. Code § 1311.011", "url": "https://codes.ohio.gov/ohio-revised-code/section-1311.011"}],
+      "effective_or_verified": "Ohio Rev. Code § 1311.011 effective 2007-03-30; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Whether the dwelling/condominium and owner intent satisfy the statutory definition.", "Effect of partial/full owner payments and lender disbursements."],
+      "attorney_reviewed": false,
+      "computed": [],
+      "advisory": {"applies_to": ["residential"],
+                   "note": "Owner-occupied home construction: no Notice of Furnishing, but owner full-payment before lien service can defeat the lien — escalate aging receivables fast (§ 1311.011)."}
+    },
+    {
+      "id": "OH-LIEN-PUBLIC",
+      "state": "OH",
+      "category": "lien",
+      "clause_variant": "oh_public_funds_affidavit",
+      "project_type": "Ohio public improvement",
+      "rule": "Public property is not treated like private real estate. A qualifying subcontractor, supplier, or laborer may serve the public authority with an affidavit of amount due and unpaid within 120 days after last labor/work/material. Serve the representative named in the public Notice of Commencement; the claim reaches contract funds.",
+      "trigger_or_deadline": "No later than 120 days after claimant's last labor/work/material.",
+      "required_form": "Verified affidavit containing the information required by Ohio Rev. Code § 1311.26.",
+      "statute": "Ohio Rev. Code § 1311.26",
+      "sources": [{"authority": "Ohio Rev. Code § 1311.26", "url": "https://codes.ohio.gov/ohio-revised-code/section-1311.26"}],
+      "effective_or_verified": "Ohio Rev. Code § 1311.26 effective 2007-03-30; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Bond statute and bond-specific notice/suit dates for the awarding authority.", "Whether the claimant and work fall within Chapter 1311 public-improvement provisions."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "public_fund_affidavit", "label": "Public-funds affidavit",
+         "anchor": "last_furnishing", "days": {"public": 120},
+         "note": "Serve the public authority's Notice-of-Commencement representative; bond remedies are separate and NOT interchangeable."}
+      ]
+    },
+    {
+      "id": "OH-RET-PRIVATE",
+      "state": "OH",
+      "category": "retainage",
+      "clause_variant": "oh_private_pass_through",
+      "project_type": "private commercial and covered public work; excludes detached 1–3 family dwellings",
+      "rule": "No general private-project percentage cap was located. The subcontract may set retainage, but after the contractor receives final retainage it must pass through the subcontractor's proportion within 10 calendar days (or the shorter contract period) if the work/materials were satisfactory and owner-approved. Late payment carries 18% annual interest; statutory interest/fees cannot be waived.",
+      "trigger_or_deadline": "10 calendar days after upstream receipt of final retainage, subject to statutory conditions.",
+      "required_form": "No statutory retainage-release form; preserve pay application, owner approval, and upstream-receipt proof.",
+      "statute": "Ohio Rev. Code § 4113.61",
+      "sources": [{"authority": "Ohio Rev. Code § 4113.61(A)(3), (C), (D)", "url": "https://codes.ohio.gov/ohio-revised-code/section-4113.61"}],
+      "effective_or_verified": "Ohio Rev. Code § 4113.61 effective 2011-09-29; verified 2026-07-26.",
+      "confidence": "medium",
+      "attorney_verify": ["Negative finding that no private cap applies to the project.", "Whether owner approval/satisfactory-performance conditions are met."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "retainage_passthrough", "label": "Retainage pass-through",
+         "anchor": "event", "event": "GC's receipt of final retainage from the owner",
+         "days": {"commercial": 10},
+         "note": "18% annual interest on late payment; excludes detached 1–3 family dwellings."}
+      ]
+    },
+    {
+      "id": "OH-RET-PUBLIC",
+      "state": "OH",
+      "category": "retainage",
+      "clause_variant": "oh_public_release",
+      "project_type": "state public building/improvement under Chapter 153",
+      "rule": "When the major portion is substantially complete and occupied, used, or accepted, retained percentages and accrued interest are due within 30 days, less only an amount reasonably necessary for final completion. Remaining retained funds are due no later than 30 days after final completion. The cited statute does not state a universal percentage cap.",
+      "trigger_or_deadline": "30 days after substantial completion/use/acceptance; remaining balance within 30 days after final completion.",
+      "required_form": "Contract pay application and substantial/final-completion documentation.",
+      "statute": "Ohio Rev. Code § 153.13",
+      "sources": [{"authority": "Ohio Rev. Code § 153.13", "url": "https://codes.ohio.gov/ohio-revised-code/section-153.13/9-30-2025"}],
+      "effective_or_verified": "Ohio Rev. Code § 153.13 effective 2025-09-30.",
+      "confidence": "high",
+      "attorney_verify": ["Whether Chapter 153 or another public-authority statute controls.", "Transportation-project exceptions and project contract terms."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "retainage_release", "label": "Public retainage release",
+         "anchor": "event", "event": "substantial completion / occupancy / acceptance",
+         "days": {"public": 30},
+         "note": "Remaining retained funds due no later than 30 days after final completion."}
+      ]
+    },
+    {
+      "id": "IN-LIEN-PRELIM",
+      "state": "IN",
+      "category": "lien",
+      "clause_variant": "in_owner_occupied_pre_lien",
+      "project_type": "owner-occupied single/double-family dwelling",
+      "rule": "For alteration or repair, a credit furnisher not contracting with the occupying owner must give the occupying owner written notice of delivery/work and lien rights within 30 days after first furnishing. For original construction intended for owner occupancy, give the record owner written notice and file a copy with the county recorder within 60 days after first furnishing. Compliance is a condition precedent to the lien.",
+      "trigger_or_deadline": "30 days after first furnishing for alteration/repair; 60 days after first furnishing plus recorder filing for original construction.",
+      "required_form": "Written notice describing delivery/labor and existence of lien rights; retain service and recording proof.",
+      "statute": "Ind. Code § 32-28-3-1(h)–(i)",
+      "sources": [{"authority": "Ind. Code § 32-28-3-1(h)–(i)", "url": "https://law.justia.com/codes/indiana/title-32/article-28/chapter-3/section-32-28-3-1/"}],
+      "effective_or_verified": "Ind. Code § 32-28-3-1(h)–(i), 2025 Code, last cited amendment P.L.81-2020; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Credit status, owner occupancy/intent, original construction versus alteration, owner identified in tax-transfer books, and service method."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "pre_lien_notice_repair", "label": "Pre-lien notice (alteration/repair)",
+         "anchor": "first_furnishing", "days": {"residential": 30},
+         "note": "Applies to alteration/repair of an owner-occupied dwelling — condition precedent to the lien."},
+        {"kind": "pre_lien_notice_new_construction", "label": "Pre-lien notice (original construction)",
+         "anchor": "first_furnishing", "days": {"residential": 60},
+         "note": "Original construction intended for owner occupancy — written notice to record owner PLUS county-recorder filing."}
+      ]
+    },
+    {
+      "id": "IN-LIEN-PRIVATE",
+      "state": "IN",
+      "category": "lien",
+      "clause_variant": "in_private_lien",
+      "project_type": "private",
+      "rule": "Except for Class 2 structures, file in duplicate a sworn Notice of Intention to Hold Mechanic's Lien with the county recorder within 90 days after last labor/material/machinery. Class 2 structures have a 60-day filing period. The filing must state the claim amount, claimant and owner information, and property description; the recorder mails a duplicate to the owner within three business days.",
+      "trigger_or_deadline": "90 days after last furnishing; 60 days for a Class 2 structure.",
+      "required_form": "Duplicate sworn statement and Notice of Intention satisfying Ind. Code § 32-28-3-3(c).",
+      "statute": "Ind. Code § 32-28-3-3",
+      "sources": [{"authority": "Ind. Code § 32-28-3-3", "url": "https://law.justia.com/codes/indiana/title-32/article-28/chapter-3/section-32-28-3-3/"}],
+      "effective_or_verified": "Ind. Code § 32-28-3-3, 2025 Code; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Class 1/Class 2 status, last-furnishing date, lien-waiver effect, property description, and one-year foreclosure period/owner notice to shorten it."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "lien_filing", "label": "Notice of Intention to Hold Mechanic's Lien",
+         "anchor": "last_furnishing", "days": {"residential": 60, "commercial": 90},
+         "note": "60 days assumes the dwelling is a Class 2 structure — the statutory class, not 'residential' loosely, controls."}
+      ]
+    },
+    {
+      "id": "IN-LIEN-PUBLIC",
+      "state": "IN",
+      "category": "lien",
+      "clause_variant": "in_public_bond_claim",
+      "project_type": "Indiana public work (non-state-highway)",
+      "rule": "File duplicate verified statements of amount due with the public body and deliver a copy to the contractor within 60 days after completing labor/service or furnishing the last material. A bond suit cannot begin until 30 days after both acts and must be brought no later than 60 days after final completion and acceptance. State highway road/bridge claims follow Ind. Code § 8-23-9 instead.",
+      "trigger_or_deadline": "Claim within 60 days after last labor/service/material; suit window is unusually short and tied to final completion/acceptance.",
+      "required_form": "Duplicate verified statement of amount due.",
+      "statute": "Ind. Code § 5-16-5-2",
+      "sources": [{"authority": "Ind. Code § 5-16-5-2(d)–(f)", "url": "https://law.justia.com/codes/indiana/title-5/article-16/chapter-5/section-5-16-5-2/"}],
+      "effective_or_verified": "Ind. Code § 5-16-5-2, 2025 Code, last cited amendment P.L.135-2017; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Which public-work bonding statute applies, exact completion/acceptance date, claimant tier, and bond wording."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "public_bond_claim", "label": "Public-work bond claim",
+         "anchor": "last_furnishing", "days": {"public": 60},
+         "note": "Suit window is unusually short — escalate unpaid public invoices immediately; state-highway work follows a different statute."}
+      ]
+    },
+    {
+      "id": "IN-RET-PRIVATE",
+      "state": "IN",
+      "category": "retainage",
+      "clause_variant": "in_private_contract_controls",
+      "project_type": "private construction",
+      "rule": "No generally applicable Indiana private-construction retainage cap or prompt-payment statute was located; contract terms therefore drive percentage and release, subject to ordinary contract law and lien rights.",
+      "trigger_or_deadline": "Contract-defined.",
+      "required_form": "Contract pay application and demand; no general statutory form identified.",
+      "statute": "Indiana public-work retainage chapter (contrast)",
+      "sources": [{"authority": "Indiana public-work retainage chapter (contrast)", "url": "https://law.justia.com/codes/indiana/title-5/article-16/chapter-5-5/"}],
+      "effective_or_verified": "Negative finding verified against Indiana public-works payment statutes and current code sources on 2026-07-26.",
+      "confidence": "medium",
+      "attorney_verify": ["Any project-specific private statute, owner type, lender requirement, or case law affecting release.", "Exact subcontract language."],
+      "attorney_reviewed": false,
+      "computed": [],
+      "advisory": {"applies_to": ["residential", "commercial"],
+                   "note": "Indiana private retainage: no statutory cap/release clock found — the subcontract controls. Check the contract's retainage terms."}
+    },
+    {
+      "id": "IN-RET-PUBLIC",
+      "state": "IN",
+      "category": "retainage",
+      "clause_variant": "in_public_6_or_3",
+      "project_type": "Indiana state public work and local public work generally over $200,000 (non-road scope under cited local statute)",
+      "rule": "The public owner elects either: retain no more than 6% of satisfactorily completed work until 50% completion and nothing further, or no more than 3% until substantial completion. For local public work over $200,000, payment including escrowed principal/income is due within 61 days after substantial completion; only 200% of the value of uncompleted minor items may remain withheld. Similar state-agency rules apply.",
+      "trigger_or_deadline": "Cap during progress; release within 61 days after substantial completion under the cited provisions.",
+      "required_form": "Contract retainage/escrow provisions and substantial-completion documentation.",
+      "statute": "Ind. Code § 5-16-5.5-3.5; Ind. Code § 36-1-12-14",
+      "sources": [
+        {"authority": "Ind. Code § 5-16-5.5-3.5", "url": "https://law.justia.com/codes/indiana/title-5/article-16/chapter-5-5/section-5-16-5-5-3-5/"},
+        {"authority": "Ind. Code § 36-1-12-14", "url": "https://law.justia.com/codes/indiana/title-36/article-1/chapter-12/section-36-1-12-14/"}
+      ],
+      "effective_or_verified": "P.L.28-2025 amendments effective 2025-07-01; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Road/highway exception, project value, state versus local chapter, and applicability to the subcontract tier.", "Whether a smaller project elects to use the statutory framework."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "retainage_release", "label": "Public retainage release",
+         "anchor": "event", "event": "substantial completion",
+         "days": {"public": 61},
+         "note": "Local public work over $200,000; only 200% of uncompleted minor items may remain withheld."}
+      ]
+    },
+    {
+      "id": "KY-LIEN-PRIVATE-NOTICE",
+      "state": "KY",
+      "category": "lien",
+      "clause_variant": "ky_private_post_furnishing_notice",
+      "project_type": "private; claimant not contracting directly with owner",
+      "rule": "After last furnishing, give the owner/agent/lessee written notice of intent to claim a lien: within 75 days when the claim is less than $1,000, within 120 days when the claim exceeds $1,000, and within 75 days for owner-occupied single- or double-family dwellings regardless of amount. Owner payment before notice can limit the lien.",
+      "trigger_or_deadline": "75 or 120 days after last labor/material, using the statutory amount and occupancy rules.",
+      "required_form": "Written notice containing the amount and statutory project/claim information under KRS 376.010.",
+      "statute": "KRS 376.010",
+      "sources": [{"authority": "KRS 376.010", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=54156"}],
+      "effective_or_verified": "KRS 376.010 effective 2023-06-29; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["The statutory text's treatment of a claim exactly equal to $1,000.", "Claimant tier, owner payments, service method, and owner-occupied classification."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "notice_of_intent", "label": "Notice of intent to claim a lien",
+         "anchor": "last_furnishing", "days": {"residential": 75, "commercial": 120},
+         "note": "75 days for owner-occupied 1–2 family dwellings regardless of amount; 120 days assumes a commercial claim over $1,000 (claims under $1,000 are 75 days)."}
+      ]
+    },
+    {
+      "id": "KY-LIEN-PRIVATE-FILE",
+      "state": "KY",
+      "category": "lien",
+      "clause_variant": "ky_private_lien_statement",
+      "project_type": "private",
+      "rule": "File the verified lien statement with the county clerk within six months after ceasing labor or furnishing material. Mail a copy to the property owner by regular mail within seven days after filing or the lien dissolves.",
+      "trigger_or_deadline": "6 months after ceasing labor/material; owner mailing within 7 days after filing.",
+      "required_form": "Sworn statement containing KRS 376.080 information.",
+      "statute": "KRS 376.080",
+      "sources": [{"authority": "KRS 376.080", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=35289"}],
+      "effective_or_verified": "KRS 376.080 effective 1990-07-13; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Ceasing/last-furnishing date, statement content, property description, mailing evidence, enforcement deadline, and claimant's contract chain."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "lien_filing", "label": "Verified lien statement",
+         "anchor": "last_furnishing", "days": {"residential": {"months": 6}, "commercial": {"months": 6}},
+         "note": "Owner copy must be MAILED within 7 days after filing or the lien dissolves — the earlier KRS 376.010 notice runs separately."}
+      ]
+    },
+    {
+      "id": "KY-LIEN-PUBLIC",
+      "state": "KY",
+      "category": "lien",
+      "clause_variant": "ky_public_funds_lien",
+      "project_type": "Kentucky public improvement",
+      "rule": "For government-owned property, the lien attaches to unpaid funds due the contractor, not the public real estate. File the verified lien statement in the county containing the owner's seat of government by the later of 60 days after the last day of the month in which labor/material was furnished or substantial completion, then deliver an attested copy to the public owner/authorized agent to attach the unpaid balance.",
+      "trigger_or_deadline": "Later of: 60 days after last day of the furnishing month, or substantial completion.",
+      "required_form": "Verified statement under KRS 376.230; clerk-attested copy delivered under KRS 376.210/.240.",
+      "statute": "KRS 376.210; KRS 376.230",
+      "sources": [
+        {"authority": "KRS 376.210", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=35305"},
+        {"authority": "KRS 376.230", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=35308"}
+      ],
+      "effective_or_verified": "KRS 376.210 effective 1998-07-15; KRS 376.230 effective 2007-06-26; verified 2026-07-26.",
+      "confidence": "high",
+      "attorney_verify": ["Owner's seat of government, substantial completion, unpaid fund balance, bond statute/claim language, and delivery method."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "public_fund_lien", "label": "Public-funds lien statement",
+         "anchor": "last_furnishing", "days": {"public": 60},
+         "note": "Statutory clock is the LATER of 60 days after the end of the furnishing month or substantial completion — the tracker's 60-days-from-last-furnishing rendering is the conservative floor."}
+      ]
+    },
+    {
+      "id": "KY-RET-CAP-RELEASE",
+      "state": "KY",
+      "category": "retainage",
+      "clause_variant": "ky_fairness_in_construction",
+      "project_type": "public and private nonresidential construction; statutory exclusions apply",
+      "rule": "Until 50% completion, retainage may not exceed 10% of an undisputed payment; after 51% completion, total retainage may not exceed 5% of the contract. Release within 30 days after statutory substantial completion, less 200% of reasonably estimated uncompleted work. The contractor must pass proportional retainage to subcontractors within 15 business days after upstream release. Late retainage accrues 12% annual interest.",
+      "trigger_or_deadline": "10%/5% caps by completion; owner/contractor release 30 days after substantial completion; downstream 15 business days after receipt.",
+      "required_form": "Pay application, written substantial-completion certification, and closeout/warranty documents required by contract.",
+      "statute": "KRS 371.410; KRS 371.425",
+      "sources": [
+        {"authority": "KRS 371.410", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=35259"},
+        {"authority": "KRS 371.425", "url": "https://apps.legislature.ky.gov/law/statutes/statute.aspx?id=56111"}
+      ],
+      "effective_or_verified": "KRS 371.410 effective 2007-06-26; applicability statute KRS 371.425 effective 2025-06-27 for contracts on/after that date.",
+      "confidence": "high",
+      "attorney_verify": ["Residential, utility-facility, USDA Rural Utilities Service, and other statutory exclusions.", "Whether strict statutory substantial completion has occurred."],
+      "attorney_reviewed": false,
+      "computed": [
+        {"kind": "retainage_release", "label": "Retainage release",
+         "anchor": "event", "event": "statutory substantial completion",
+         "days": {"commercial": 30, "public": 30},
+         "note": "Nonresidential only; GC must pass retainage downstream within 15 business days after upstream release; 12% annual interest when late."}
+      ]
+    }
+  ]
+}
