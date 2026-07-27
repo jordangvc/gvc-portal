@@ -66,3 +66,14 @@ only safeguard — it surfaces deadlines, humans own them.
 - Takeoff-app tie-in (later): "Send to Office" already carries the job's
   address/state/stock date — first furnishing usually equals the stocking
   date, so the takeoff seam can seed the clock automatically.
+
+## AMENDMENT (Jordan, Jul 26, 2026) — build dark
+
+"Just build it for now. Don't set up any alerts. Build the alerts as well,
+but do not turn them on until we're prepared to accept all of them. It'll
+be overwhelming and confusing at first."
+
+RULE: P1 ships with the tracker page LIVE and ALL alert channels (Slack
+pings, brief lines) BUILT but DISABLED behind `GVC_LIEN_ALERTS_ENABLED`
+(default false/unset). Nobody — no agent, no session — enables that flag
+except Jordan explicitly. The status page is the only surface until then.
