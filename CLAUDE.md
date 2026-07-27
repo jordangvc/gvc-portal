@@ -1525,3 +1525,12 @@ write-back landed on the SAME Opportunity item (job.monday_item_id path, not a n
   3. Audit Monday, Stripe, and GCP IAM for grants he held.
   4. Suspend his Google Workspace account (kills portal OAuth sign-in at the root).
   Delete this block once all four are done.
+
+### 2026-07-26 — Lien-rights tracker designed (from the takeoff project)
+- Jordan flagged lien-rights protection (NOF / pre-lien / retainage timing) as a
+  near-zero, all-manual gap: "Need to fix this for sure." Design at
+  docs/portal-lien-rights-tracker-design.md — phases P0 attorney gate, P1
+  deadline watch + Slack reminders (BUILD FIRST), P2 draft docs (hello@ drafts,
+  never auto-send), P3 mail-service leg. Rule source: validated tri-state legal
+  pack (10/10 statute spot-checks Jul 26; validation report in the takeoff repo).
+  Monday stays the bus; notice status writes back as Projects-board columns.
