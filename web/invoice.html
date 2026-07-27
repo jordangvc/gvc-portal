@@ -85,7 +85,7 @@
   .modal-body .changes { margin: 8px 0; padding-left: 18px; }
   .modal-body .changes li { margin: 3px 0; font-size: 13.5px; }
   .modal-body code { background: #f1f4f1; padding: 1px 5px; border-radius: 4px; }
-  .modal-body .caveat { background: #fff7e6; color: #8a5a00; border: 1px solid #f0d8a0; border-radius: 8px; padding: 9px 12px; margin: 8px 0; font-size: 13px; }
+  .modal-body .caveat { background: #fff7e6; color: #96763B; border: 1px solid #f0d8a0; border-radius: 8px; padding: 9px 12px; margin: 8px 0; font-size: 13px; }
   .route-pill { display: inline-block; background: #eef4ef; color: #1A3E2B; border-radius: 999px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
   iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
   .result-line { padding: 4px 0; }
@@ -106,7 +106,7 @@
   .badge { display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: 10px; margin-left: 6px; }
   .badge.synced { background: #FBF3E1; color: var(--green-dark); border: 1px solid #E3CFA0; }
   .badge.local { background: var(--warn-bg); color: #96763B; border: 1px solid var(--warn-line); }
-  .badge.active { background: #e0f2fe; color: #075985; border: 1px solid #bae6fd; }
+  .badge.active { background: #e0f2fe; color: #1A72B8; border: 1px solid #bae6fd; }
   /* Commercial section */
   .toggle-row { display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600; color: #44403C; }
   .toggle-row input { width: auto; }
@@ -551,7 +551,7 @@ async function run(mode) {
       // already in the form — no separate trip to the correction tool.
       if (wb.already_existed || wb.correction_hint) {
         window._lastInvoiceData = data;
-        html += `<div class="result-line" style="margin-top:10px;color:#8a5a00">⚠️ ${wb.correction_hint || "This invoice number already exists in Stripe — re-running reuses it rather than changing it."}</div>`;
+        html += `<div class="result-line" style="margin-top:10px;color:#96763B">⚠️ ${wb.correction_hint || "This invoice number already exists in Stripe — re-running reuses it rather than changing it."}</div>`;
         html += `<div class="result-line"><button type="button" class="btn secondary small" id="btn-correct-inline">Correct / reissue this invoice…</button></div>`;
       }
       setStatus("warn", html);
