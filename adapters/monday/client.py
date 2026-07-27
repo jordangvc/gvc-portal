@@ -1160,6 +1160,54 @@ class MondayClient:
 # Helpers
 # ---------------------------------------------------------------------------
 
+_AUTH_PROBE_CACHE: dict = {"at": 0.0, "result": None}
+
+
+def _auth_probe_ttl() -> int:
+    try:
+        return int(os.environ.get("GVC_MONDAY_AUTH_PROBE_TTL", "300"))
+    except ValueError:
+        return 300
+
+
+def probe_token(force: bool = False) -> dict:
+    """
+    Cached `me { name }` probe for /health — mirrors slack_notify.probe_token.
+
+    WHY THIS EXISTS (2026-07-27): health reported `monday_configured: True`
+    purely because MONDAY_API_TOKEN was SET, while the token itself had been
+    dead for weeks (it belonged to a departing employee). Job Check surfaced
+    it only when a crew-facing page finally called Monday. Same class of bug
+    as the 2026-07-02 Slack incident, same fix: probe, don't assume.
+
+    Returns a flat dict:
+      configured    bool       — MONDAY_API_TOKEN is set
+      ok            bool|None  — token actually authenticates (None = no token)
+      error         str|None   — API/transport error when not ok
+      account_user  str|None   — authenticated Monday user name when ok
+    """
+    import time
+
+    now = time.time()
+    cached = _AUTH_PROBE_CACHE.get("result")
+    if not force and cached is not None and (now - _AUTH_PROBE_CACHE["at"]) < _auth_probe_ttl():
+        return cached
+    try:
+        data = MondayClient()._query("query { me { name } }")
+        name = ((data or {}).get("me") or {}).get("name")
+        result = {"configured": True, "ok": True, "error": None, "account_user": name}
+    except MondayNotConfigured:
+        result = {"configured": False, "ok": None,
+                  "error": "MONDAY_API_TOKEN not set", "account_user": None}
+    except Exception as e:  # noqa: BLE001 — health must never raise
+        msg = f"{type(e).__name__}: {e}"
+        if "401" in msg:
+            msg += " (token invalid or revoked — see the MONDAY-TOKEN-ROTATION runbook)"
+        result = {"configured": True, "ok": False, "error": msg, "account_user": None}
+    _AUTH_PROBE_CACHE.update({"at": now, "result": result})
+    return result
+
+
 def _match_customer_rule(customer_name: Optional[str], builder: Optional[str]) -> Optional[dict]:
     """Match against the customer name first, then the builder text. Case-insensitive substring."""
     candidates = [customer_name, builder]

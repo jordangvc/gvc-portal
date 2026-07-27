@@ -329,6 +329,17 @@ def healthz() -> dict:
     # slack_auth_error carries the exact Slack error when it doesn't.
     slack_probe = slack_notify.probe_token()
     slack_configured = bool(slack_probe["configured"] and slack_probe["ok"])
+
+    # Monday readiness — same "present vs works" correction (2026-07-27).
+    # Cached `me { name }` probe; TTL GVC_MONDAY_AUTH_PROBE_TTL (default 5 min)
+    # so Cloud Run's liveness checks don't burn Monday API quota.
+    try:
+        from adapters.monday.client import probe_token as _monday_probe_token
+        monday_probe = _monday_probe_token()
+    except Exception as e:  # noqa: BLE001 — health must not raise
+        monday_probe = {"configured": bool(os.environ.get("MONDAY_API_TOKEN")),
+                        "ok": False, "error": f"probe failed: {type(e).__name__}: {e}",
+                        "account_user": None}
     slack_channel = os.environ.get("GVC_ESTIMATES_SLACK_CHANNEL") or "#estimates (default)"
 
     # Grants-store visibility (2026-07-02 incident): in gcs mode an empty or
@@ -349,7 +360,13 @@ def healthz() -> dict:
         "service": "gvc-invoice",
         "stripe_configured": bool(os.environ.get("STRIPE_API_KEY")),
         "drive_configured": bool(os.environ.get("GVC_DRIVE_SHARED_DRIVE_ID")),
-        "monday_configured": bool(os.environ.get("MONDAY_API_TOKEN")),
+        # v r6: monday_configured now means "token WORKS", not "token PRESENT"
+        # — same correction Slack got after 2026-07-02. monday_auth_error
+        # carries the exact failure (e.g. a 401 from a revoked token).
+        "monday_configured": bool(monday_probe["configured"] and monday_probe["ok"]),
+        "monday_token_present": bool(monday_probe["configured"]),
+        "monday_auth_error": monday_probe["error"],
+        "monday_account_user": monday_probe["account_user"],
         "preview_bucket_configured": bool(os.environ.get("GVC_GCS_PREVIEW_BUCKET")),
         "gmail_ready": gmail_ready,
         "gmail_error": gmail_error,

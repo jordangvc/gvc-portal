@@ -1664,3 +1664,15 @@ Per the design above. Column ids/types verified LIVE against Projects board 1918
   Jordan's fresh hello@ gcloud auth, Jul 27. Remaining revocation items:
   grants.json row via /ui/admin, Monday/Stripe/GCP IAM audit, Workspace
   suspension.
+
+### 2026-07-27 — r6: Monday token probe on /health ("present" -> "works")
+- The dead-Monday-token incident: health said monday_configured TRUE for weeks
+  because the env var existed; the token (a departing employee's) had been
+  401ing. Job Check surfaced it only when a crew page finally called Monday.
+- Fix mirrors the 2026-07-02 Slack correction: adapters/monday/client.py gains
+  cached probe_token() (`me { name }`, TTL GVC_MONDAY_AUTH_PROBE_TTL default
+  300s). /health now reports monday_configured = works, plus
+  monday_token_present / monday_auth_error / monday_account_user.
+- Rotation runbook (all 3 token locations incl. the Apps Script property named
+  MONDAY_TOKEN, not MONDAY_API_TOKEN) lives in the takeoff repo:
+  docs/MONDAY-TOKEN-ROTATION.md.
