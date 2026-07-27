@@ -1,0 +1,286 @@
+"""
+Job Check pure-logic tests — allowlist gating, value shaping, validation,
+status-label parsing, job-row normalization, change descriptions. Everything
+here is pure — no Monday, no network (the write path is exercised with a
+stub client). Runs under pytest OR directly: `python tests/test_jobcheck.py`.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from adapters.monday import jobcheck as mj  # noqa: E402
+from orchestrators import jobcheck_flow as jf  # noqa: E402
+from shared import boards  # noqa: E402
+
+
+# ------------------------------------------------------------ config sanity
+
+def test_config_entries_are_well_formed():
+    assert boards.JOBCHECK_COLUMNS, "shipped allowlist is empty"
+    for entry in boards.JOBCHECK_COLUMNS:
+        assert entry["id"].strip(), entry
+        assert entry["label"].strip(), entry
+        assert entry["type"] in boards.JOBCHECK_RENDER_TYPES, entry
+
+
+def test_shipped_config_survives_the_hard_exclusion_gate():
+    # Every shipped entry must come through allowlisted_columns() unchanged —
+    # if this fails, the default config itself contains an excluded column.
+    effective = jf.allowlisted_columns()
+    assert [c["id"] for c in effective] == [c["id"] for c in boards.JOBCHECK_COLUMNS]
+    # Display order is config order.
+    assert effective[0]["label"] == "Framing Status"
+    assert effective[-1]["label"] == "Notes"
+
+
+def test_hard_exclusions_beat_config_edits():
+    # Simulate someone adding money/link/relation columns to the config:
+    # they must never reach the effective allowlist.
+    bad = (
+        {"id": "board_counts", "label": "Board Count", "type": "text"},          # money by ID
+        {"id": "numeric_mm5ahj91", "label": "CO Amount", "type": "number"},      # money by ID
+        {"id": "lookup_mm40txvs", "label": "Contract Value", "type": "mirror"},  # excluded type
+        {"id": "board_relation_mkvp7t1x", "label": "Invoicing Link", "type": "board_relation"},
+        {"id": "link_mkwr6ef9", "label": "GFolder Link", "type": "link"},
+        {"id": "files", "label": "Files", "type": "file"},
+        {"id": "weird", "label": "Weird", "type": "rating"},                     # unsupported render type
+    )
+    saved = boards.JOBCHECK_COLUMNS
+    boards.JOBCHECK_COLUMNS = saved + bad
+    try:
+        ids = {c["id"] for c in jf.allowlisted_columns()}
+        for entry in bad:
+            assert entry["id"] not in ids, f"{entry['id']} leaked through the gate"
+        # …and the validator rejects them as write targets too.
+        shaped, errors, _ = jf.validate_values({"board_counts": "999",
+                                                "lookup_mm40txvs": "x"})
+        assert shaped == {}
+        assert set(errors) == {"board_counts", "lookup_mm40txvs"}
+    finally:
+        boards.JOBCHECK_COLUMNS = saved
+
+
+# ------------------------------------------------------------- value shaping
+
+def test_shape_status_date_number_text():
+    assert jf.shape_value("status", "100% Hanging Completed") == \
+        {"label": "100% Hanging Completed"}
+    assert jf.shape_value("status", "") is None                 # clear
+    assert jf.shape_value("date", "2026-07-27") == {"date": "2026-07-27"}
+    assert jf.shape_value("date", None) is None                 # clear
+    assert jf.shape_value("number", "42") == "42"
+    assert jf.shape_value("number", "3.5") == "3.5"
+    assert jf.shape_value("number", "1,250") == "1250"
+    assert jf.shape_value("number", "") == ""                   # clear
+    assert jf.shape_value("text", "  lot 4 ") == "lot 4"
+    assert jf.shape_value("text", None) == ""                   # clear
+    assert jf.shape_value("long_text", "crew note") == {"text": "crew note"}
+    assert jf.shape_value("checkbox", "true") == {"checked": True}
+    assert jf.shape_value("checkbox", "false") is None
+    assert jf.shape_value("checkbox", True) == {"checked": True}
+
+
+def test_shape_rejects_garbage():
+    for rtype, raw in (("date", "tomorrow"), ("date", "07/27/2026"),
+                       ("number", "forty"), ("checkbox", "maybe"),
+                       ("nonsense", "x")):
+        try:
+            jf.shape_value(rtype, raw)
+        except ValueError:
+            continue
+        raise AssertionError(f"shape_value({rtype!r}, {raw!r}) did not raise")
+
+
+def test_shape_text_length_cap():
+    jf.shape_value("long_text", "x" * jf.MAX_TEXT_LEN)  # at the cap: fine
+    try:
+        jf.shape_value("long_text", "x" * (jf.MAX_TEXT_LEN + 1))
+    except ValueError as e:
+        assert "too long" in str(e)
+    else:
+        raise AssertionError("over-cap text did not raise")
+
+
+# --------------------------------------------------------------- validation
+
+def test_validate_values_allowlist_and_labels():
+    labels = {"status_19": ["Hanging Not Started", "100% Hanging Completed"]}
+    shaped, errors, accepted = jf.validate_values(
+        {"status_19": "100% Hanging Completed",     # ok
+         "date1": "2026-07-27",                     # ok
+         "notes7": "back bedroom needs a skim",     # ok
+         "status_19x": "boom",                      # not allowlisted
+         "deal_stage": "For Invoicing"},            # not in the config
+        status_labels=labels)
+    assert shaped == {"status_19": {"label": "100% Hanging Completed"},
+                      "date1": {"date": "2026-07-27"},
+                      "notes7": {"text": "back bedroom needs a skim"}}
+    assert set(errors) == {"status_19x", "deal_stage"}
+    assert set(accepted) == set(shaped)
+
+
+def test_validate_values_rejects_unknown_status_label():
+    labels = {"status_19": ["Hanging Not Started"]}
+    shaped, errors, _ = jf.validate_values({"status_19": "Totally Done"},
+                                           status_labels=labels)
+    assert shaped == {}
+    assert "not a label" in errors["status_19"]
+    # Without a label set to check against, the label passes through
+    # (Monday itself becomes the validator and reports per-column).
+    shaped, errors, _ = jf.validate_values({"status_19": "Totally Done"})
+    assert shaped == {"status_19": {"label": "Totally Done"}} and not errors
+
+
+def test_validate_values_bad_value_is_per_column():
+    shaped, errors, _ = jf.validate_values(
+        {"date1": "not-a-date", "notes7": "fine"}, status_labels={})
+    assert list(shaped) == ["notes7"]
+    assert "date1" in errors and "YYYY-MM-DD" in errors["date1"]
+
+
+# ------------------------------------------------- status settings parsing
+
+def test_parse_status_labels_classic_dict_shape():
+    settings = json.dumps({
+        "labels": {"5": "Not Started", "1": "Working", "2": "Done", "9": ""},
+        "labels_colors": {"5": {"color": "#c4c4c4"}, "1": {"color": "#00c875"},
+                          "2": {"color": "#037f4c"}},
+        "labels_positions_v2": {"5": 0, "1": 1, "2": 2},
+    })
+    out = mj.parse_status_labels(settings)
+    assert [l["label"] for l in out] == ["Not Started", "Working", "Done"]
+    assert out[1]["hex"] == "#00c875"
+
+
+def test_parse_status_labels_list_shape_and_deactivated():
+    settings = json.dumps({"labels": [
+        {"id": 1, "label": "Done", "index": 2, "hex": "#037f4c",
+         "is_deactivated": False},
+        {"id": 0, "label": "Old", "index": 1, "hex": "#000",
+         "is_deactivated": True},
+        {"id": 5, "label": "Not Started", "index": 0, "hex": "#c4c4c4",
+         "is_deactivated": False},
+    ]})
+    out = mj.parse_status_labels(settings)
+    assert [l["label"] for l in out] == ["Not Started", "Done"]
+
+
+def test_parse_status_labels_garbage_is_empty():
+    assert mj.parse_status_labels(None) == []
+    assert mj.parse_status_labels("") == []
+    assert mj.parse_status_labels("not json") == []
+    assert mj.parse_status_labels(json.dumps({"labels": 7})) == []
+
+
+# ------------------------------------------------- job-row normalization
+
+def _raw_item(name="123 Main St - Builder", group="topics",
+              title="Work-In-Progress Projects", **cols):
+    defaults = {"text_mm4fvj91": None, "location5": None, "deal_stage": None}
+    defaults.update(cols)
+    return {"id": "101", "name": name,
+            "group": {"id": group, "title": title},
+            "column_values": [{"id": k, "text": v} for k, v in defaults.items()]}
+
+
+def test_normalize_job_keeps_active_and_maps_columns():
+    row = mj._normalize_job(_raw_item(text_mm4fvj91="2026-C-041",
+                                      location5="Brookville, IN",
+                                      deal_stage="Work-in-Progress"))
+    assert row["item_id"] == 101
+    assert row["project_number"] == "2026-C-041"
+    assert row["location"] == "Brookville, IN"
+    assert row["deal_stage"] == "Work-in-Progress"
+    assert str(mj.PROJECTS_BOARD_ID) in row["url"]
+
+
+def test_normalize_job_skips_closed_co_and_lost():
+    assert mj._normalize_job(_raw_item(group="closed",
+                                       title="Completed and Paid Projects")) is None
+    assert mj._normalize_job(_raw_item(name="CO.2 - 123 Main St")) is None
+    assert mj._normalize_job(_raw_item(deal_stage="Project Lost/canceled")) is None
+    # completed-but-unpaid groups stay in (crew may still be closing punch items)
+    assert mj._normalize_job(_raw_item(group="duplicate_of_for_internal_qual__1",
+                                       title="Work Completed 100% (Unpaid)")) is not None
+
+
+# ----------------------------------------------------- write-path fallback
+
+class _StubMC:
+    """Stub Monday client: batch mutation fails, per-column succeeds except
+    for one poisoned column — proves the per-column error reporting."""
+    def __init__(self):
+        self.calls = []
+
+    def _query(self, query, variables):
+        values = json.loads(variables["values"])
+        self.calls.append(sorted(values))
+        if len(values) > 1:
+            raise RuntimeError("Monday API error: batch boom")
+        if "date1" in values:
+            raise RuntimeError("Monday API error: bad date payload")
+        return {"change_multiple_column_values": {"id": variables["itemId"]}}
+
+
+def test_set_item_columns_batch_then_per_column_errors():
+    mc = _StubMC()
+    out = mj.set_item_columns(mc, 101, {
+        "status_19": {"label": "Done"},
+        "notes7": {"text": "hi"},
+        "date1": {"date": "2026-07-27"},
+    })
+    assert out["written"] == ["notes7", "status_19"]
+    assert list(out["failed"]) == ["date1"]
+    assert "bad date payload" in out["failed"]["date1"]
+    # first call was the batch (3 cols), then one call per column
+    assert mc.calls[0] == ["date1", "notes7", "status_19"]
+    assert all(len(c) == 1 for c in mc.calls[1:])
+
+
+def test_set_item_columns_happy_batch_and_guards():
+    class _OkMC:
+        def _query(self, query, variables):
+            assert "change_multiple_column_values" in query
+            assert "create_item" not in query and "delete" not in query.lower()
+            return {"change_multiple_column_values": {"id": variables["itemId"]}}
+    out = mj.set_item_columns(_OkMC(), 101, {"notes7": {"text": "hi"}})
+    assert out == {"written": ["notes7"], "failed": {}}
+    assert mj.set_item_columns(_OkMC(), 101, {}) == {"written": [], "failed": {}}
+    try:
+        mj.set_item_columns(_OkMC(), 0, {"notes7": {"text": "hi"}})
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("empty item_id did not raise")
+
+
+# --------------------------------------------------------- change describe
+
+def test_describe_changes_reads_like_the_audit_trail():
+    cols = {"status_19": {"label": "Hanging Status"},
+            "notes7": {"label": "Notes"}}
+    text = jf.describe_changes(
+        {"status_19": "Hanging Not Started", "notes7": None},
+        {"status_19": "100% Hanging Completed", "notes7": "swept garage"},
+        cols)
+    assert "Hanging Status: Hanging Not Started → 100% Hanging Completed" in text
+    assert "Notes: (empty) → swept garage" in text
+    assert jf.describe_changes({}, {}, {}) == ""
+
+
+if __name__ == "__main__":
+    failed = 0
+    for name, fn in sorted(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            try:
+                fn()
+                print(f"  ok  {name}")
+            except AssertionError as e:
+                failed += 1
+                print(f"FAIL  {name}: {e}")
+    print(f"\n{failed} failed" if failed else "\nall tests passed")
+    sys.exit(1 if failed else 0)

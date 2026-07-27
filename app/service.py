@@ -74,6 +74,7 @@ from orchestrators import change_order_flow as change_order_flow
 from orchestrators import check_flow
 from orchestrators import coi_flow
 from orchestrators import lien_flow
+from orchestrators import jobcheck_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
@@ -1808,6 +1809,130 @@ def ui_lien_status(request: Request) -> dict:
         raise
     except Exception as e:  # noqa: BLE001
         print(f"[ui:lien] error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
+# ---------------------------------------------------------------------------
+# Job Check routes — the portal's FIRST Monday write surface (designed
+# 2026-07-27, docs/portal-job-check-design.md). Gated by the `jobcheck`
+# grant. Reads mirror the lien fetch; the ONE write is the explicit POST
+# below — user-tap only, allowlisted columns only (shared/boards.py
+# JOBCHECK_COLUMNS with hard-excluded money/link/relation types re-checked
+# server-side), column updates on existing items only (never create/delete).
+# Every save is audit-logged old→new to the activity store.
+# ---------------------------------------------------------------------------
+
+class JobCheckSaveRequest(BaseModel):
+    values: dict = Field(
+        ...,
+        description="{column_id: raw value} — Job Check allowlisted columns "
+                    "only; anything else is rejected per-column.",
+    )
+
+
+@app.get("/ui/jobcheck", response_class=HTMLResponse)
+def ui_jobcheck_page(request: Request) -> HTMLResponse:
+    """Serve the Job Check page (field-crew quality-check form)."""
+    email = require_feature(request, "jobcheck")
+    activity.log_event("tool.open", actor=email, target="jobcheck")
+    path = WEB_DIR / "jobcheck.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+
+
+@app.get("/ui/api/jobcheck/jobs")
+def ui_jobcheck_jobs(request: Request) -> dict:
+    """Active Projects-board jobs for the dropdown. Read-only."""
+    require_feature(request, "jobcheck")
+    try:
+        return jobcheck_flow.list_active_jobs()
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] jobs error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
+@app.get("/ui/api/jobcheck/job/{item_id}")
+def ui_jobcheck_job(item_id: int, request: Request) -> dict:
+    """One job's context header + allowlisted columns with current values.
+    Read-only."""
+    require_feature(request, "jobcheck")
+    try:
+        detail = jobcheck_flow.get_job_detail(item_id)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] job error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail_msg, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail_msg, "advice": advice},
+        )
+    if detail is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"ok": False, "code": "ITEM_NOT_FOUND",
+                    "detail": f"Monday item {item_id} doesn't exist.",
+                    "advice": "Reload the job list and pick again."},
+        )
+    return detail
+
+
+@app.post("/ui/api/jobcheck/job/{item_id}")
+def ui_jobcheck_save(item_id: int, req: JobCheckSaveRequest, request: Request) -> dict:
+    """
+    THE Monday write: save the crew's checked values to the selected item.
+    User-initiated (the gold Save tap), allowlist-validated server-side,
+    audit-logged old→new. Returns confirmed values + per-column failures —
+    no silent partial writes.
+    """
+    actor = require_feature(request, "jobcheck")
+    if not isinstance(req.values, dict) or not req.values:
+        raise HTTPException(
+            status_code=400,
+            detail={"ok": False, "code": "NO_VALUES",
+                    "detail": "No column values submitted.",
+                    "advice": "Change at least one field, then tap Save."},
+        )
+    try:
+        return jobcheck_flow.save_job_check(item_id, req.values, actor)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] save error: {type(e).__name__}: {e}", file=sys.stderr)
         status, code, detail, advice = _friendly_error(e)
         raise HTTPException(
             status_code=status,

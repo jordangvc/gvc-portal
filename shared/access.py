@@ -28,9 +28,10 @@ import os
 
 # Canonical feature set. Order is display order on the hub.
 # `lien` = Lien Watch (notice/lien deadline tracker), added 2026-07-26.
+# `jobcheck` = Job Check (field-crew Monday column updates), added 2026-07-27.
 FEATURES: tuple[str, ...] = (
     "estimate", "change_order", "invoice", "check",
-    "coi", "lien", "takeoff", "timeoff", "activity", "admin",
+    "coi", "lien", "jobcheck", "takeoff", "timeoff", "activity", "admin",
 )
 ALL_FEATURES = frozenset(FEATURES)
 BASELINE = frozenset({"timeoff"})  # every provisioned store user gets this

@@ -1,1 +1,1 @@
-"""Monday.com adapter: client (API client + invoice ledger), co (CO subitems), estimate (Bid Board prefill/writeback)."""
+"""Monday.com adapter: client (API client + invoice ledger), co (CO subitems), estimate (Bid Board prefill/writeback), coi, lien (read-only Projects fetch for Lien Watch), jobcheck (Job Check reads + the single allowlisted column-write path)."""

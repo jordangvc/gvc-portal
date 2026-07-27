@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Job Check</title>
+<style>
+  :root {
+    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #fff7ed; --warn-line: #fdba74;
+    --err-bg: #fef2f2; --err-line: #fca5a5; --ok-bg: #e7f1ec; --ok-line: #bcd6c8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; }
+  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #cbd5e1; display: inline-block; }
+  .dot.ok { background: #4ade80; } .dot.bad { background: #f87171; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 120px; display: grid; gap: 16px; }
+  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 18px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
+  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
+    display: flex; align-items: center; gap: 9px; justify-content: center; }
+  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
+    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
+
+  /* Job Check page */
+  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.info { background: #eff6ff; border: 1px solid #bfdbfe; }
+  #status.ok  { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7f1d1d; }
+  #status ul { margin: 6px 0 0; padding-left: 20px; }
+
+  #search { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  #search:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  #joblist { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; gap: 6px; }
+  .jobbtn { display: block; width: 100%; text-align: left; min-height: 48px; padding: 10px 14px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; cursor: pointer; }
+  .jobbtn:hover { border-color: var(--green); }
+  .jobbtn .jname { font-weight: 600; }
+  .jobbtn .jmeta { font-size: 12.5px; color: var(--muted); }
+  .linkish { background: none; border: 0; padding: 8px 0; color: var(--green-dark);
+    text-decoration: underline; font: inherit; font-size: 14px; cursor: pointer; min-height: 44px; }
+
+  .ctx { display: grid; gap: 4px; }
+  .ctx .jobname { font-size: 17px; font-weight: 700; }
+  .ctx .jobname a { color: var(--ink); text-decoration: none; }
+  .ctx .jobname a:hover { color: var(--green-dark); text-decoration: underline; }
+  .ctx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; color: var(--muted); }
+  .ctx-meta b { color: var(--ink); font-weight: 600; }
+  .grouptag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; background: #FBF3E1;
+    color: var(--gold-dark); border: 1px solid #E3CFA0; }
+
+  .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid #f1ece0; }
+  .field:last-child { border-bottom: 0; }
+  .field > label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--muted); }
+  .field.dirty > label::after { content: " •"; color: var(--gold-dark); }
+  .chip-btn { min-height: 48px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line);
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; text-align: center; }
+  .chip-btn.unset { background: #f3f4f6; color: var(--muted); font-weight: 600; }
+  .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
+    width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
+  .field textarea { min-height: 88px; resize: vertical; }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  .checkwrap { display: flex; align-items: center; gap: 14px; min-height: 48px; cursor: pointer; }
+  .checkwrap input[type="checkbox"] { width: 28px; height: 28px; accent-color: var(--green); cursor: pointer; }
+  .checkwrap span { font-size: 16px; }
+
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(250,250,248,.96);
+    border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: none; }
+  .savebar.show { display: block; }
+  .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
+  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700;
+    border: 0; border-radius: 10px; min-height: 52px; padding: 12px 22px; font-size: 17px;
+    cursor: pointer; flex: 1; }
+  .btn.gold:hover { filter: brightness(1.06); }
+  .btn.gold:disabled { opacity: .6; cursor: default; filter: none; }
+  #dirtycount { font-size: 13px; color: var(--muted); white-space: nowrap; }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>Job Check</h1>
+  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div id="status"></div>
+
+  <div class="card" id="pickcard">
+    <h2>Pick a job</h2>
+    <input id="search" type="search" placeholder="Search active jobs — name, address, project #…"
+           autocomplete="off" />
+    <div id="joblist"><div class="hint">Loading active jobs from Monday…</div></div>
+    <div class="hint">Active Projects-board jobs only — completed-and-paid jobs don't show here.</div>
+  </div>
+
+  <div class="card" id="ctxcard" style="display:none;">
+    <h2>Job <span style="float:right"><button class="linkish" id="changejob" type="button">Change job</button></span></h2>
+    <div class="ctx" id="ctx"></div>
+  </div>
+
+  <div class="card" id="formcard" style="display:none;">
+    <h2>Quality check <span class="opt" style="text-transform:none;font-weight:400;">— tap a status to advance it</span></h2>
+    <div id="fields"></div>
+    <div class="hint">Only the fields you change are saved. Money and contract columns can't be
+      edited here by design.</div>
+  </div>
+</main>
+
+<div class="savebar" id="savebar">
+  <div class="inner">
+    <span id="dirtycount">No changes yet</span>
+    <button class="btn gold" id="save" type="button" disabled>Save to Monday</button>
+  </div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let jobs = [];             // dropdown rows
+let detail = null;         // current job detail payload
+let baseline = {};         // col_id -> value as loaded (text or null)
+let current = {};          // col_id -> value as edited (raw UI value or null)
+let statusSeq = {};        // col_id -> [null, ...labels[{label,hex}]]
+
+function showStatus(kind, html) {
+  const el = $("#status");
+  el.className = "show " + kind;
+  el.innerHTML = html;
+  el.scrollIntoView({ block: "nearest" });
+}
+function hideStatus() { $("#status").className = ""; }
+
+/* ---------- job list ---------- */
+
+function jobButton(j) {
+  const meta = [j.project_number ? "#" + j.project_number : null, j.location, j.group_title]
+    .filter(Boolean).join(" · ");
+  return `<button class="jobbtn" type="button" data-id="${j.item_id}">
+    <div class="jname">${esc(j.name)}</div>
+    ${meta ? `<div class="jmeta">${esc(meta)}</div>` : ""}
+  </button>`;
+}
+
+function renderJobList() {
+  const q = ($("#search").value || "").trim().toLowerCase();
+  const hits = !q ? jobs : jobs.filter((j) =>
+    [j.name, j.project_number, j.location, j.group_title]
+      .some((f) => (f || "").toLowerCase().includes(q)));
+  $("#joblist").innerHTML = hits.length
+    ? hits.map(jobButton).join("")
+    : `<div class="hint">No active job matches "${esc(q)}".</div>`;
+  document.querySelectorAll("#joblist .jobbtn").forEach((b) =>
+    b.addEventListener("click", () => loadJob(+b.dataset.id)));
+}
+
+async function loadJobs() {
+  try {
+    const r = await fetch("/ui/api/jobcheck/jobs");
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the job list.")}<br>${esc(d.advice || "")}`);
+      $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
+      return;
+    }
+    jobs = body.jobs || [];
+    renderJobList();
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+    $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
+  }
+}
+
+/* ---------- job detail + form ---------- */
+
+function textColorFor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return "#1C1917";
+  const n = parseInt(m[1], 16);
+  const lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150 ? "#1C1917" : "#ffffff";
+}
+
+function renderContext(job) {
+  const rows = [
+    job.project_number ? `<span>Project # <b>${esc(job.project_number)}</b></span>` : "",
+    job.location ? `<span>${esc(job.location)}</span>` : "",
+    job.builder ? `<span>Builder <b>${esc(job.builder)}</b></span>` : "",
+    job.supervisor ? `<span>Supervisor <b>${esc(job.supervisor)}</b></span>` : "",
+    job.deal_stage ? `<span>Status <b>${esc(job.deal_stage)}</b></span>` : "",
+    job.project_type ? `<span>${esc(job.project_type)}</span>` : "",
+  ].filter(Boolean).join("");
+  $("#ctx").innerHTML = `
+    <div class="jobname"><a href="${esc(job.url)}" target="_blank" rel="noopener">${esc(job.name)}</a></div>
+    <div>${job.group ? `<span class="grouptag">${esc(job.group)}</span>` : ""}</div>
+    <div class="ctx-meta">${rows}</div>`;
+}
+
+function statusChipHtml(col) {
+  const val = current[col.id];
+  if (val === null || val === undefined || val === "") {
+    return `<button class="chip-btn unset" type="button" data-col="${esc(col.id)}">(not set) — tap to set</button>`;
+  }
+  const lab = (statusSeq[col.id] || []).find((l) => l && l.label === val);
+  const bg = lab && lab.hex ? lab.hex : "#f3f4f6";
+  return `<button class="chip-btn" type="button" data-col="${esc(col.id)}"
+    style="background:${esc(bg)};color:${textColorFor(bg)};border-color:${esc(bg)};">${esc(val)}</button>`;
+}
+
+function fieldHtml(col) {
+  const v = current[col.id];
+  let control = "";
+  if (col.type === "status") {
+    control = statusChipHtml(col);
+  } else if (col.type === "checkbox") {
+    control = `<label class="checkwrap"><input type="checkbox" data-col="${esc(col.id)}"
+      ${v ? "checked" : ""}/><span>${v ? "Done" : "Not done"}</span></label>`;
+  } else if (col.type === "date") {
+    control = `<input type="date" data-col="${esc(col.id)}" value="${esc(v || "")}" />`;
+  } else if (col.type === "number") {
+    control = `<input type="number" inputmode="decimal" step="any" data-col="${esc(col.id)}" value="${esc(v || "")}" />`;
+  } else if (col.type === "long_text") {
+    control = `<textarea data-col="${esc(col.id)}">${esc(v || "")}</textarea>`;
+  } else {
+    control = `<input type="text" data-col="${esc(col.id)}" value="${esc(v || "")}" />`;
+  }
+  return `<div class="field" data-field="${esc(col.id)}">
+    <label>${esc(col.label)}</label>${control}</div>`;
+}
+
+function isDirty(colId) {
+  const a = baseline[colId] ?? "";
+  const b = current[colId] ?? "";
+  return String(a) !== String(b);
+}
+
+function refreshDirtyUi() {
+  let n = 0;
+  (detail?.columns || []).forEach((c) => {
+    const dirty = isDirty(c.id);
+    if (dirty) n++;
+    const el = document.querySelector(`.field[data-field="${CSS.escape(c.id)}"]`);
+    if (el) el.classList.toggle("dirty", dirty);
+  });
+  $("#dirtycount").textContent = n ? `${n} change${n === 1 ? "" : "s"}` : "No changes yet";
+  $("#save").disabled = n === 0;
+}
+
+function wireField(col) {
+  const root = document.querySelector(`.field[data-field="${CSS.escape(col.id)}"]`);
+  if (!root) return;
+  if (col.type === "status") {
+    root.querySelector(".chip-btn").addEventListener("click", () => {
+      const seq = statusSeq[col.id] || [null];
+      const idx = seq.findIndex((l) => (l ? l.label : null) === (current[col.id] || null));
+      const next = seq[(idx + 1) % seq.length];
+      current[col.id] = next ? next.label : null;
+      root.outerHTML = fieldHtml(col);
+      wireField(col);
+      refreshDirtyUi();
+    });
+  } else if (col.type === "checkbox") {
+    const cb = root.querySelector("input[type=checkbox]");
+    cb.addEventListener("change", () => {
+      current[col.id] = cb.checked ? "true" : null;
+      root.querySelector(".checkwrap span").textContent = cb.checked ? "Done" : "Not done";
+      refreshDirtyUi();
+    });
+  } else {
+    const input = root.querySelector("input, textarea");
+    input.addEventListener("input", () => {
+      current[col.id] = input.value.trim() || null;
+      refreshDirtyUi();
+    });
+  }
+}
+
+function renderForm() {
+  $("#fields").innerHTML = (detail.columns || []).map(fieldHtml).join("");
+  (detail.columns || []).forEach(wireField);
+  refreshDirtyUi();
+}
+
+function setValuesFrom(columns, valueOf) {
+  baseline = {}; current = {}; statusSeq = {};
+  columns.forEach((c) => {
+    const v = valueOf(c) ?? null;
+    baseline[c.id] = v;
+    current[c.id] = v;
+    if (c.type === "status") statusSeq[c.id] = [null, ...(c.labels || [])];
+  });
+}
+
+async function loadJob(itemId) {
+  hideStatus();
+  $("#joblist").innerHTML = `<div class="hint">Loading job…</div>`;
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${itemId}`);
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the job.")}<br>${esc(d.advice || "")}`);
+      renderJobList();
+      return;
+    }
+    detail = body;
+    setValuesFrom(detail.columns || [], (c) => c.value);
+    renderContext(detail.job);
+    renderForm();
+    $("#pickcard").style.display = "none";
+    $("#ctxcard").style.display = "";
+    $("#formcard").style.display = "";
+    $("#savebar").classList.add("show");
+    window.scrollTo({ top: 0 });
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+    renderJobList();
+  }
+}
+
+function backToList() {
+  detail = null;
+  $("#ctxcard").style.display = "none";
+  $("#formcard").style.display = "none";
+  $("#savebar").classList.remove("show");
+  $("#pickcard").style.display = "";
+  hideStatus();
+  renderJobList();
+}
+
+/* ---------- save ---------- */
+
+async function save() {
+  if (!detail) return;
+  const values = {};
+  (detail.columns || []).forEach((c) => {
+    if (isDirty(c.id)) values[c.id] = current[c.id] ?? "";
+  });
+  if (!Object.keys(values).length) return;
+  const btn = $("#save");
+  btn.disabled = true;
+  btn.textContent = "Saving…";
+  hideStatus();
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ values }),
+    });
+    const body = await r.json();
+    const labelOf = (id) =>
+      ((detail.columns || []).find((c) => c.id === id) || {}).label || id;
+    if (!r.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Save failed; nothing recorded.")}<br>${esc(d.advice || "")}`);
+      return;
+    }
+    // Re-render from Monday's confirmed values — what you see is what landed.
+    (detail.columns || []).forEach((c) => {
+      if (Object.prototype.hasOwnProperty.call(body.confirmed || {}, c.id)) {
+        c.value = body.confirmed[c.id];
+      }
+    });
+    setValuesFrom(detail.columns || [], (c) => c.value);
+    renderForm();
+    const failures = body.failures || {};
+    const failKeys = Object.keys(failures);
+    if (body.ok) {
+      const n = (body.written || []).length;
+      showStatus("ok", `✔ Saved to Monday — ${n} column${n === 1 ? "" : "s"} updated. Values below are re-read from the board.`);
+    } else if ((body.written || []).length) {
+      showStatus("err",
+        `<strong>Partial save.</strong> ${(body.written || []).length} column(s) landed; these did NOT:` +
+        `<ul>${failKeys.map((k) => `<li><b>${esc(labelOf(k))}</b> — ${esc(failures[k])}</li>`).join("")}</ul>` +
+        `Values below show what Monday holds now — fix and save again.`);
+    } else {
+      showStatus("err",
+        `<strong>Nothing saved.</strong>` +
+        `<ul>${failKeys.map((k) => `<li><b>${esc(labelOf(k))}</b> — ${esc(failures[k])}</li>`).join("")}</ul>`);
+    }
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}. Nothing may have saved; reload the job to check.`);
+  } finally {
+    btn.textContent = "Save to Monday";
+    refreshDirtyUi();
+  }
+}
+
+/* ---------- boot ---------- */
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML = `<span>${dot(h.monday_configured)} Monday</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+$("#search").addEventListener("input", renderJobList);
+$("#changejob").addEventListener("click", backToList);
+$("#save").addEventListener("click", save);
+checkHealth();
+loadJobs();
+</script>
+</body>
+</html>

@@ -1597,3 +1597,62 @@ are OFF until Jordan — and only Jordan — sets GVC_LIEN_ALERTS_ENABLED to exa
   portal's FIRST Monday write surface. Design: docs/portal-job-check-design.md.
   Column allowlist in shared/boards.py (money columns excluded); saves are
   explicit-tap only, audit-logged to the activity store; grant key `jobcheck`.
+
+### 2026-07-27 — ✨ JOB CHECK (v1) BUILT — the portal's first Monday WRITE surface (from the takeoff project)
+Per the design above. Column ids/types verified LIVE against Projects board 1918846405
+(433 items) via get_board_info 2026-07-27 before shipping the default allowlist.
+- shared/boards.py — JOBCHECK_COLUMNS (the editable allowlist, display order = config order)
+  + the NON-config hard exclusions: JOBCHECK_HARD_EXCLUDED_TYPES (board_relation/mirror/link/
+  file/button/formula/people/tags/progress/timeline/location/…) and JOBCHECK_HARD_EXCLUDED_IDS
+  (board_counts = per-board billing basis, numeric_mm3fcjmn Pay App #, numeric_mm5ahj91 CO
+  Amount). Money/contract/link columns can NEVER be written even if someone edits the config —
+  allowlisted_columns() re-filters on every save. Default allowlist = the drywall trade
+  sequence: Framing Status (color_mkza9z7c), Hanging Status (status_19), Scrapping Status
+  (dup__of_hung_status1), Taped Status (dup__of_scrapped_status), 2nd Bed Coat
+  (dup__of_taped_status), 3rd Coat (dup__of_2nd_bed_coat), Sanded (dup__of_3rd_coat),
+  Text/Skim (dup__of_sanded), Finishing Stage (color_mkza855s), Cleaned Out (color8),
+  Completion Date (date1), Notes (notes7). deal_stage "Project Status" deliberately NOT
+  editable (office-owned workflow driver — it's read-only context on the page); Start Date
+  left out too (it's the Lien Watch furnishing clock — don't let a stray tap move it).
+- adapters/monday/jobcheck.py — fetch_active_jobs() (paged 200, same filters as lien.py:
+  skip `closed` group / "CO." rows / Lost-canceled), get_board_columns() (status labels+hex
+  in board display order; parse_status_labels handles both settings_str shapes),
+  get_item_values() (one item, allowlist + context columns), and set_item_columns() — THE
+  write: change_multiple_column_values on ONE existing item, batch first, per-column retry
+  on batch failure so failures are named per column. Never creates/deletes items.
+- orchestrators/jobcheck_flow.py — list_active_jobs(), get_job_detail() (context header +
+  per-column current value + status label/color sets for the chips), save_job_check(): read
+  BEFORE snapshot → validate_values() against the effective allowlist (status labels checked
+  against the board's real set; dates YYYY-MM-DD; text capped 4000) → adapter write → RE-READ
+  → activity.log_event("jobcheck.save", who/item/columns + "Label: old → new; …" changes
+  string, result ok|partial|error) → returns {ok, written, failures, confirmed}. No silent
+  partial writes. Empty/None value = clear (status/date/checkbox → null, text/number → "").
+- app/service.py — GET /ui/jobcheck (page) + GET /ui/api/jobcheck/jobs + GET/POST
+  /ui/api/jobcheck/job/{item_id}, all require_feature("jobcheck") (NEW feature in
+  access.FEATURES, hub order after `lien`). POST is the ONLY write path — user-tap only.
+- web/jobcheck.html — mobile-first (crew on phones): searchable job list (48px+ rows),
+  read-only context card (name/group/Project #/location/builder/supervisor/Project Status/
+  Project Type + Monday link), checklist form — status columns are TAP-TO-CYCLE chips in the
+  board's label order with the label's real hex color (cycle includes "(not set)" so a chip
+  can be cleared), 48px date/text/number inputs, textarea notes, dirty-dot per field, sticky
+  gold "Save to Monday" bar with change count, saving state, confirmed-values re-render from
+  the post-save re-read, explicit per-column failure list on partial saves. Only CHANGED
+  fields are submitted. hub.html: Job Check tile (✅ Live, "Pick an active job, check the
+  boxes, one save updates Monday — quality checks made quick.") + footer r3 → r4.
+- TESTS: tests/test_jobcheck.py — 17 pure tests (self-running like test_lien_watch.py; both
+  suites pass): config sanity, hard-exclusion gate vs config edits, value shaping incl.
+  clears + garbage rejection + 4000-char cap, allowlist/label validation, settings_str
+  parsing (dict + list shapes + deactivated labels), job normalization, stubbed write-path
+  batch→per-column fallback with per-column errors, audit change strings. python -m
+  compileall clean; stubbed `import app.service` OK (64 routes, was 60); jobcheck.html JS
+  node --check clean; allowlist ids/types cross-checked against the live board snapshot
+  (12/12 match).
+- NOT DEPLOYED (gcloud auth still dead). DEPLOY (admin): --source . deploy → grant `jobcheck`
+  in /ui/admin (crew members get it WITHOUT billing tools — that's the point) → open
+  /ui/jobcheck on a phone. OPEN for Jordan/Andrea to confirm: (1) the default column list —
+  esp. whether Ceiling Finish / Garage Finish (spec columns) or any supplies-status columns
+  belong on the crew pass; (2) whether "Assigned …"/"Paid …" status columns should ever be
+  crew-editable (left out — they look office/payroll-adjacent); (3) there is NO checkbox-type
+  column on the Projects board today (the form supports the type if one is added); (4) the
+  deal_stage labels literally include "Complete Job Check Form" — flipping deal_stage after a
+  completed check pass could be a v2 automation, but v1 leaves deal_stage read-only.
