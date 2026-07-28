@@ -396,8 +396,14 @@ def commit_check(*, monday_item_ids: list[int], image_bytes: bytes, content_type
         errors.extend(inv_errors)
 
     ok = not errors
+    # Customer + job come off the Monday rows so the activity log answers
+    # "whose check was this?" without opening the board (dedup preserves order).
+    _customers = list(dict.fromkeys(r.get("customer") for r in rows if r.get("customer")))
+    _jobs = list(dict.fromkeys(r.get("job") for r in rows if r.get("job")))
     activity.log_event("check.commit", actor=email, target=";".join(identifiers),
                        result="ok" if ok else "error", check_no=check_no,
+                       customer=", ".join(_customers) or None,
+                       job=", ".join(_jobs) or None,
                        amount=amount, n_invoices=len(ids),
                        steps=";".join(f"{i}:{k}={v}" for i, r in results.items() for k, v in r.items()),
                        errors=";".join(errors) or None)

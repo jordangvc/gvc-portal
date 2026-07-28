@@ -61,6 +61,7 @@ API_KEY = (os.environ.get("GVC_SERVICE_API_KEY") or "").strip() or None
 from shared import auth as portal_auth
 from shared import access as access
 from shared import activity as activity
+from shared import activity_detail as activity_detail
 from shared import activity_read as activity_read
 from shared import portal_store as portal_store
 from subsystems.estimate import drafts as estimate_drafts
@@ -806,8 +807,20 @@ def ui_invoice_form(request: Request) -> HTMLResponse:
 def ui_invoice_run(req: FromJSONRequest, request: Request) -> dict:
     """Run the invoice flow for the browser form. Same core as /v1/from-json."""
     email = require_feature(request, "invoice")
-    activity.log_event("invoice.run", actor=email, target=req.mode)
-    return _run(req.data, mode=req.mode, finalize=req.finalize, source_label="ui:invoice")
+    try:
+        out = _run(req.data, mode=req.mode, finalize=req.finalize, source_label="ui:invoice")
+    except Exception as e:
+        # Log the ATTEMPT with the customer/document it was for — a bare
+        # "invoice.run … error" can't be investigated a week later.
+        activity.log_event(
+            "invoice.run", actor=email, result="error", severity="ERROR",
+            **activity_detail.summarize("invoice", req.data, None, mode=req.mode, error=e))
+        raise
+    wb = out.get("writeback") if isinstance(out, dict) else None
+    activity.log_event(
+        "invoice.run", actor=email, result=activity_detail.result_for(wb),
+        **activity_detail.summarize("invoice", req.data, wb, mode=req.mode))
+    return out
 
 
 @app.post("/ui/api/invoice/correct")
@@ -1050,8 +1063,7 @@ def ui_estimate_run(req: EstimateRunRequest, request: Request) -> dict:
     No Stripe, ever.
     """
     user_email = require_feature(request, "estimate")
-    activity.log_event("estimate.run", actor=user_email,
-                       target=f"{req.mode}+revise" if req.revise else req.mode)
+    _est_mode = f"{req.mode}+revise" if req.revise else req.mode
     # The signed-in user is the default preparer (overridable in the form).
     pb = req.data.setdefault("prepared_by", {})
     if not pb.get("email") and "@" in user_email:
@@ -1067,10 +1079,16 @@ def ui_estimate_run(req: EstimateRunRequest, request: Request) -> dict:
             if not wb.get("gmail_draft_url") and "gmail_status" not in wb:
                 wb["gmail_status"] = "No draft URL returned — check hello@ configuration."
             _log_estimate_slack(wb, actor=user_email)
+        activity.log_event(
+            "estimate.run", actor=user_email, result=activity_detail.result_for(wb),
+            **activity_detail.summarize("estimate", req.data, wb, mode=_est_mode))
         return {"ok": True, "writeback": wb}
     except HTTPException:
         raise
     except Exception as e:
+        activity.log_event(
+            "estimate.run", actor=user_email, result="error", severity="ERROR",
+            **activity_detail.summarize("estimate", req.data, None, mode=_est_mode, error=e))
         print(f"[ui:estimate] error: {type(e).__name__}: {e}", file=sys.stderr)
         status, code, detail, advice = _friendly_error(e)
         raise HTTPException(
@@ -1580,8 +1598,7 @@ def ui_change_order_run(req: ChangeOrderRunRequest, request: Request) -> dict:
     creates/updates the Monday CO item + Operations task. No Stripe, ever.
     """
     user_email = require_feature(request, "change_order")
-    activity.log_event("change_order.run", actor=user_email,
-                       target=f"{req.mode}+revise" if req.revise else req.mode)
+    _co_mode = f"{req.mode}+revise" if req.revise else req.mode
     pb = req.data.setdefault("prepared_by", {})
     if not pb.get("email") and "@" in user_email:
         pb["email"] = user_email
@@ -1596,10 +1613,16 @@ def ui_change_order_run(req: ChangeOrderRunRequest, request: Request) -> dict:
             )
             if not wb.get("gmail_draft_url") and "gmail_status" not in wb:
                 wb["gmail_status"] = "No draft URL returned — check hello@ configuration."
+        activity.log_event(
+            "change_order.run", actor=user_email, result=activity_detail.result_for(wb),
+            **activity_detail.summarize("change_order", req.data, wb, mode=_co_mode))
         return {"ok": True, "writeback": wb}
     except HTTPException:
         raise
     except Exception as e:
+        activity.log_event(
+            "change_order.run", actor=user_email, result="error", severity="ERROR",
+            **activity_detail.summarize("change_order", req.data, None, mode=_co_mode, error=e))
         print(f"[ui:change-order] error: {type(e).__name__}: {e}", file=sys.stderr)
         status, code, detail, advice = _friendly_error(e)
         raise HTTPException(
@@ -1655,7 +1678,6 @@ def ui_coi_run(req: CoiRunRequest, request: Request) -> dict:
     (placeholder). Nothing is emailed until a human reviews the draft.
     """
     user_email = require_feature(request, "coi")
-    activity.log_event("coi.run", actor=user_email, target=req.mode)
     try:
         wb = coi_flow.process_coi(req.data, OUTPUT_DIR, mode=req.mode,
                                   source_label="ui:coi")
@@ -1666,6 +1688,9 @@ def ui_coi_run(req: CoiRunRequest, request: Request) -> dict:
             )
             if not wb.get("gmail_draft_url") and "gmail_status" not in wb:
                 wb["gmail_status"] = "No draft URL returned — check hello@ configuration."
+        activity.log_event(
+            "coi.run", actor=user_email, result=activity_detail.result_for(wb),
+            **activity_detail.summarize("coi", req.data, wb, mode=req.mode))
         return {"ok": True, "writeback": wb}
     except (coi_template.CoiTemplateMissing, portal_store.PortalStoreNotConfigured) as e:
         raise _coi_template_unavailable(e)

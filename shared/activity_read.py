@@ -157,13 +157,21 @@ def normalize_payload(
     return event
 
 
+# Business fields promoted to their own CSV columns so the export opens in Excel
+# as a usable report (sort by customer, total the amounts) instead of one opaque
+# JSON blob. Written by shared/activity_detail.summarize(); older events simply
+# leave them blank. `extra` still carries EVERYTHING, so nothing is lost.
+REPORT_FIELDS = ("customer", "job", "amount", "sent_to", "cc", "due", "mode",
+                 "gmail", "drive", "monday", "stripe_invoice_id", "error")
+
+
 def to_csv(events: list[dict]) -> str:
-    """Render normalized events as a CSV string (extras JSON-encoded in one column)."""
+    """Render normalized events as CSV: core + business columns, then the raw extras."""
     import json
 
     buf = io.StringIO()
     writer = csv.writer(buf)
-    writer.writerow([*CORE_FIELDS, "extra"])
+    writer.writerow([*CORE_FIELDS, *REPORT_FIELDS, "extra"])
     for ev in events:
         extra = ev.get("extra") or {}
         writer.writerow([
@@ -173,6 +181,7 @@ def to_csv(events: list[dict]) -> str:
             ev.get("target") or "",
             ev.get("result") or "",
             ev.get("severity") or "",
+            *[extra.get(f, "") if extra.get(f) is not None else "" for f in REPORT_FIELDS],
             json.dumps(extra, default=str) if extra else "",
         ])
     return buf.getvalue()

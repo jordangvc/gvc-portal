@@ -6,95 +6,147 @@
 <title>Activity · GVC Portal</title>
 <style>
   :root {
-    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8;
+    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B;
+    --ink: #1C1917; --muted: #78716C; --line: #E7E0CE; --bg: #FAFAF8;
+    --tint: #F2F7EE; --sand: #F3EBDD;
+    --danger: #B3261E; --danger-bg: #FDECEA; --danger-line: #F3C7C2;
+    --warn: #8A5A00; --warn-bg: #FDF3DF; --warn-line: #EBD8A6;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  header a.back { color: #fff; text-decoration: none; opacity: .9; font-size: 13px; }
-  header a.back:hover { opacity: 1; text-decoration: underline; }
-  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
-  .who a { color: #fff; text-decoration: underline; opacity: .9; }
-  main { max-width: 1100px; margin: 0 auto; padding: 28px 24px 48px; }
-  .intro h2 { font-size: 22px; margin: 0 0 4px; }
-  .intro p { margin: 0 0 20px; color: var(--muted); }
-  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
-    background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
-  .field { display: flex; flex-direction: column; gap: 4px; }
-  .field label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .03em; }
-  .field input, .field select { font: inherit; padding: 7px 9px; border: 1px solid var(--line);
-    border-radius: 8px; background: #fff; color: var(--ink); min-width: 150px; }
-  .field input:focus, .field select:focus { outline: none; border-color: var(--green); }
-  .spacer { flex: 1 1 auto; }
-  button { font: inherit; font-weight: 600; border: 1px solid var(--green); background: var(--green);
-    color: #fff; padding: 8px 14px; border-radius: 8px; cursor: pointer; transition: background .12s; }
-  button:hover { background: var(--green-dark); }
-  button.ghost { background: #fff; color: var(--green-dark); }
-  button.ghost:hover { background: #f0f6f2; }
-  .toggle { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--muted); }
-  .toggle input { width: 16px; height: 16px; }
-  .banner { display: none; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
-  .banner.warn { display: block; background: #fef3c7; border: 1px solid #fcd34d; color: #92400e; }
-  .meta { font-size: 12px; color: var(--muted); margin: 0 0 10px; }
-  table { width: 100%; border-collapse: collapse; background: #fff;
-    border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
-  th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); background: #FAFAF8; }
-  td { font-size: 13px; }
-  td.ts { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
-  td.mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  td.extra { color: var(--muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11px; word-break: break-word; }
-  tr:last-child td { border-bottom: none; }
-  .pill { display: inline-block; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 999px; }
-  .pill.ok { background: #FBF3E1; color: var(--green-dark); border: 1px solid #E3CFA0; }
-  .pill.denied { background: #FEE7E7; color: #b91c1c; border: 1px solid #fecaca; }
-  .pill.error { background: #FEE7E7; color: #b91c1c; border: 1px solid #fecaca; }
-  .pill.other { background: #F6F5F0; color: var(--muted); border: 1px solid var(--line); }
-  .footer-row { display: flex; align-items: center; gap: 12px; margin-top: 16px; }
-  .empty { display: none; color: var(--muted); padding: 24px; text-align: center; }
-  .loading { color: var(--muted); font-size: 13px; }
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    -webkit-font-smoothing: antialiased; }
+
   /* Standard GVC Portal header (shared across all tool pages) */
-  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-  header h1 { text-align: center; }
+  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff;
+    padding: 16px 24px; display: grid; grid-template-columns: 1fr auto 1fr;
+    align-items: center; gap: 16px; }
+  header h1 { font-size: 18px; margin: 0; text-align: center;
+    font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
+    display: flex; align-items: center; gap: 9px; justify-content: center; }
+  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
+    background: #1B382B; border: 1.5px solid var(--gold); color: var(--gold);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
   header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
     font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
     border-radius: 8px; opacity: .95; }
-  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link:hover { background: rgba(255,255,255,.16); opacity: 1; }
   header .home-link .chev { font-size: 17px; line-height: 1; }
-  header #health, header .who { justify-self: end; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; justify-self: end; }
+  .who a { color: #fff; text-decoration: underline; opacity: .9; }
   @media (max-width: 720px) {
-    header { grid-template-columns: auto 1fr; }
-    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-    header #health, header .who { grid-row: 1; }
+    header { grid-template-columns: auto 1fr; padding: 12px 16px; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; justify-content: flex-start; }
+    header .who { grid-row: 1; }
   }
-  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
-     visual fatigue on long forms. Calm green/slate alternation; overrides the
-     plain white .card above via source order. ── */
-  :root {
-    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
-  }
-  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
-    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
-  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
-    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
-  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
-    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
-  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
 
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px; justify-content: center; }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700; }
-  .btn.gold:hover { background: linear-gradient(0deg, #B9954E, #C9A24B); filter: brightness(1.06); }
+  main { max-width: 1180px; margin: 0 auto; padding: 28px 24px 56px; }
+  @media (max-width: 720px) { main { padding: 20px 14px 40px; } }
+
+  .intro h2 { font-size: 22px; margin: 0 0 4px; font-family: Georgia, serif; font-weight: 700; }
+  .intro p { margin: 0 0 20px; color: var(--muted); max-width: 68ch; }
+
+  /* ── Filter bar ─────────────────────────────────────────────────── */
+  .controls { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
+    background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--green);
+    border-radius: 12px; padding: 14px 16px; margin-bottom: 18px;
+    box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  .field { display: flex; flex-direction: column; gap: 5px; }
+  .field label { font-size: 11px; font-weight: 700; color: var(--muted);
+    text-transform: uppercase; letter-spacing: .05em; }
+  .field input, .field select { font: inherit; font-size: 14px; padding: 8px 10px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; color: var(--ink);
+    min-width: 152px; min-height: 40px; }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--green);
+    box-shadow: 0 0 0 3px rgba(35,83,57,.10); }
+  .spacer { flex: 1 1 auto; }
+  button { font: inherit; font-size: 14px; font-weight: 600; border: 1px solid var(--green);
+    background: var(--green); color: #fff; padding: 9px 15px; border-radius: 8px; cursor: pointer;
+    min-height: 40px; transition: background .12s, filter .12s; }
+  button:hover { background: var(--green-dark); }
+  button.ghost { background: #fff; color: var(--green-dark); }
+  button.ghost:hover { background: #F0F6F2; }
+  .toggle { display: flex; align-items: center; gap: 7px; font-size: 13px; color: var(--muted);
+    white-space: nowrap; }
+  .toggle input { width: 17px; height: 17px; accent-color: var(--green); }
+
+  .banner { display: none; border-radius: 10px; padding: 12px 14px; margin-bottom: 16px; font-size: 14px; }
+  .banner.warn { display: block; background: var(--warn-bg); border: 1px solid var(--warn-line); color: var(--warn); }
+  .meta { font-size: 13px; color: var(--muted); margin: 0 0 10px; }
+
+  /* ── Ledger ─────────────────────────────────────────────────────── */
+  .ledger { background: #fff; border: 1px solid var(--line); border-radius: 12px;
+    overflow: hidden; box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { position: sticky; top: 0; z-index: 2; background: var(--tint);
+    font-size: 11px; text-transform: uppercase; letter-spacing: .05em; font-weight: 700;
+    color: var(--green-dark); text-align: left; padding: 10px 14px;
+    border-bottom: 1px solid var(--line); }
+  thead th.num { text-align: right; }
+  tbody td { padding: 12px 14px; border-bottom: 1px solid #F1EDE2; vertical-align: top; font-size: 14px; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr.row:hover { background: #FCFBF7; }
+
+  /* Day separator — makes a long list scannable at a glance */
+  tr.daysep td { background: var(--sand); color: var(--green-dark); font-weight: 700;
+    font-size: 11px; letter-spacing: .06em; text-transform: uppercase;
+    padding: 7px 14px; border-bottom: 1px solid var(--line); }
+
+  td.time { white-space: nowrap; color: var(--muted); font-size: 13px;
+    font-variant-numeric: tabular-nums; width: 88px; }
+  .kind { font-weight: 700; color: var(--ink); }
+  .doc { display: inline-block; margin-top: 3px; font-size: 12.5px; color: var(--green-dark);
+    background: var(--tint); border: 1px solid #DDE8D6; border-radius: 6px; padding: 1px 7px;
+    font-variant-numeric: tabular-nums; }
+  .sub { display: block; margin-top: 3px; color: var(--muted); font-size: 12.5px; }
+  .who-name { font-weight: 600; }
+  td.num { text-align: right; white-space: nowrap; font-variant-numeric: tabular-nums;
+    font-weight: 600; }
+  .to { font-size: 13px; word-break: break-word; }
+
+  /* Step chips: what actually landed downstream */
+  .chips { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 2px; }
+  .chip { font-size: 11.5px; font-weight: 600; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid #DDE8D6; background: var(--tint); color: var(--green-dark); white-space: nowrap; }
+  .chip.bad { background: var(--danger-bg); border-color: var(--danger-line); color: var(--danger);
+    white-space: normal; }
+  .chip.info { background: var(--sand); border-color: #E4D6BC; color: #6B5426; }
+
+  .pill { display: inline-block; font-size: 11.5px; font-weight: 700; padding: 2px 9px;
+    border-radius: 999px; white-space: nowrap; }
+  .pill.ok { background: var(--tint); color: var(--green-dark); border: 1px solid #CFE0C4; }
+  .pill.partial { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn-line); }
+  .pill.error, .pill.denied { background: var(--danger-bg); color: var(--danger); border: 1px solid var(--danger-line); }
+  .pill.other { background: #F6F5F0; color: var(--muted); border: 1px solid var(--line); }
+
+  .rest { margin-top: 5px; color: var(--muted); font-size: 11.5px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; word-break: break-word; }
+  .errline { margin-top: 5px; color: var(--danger); font-size: 12.5px; word-break: break-word; }
+
+  .footer-row { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
+  .empty { display: none; color: var(--muted); padding: 34px 20px; text-align: center; }
+  .empty strong { display: block; color: var(--ink); font-size: 16px; margin-bottom: 4px; }
+  .loading { color: var(--muted); font-size: 13px; }
+
+  /* ── Mobile: the table becomes stacked cards (field-first) ───────── */
+  @media (max-width: 720px) {
+    .ledger { background: transparent; border: none; box-shadow: none; overflow: visible; }
+    thead { display: none; }
+    tbody, tbody tr, tbody td { display: block; width: 100%; }
+    tbody tr.row { background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--green);
+      border-radius: 12px; margin-bottom: 10px; padding: 12px 14px;
+      box-shadow: 0 1px 2px rgba(28,25,23,.04); }
+    tbody tr.row.is-bad { border-left-color: var(--danger); }
+    tbody tr.row.is-partial { border-left-color: var(--gold-dark); }
+    tbody td { border: none; padding: 0 0 6px; font-size: 14px; }
+    tbody td:last-child { padding-bottom: 0; }
+    td.time { width: auto; }
+    td.num { text-align: left; }
+    td.num::before { content: "Amount: "; font-weight: 400; color: var(--muted); }
+    td.to-cell::before { content: "Sent to: "; color: var(--muted); font-size: 12.5px; }
+    tr.daysep td { background: transparent; padding: 10px 2px 6px; border: none; }
+  }
 </style>
 </head>
 <body>
@@ -107,44 +159,46 @@
 <main>
   <div class="intro">
     <h2>Portal activity</h2>
-    <p>Audit trail of who did what — sign-ins, tool opens, finalizes, and access denials. Read live from Cloud Logging.</p>
+    <p>Every document the portal produced — who ran it, for which customer, how much, where it was
+       emailed, and whether the draft, Drive copy and Monday row all landed. Sign-ins and access
+       denials are here too. Read live from Cloud Logging (60 days).</p>
   </div>
 
   <div id="banner" class="banner warn"></div>
 
   <div class="controls">
     <div class="field">
-      <label for="f-actor">Actor (email)</label>
+      <label for="f-actor">Who</label>
       <input id="f-actor" type="text" placeholder="anyone" autocomplete="off" />
     </div>
     <div class="field">
-      <label for="f-action">Action</label>
-      <input id="f-action" type="text" list="actions" placeholder="any action" autocomplete="off" />
+      <label for="f-action">Activity</label>
+      <input id="f-action" type="text" list="actions" placeholder="everything" autocomplete="off" />
       <datalist id="actions">
-        <option value="signin"></option>
-        <option value="hub.open"></option>
-        <option value="tool.open"></option>
-        <option value="invoice.run"></option>
-        <option value="estimate.run"></option>
-        <option value="estimate.draft.save"></option>
-        <option value="estimate.draft.delete"></option>
-        <option value="change_order.run"></option>
-        <option value="check.extract"></option>
-        <option value="check.commit"></option>
-        <option value="admin.grant.update"></option>
-        <option value="admin.user.remove"></option>
-        <option value="access.denied"></option>
-        <option value="activity.view"></option>
-        <option value="activity.export"></option>
+        <option value="invoice.run">Invoice</option>
+        <option value="estimate.run">Estimate</option>
+        <option value="change_order.run">Change order</option>
+        <option value="coi.run">COI</option>
+        <option value="check.commit">Check payment recorded</option>
+        <option value="check.extract">Check read</option>
+        <option value="jobcheck.save">Job check saved</option>
+        <option value="signin">Sign-in</option>
+        <option value="tool.open">Tool opened</option>
+        <option value="hub.open">Hub opened</option>
+        <option value="admin.grant.update">Admin — access changed</option>
+        <option value="admin.user.remove">Admin — user removed</option>
+        <option value="access.denied">Access denied</option>
+        <option value="activity.export">Activity export</option>
       </datalist>
     </div>
     <div class="field">
-      <label for="f-result">Result</label>
+      <label for="f-result">Outcome</label>
       <select id="f-result">
         <option value="">any</option>
         <option value="ok">ok</option>
-        <option value="denied">denied</option>
+        <option value="partial">partial — a step failed</option>
         <option value="error">error</option>
+        <option value="denied">denied</option>
         <option value="noop">noop</option>
       </select>
     </div>
@@ -167,13 +221,26 @@
 
   <p class="meta" id="meta"></p>
 
-  <table id="table">
-    <thead>
-      <tr><th>Time (UTC)</th><th>Action</th><th>Actor</th><th>Target</th><th>Result</th><th>Detail</th></tr>
-    </thead>
-    <tbody id="rows"></tbody>
-  </table>
-  <div class="empty" id="empty">No activity matches these filters.</div>
+  <div class="ledger">
+    <table>
+      <thead>
+        <tr>
+          <th>Time</th>
+          <th>Activity</th>
+          <th>Customer</th>
+          <th class="num">Amount</th>
+          <th>Sent to</th>
+          <th>Steps</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty">
+      <strong>Nothing here yet</strong>
+      No activity matches these filters.
+    </div>
+  </div>
 
   <div class="footer-row">
     <button id="more" class="ghost" style="display:none;">Load more</button>
@@ -185,53 +252,154 @@
   const $ = (id) => document.getElementById(id);
   let nextToken = null;
   let autoTimer = null;
+  let lastDay = null;   // for day separators across "Load more" appends
+
+  // Human labels — the log stores machine actions; the office reads English.
+  const KINDS = {
+    'invoice.run': 'Invoice', 'estimate.run': 'Estimate', 'change_order.run': 'Change order',
+    'coi.run': 'COI', 'coi.bulk.run': 'COI bulk run',
+    'check.commit': 'Check payment', 'check.extract': 'Check read',
+    'check.already_deposited': 'Check — already deposited',
+    'jobcheck.save': 'Job check', 'signin': 'Sign-in', 'hub.open': 'Opened the hub',
+    'tool.open': 'Opened a tool', 'access.denied': 'Access denied',
+    'admin.grant.update': 'Access changed', 'admin.user.remove': 'User removed',
+    'activity.view': 'Viewed activity', 'activity.export': 'Exported activity',
+    'activity.backup': 'Activity backup', 'estimate.slack': 'Estimate Slack notice',
+    'estimate.draft.save': 'Estimate draft saved', 'estimate.draft.delete': 'Estimate draft deleted',
+    'invoice.draft.save': 'Invoice draft saved', 'invoice.draft.delete': 'Invoice draft deleted',
+    'change_order.draft.save': 'CO draft saved', 'change_order.draft.delete': 'CO draft deleted',
+    'invoice.lookup': 'Invoice lookup', 'estimate.scopes.save': 'Scope catalog saved',
+    'coi.template.upload': 'COI template uploaded', 'lien.status': 'Lien watch viewed',
+  };
+  // Keys rendered in dedicated columns — everything else falls to the tail line.
+  const COLUMN_KEYS = ['customer', 'amount', 'sent_to', 'job', 'error'];
+  const STEP_KEYS = ['gmail', 'drive', 'monday', 'stripe_invoice_id', 'reused', 'revision', 'steps'];
+  const STEP_LABELS = { gmail: 'Draft', drive: 'Drive', monday: 'Monday', stripe_invoice_id: 'Stripe' };
+
+  function esc(s) {
+    return (s == null ? '' : String(s)).replace(/[&<>"]/g, c =>
+      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  }
+  function isBad(v) { return /^FAILED|not synced|^No draft/i.test(String(v || '')); }
+
+  function fmtTime(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return esc((iso || '').replace('T', ' ').replace(/\..*$/, ''));
+    return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  function dayKey(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return '';
+    return d.toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
+  }
+
+  // Most flows log an already-formatted total ("$27,500.00"); the check flow logs
+  // the raw form value ("110610.00"). Normalize here so the column reads as money
+  // for every row, including events logged before this page was rebuilt.
+  function money(v) {
+    const s = String(v == null ? '' : v).trim();
+    if (!s) return '';
+    if (!/^-?\d+(\.\d+)?$/.test(s)) return s;
+    const n = Number(s);
+    return isNaN(n) ? s : n.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+  }
+
+  function pill(result) {
+    const r = (result || '').toLowerCase();
+    const cls = ['ok', 'partial', 'denied', 'error'].includes(r) ? r : 'other';
+    return `<span class="pill ${cls}">${esc(result || '—')}</span>`;
+  }
+
+  function stepChips(extra) {
+    const out = [];
+    for (const key of ['gmail', 'drive', 'monday', 'stripe_invoice_id']) {
+      const v = extra[key];
+      if (v == null || v === '') continue;
+      const bad = isBad(v);
+      const label = STEP_LABELS[key];
+      // Success is a tick + the step name; a failure shows its reason in full.
+      const text = bad ? `${label}: ${v}`
+                       : (key === 'stripe_invoice_id' ? `${label} ✓` : `${label} ✓`);
+      out.push(`<span class="chip ${bad ? 'bad' : ''}">${esc(text)}</span>`);
+    }
+    if (extra.reused) out.push(`<span class="chip info">reused — no duplicate</span>`);
+    if (extra.revision) out.push(`<span class="chip info">revision ${esc(extra.revision)}</span>`);
+    if (extra.steps) out.push(`<span class="chip info">${esc(String(extra.steps).slice(0, 120))}</span>`);
+    return out.length ? `<div class="chips">${out.join('')}</div>` : '';
+  }
+
+  // Anything the design doesn't have a home for is still shown — never hide data.
+  function tail(extra) {
+    const skip = new Set([...COLUMN_KEYS, ...STEP_KEYS, 'cc', 'due', 'mode']);
+    const rest = Object.entries(extra).filter(([k, v]) => !skip.has(k) && v !== null && v !== '');
+    if (!rest.length) return '';
+    return `<div class="rest">${esc(rest.map(([k, v]) => `${k}=${v}`).join('  ·  '))}</div>`;
+  }
+
+  function addRows(events) {
+    const tbody = $('rows');
+    for (const ev of events) {
+      const extra = ev.extra || {};
+      const day = dayKey(ev.ts);
+      if (day && day !== lastDay) {
+        lastDay = day;
+        const sep = document.createElement('tr');
+        sep.className = 'daysep';
+        sep.innerHTML = `<td colspan="7">${esc(day)}</td>`;
+        tbody.appendChild(sep);
+      }
+
+      const result = (ev.result || '').toLowerCase();
+      const tr = document.createElement('tr');
+      tr.className = 'row' + (result === 'error' || result === 'denied' ? ' is-bad'
+                            : result === 'partial' ? ' is-partial' : '');
+
+      const kind = KINDS[ev.action] || ev.action || '—';
+      // Target is the document number for document flows; for sign-ins etc. it's
+      // a feature name, so only badge it when it isn't just repeating the label.
+      const target = ev.target && ev.target !== ev.action ? ev.target : '';
+      const docBadge = target ? `<span class="doc">${esc(target)}</span>` : '';
+      const jobLine = extra.job ? `<span class="sub">${esc(extra.job)}</span>` : '';
+      const modeLine = extra.mode && extra.mode !== 'live'
+        ? `<span class="sub">${esc(extra.mode)}</span>` : '';
+
+      const customer = extra.customer
+        ? `<span class="who-name">${esc(extra.customer)}</span><span class="sub">${esc(ev.actor || '')}</span>`
+        : `<span class="sub">${esc(ev.actor || '')}</span>`;
+
+      const sentTo = extra.sent_to
+        ? `<span class="to">${esc(extra.sent_to)}</span>` +
+          (extra.cc ? `<span class="sub">cc ${esc(extra.cc)}</span>` : '')
+        : '';
+
+      const errLine = extra.error ? `<div class="errline">${esc(extra.error)}</div>` : '';
+
+      tr.innerHTML =
+        `<td class="time">${fmtTime(ev.ts)}</td>` +
+        `<td><span class="kind">${esc(kind)}</span> ${docBadge}${jobLine}${modeLine}${errLine}${tail(extra)}</td>` +
+        `<td>${customer}</td>` +
+        `<td class="num">${esc(money(extra.amount))}</td>` +
+        `<td class="to-cell">${sentTo}</td>` +
+        `<td>${stepChips(extra)}</td>` +
+        `<td>${pill(ev.result)}</td>`;
+      tbody.appendChild(tr);
+    }
+  }
 
   function filters() {
     const p = new URLSearchParams();
     const actor = $('f-actor').value.trim();
     const action = $('f-action').value.trim();
     const result = $('f-result').value;
-    const range = $('f-range').value;
     if (actor) p.set('actor', actor);
     if (action) p.set('action', action);
     if (result) p.set('result', result);
-    p.set('range', range);
+    p.set('range', $('f-range').value);
     return p;
   }
 
-  function pill(result) {
-    const r = (result || '').toLowerCase();
-    const cls = (r === 'ok') ? 'ok' : (r === 'denied' || r === 'error') ? r : 'other';
-    return `<span class="pill ${cls}">${result || '—'}</span>`;
-  }
-
-  function esc(s) {
-    return (s == null ? '' : String(s)).replace(/[&<>"]/g, c =>
-      ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  }
-
-  function fmtExtra(extra) {
-    if (!extra || !Object.keys(extra).length) return '';
-    return Object.entries(extra).map(([k, v]) => `${k}=${v}`).join('  ');
-  }
-
-  function addRows(events) {
-    const tbody = $('rows');
-    for (const ev of events) {
-      const tr = document.createElement('tr');
-      tr.innerHTML =
-        `<td class="ts">${esc((ev.ts || '').replace('T', ' ').replace(/\..*$/, '').replace('Z',''))}</td>` +
-        `<td class="mono">${esc(ev.action)}</td>` +
-        `<td>${esc(ev.actor)}</td>` +
-        `<td>${esc(ev.target)}</td>` +
-        `<td>${pill(ev.result)}</td>` +
-        `<td class="extra">${esc(fmtExtra(ev.extra))}</td>`;
-      tbody.appendChild(tr);
-    }
-  }
-
   async function load(reset) {
-    if (reset) { nextToken = null; $('rows').innerHTML = ''; }
+    if (reset) { nextToken = null; lastDay = null; $('rows').innerHTML = ''; }
     $('loading').textContent = 'Loading…';
     $('banner').style.display = 'none';
     const p = filters();
@@ -251,10 +419,10 @@
       addRows(body.events || []);
       nextToken = body.next_page_token || null;
       $('more').style.display = nextToken ? 'inline-block' : 'none';
-      const count = $('rows').children.length;
+      const count = $('rows').querySelectorAll('tr.row').length;
       $('empty').style.display = count ? 'none' : 'block';
       $('meta').textContent = count
-        ? `Showing ${count} event${count === 1 ? '' : 's'}${nextToken ? ' (more available)' : ''}.`
+        ? `Showing ${count} event${count === 1 ? '' : 's'}${nextToken ? ' — more available' : ''}.`
         : '';
       $('loading').textContent = '';
     } catch (e) {

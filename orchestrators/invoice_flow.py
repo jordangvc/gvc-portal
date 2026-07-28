@@ -99,6 +99,20 @@ def process_one(
         "pdf_path": str(output_path),
     }
 
+    # Business summary for the activity log (shared/activity_detail). Read from
+    # `enriched` so the customer/amount recorded are EXACTLY what the PDF and the
+    # Stripe invoice carry — never recomputed from raw input, which would let the
+    # log drift from the document. Additive keys; existing consumers ignore them.
+    _client = enriched.get("client") or {}
+    writeback.update({
+        "customer": _client.get("name"),
+        "job_name": (enriched.get("job") or {}).get("name"),
+        "recipient": _client.get("email"),
+        "cc": data.get("cc_email") or (data.get("_monday") or {}).get("cc_email"),
+        "amount_pretty": inv_data.get("total_pretty"),
+        "due_date_pretty": inv_data.get("due_date_pretty"),
+    })
+
     if mode == "dry-run":
         hosted_url = DRYRUN_PLACEHOLDER_URL.format(identifier)
         print(f"[dry-run {identifier}] placeholder URL: {hosted_url}")
