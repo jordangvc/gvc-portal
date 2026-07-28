@@ -52,6 +52,28 @@ CONTEXT_COLUMN_IDS = (
 # picker. Read off the Project Status mirror (Operations has no deal_stage).
 SKIP_PROJECT_STATUSES = {"project lost/canceled"}
 
+# ⚠ Mirror and board-relation columns return text = NULL — their readable value
+# lives in `display_value` (verified live 2026-07-28: link_to_projects/mirror3/
+# lookup_mknf1rdw all had text=None while display_value carried the project
+# name, status and address). Every Operations context column is one of those
+# types, so both reads request this fragment and prefer display_value.
+_VALUE_FRAGMENT = """
+          id
+          text
+          ... on MirrorValue { display_value }
+          ... on BoardRelationValue { display_value }
+"""
+
+
+def _column_text(cv: dict) -> Optional[str]:
+    """Readable value of one column_value: display_value (mirrors/relations)
+    falling back to text (everything else). None when empty."""
+    for key in ("display_value", "text"):
+        raw = cv.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return None
+
 
 def _item_url(item_id) -> str:
     return (f"https://greenvalleycontractors.monday.com/boards/"
@@ -81,12 +103,12 @@ def fetch_active_jobs(mc) -> list[dict]:
             id
             name
             group { id title }
-            column_values(ids: %s) { id text }
+            column_values(ids: %s) { %s }
           }
         }
       }
     }
-    """ % col_ids
+    """ % (col_ids, _VALUE_FRAGMENT)
     jobs: list[dict] = []
     cursor: Optional[str] = None
     while True:
@@ -112,8 +134,7 @@ def _normalize_job(item: dict) -> Optional[dict]:
     group = item.get("group") or {}
     if group.get("id") in JOBCHECK_SKIP_GROUP_IDS:
         return None
-    cols = {cv["id"]: (cv.get("text") or "").strip() or None
-            for cv in item.get("column_values") or []}
+    cols = {cv["id"]: _column_text(cv) for cv in item.get("column_values") or []}
     project_status = cols.get(CONTEXT_COL_PROJECT_STATUS)
     if (project_status or "").strip().lower() in SKIP_PROJECT_STATUSES:
         return None
@@ -216,18 +237,17 @@ def get_item_values(mc, item_id: int, column_ids: list[str]) -> Optional[dict]:
         id
         name
         group { id title }
-        column_values(ids: $cols) { id text }
+        column_values(ids: $cols) { %s }
       }
     }
-    """
+    """ % _VALUE_FRAGMENT
     data = mc._query(query, {"itemId": [str(item_id)], "cols": fetch_ids})
     items = data.get("items") or []
     if not items:
         return None
     item = items[0]
     group = item.get("group") or {}
-    values = {cv["id"]: ((cv.get("text") or "").strip() or None)
-              for cv in item.get("column_values") or []}
+    values = {cv["id"]: _column_text(cv) for cv in item.get("column_values") or []}
     return {
         "item_id": int(item["id"]),
         "name": (item.get("name") or "").strip(),
