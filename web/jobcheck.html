@@ -81,9 +81,21 @@
   .field > label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
     color: var(--muted); }
   .field.dirty > label::after { content: " •"; color: var(--gold-dark); }
-  .chip-btn { min-height: 48px; padding: 10px 18px; border-radius: 10px; border: 1px solid var(--line);
-    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; text-align: center; }
-  .chip-btn.unset { background: #F6F5F0; color: var(--muted); font-weight: 600; }
+  /* Status picker — a native <select> so phones open the OS picker: every option
+     visible at once, one tap to choose. (Was tap-to-cycle, which meant stepping
+     through every label to reach the last one — wrong on a job site.) The closed
+     control still carries the chosen label's real board color. */
+  .select-wrap { position: relative; display: block; width: 100%; }
+  .status-select { -webkit-appearance: none; appearance: none;
+    width: 100%; min-height: 48px; padding: 10px 42px 10px 16px; border-radius: 10px;
+    border: 1px solid var(--line); background-color: #F6F5F0; color: var(--ink);
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .status-select.unset { color: var(--muted); font-weight: 600; }
+  .status-select:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  .select-chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; font-size: 13px; opacity: .85; }
+  /* The dropdown list itself is OS-drawn; force readable list rows on desktop. */
+  .status-select option { background: #fff; color: var(--ink); font-weight: 600; }
   .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
     width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
     border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
@@ -130,7 +142,7 @@
   </div>
 
   <div class="card" id="formcard" style="display:none;">
-    <h2>Quality check <span class="opt" style="text-transform:none;font-weight:400;">— tap a status to advance it</span></h2>
+    <h2>Quality check <span class="opt" style="text-transform:none;font-weight:400;">— pick a status for each step</span></h2>
     <div id="fields"></div>
     <div class="hint">Only the fields you change are saved. Money and contract columns can't be
       edited here by design.</div>
@@ -229,22 +241,28 @@ function renderContext(job) {
     <div class="ctx-meta">${rows}</div>`;
 }
 
-function statusChipHtml(col) {
-  const val = current[col.id];
-  if (val === null || val === undefined || val === "") {
-    return `<button class="chip-btn unset" type="button" data-col="${esc(col.id)}">(not set) — tap to set</button>`;
-  }
-  const lab = (statusSeq[col.id] || []).find((l) => l && l.label === val);
-  const bg = lab && lab.hex ? lab.hex : "#F6F5F0";
-  return `<button class="chip-btn" type="button" data-col="${esc(col.id)}"
-    style="background:${esc(bg)};color:${textColorFor(bg)};border-color:${esc(bg)};">${esc(val)}</button>`;
+function statusSelectHtml(col) {
+  const val = current[col.id] ?? "";
+  const labels = (statusSeq[col.id] || []).filter(Boolean);
+  const chosen = labels.find((l) => l.label === val);
+  const bg = chosen && chosen.hex ? chosen.hex : "";
+  const fg = bg ? textColorFor(bg) : "";
+  const style = bg ? `background-color:${esc(bg)};color:${fg};border-color:${esc(bg)};` : "";
+  const opts = [`<option value=""${val === "" ? " selected" : ""}>(not set)</option>`].concat(
+    labels.map((l) =>
+      `<option value="${esc(l.label)}"${l.label === val ? " selected" : ""}>${esc(l.label)}</option>`)
+  );
+  return `<span class="select-wrap">
+    <select class="status-select${bg ? "" : " unset"}" data-col="${esc(col.id)}"
+      aria-label="${esc(col.label)}" style="${style}">${opts.join("")}</select>
+    <span class="select-chev"${fg ? ` style="color:${fg};"` : ""}>▼</span></span>`;
 }
 
 function fieldHtml(col) {
   const v = current[col.id];
   let control = "";
   if (col.type === "status") {
-    control = statusChipHtml(col);
+    control = statusSelectHtml(col);
   } else if (col.type === "checkbox") {
     control = `<label class="checkwrap"><input type="checkbox" data-col="${esc(col.id)}"
       ${v ? "checked" : ""}/><span>${v ? "Done" : "Not done"}</span></label>`;
@@ -283,11 +301,11 @@ function wireField(col) {
   const root = document.querySelector(`.field[data-field="${CSS.escape(col.id)}"]`);
   if (!root) return;
   if (col.type === "status") {
-    root.querySelector(".chip-btn").addEventListener("click", () => {
-      const seq = statusSeq[col.id] || [null];
-      const idx = seq.findIndex((l) => (l ? l.label : null) === (current[col.id] || null));
-      const next = seq[(idx + 1) % seq.length];
-      current[col.id] = next ? next.label : null;
+    const sel = root.querySelector("select");
+    sel.addEventListener("change", () => {
+      // "" is the explicit clear option — store null so the save sends a clear.
+      current[col.id] = sel.value === "" ? null : sel.value;
+      // Re-render so the control repaints in the newly chosen label's color.
       root.outerHTML = fieldHtml(col);
       wireField(col);
       refreshDirtyUi();
