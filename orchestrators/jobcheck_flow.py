@@ -221,12 +221,13 @@ def get_job_detail(item_id: int) -> Optional[dict]:
             "name": item["name"],
             "url": item["url"],
             "group": item["group_title"],
-            "project_number": values.get(mj.CONTEXT_COL_PROJECT_NUMBER),
+            # Operations-board context (2026-07-28) — named for what they now
+            # actually hold, rather than reusing the old Projects-board keys.
+            "project": values.get(mj.CONTEXT_COL_PROJECT_LINK),
             "location": values.get(mj.CONTEXT_COL_LOCATION),
-            "builder": values.get(mj.CONTEXT_COL_BUILDER),
-            "supervisor": values.get(mj.CONTEXT_COL_SUPERVISOR),
-            "deal_stage": values.get(mj.CONTEXT_COL_DEAL_STAGE),
-            "project_type": values.get(mj.CONTEXT_COL_PROJECT_TYPE),
+            "ops_owner": values.get(mj.CONTEXT_COL_OPS_OWNER),
+            "overdue": values.get(mj.CONTEXT_COL_OVERDUE),
+            "project_status": values.get(mj.CONTEXT_COL_PROJECT_STATUS),
         },
         "columns": form_columns,
     }

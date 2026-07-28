@@ -45,6 +45,29 @@ OPERATIONS_BOARD_ID = int(os.environ.get("GVC_MONDAY_OPERATIONS_BOARD_ID", "1920
 # billing). See orchestrators/jobcheck_flow.validate_values().
 # ---------------------------------------------------------------------------
 
+# Job Check targets the OPERATIONS board (moved 2026-07-28). Evidence: over 14
+# days the Operations board took 788 column edits — Scheduled Day 178, Stage
+# Detail 95, Stage Completion 75, Stage 72, Needs-from-Jordan 34, Blocked 24 —
+# with the field PMs (Mark W, Robert R) as the top editors, while the twelve
+# Projects-board columns Job Check used to write took just 29 edits between
+# them. The crew already lives here.
+#
+# ⚠ The trade-status columns (Framing/Hanging/Scrapping/Finishing…) exist on
+# Operations only as MIRRORS of the Projects board, and Monday cannot write to
+# a mirror. They are deliberately absent from the allowlist below; writing them
+# through the `link_to_projects` relation is phase 2.
+JOBCHECK_BOARD_ID = int(os.environ.get("GVC_MONDAY_JOBCHECK_BOARD_ID")
+                        or OPERATIONS_BOARD_ID)
+
+# Operations groups the crew picker hides: finished work and the office's
+# invoicing queue. Everything else (In-Progress, Upcoming) is offered — an
+# exclusion set, not an allowlist, so a NEW group can never silently vanish
+# from the picker.
+JOBCHECK_SKIP_GROUP_IDS = frozenset({
+    "new_group",          # "Completed Tasks"
+    "group_mm3zq4q2",     # "Ready to Invoice" — office-owned from here on
+})
+
 # Monday column TYPES Job Check may never write, regardless of config.
 JOBCHECK_HARD_EXCLUDED_TYPES = frozenset({
     "board_relation", "mirror", "lookup", "link", "file", "button",
@@ -56,9 +79,14 @@ JOBCHECK_HARD_EXCLUDED_TYPES = frozenset({
 # Money/billing columns on the Projects board whose plain type (text/numbers)
 # would otherwise pass the type gate. Never writable through Job Check.
 JOBCHECK_HARD_EXCLUDED_IDS = frozenset({
+    # Projects board
     "board_counts",       # "Board Count" — the per-board billing basis
     "numeric_mm3fcjmn",   # "Pay App #" — AIA billing sequence (office-owned)
     "numeric_mm5ahj91",   # "CO Amount" — change-order dollars
+    # Operations board
+    "color_mm2xd40t",     # "BIllable" — a billing decision, not a crew call
+    "date_mm3zry96",      # "Ready for Invoice Date" — triggers the office
+    "color_mm1x2172",     # "Overdue" — an automation owns this column
 })
 
 # Render types the Job Check form supports (and the only values the config
@@ -66,18 +94,20 @@ JOBCHECK_HARD_EXCLUDED_IDS = frozenset({
 JOBCHECK_RENDER_TYPES = ("status", "checkbox", "date", "text", "long_text",
                          "number")
 
-# Default allowlist — display order IS this order. Jordan/Andrea: edit here.
+# Default allowlist — OPERATIONS board (1920364853), display order IS this
+# order. Column ids/types verified live via get_board_info 2026-07-28. Ordered
+# the way a PM reports from a driveway: where the job is, what's stopping it,
+# when it's due back, then the site-logistics notes. Jordan/Andrea: edit here.
 JOBCHECK_COLUMNS: tuple[dict, ...] = (
-    {"id": "color_mkza9z7c",          "label": "Framing Status",   "type": "status"},
-    {"id": "status_19",               "label": "Hanging Status",   "type": "status"},
-    {"id": "dup__of_hung_status1",    "label": "Scrapping Status", "type": "status"},
-    {"id": "dup__of_scrapped_status", "label": "Taped Status",     "type": "status"},
-    {"id": "dup__of_taped_status",    "label": "2nd Bed Coat",     "type": "status"},
-    {"id": "dup__of_2nd_bed_coat",    "label": "3rd Coat",         "type": "status"},
-    {"id": "dup__of_3rd_coat",        "label": "Sanded",           "type": "status"},
-    {"id": "dup__of_sanded",          "label": "Text/Skim",        "type": "status"},
-    {"id": "color_mkza855s",          "label": "Finishing Stage",  "type": "status"},
-    {"id": "color8",                  "label": "Cleaned Out",      "type": "status"},
-    {"id": "date1",                   "label": "Completion Date",  "type": "date"},
-    {"id": "notes7",                  "label": "Notes",            "type": "long_text"},
+    {"id": "status",           "label": "Stage",              "type": "status"},
+    {"id": "color_mm1hmwdm",   "label": "Stage Detail",       "type": "status"},
+    {"id": "color_mm1hrm6z",   "label": "Blocked",            "type": "status"},
+    {"id": "color_mm1gemtq",   "label": "Needs from Jordan",  "type": "status"},
+    {"id": "status_19",        "label": "Scheduled Day",      "type": "status"},
+    {"id": "date_mm1kwzf9",    "label": "Stage Completion",   "type": "date"},
+    {"id": "date_mm1ghszy",    "label": "Full Completion",    "type": "date"},
+    {"id": "text_mkz4p9tk",    "label": "Scaffolding",        "type": "text"},
+    {"id": "text_mkz4q570",    "label": "Heater/Cans",        "type": "text"},
+    {"id": "text_mkz49r0m",    "label": "Lock Box",           "type": "text"},
+    {"id": "text_mm14mhpm",    "label": "Shower Instructions", "type": "text"},
 )

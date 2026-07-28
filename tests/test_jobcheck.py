@@ -33,8 +33,8 @@ def test_shipped_config_survives_the_hard_exclusion_gate():
     effective = jf.allowlisted_columns()
     assert [c["id"] for c in effective] == [c["id"] for c in boards.JOBCHECK_COLUMNS]
     # Display order is config order.
-    assert effective[0]["label"] == "Framing Status"
-    assert effective[-1]["label"] == "Notes"
+    assert effective[0]["label"] == "Stage"
+    assert effective[-1]["label"] == "Shower Instructions"
 
 
 def test_hard_exclusions_beat_config_edits():
@@ -111,15 +111,15 @@ def test_validate_values_allowlist_and_labels():
     labels = {"status_19": ["Hanging Not Started", "100% Hanging Completed"]}
     shaped, errors, accepted = jf.validate_values(
         {"status_19": "100% Hanging Completed",     # ok
-         "date1": "2026-07-27",                     # ok
-         "notes7": "back bedroom needs a skim",     # ok
+         "date_mm1kwzf9": "2026-07-27",                     # ok
+         "text_mm14mhpm": "back bedroom needs a skim",     # ok
          "status_19x": "boom",                      # not allowlisted
-         "deal_stage": "For Invoicing"},            # not in the config
+         "color_mm2xd40t": "For Invoicing"},            # not in the config
         status_labels=labels)
     assert shaped == {"status_19": {"label": "100% Hanging Completed"},
-                      "date1": {"date": "2026-07-27"},
-                      "notes7": {"text": "back bedroom needs a skim"}}
-    assert set(errors) == {"status_19x", "deal_stage"}
+                      "date_mm1kwzf9": {"date": "2026-07-27"},
+                      "text_mm14mhpm": "back bedroom needs a skim"}
+    assert set(errors) == {"status_19x", "color_mm2xd40t"}
     assert set(accepted) == set(shaped)
 
 
@@ -137,9 +137,9 @@ def test_validate_values_rejects_unknown_status_label():
 
 def test_validate_values_bad_value_is_per_column():
     shaped, errors, _ = jf.validate_values(
-        {"date1": "not-a-date", "notes7": "fine"}, status_labels={})
-    assert list(shaped) == ["notes7"]
-    assert "date1" in errors and "YYYY-MM-DD" in errors["date1"]
+        {"date_mm1kwzf9": "not-a-date", "text_mm14mhpm": "fine"}, status_labels={})
+    assert list(shaped) == ["text_mm14mhpm"]
+    assert "date_mm1kwzf9" in errors and "YYYY-MM-DD" in errors["date_mm1kwzf9"]
 
 
 # ------------------------------------------------- status settings parsing
@@ -178,9 +178,11 @@ def test_parse_status_labels_garbage_is_empty():
 
 # ------------------------------------------------- job-row normalization
 
-def _raw_item(name="123 Main St - Builder", group="topics",
-              title="Work-In-Progress Projects", **cols):
-    defaults = {"text_mm4fvj91": None, "location5": None, "deal_stage": None}
+def _raw_item(name="123 Main St - Builder - New House", group="topics",
+              title="Activities/Tasks (In-Progress)", **cols):
+    # Operations-board context ids (link to Projects / Job Location mirror /
+    # Project Status mirror).
+    defaults = {"link_to_projects": None, "lookup_mknf1rdw": None, "mirror3": None}
     defaults.update(cols)
     return {"id": "101", "name": name,
             "group": {"id": group, "title": title},
@@ -188,24 +190,26 @@ def _raw_item(name="123 Main St - Builder", group="topics",
 
 
 def test_normalize_job_keeps_active_and_maps_columns():
-    row = mj._normalize_job(_raw_item(text_mm4fvj91="2026-C-041",
-                                      location5="Brookville, IN",
-                                      deal_stage="Work-in-Progress"))
+    row = mj._normalize_job(_raw_item(link_to_projects="123 Main St - Builder",
+                                      lookup_mknf1rdw="Brookville, IN",
+                                      mirror3="Work-in-Progress"))
     assert row["item_id"] == 101
-    assert row["project_number"] == "2026-C-041"
+    assert row["project_number"] == "123 Main St - Builder"
     assert row["location"] == "Brookville, IN"
     assert row["deal_stage"] == "Work-in-Progress"
-    assert str(mj.PROJECTS_BOARD_ID) in row["url"]
+    assert str(mj.JOBCHECK_BOARD_ID) in row["url"]
 
 
-def test_normalize_job_skips_closed_co_and_lost():
-    assert mj._normalize_job(_raw_item(group="closed",
-                                       title="Completed and Paid Projects")) is None
-    assert mj._normalize_job(_raw_item(name="CO.2 - 123 Main St")) is None
-    assert mj._normalize_job(_raw_item(deal_stage="Project Lost/canceled")) is None
-    # completed-but-unpaid groups stay in (crew may still be closing punch items)
-    assert mj._normalize_job(_raw_item(group="duplicate_of_for_internal_qual__1",
-                                       title="Work Completed 100% (Unpaid)")) is not None
+def test_normalize_job_skips_finished_and_lost():
+    # Completed Tasks and the office's invoicing queue are hidden from the crew.
+    assert mj._normalize_job(_raw_item(group="new_group",
+                                       title="Completed Tasks")) is None
+    assert mj._normalize_job(_raw_item(group="group_mm3zq4q2",
+                                       title="Ready to Invoice")) is None
+    assert mj._normalize_job(_raw_item(mirror3="Project Lost/canceled")) is None
+    # Upcoming work stays in — the crew may start it today.
+    assert mj._normalize_job(_raw_item(group="group_mm3khfvc",
+                                       title="Upcoming Projects (Not Started)")) is not None
 
 
 # ----------------------------------------------------- write-path fallback
@@ -221,7 +225,7 @@ class _StubMC:
         self.calls.append(sorted(values))
         if len(values) > 1:
             raise RuntimeError("Monday API error: batch boom")
-        if "date1" in values:
+        if "date_mm1kwzf9" in values:
             raise RuntimeError("Monday API error: bad date payload")
         return {"change_multiple_column_values": {"id": variables["itemId"]}}
 
@@ -230,14 +234,14 @@ def test_set_item_columns_batch_then_per_column_errors():
     mc = _StubMC()
     out = mj.set_item_columns(mc, 101, {
         "status_19": {"label": "Done"},
-        "notes7": {"text": "hi"},
-        "date1": {"date": "2026-07-27"},
+        "text_mm14mhpm": {"text": "hi"},
+        "date_mm1kwzf9": {"date": "2026-07-27"},
     })
-    assert out["written"] == ["notes7", "status_19"]
-    assert list(out["failed"]) == ["date1"]
-    assert "bad date payload" in out["failed"]["date1"]
+    assert out["written"] == ["status_19", "text_mm14mhpm"]
+    assert list(out["failed"]) == ["date_mm1kwzf9"]
+    assert "bad date payload" in out["failed"]["date_mm1kwzf9"]
     # first call was the batch (3 cols), then one call per column
-    assert mc.calls[0] == ["date1", "notes7", "status_19"]
+    assert sorted(mc.calls[0]) == ["date_mm1kwzf9", "status_19", "text_mm14mhpm"]
     assert all(len(c) == 1 for c in mc.calls[1:])
 
 
@@ -247,11 +251,11 @@ def test_set_item_columns_happy_batch_and_guards():
             assert "change_multiple_column_values" in query
             assert "create_item" not in query and "delete" not in query.lower()
             return {"change_multiple_column_values": {"id": variables["itemId"]}}
-    out = mj.set_item_columns(_OkMC(), 101, {"notes7": {"text": "hi"}})
-    assert out == {"written": ["notes7"], "failed": {}}
+    out = mj.set_item_columns(_OkMC(), 101, {"text_mm14mhpm": {"text": "hi"}})
+    assert out == {"written": ["text_mm14mhpm"], "failed": {}}
     assert mj.set_item_columns(_OkMC(), 101, {}) == {"written": [], "failed": {}}
     try:
-        mj.set_item_columns(_OkMC(), 0, {"notes7": {"text": "hi"}})
+        mj.set_item_columns(_OkMC(), 0, {"text_mm14mhpm": {"text": "hi"}})
     except ValueError:
         pass
     else:
@@ -262,10 +266,10 @@ def test_set_item_columns_happy_batch_and_guards():
 
 def test_describe_changes_reads_like_the_audit_trail():
     cols = {"status_19": {"label": "Hanging Status"},
-            "notes7": {"label": "Notes"}}
+            "text_mm14mhpm": {"label": "Notes"}}
     text = jf.describe_changes(
-        {"status_19": "Hanging Not Started", "notes7": None},
-        {"status_19": "100% Hanging Completed", "notes7": "swept garage"},
+        {"status_19": "Hanging Not Started", "text_mm14mhpm": None},
+        {"status_19": "100% Hanging Completed", "text_mm14mhpm": "swept garage"},
         cols)
     assert "Hanging Status: Hanging Not Started → 100% Hanging Completed" in text
     assert "Notes: (empty) → swept garage" in text

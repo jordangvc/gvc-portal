@@ -31,30 +31,31 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
-from shared.boards import PROJECTS_BOARD_ID
+from shared.boards import JOBCHECK_BOARD_ID, JOBCHECK_SKIP_GROUP_IDS
 
 # Read-only context columns shown at the top of the Job Check page (never
-# editable there). Ids verified live via get_board_info 2026-07-27.
-CONTEXT_COL_PROJECT_NUMBER = "text_mm4fvj91"   # "Project #"
-CONTEXT_COL_LOCATION = "location5"             # "Job Location"
-CONTEXT_COL_BUILDER = "text"                   # "Who is the Builder?"
-CONTEXT_COL_SUPERVISOR = "text5"               # "Who is the Supervisor?"
-CONTEXT_COL_DEAL_STAGE = "deal_stage"          # "Project Status"
-CONTEXT_COL_PROJECT_TYPE = "status"            # "Project Type"
+# editable there). OPERATIONS-board ids, verified live via get_board_info
+# 2026-07-28. Several are mirrors/relations of the Projects board — fine to
+# READ for context, impossible to write (see shared/boards.py).
+CONTEXT_COL_PROJECT_LINK = "link_to_projects"   # → the Projects item
+CONTEXT_COL_LOCATION = "lookup_mknf1rdw"        # "Job Location" (mirror)
+CONTEXT_COL_PROJECT_STATUS = "mirror3"          # "Project Status" (mirror)
+CONTEXT_COL_OPS_OWNER = "multiple_person_mm1ht2vj"  # "Ops. Owner"
+CONTEXT_COL_OVERDUE = "color_mm1x2172"          # "Overdue" (automation-owned)
 
 CONTEXT_COLUMN_IDS = (
-    CONTEXT_COL_PROJECT_NUMBER, CONTEXT_COL_LOCATION, CONTEXT_COL_BUILDER,
-    CONTEXT_COL_SUPERVISOR, CONTEXT_COL_DEAL_STAGE, CONTEXT_COL_PROJECT_TYPE,
+    CONTEXT_COL_PROJECT_LINK, CONTEXT_COL_LOCATION, CONTEXT_COL_PROJECT_STATUS,
+    CONTEXT_COL_OPS_OWNER, CONTEXT_COL_OVERDUE,
 )
 
-# Same active-job filters as the Lien Watch fetch (adapters/monday/lien.py).
-CLOSED_GROUP_ID = "closed"                     # "Completed and Paid Projects"
-SKIP_DEAL_STAGES = {"project lost/canceled"}
+# A job whose parent project was lost/cancelled shouldn't be in the crew's
+# picker. Read off the Project Status mirror (Operations has no deal_stage).
+SKIP_PROJECT_STATUSES = {"project lost/canceled"}
 
 
 def _item_url(item_id) -> str:
     return (f"https://greenvalleycontractors.monday.com/boards/"
-            f"{PROJECTS_BOARD_ID}/pulses/{item_id}")
+            f"{JOBCHECK_BOARD_ID}/pulses/{item_id}")
 
 
 # ---------------------------------------------------------------------------
@@ -63,14 +64,14 @@ def _item_url(item_id) -> str:
 
 def fetch_active_jobs(mc) -> list[dict]:
     """
-    Every active job on the Projects board, normalized for the dropdown:
+    Every active task on the Operations board, normalized for the picker:
       {item_id, name, url, group_id, group_title, project_number,
        location, deal_stage}
-    Paged at 200. Read-only. Filters mirror lien.py: the closed group,
-    top-level "CO." rows, and Lost/canceled jobs are skipped.
+    Paged at 200. Read-only. Completed Tasks / Ready to Invoice groups and
+    lost-or-cancelled projects are skipped (see JOBCHECK_SKIP_GROUP_IDS).
     """
-    col_ids = json.dumps([CONTEXT_COL_PROJECT_NUMBER, CONTEXT_COL_LOCATION,
-                          CONTEXT_COL_DEAL_STAGE])
+    col_ids = json.dumps([CONTEXT_COL_PROJECT_LINK, CONTEXT_COL_LOCATION,
+                          CONTEXT_COL_PROJECT_STATUS])
     query = """
     query ($boardId: [ID!], $cursor: String) {
       boards(ids: $boardId) {
@@ -89,7 +90,7 @@ def fetch_active_jobs(mc) -> list[dict]:
     jobs: list[dict] = []
     cursor: Optional[str] = None
     while True:
-        data = mc._query(query, {"boardId": [str(PROJECTS_BOARD_ID)],
+        data = mc._query(query, {"boardId": [str(JOBCHECK_BOARD_ID)],
                                  "cursor": cursor})
         boards = data.get("boards") or []
         if not boards:
@@ -106,17 +107,15 @@ def fetch_active_jobs(mc) -> list[dict]:
 
 
 def _normalize_job(item: dict) -> Optional[dict]:
-    """One raw item → dropdown row, or None when it isn't an active job."""
+    """One raw item → picker row, or None when it isn't an active task."""
     name = (item.get("name") or "").strip()
     group = item.get("group") or {}
-    if group.get("id") == CLOSED_GROUP_ID:
-        return None
-    if name.startswith("CO."):        # top-level Change Order rows, not jobs
+    if group.get("id") in JOBCHECK_SKIP_GROUP_IDS:
         return None
     cols = {cv["id"]: (cv.get("text") or "").strip() or None
             for cv in item.get("column_values") or []}
-    deal_stage = cols.get(CONTEXT_COL_DEAL_STAGE)
-    if (deal_stage or "").strip().lower() in SKIP_DEAL_STAGES:
+    project_status = cols.get(CONTEXT_COL_PROJECT_STATUS)
+    if (project_status or "").strip().lower() in SKIP_PROJECT_STATUSES:
         return None
     return {
         "item_id": int(item["id"]),
@@ -124,9 +123,11 @@ def _normalize_job(item: dict) -> Optional[dict]:
         "url": _item_url(item["id"]),
         "group_id": group.get("id"),
         "group_title": group.get("title"),
-        "project_number": cols.get(CONTEXT_COL_PROJECT_NUMBER),
+        # Kept under the same keys the flow/UI already read: the linked
+        # Projects item stands in for the old "Project #".
+        "project_number": cols.get(CONTEXT_COL_PROJECT_LINK),
         "location": cols.get(CONTEXT_COL_LOCATION),
-        "deal_stage": deal_stage,
+        "deal_stage": project_status,
     }
 
 
@@ -144,7 +145,7 @@ def get_board_columns(mc, column_ids: list[str]) -> dict[str, dict]:
       }
     }
     """
-    data = mc._query(query, {"boardId": [str(PROJECTS_BOARD_ID)],
+    data = mc._query(query, {"boardId": [str(JOBCHECK_BOARD_ID)],
                              "cols": list(column_ids)})
     out: dict[str, dict] = {}
     for board in data.get("boards") or []:
@@ -269,7 +270,7 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
     if not values:
         return {"written": [], "failed": {}}
 
-    variables = {"boardId": str(PROJECTS_BOARD_ID), "itemId": str(int(item_id))}
+    variables = {"boardId": str(JOBCHECK_BOARD_ID), "itemId": str(int(item_id))}
     try:
         mc._query(_MUTATION, {**variables, "values": json.dumps(values)})
         return {"written": sorted(values), "failed": {}}
