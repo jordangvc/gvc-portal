@@ -1676,3 +1676,29 @@ Per the design above. Column ids/types verified LIVE against Projects board 1918
 - Rotation runbook (all 3 token locations incl. the Apps Script property named
   MONDAY_TOKEN, not MONDAY_API_TOKEN) lives in the takeoff repo:
   docs/MONDAY-TOKEN-ROTATION.md.
+
+### MULTI-WRITER PROTOCOL (Jul 28, 2026) — read before editing
+Three parties now touch this repo: Claude Code sessions (takeoff project +
+portal project), a design agent connected via GitHub, and Jordan directly.
+`master` is the deploy source, so:
+
+1. **Design/UI proposals arrive on a BRANCH, never master.** Branch name
+   `design/<topic>`. Someone reviews, then merges. A design agent pushing
+   straight to master can silently change what the next deploy ships.
+2. **Pull before you edit, push when you're done.** `git status -sb` first —
+   "ahead N" means unpushed work someone else can't see; "behind N" means you
+   are about to edit a stale file.
+3. **NEVER force-push and never rewrite shared history.** If master and local
+   diverge, merge — do not resolve it by overwriting.
+4. **The deploy is a separate act from the merge.** Merging to master does NOT
+   change production; production changes only when someone runs
+   `gcloud run deploy`. Check `gcloud run services describe` for the live
+   revision before assuming what users see.
+5. **Bump the hub footer rN + this file's dated note in the same commit** as
+   any user-visible change (existing rule, matters more with several writers).
+
+STYLING NOTE for whoever restyles this app: there is **no stylesheet**. Every
+page in `web/` carries its own inline `<style>` with a duplicated `:root`
+token block — twelve copies. That is why the Jul 2026 rebrand needed an
+eleven-file sweep and why one page kept its blues after the others changed.
+Extracting a single shared stylesheet is a wanted change, not a side quest.
