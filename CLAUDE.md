@@ -1743,9 +1743,21 @@ bar, mobile-first 48px targets, light+dark themed, print stylesheet). `app/servi
    which means all three files will conflict on merge. The conflicts are small and additive (a
    tuple entry, a route, a tile, the version span). If Job Start does NOT land first, change r9
    to r8.
-2. **This is the 13th inline `:root` block.** `web/gvc.css` (uncommitted, referenced by nothing
-   yet) is the shared stylesheet this page should migrate to the moment it lands. Left
-   self-contained deliberately rather than forking someone else's unfinished work.
+2. **This is the 13th inline `:root` block — and `web/gvc.css` landed mid-build.** Master gained
+   `4be3520 "Add web/gvc.css — the approved GVC portal design system"` while this page was being
+   written; that commit is merged into this branch (`da1feaf`) so the branch is current, but the
+   PAGE has not been migrated onto it. Two honest reasons, both worth a decision rather than a
+   silent choice:
+   (a) **gvc.css is light-only** — zero `prefers-color-scheme` / `data-theme` hooks. This page is
+       themed for both. Migrating means either dropping dark mode (fine, it matches the rest of
+       the portal) or layering dark overrides on top of gvc.css (better, and it's the change the
+       whole portal will eventually want — a crew member reading this on a phone at 6am in an
+       unlit building is the actual use case).
+   (b) **gvc.css was still moving** — 38 further uncommitted lines in the main tree at the time
+       of writing. Migrating onto a file mid-edit invites a pointless conflict.
+   The mapping is mostly mechanical: `.tile`→`.gvc-tile`, `.note`→`.gvc-banner--*`,
+   `.table-wrap`→`.gvc-tablewrap`, `label.step`→`.gvc-check`, `.seg`/buttons→`.gvc-btn--*`,
+   plus the `--gvc-*` tokens. Do it as its own commit so the diff is reviewable.
 3. **Not deployed.** Merge, then `gcloud run deploy` separately. Smoke: sign in as a non-admin
    with no grants → Field Manual tile shows on the hub → opens → Plain/Full toggle flips the
    expert blocks → tap a Component Index term → lands on that section in Full detail.
