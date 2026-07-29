@@ -295,5 +295,34 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
         print(f"[jobcheck] partial save on item {item_id}: "
               f"{failures}", file=sys.stderr)
 
+    # Tell ops in Slack. Best-effort by contract: the Monday write has already
+    # landed and the crew has already seen "saved", so a Slack problem must
+    # never turn a successful save into an error. Silent when the channel isn't
+    # configured. Skipped when nothing was actually written (a pure-failure
+    # save has nothing to announce).
+    slack_status = None
+    if written:
+        from adapters import slack_notify
+        try:
+            posted = slack_notify.notify_jobcheck_saved({
+                "job": before["name"],
+                "actor": actor,
+                "url": before.get("url"),
+                "changes": [
+                    {"label": next((c["label"] for c in cols if c["id"] == cid), cid),
+                     "old": before["values"].get(cid),
+                     "new": after["values"].get(cid)}
+                    for cid in written
+                ],
+            })
+            slack_status = "posted" if posted else "skipped"
+        except slack_notify.SlackNotConfigured:
+            slack_status = "skipped — no #operations channel configured"
+        except Exception as e:  # noqa: BLE001 — a notice never breaks a save
+            slack_status = f"FAILED — {type(e).__name__}: {e}"
+            print(f"[jobcheck] Slack notice failed (non-fatal): {e}",
+                  file=sys.stderr)
+
     return {"ok": not failures, "item_id": item_id, "written": written,
-            "failures": failures, "confirmed": confirmed}
+            "failures": failures, "confirmed": confirmed,
+            "slack": slack_status}

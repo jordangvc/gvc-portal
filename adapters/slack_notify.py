@@ -419,6 +419,67 @@ def notify_estimate_emailed(info: dict, *, channel: Optional[str] = None) -> dic
 
 
 # ---------------------------------------------------------------------------
+# Job Check → #operations
+# ---------------------------------------------------------------------------
+# A field save is the crew telling the office where a job stands; this puts it
+# in front of ops in seconds instead of waiting for someone to open Monday.
+# ONE message per save (a crew member sets several fields and taps once), never
+# one per column. Channel: GVC_JOBCHECK_SLACK_CHANNEL, ID-based with NO named
+# fallback — unset means a clean skip rather than a message in the wrong room.
+
+# Changes that mean "someone needs to do something", not just "work progressed".
+# A blocker leads the message and flips the header, because that's the line
+# worth seeing from a truck.
+JOBCHECK_ALERT_LABELS = ("Blocked", "Needs from Jordan")
+JOBCHECK_CLEAR_VALUES = {"clear", "nothing", "(empty)", ""}
+
+
+def _jobcheck_channel(channel: Optional[str]) -> Optional[str]:
+    return channel or os.environ.get("GVC_JOBCHECK_SLACK_CHANNEL") or None
+
+
+def _is_alerting(label: str, new_value: str) -> bool:
+    return (label in JOBCHECK_ALERT_LABELS
+            and (new_value or "").strip().lower() not in JOBCHECK_CLEAR_VALUES)
+
+
+def _jobcheck_message(info: dict) -> str:
+    """
+    PURE. info: {job, actor, url, changes: [{label, old, new}, ...]}.
+    Blocker lines float to the top and set the header, so the reason a job is
+    stuck is never buried under three routine progress lines.
+    """
+    changes = list(info.get("changes") or [])
+    alerts = [c for c in changes if _is_alerting(c.get("label", ""), c.get("new", ""))]
+    routine = [c for c in changes if c not in alerts]
+
+    header = "🚧 *Job update — needs attention*" if alerts else "🔧 *Job update*"
+    parts = [f"{header} — {info.get('job', 'Unknown job')}"]
+
+    actor = (info.get("actor") or "").split("@")[0] or "someone"
+    parts.append(f"_updated by {actor}_")
+    for c in alerts + routine:
+        old = c.get("old") or "(empty)"
+        new = c.get("new") or "(empty)"
+        parts.append(f"• *{c.get('label', '?')}*: {old} → {new}")
+    if not changes:
+        parts.append("• (no field changes recorded)")
+    if info.get("url"):
+        parts.append(f"<{info['url']}|Open in Monday>")
+    return "\n".join(parts)
+
+
+def notify_jobcheck_saved(info: dict, *, channel: Optional[str] = None) -> Optional[dict]:
+    """Post a Job Check save to #operations. Returns None when no channel is
+    configured (clean skip). Raises like any other notice — the caller treats a
+    Slack problem as non-fatal, because the Monday write already succeeded."""
+    target = _jobcheck_channel(channel)
+    if not target:
+        raise SlackNotConfigured("GVC_JOBCHECK_SLACK_CHANNEL not set.")
+    return post_message(_jobcheck_message(info), channel=target)
+
+
+# ---------------------------------------------------------------------------
 # Ops failure alerts (Portal → #gvc-ops-alerts)
 # ---------------------------------------------------------------------------
 # Fire-and-forget so a Slack-first ops model SEES failures instead of burying

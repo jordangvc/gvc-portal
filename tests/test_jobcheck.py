@@ -288,3 +288,46 @@ if __name__ == "__main__":
                 print(f"FAIL  {name}: {e}")
     print(f"\n{failed} failed" if failed else "\nall tests passed")
     sys.exit(1 if failed else 0)
+
+
+# ------------------------------------------------- Slack notice (pure)
+
+def test_jobcheck_slack_message_routine_vs_blocked():
+    from adapters.slack_notify import _jobcheck_message
+    base = {"job": "4121 Witler St", "actor": "mark@greenvalleycontractors.com",
+            "url": "https://monday/x",
+            "changes": [{"label": "Stage", "old": "Hanging", "new": "Finishing"}]}
+    routine = _jobcheck_message(base)
+    assert routine.startswith("🔧 *Job update*")
+    assert "_updated by mark_" in routine          # no email address in channel
+    assert "*Stage*: Hanging → Finishing" in routine
+    assert "<https://monday/x|Open in Monday>" in routine
+
+    blocked = _jobcheck_message({**base, "changes": base["changes"] + [
+        {"label": "Blocked", "old": "Clear", "new": "Waiting on GC"}]})
+    assert blocked.startswith("🚧 *Job update — needs attention*")
+    # The blocker must be the FIRST bullet, above routine progress.
+    bullets = [l for l in blocked.splitlines() if l.startswith("•")]
+    assert bullets[0].startswith("• *Blocked*")
+
+
+def test_jobcheck_slack_clearing_a_blocker_is_not_an_alert():
+    from adapters.slack_notify import _jobcheck_message
+    msg = _jobcheck_message({"job": "J", "actor": "robert@x.com", "changes": [
+        {"label": "Blocked", "old": "Waiting on GC", "new": "Clear"}]})
+    assert msg.startswith("🔧 *Job update*")      # good news isn't an alarm
+
+
+def test_jobcheck_slack_skips_cleanly_without_a_channel(monkeypatch=None):
+    import os
+    from adapters import slack_notify
+    old = os.environ.pop("GVC_JOBCHECK_SLACK_CHANNEL", None)
+    try:
+        try:
+            slack_notify.notify_jobcheck_saved({"job": "J", "changes": []})
+            raise AssertionError("expected SlackNotConfigured")
+        except slack_notify.SlackNotConfigured:
+            pass
+    finally:
+        if old is not None:
+            os.environ["GVC_JOBCHECK_SLACK_CHANNEL"] = old
