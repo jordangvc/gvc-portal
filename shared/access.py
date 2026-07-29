@@ -29,12 +29,16 @@ import os
 # Canonical feature set. Order is display order on the hub.
 # `lien` = Lien Watch (notice/lien deadline tracker), added 2026-07-26.
 # `jobcheck` = Job Check (field-crew Monday column updates), added 2026-07-27.
+# `fieldguide` = Field Manual (our own production procedures), added 2026-07-29.
 FEATURES: tuple[str, ...] = (
     "estimate", "change_order", "invoice", "check",
-    "coi", "lien", "jobcheck", "takeoff", "timeoff", "activity", "admin",
+    "coi", "lien", "jobcheck", "takeoff", "timeoff", "fieldguide", "activity", "admin",
 )
 ALL_FEATURES = frozenset(FEATURES)
-BASELINE = frozenset({"timeoff"})  # every provisioned store user gets this
+# Baseline = every provisioned store user gets this without an explicit grant.
+# `fieldguide` is baseline on purpose: it holds no customer or financial data,
+# and the whole point is that a crew member can reach it in one tap.
+BASELINE = frozenset({"timeoff", "fieldguide"})
 WILDCARD = "*"
 
 # Backward-compatible implications: when a tool graduates to its own feature,

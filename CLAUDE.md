@@ -1702,3 +1702,52 @@ page in `web/` carries its own inline `<style>` with a duplicated `:root`
 token block — twelve copies. That is why the Jul 2026 rebrand needed an
 eleven-file sweep and why one page kept its blues after the others changed.
 Extracting a single shared stylesheet is a wanted change, not a side quest.
+
+### 2026-07-29 — 📘 FIELD MANUAL (`/ui/fieldguide`) — BUILT on branch `design/field-manual`, NOT merged, NOT deployed
+Jordan's ask: written procedures the crews can actually use, readable by a beginner but carrying
+the expert detail a lead needs. Built as a static portal page — no new deps, no new env, no
+Dockerfile change (`COPY web ./web` already takes the directory).
+CONTENT — 9 procedures + 3 reference sections, all one page: Metal Stud Framing (layout-first,
+batch-by-operation), Stocking Any Material, Stocking Drywall, Hanging, **Scraping**, Finishing,
+Acoustical Ceilings (CT/ACT), Drywall Patch, Touch-Up, plus a Component Index (A–Z, tap a term →
+jumps to the detail), a Glossary, and Sources & Method. The drywall docs are deliberately named
+and ordered to match the **Job Check** stage columns (Hanging Status → Scrapping Status → Taped →
+… ) so a crew member moves between the two tools without translating.
+TWO REGISTERS — every doc opens with an "In plain words" summary, and 17 `.expert` blocks carry
+the deep detail (deflection track: slotted vs double/slip vs clips vs 2D drift; bridging +
+anchorage; cold-rolled channel; flat strap / strap-and-block / diagonal bracing; blocking's two
+meanings; Z-furring; tall-wall levers + L/240 vs L/360 + stacked walls and stud splicing; board
+types; rated assemblies; control joints; GA-214 levels; compound chemistry; corner bead; auto
+tools; ACT grid profiles, tile edges, hanger wire, seismic). A **Plain / Full detail** toggle in
+the control bar hides or shows every expert block; the choice and all 165 checkbox states persist
+in `localStorage` — nothing is written server-side.
+SOURCING — every section ends with a "Where this came from" note, and Sources & Method separates
+**Standard** (GA-214/GA-216, AISI S100/S211, manufacturer instructions, the listed assembly) from
+**Benchmark** (vendor/forum production claims, flagged as ranges not guarantees) from **GVC
+practice**. DELIBERATE OMISSION: no production rates. Published figures disagree by 2×+, and
+publishing one would hand estimators a number that looks authoritative and isn't — the note says
+so and points at Job Check stage data as the real source once we have history.
+ACCESS — NEW `fieldguide` feature in `shared/access.py`, added to **BASELINE** alongside `timeoff`
+(Jordan's call): every provisioned user gets it with no admin action. Verified via `_expand`:
+`[]` → `{fieldguide, timeoff}`. It holds no customer or financial data and the point is one-tap
+reach from a phone.
+FILES: NEW `web/fieldguide.html` (~140KB, self-contained, portal header standard + sticky control
+bar, mobile-first 48px targets, light+dark themed, print stylesheet). `app/service.py`: GET
+/ui/fieldguide (require_feature "fieldguide", logs `tool.open`, same UI_MISSING guard as
+/ui/timeoff). `shared/access.py`: FEATURES += fieldguide, BASELINE += fieldguide.
+`web/hub.html`: Field Manual tile + footer r7 → **r9**.
+⚠ THREE THINGS FOR WHOEVER MERGES:
+1. **r9, not r8, on purpose.** The uncommitted Job Start work in the main tree also bumps the
+   footer (r7 → r8) and also edits `access.py` FEATURES, `service.py`, and `hub.html`. This branch
+   was cut from committed `master` via a git worktree so that in-flight work was never touched —
+   which means all three files will conflict on merge. The conflicts are small and additive (a
+   tuple entry, a route, a tile, the version span). If Job Start does NOT land first, change r9
+   to r8.
+2. **This is the 13th inline `:root` block.** `web/gvc.css` (uncommitted, referenced by nothing
+   yet) is the shared stylesheet this page should migrate to the moment it lands. Left
+   self-contained deliberately rather than forking someone else's unfinished work.
+3. **Not deployed.** Merge, then `gcloud run deploy` separately. Smoke: sign in as a non-admin
+   with no grants → Field Manual tile shows on the hub → opens → Plain/Full toggle flips the
+   expert blocks → tap a Component Index term → lands on that section in Full detail.
+NEXT (not built): deep-link each Job Check stage chip to its procedure; insulation, paint and demo
+procedures; photos/diagrams for deflection track types, grid profiles, tile edges, butterfly patch.

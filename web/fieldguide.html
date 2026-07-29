@@ -1,0 +1,1784 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Field Manual</title>
+<style>
+  :root {
+    --green:#235339; --green-deep:#1A3E2B; --green-soft:#E8EFE9;
+    --gold:#C9A24B; --gold-dark:#96763B; --gold-soft:#FBF3E1;
+    --ink:#1C1917; --ink-2:#44403C; --muted:#78716C;
+    --line:#E7E0CE; --line-soft:#EFEBE0;
+    --bg:#FAFAF8; --surface:#FFFFFF; --surface-2:#F5F4EF;
+    --alert:#9A3412; --alert-soft:#FBEAE2;
+    --expert:#4C4A82; --expert-soft:#EAE9F5;
+    --check-mark:#FFFFFF;
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --mono: ui-monospace, "Cascadia Mono", Consolas, "SF Mono", Menlo, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --green:#7FB894; --green-deep:#A8D4B8; --green-soft:#17251C;
+      --gold:#D9B76A; --gold-dark:#C9A24B; --gold-soft:#241D0F;
+      --ink:#F0EEE9; --ink-2:#C9C4BB; --muted:#94908A;
+      --line:#38342C; --line-soft:#2C2924;
+      --bg:#14130F; --surface:#1C1B16; --surface-2:#24221C;
+      --alert:#F0A186; --alert-soft:#2B1710;
+      --expert:#A8A5E0; --expert-soft:#1D1C2E;
+      --check-mark:#14130F;
+    }
+  }
+  :root[data-theme="dark"] {
+    --green:#7FB894; --green-deep:#A8D4B8; --green-soft:#17251C;
+    --gold:#D9B76A; --gold-dark:#C9A24B; --gold-soft:#241D0F;
+    --ink:#F0EEE9; --ink-2:#C9C4BB; --muted:#94908A;
+    --line:#38342C; --line-soft:#2C2924;
+    --bg:#14130F; --surface:#1C1B16; --surface-2:#24221C;
+    --alert:#F0A186; --alert-soft:#2B1710;
+    --expert:#A8A5E0; --expert-soft:#1D1C2E;
+    --check-mark:#14130F;
+  }
+  :root[data-theme="light"] {
+    --green:#235339; --green-deep:#1A3E2B; --green-soft:#E8EFE9;
+    --gold:#C9A24B; --gold-dark:#96763B; --gold-soft:#FBF3E1;
+    --ink:#1C1917; --ink-2:#44403C; --muted:#78716C;
+    --line:#E7E0CE; --line-soft:#EFEBE0;
+    --bg:#FAFAF8; --surface:#FFFFFF; --surface-2:#F5F4EF;
+    --alert:#9A3412; --alert-soft:#FBEAE2;
+    --expert:#4C4A82; --expert-soft:#EAE9F5;
+    --check-mark:#FFFFFF;
+  }
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%; }
+
+  /* ---------- portal header standard (docs/portal-ui-header-standard.md) ---------- */
+  header {
+    background:#235339; border-bottom:2.5px solid var(--gold); color:#fff; padding:14px 18px;
+    display:grid; grid-template-columns:1fr auto 1fr; align-items:center; gap:12px;
+  }
+  header h1 { font-size:18px; margin:0; font-weight:600; font-family:var(--serif); text-align:center; }
+  header .home-link {
+    justify-self:start; color:#fff; text-decoration:none; font-weight:700; font-size:14px;
+    display:inline-flex; align-items:center; gap:5px; padding:6px 10px; border-radius:8px; opacity:.92;
+  }
+  header .home-link:hover, header .home-link:focus-visible { background:rgba(255,255,255,.16); opacity:1; }
+  header .home-link .chev { font-size:17px; line-height:1; }
+  header .who { justify-self:end; font-size:13px; opacity:.95; display:flex; align-items:center; gap:12px; }
+  header .who a { color:#fff; text-decoration:underline; }
+  @media (max-width:640px) {
+    header { grid-template-columns:auto 1fr; row-gap:8px; }
+    header h1 { grid-column:1 / -1; grid-row:2; text-align:left; }
+    header .who { grid-row:1; }
+  }
+
+  /* ---------- control bar (back + detail level) ---------- */
+  .controlbar {
+    position:sticky; top:0; z-index:30; background:var(--surface-2);
+    border-bottom:1px solid var(--line); padding:9px 16px;
+    display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  }
+  .cb-label { font-family:var(--mono); font-size:10.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .backlink {
+    background:transparent; border:1px solid var(--line); color:var(--ink); font:inherit; font-size:13.5px;
+    padding:0 13px; min-height:40px; border-radius:8px; cursor:pointer; display:none; align-items:center;
+  }
+  .backlink:hover, .backlink:focus-visible { border-color:var(--green); color:var(--green); }
+  body.in-doc .backlink { display:inline-flex; }
+  body.in-doc .cb-label { display:none; }
+  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
+  .seg button {
+    background:var(--surface); border:0; color:var(--ink-2); font:inherit; font-size:12.5px;
+    padding:0 13px; min-height:40px; cursor:pointer; white-space:nowrap;
+  }
+  .seg button[aria-pressed="true"] { background:var(--green); color:#fff; font-weight:700; }
+  .seg button:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+
+  main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
+
+  /* ---------- home ---------- */
+  .intro { margin:0 0 20px; display:flex; flex-direction:column; gap:8px; }
+  .intro h2 { font-family:var(--serif); font-size:25px; margin:0; font-weight:700; line-height:1.15; }
+  .intro p { margin:0; color:var(--muted); max-width:62ch; }
+
+  .principle-strip {
+    background:var(--green-soft); border:1px solid var(--line); border-left:4px solid var(--green);
+    border-radius:10px; padding:15px 17px; margin:0 0 24px; display:flex; flex-direction:column; gap:7px;
+  }
+  .principle-strip strong { font-family:var(--serif); font-size:16.5px; color:var(--green-deep); }
+  .principle-strip p { margin:0; font-size:14.5px; color:var(--ink-2); }
+
+  .sect-label { font-family:var(--mono); font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:0 0 11px; }
+
+  .tiles { display:grid; grid-template-columns:repeat(auto-fill, minmax(255px,1fr)); gap:13px; margin-bottom:28px; }
+  .tile {
+    display:flex; flex-direction:column; gap:6px; background:var(--surface);
+    border:1px solid var(--line); border-top:2px solid var(--gold-dark); border-radius:12px;
+    padding:17px; text-align:left; font:inherit; color:var(--ink); cursor:pointer;
+    min-height:128px; transition:border-color .12s, box-shadow .12s, transform .12s;
+  }
+  .tile:hover { border-color:var(--green); box-shadow:0 4px 16px rgba(35,83,57,.14); transform:translateY(-2px); }
+  .tile:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .tile .icon { font-size:25px; line-height:1; }
+  .tile .name { font-size:16px; font-weight:600; font-family:var(--serif); }
+  .tile .desc { font-size:13px; color:var(--muted); line-height:1.45; }
+  .tile .stage {
+    align-self:flex-start; font-family:var(--mono); font-size:10px; letter-spacing:.08em;
+    text-transform:uppercase; background:var(--gold-soft); color:var(--gold-dark);
+    border:1px solid var(--line); border-radius:999px; padding:3px 9px; font-weight:600;
+  }
+
+  /* ---------- doc views ---------- */
+  .doc { display:none; }
+  .doc.active { display:block; }
+
+  .doc-head { margin-bottom:20px; display:flex; flex-direction:column; gap:8px; }
+  .doc-head .stage-line { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--green); font-weight:600; }
+  .doc-head h2 { font-family:var(--serif); font-size:clamp(26px,6vw,35px); margin:0; line-height:1.1; font-weight:700; text-wrap:balance; }
+  .doc-head .lede { margin:0; font-size:16.5px; color:var(--ink-2); max-width:62ch; }
+
+  .plainwords {
+    background:var(--surface-2); border:1px solid var(--line); border-radius:10px;
+    padding:14px 16px; margin:0 0 24px; display:flex; flex-direction:column; gap:6px;
+  }
+  .plainwords .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--green); }
+  .plainwords p { margin:0; font-size:15.5px; color:var(--ink-2); }
+  .plainwords p b { color:var(--ink); }
+
+  .block { margin-bottom:26px; }
+  h3 { font-family:var(--serif); font-size:20px; margin:0 0 4px; font-weight:700; line-height:1.2; padding-bottom:7px; border-bottom:2px solid var(--line); scroll-margin-top:80px; }
+  h3 + .sub { margin:8px 0 13px; color:var(--muted); font-size:14.5px; }
+  h3 + ul, h3 + ol, h3 + .note, h3 + .table-wrap, h3 + .expert { margin-top:13px; }
+  h4 { font-size:15px; margin:19px 0 8px; font-weight:700; color:var(--green-deep); scroll-margin-top:80px; }
+
+  /* ---------- expert layer ---------- */
+  .expert {
+    background:var(--expert-soft); border:1px solid var(--line);
+    border-left:4px solid var(--expert); border-radius:10px;
+    padding:16px 17px; margin:16px 0; scroll-margin-top:80px;
+  }
+  .expert > .tag {
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+    font-weight:700; color:var(--expert); display:block; margin-bottom:9px;
+  }
+  .expert h4 { margin-top:16px; color:var(--expert); }
+  .expert h4:first-of-type { margin-top:4px; }
+  .expert p { margin:0 0 9px; font-size:15px; color:var(--ink-2); }
+  .expert p:last-child { margin-bottom:0; }
+  .expert p b { color:var(--ink); }
+  body.plain .expert { display:none; }
+
+  /* ---------- lists ---------- */
+  ul.steps { list-style:none; margin:0; padding:0; }
+  ul.steps > li { border-bottom:1px solid var(--line-soft); }
+  ul.steps > li:first-child { border-top:1px solid var(--line-soft); }
+  label.step { display:flex; gap:12px; align-items:flex-start; padding:11px 2px; min-height:48px; cursor:pointer; }
+  label.step input {
+    appearance:none; -webkit-appearance:none; flex:0 0 auto; width:22px; height:22px; margin:2px 0 0;
+    border:2px solid var(--muted); border-radius:5px; background:transparent; cursor:pointer;
+  }
+  label.step input:checked { background:var(--green); border-color:var(--green); }
+  label.step input:checked::after {
+    content:""; display:block; width:5px; height:11px; margin:1px 0 0 6px;
+    border:solid var(--check-mark); border-width:0 2.5px 2.5px 0; transform:rotate(43deg);
+  }
+  label.step input:focus-visible { outline:3px solid var(--gold); outline-offset:2px; }
+  label.step input:checked ~ .txt { color:var(--muted); text-decoration:line-through; text-decoration-thickness:1px; }
+  .txt { font-size:15.5px; }
+  .txt b { font-weight:650; }
+  .spec, .txt code {
+    font-family:var(--mono); font-size:.85em; background:var(--surface-2);
+    border:1px solid var(--line-soft); padding:.08em .35em; border-radius:4px; white-space:nowrap;
+  }
+
+  ul.plain { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:9px; }
+  ul.plain > li { display:flex; gap:10px; font-size:15.5px; color:var(--ink-2); }
+  ul.plain > li::before { content:"▪"; color:var(--gold-dark); flex:0 0 auto; font-size:13px; line-height:1.5; }
+  ul.plain > li b { color:var(--ink); font-weight:650; }
+  .expert ul.plain > li::before { color:var(--expert); }
+
+  ol.ranked { margin:0; padding:0; list-style:none; counter-reset:r; }
+  ol.ranked > li { counter-increment:r; display:flex; gap:12px; padding:10px 0; border-bottom:1px solid var(--line-soft); font-size:15.5px; color:var(--ink-2); }
+  ol.ranked > li:first-child { border-top:1px solid var(--line-soft); }
+  ol.ranked > li::before { content:counter(r); font-family:var(--mono); font-weight:700; font-size:14px; color:var(--alert); flex:0 0 1.5rem; font-variant-numeric:tabular-nums; }
+  ol.ranked > li b { color:var(--ink); font-weight:650; }
+
+  /* ---------- callouts ---------- */
+  .note { border-radius:10px; padding:14px 16px; margin:15px 0; background:var(--surface-2); border:1px solid var(--line); display:flex; flex-direction:column; gap:6px; font-size:14.5px; }
+  .note .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--muted); }
+  .note p { margin:0; color:var(--ink-2); }
+  .note p b { color:var(--ink); }
+  .note.why { background:var(--green-soft); } .note.why .tag { color:var(--green); }
+  .note.stop { background:var(--alert-soft); } .note.stop .tag { color:var(--alert); } .note.stop p { color:var(--ink); }
+  .note.money { background:var(--gold-soft); } .note.money .tag { color:var(--gold-dark); }
+
+  /* ---------- tables ---------- */
+  .table-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; margin:14px 0; }
+  table { border-collapse:collapse; width:100%; min-width:32rem; font-size:14.5px; }
+  th, td { text-align:left; padding:10px 12px 10px 0; border-bottom:1px solid var(--line-soft); vertical-align:top; }
+  th { font-family:var(--mono); font-size:10.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); border-bottom:2px solid var(--line); font-weight:600; }
+  td:first-child { font-weight:650; color:var(--ink); padding-right:18px; }
+  td:last-child { color:var(--ink-2); }
+  table.tight td:first-child { white-space:nowrap; }
+
+  /* ---------- index ---------- */
+  .idx { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:0 22px; }
+  .idx-item { border-bottom:1px solid var(--line-soft); padding:10px 0; }
+  .idx-item button {
+    background:none; border:0; padding:0; font:inherit; color:var(--green);
+    font-weight:650; cursor:pointer; text-align:left; font-size:15px; text-decoration:underline; text-underline-offset:3px;
+  }
+  .idx-item button:hover { color:var(--gold-dark); }
+  .idx-item button:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .idx-item span { display:block; font-size:13.5px; color:var(--muted); margin-top:2px; }
+
+  /* ---------- sources ---------- */
+  .sources { font-size:14px; }
+  .sources ul { margin:10px 0 0; padding-left:20px; display:flex; flex-direction:column; gap:7px; }
+  .sources li { color:var(--ink-2); }
+  .sources a { color:var(--green); text-decoration:underline; text-underline-offset:2px; word-break:break-word; }
+  .sources a:hover { color:var(--gold-dark); }
+
+  .provenance { border:1px dashed var(--line); border-radius:10px; padding:13px 15px; margin:22px 0 0; font-size:13.5px; color:var(--muted); display:flex; flex-direction:column; gap:5px; }
+  .provenance .tag { font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase; font-weight:700; color:var(--gold-dark); }
+  .provenance p { margin:0; }
+
+  footer { max-width:64rem; margin:0 auto; padding:24px 16px 44px; border-top:1px solid var(--line); color:var(--muted); font-size:12.5px; display:flex; flex-direction:column; gap:12px; }
+  footer p { margin:0; }
+  button.reset {
+    font-family:var(--mono); font-size:11.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--ink); background:transparent; border:1.5px solid var(--line); border-radius:8px;
+    padding:0 16px; min-height:46px; cursor:pointer; align-self:flex-start;
+  }
+  button.reset:hover, button.reset:focus-visible { border-color:var(--green); color:var(--green); }
+
+  @media (min-width:46rem) { main { padding:32px 26px 70px; } body { font-size:16.5px; } }
+  @media (prefers-reduced-motion:reduce) { * { transition:none !important; } }
+  @media print {
+    header, .controlbar, .backlink, button.reset, .tiles, .seg { display:none !important; }
+    .doc, .expert { display:block !important; }
+    body { background:#fff; color:#000; }
+    h3 { break-after:avoid; } .note, table, .expert { break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">&lsaquo;</span> GVC Portal</a>
+  <h1>Field Manual</h1>
+  <div class="who"><span id="email">{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<div class="controlbar">
+  <button class="backlink" type="button" id="back">&larr; All procedures</button>
+  <span class="cb-label">Production procedures</span>
+  <div class="seg" role="group" aria-label="Detail level">
+    <button type="button" id="lvl-plain" aria-pressed="false">Plain</button>
+    <button type="button" id="lvl-full" aria-pressed="true">Full detail</button>
+  </div>
+</div>
+
+<main>
+
+<!-- ==================== HOME ==================== -->
+<section class="doc active" id="home">
+  <div class="intro">
+    <h2>Production procedures</h2>
+    <p>How we do the work, and why doing it this way is faster. Written to be understood by someone on their first week, with the technical detail a lead needs sitting right underneath it.</p>
+  </div>
+
+  <div class="principle-strip">
+    <strong>Two levels, one manual</strong>
+    <p><b>Plain</b> gives you the procedure in everyday language — enough to do the job right. <b>Full detail</b> adds the assemblies, product options, and specifications a lead or foreman needs when there's a decision to make. Switch anytime with the button up top; it remembers your choice.</p>
+  </div>
+
+  <div class="principle-strip">
+    <strong>And one idea runs through all of it</strong>
+    <p><b>The expensive work is the work you do twice.</b> Sanding costs more than scraping. Rework costs more than layout. Walking for material costs more than staging it. Every procedure here front-loads the cheap step that kills the expensive one.</p>
+  </div>
+
+  <p class="sect-label">Framing</p>
+  <div class="tiles">
+    <button class="tile" data-go="framing">
+      <span class="icon">📐</span><span class="stage">Framing Status</span>
+      <span class="name">Metal Stud Framing</span>
+      <span class="desc">Layout first, then batch by operation. Full detail covers deflection track, bridging, strapping, cold-rolled channel, Z-furring, and tall walls.</span>
+    </button>
+  </div>
+
+  <p class="sect-label">Material — before the work starts</p>
+  <div class="tiles">
+    <button class="tile" data-go="stock-general">
+      <span class="icon">🚚</span><span class="stage">Pre-production</span>
+      <span class="name">Stocking Any Material</span>
+      <span class="desc">Stock to the work, not to the door. Applies to steel, mud, ceiling, insulation, and paint.</span>
+    </button>
+    <button class="tile" data-go="stock-drywall">
+      <span class="icon">📦</span><span class="stage">Pre-production</span>
+      <span class="name">Stocking Drywall</span>
+      <span class="desc">The heaviest, most fragile, most injury-prone thing we move. Load placement, stack rules, floor loading.</span>
+    </button>
+  </div>
+
+  <p class="sect-label">Drywall — the Job Check sequence</p>
+  <div class="tiles">
+    <button class="tile" data-go="hang">
+      <span class="icon">🔩</span><span class="stage">Hanging Status</span>
+      <span class="name">Hanging Drywall</span>
+      <span class="desc">Sheet layout that kills joints before they exist. Full detail covers board types, fastening, rated assemblies, and control joints.</span>
+    </button>
+    <button class="tile" data-go="scrape">
+      <span class="icon">🔪</span><span class="stage">Scrapping Status</span>
+      <span class="name">Scraping</span>
+      <span class="desc">The cheapest hour on the job, and it deletes the most expensive one. Why it's its own stage.</span>
+    </button>
+    <button class="tile" data-go="finish">
+      <span class="icon">🪣</span><span class="stage">Taped → Sanded</span>
+      <span class="name">Finishing Drywall</span>
+      <span class="desc">Coat sequence and mud selection. Full detail covers finish levels, compound chemistry, bead options, and the automatic-tool decision.</span>
+    </button>
+  </div>
+
+  <p class="sect-label">Ceilings</p>
+  <div class="tiles">
+    <button class="tile" data-go="act">
+      <span class="icon">▦</span><span class="stage">CT / ACT</span>
+      <span class="name">Acoustical Ceilings</span>
+      <span class="desc">Grid layout, hanging, and tile. Full detail covers grid face profiles, tile edge types, hanger wire rules, and seismic bracing.</span>
+    </button>
+  </div>
+
+  <p class="sect-label">Repair &amp; punch</p>
+  <div class="tiles">
+    <button class="tile" data-go="patch">
+      <span class="icon">🩹</span><span class="stage">Patch work</span>
+      <span class="name">Drywall Patch</span>
+      <span class="desc">Match the method to the hole. Four methods and when each one wins.</span>
+    </button>
+    <button class="tile" data-go="touchup">
+      <span class="icon">🖌️</span><span class="stage">Punch</span>
+      <span class="name">Touch-Up</span>
+      <span class="desc">Why touch-ups flash, and the rules that make them disappear. Sheen decides everything.</span>
+    </button>
+  </div>
+
+  <p class="sect-label">Reference</p>
+  <div class="tiles">
+    <button class="tile" data-go="index">
+      <span class="icon">🔎</span><span class="stage">Look it up</span>
+      <span class="name">Component Index</span>
+      <span class="desc">Every named part and technique, A to Z, with a one-line answer and a jump to the detail. Built for showing someone on the spot.</span>
+    </button>
+    <button class="tile" data-go="glossary">
+      <span class="icon">💬</span><span class="stage">Plain English</span>
+      <span class="name">Glossary</span>
+      <span class="desc">The words we use that nobody explains on day one.</span>
+    </button>
+    <button class="tile" data-go="sources">
+      <span class="icon">📚</span><span class="stage">Method</span>
+      <span class="name">Sources &amp; Method</span>
+      <span class="desc">Where every number came from, what's a standard, what's a benchmark, and what still needs GVC's own data.</span>
+    </button>
+  </div>
+</section>
+
+<!-- ==================== COMPONENT INDEX ==================== -->
+<section class="doc" id="index">
+  <div class="doc-head">
+    <span class="stage-line">Reference · look it up fast</span>
+    <h2>Component Index</h2>
+    <p class="lede">Every named part and technique in the manual. One line of plain English, then a jump to the full detail. Built for pulling up on a phone and showing someone.</p>
+  </div>
+
+  <div class="block">
+    <h3>A–Z</h3>
+    <div class="idx">
+      <div class="idx-item"><button data-jump="framing|sys-bridging">Bridging</button><span>Horizontal members that stop studs from twisting. Not the same as shear bracing.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-blocking">Blocking</button><span>Two different meanings — backing to hang things on, and structural blocking to brace studs.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-crc">Cold-rolled channel (CRC)</button><span>Solid steel channel threaded through stud knockouts as bridging. The workhorse.</span></div>
+      <div class="idx-item"><button data-jump="hang|hang-control">Control joint</button><span>A deliberate break in the board so the wall cracks where you chose, not where it wants.</span></div>
+      <div class="idx-item"><button data-jump="finish|fin-bead">Corner bead</button><span>The metal or vinyl edge that makes an outside corner straight and durable.</span></div>
+      <div class="idx-item"><button data-jump="act|act-crosstee">Cross tee</button><span>The shorter grid pieces that clip between main tees to make the tile openings.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection track</button><span>Top-of-wall track that lets the building move without loading the wall.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection clip</button><span>A slotted bracket that does the deflection job when the track can't.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-tall">Drift</button><span>Sideways building movement, usually seismic. Different problem from vertical deflection.</span></div>
+      <div class="idx-item"><button data-jump="touchup|tu-why">Flashing</button><span>When a touch-up or patch shows as a different sheen. The most common paint complaint.</span></div>
+      <div class="idx-item"><button data-jump="act|act-wire">Hanger wire</button><span>The wire that holds a ceiling grid up. 12 gauge, 4 feet apart, wrapped three turns.</span></div>
+      <div class="idx-item"><button data-jump="finish|fin-hotmud">Hot mud</button><span>Setting compound. Hardens chemically instead of drying, so you can recoat the same day.</span></div>
+      <div class="idx-item"><button data-jump="finish|fin-levels">Levels of finish (0–5)</button><span>The industry scale for how smooth a wall has to be. Getting this right is the biggest money item in finishing.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-tall">Limiting height</button><span>The published table that says how tall a given stud can go. The authority on tall walls.</span></div>
+      <div class="idx-item"><button data-jump="act|act-maintee">Main tee / main runner</button><span>The long grid members that carry the ceiling. Usually 4 feet apart.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-tall">Stacked walls</button><span>Getting height by building one wall on top of another instead of one tall stud.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-strap">Strapping / flat strap</button><span>Flat steel banding screwed across stud flanges to brace them.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-strap">Strap and block</button><span>Strap plus a short block between studs. Required once studs get deep.</span></div>
+      <div class="idx-item"><button data-jump="act|act-tile">Tegular tile</button><span>Ceiling tile with a stepped edge that drops below the grid. Needs matching grid.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-zfur">Z-furring</button><span>Z-shaped channel that furs out masonry, holds insulation, and gives you a drywall surface.</span></div>
+      <div class="idx-item"><button data-jump="framing|sys-strap">Z / X bracing</button><span>Diagonal strap bracing that resists racking. A different job from horizontal bridging.</span></div>
+    </div>
+  </div>
+
+  <div class="note why">
+    <span class="tag">How to use this on the job</span>
+    <p>Switch to <b>Full detail</b> at the top, tap the term, and hand someone the phone. Every entry lands on the section that explains the whole component — what it is, when it's used, and what gets it wrong.</p>
+  </div>
+</section>
+
+<!-- ==================== GLOSSARY ==================== -->
+<section class="doc" id="glossary">
+  <div class="doc-head">
+    <span class="stage-line">Reference · plain English</span>
+    <h2>Glossary</h2>
+    <p class="lede">The words we use every day and nobody explains on day one. If you're new, read this once and most of the rest of the manual opens up.</p>
+  </div>
+
+  <div class="block">
+    <h3>Framing words</h3>
+    <div class="table-wrap"><table class="tight">
+      <tbody>
+        <tr><td>Track</td><td>The U-shaped channel that runs along the floor and the ceiling. Studs sit in it.</td></tr>
+        <tr><td>Stud</td><td>The vertical member. In steel it's a C-shape with an open side.</td></tr>
+        <tr><td>On center (o.c.)</td><td>Measured from the middle of one stud to the middle of the next. "16 o.c." means every 16 inches.</td></tr>
+        <tr><td>Gauge / mils</td><td>How thick the steel is. Lower gauge number = thicker steel = stronger. Mils is the newer, more precise way of saying the same thing.</td></tr>
+        <tr><td>Web / flange</td><td>The web is the flat back of the stud; the flanges are the two sides that stick out. Board screws into the flange.</td></tr>
+        <tr><td>Knockout / punchout</td><td>The oval holes stamped in the stud web. Pipe, wire, and bridging go through them.</td></tr>
+        <tr><td>Layout</td><td>Marking on the floor and deck exactly where every wall goes, before anything is built.</td></tr>
+        <tr><td>Keel</td><td>The waxy marking crayon used to write on concrete and steel.</td></tr>
+        <tr><td>Head of wall</td><td>Where the top of the wall meets the structure above. The most detail-sensitive spot in the whole wall.</td></tr>
+        <tr><td>Deflection</td><td>The structure above moving down and up as it's loaded. The wall has to allow it.</td></tr>
+        <tr><td>Rated wall</td><td>A wall built to a tested fire-resistance assembly. Everything about it is specified and it gets inspected.</td></tr>
+        <tr><td>Backing</td><td>Extra steel or wood in the wall so something can be screwed to it later.</td></tr>
+        <tr><td>Rough opening (RO)</td><td>The hole framed for a door or window — always bigger than the door itself.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>Drywall words</h3>
+    <div class="table-wrap"><table class="tight">
+      <tbody>
+        <tr><td>Board / rock</td><td>Gypsum wallboard. Same thing.</td></tr>
+        <tr><td>Hang</td><td>Putting the board up.</td></tr>
+        <tr><td>Tapered edge</td><td>The long edges of a sheet are slightly thinner, forming a shallow recess for tape and mud.</td></tr>
+        <tr><td>Butt joint</td><td>Where two cut ends meet. No recess, so it's much harder to hide than a tapered seam.</td></tr>
+        <tr><td>Mud</td><td>Joint compound.</td></tr>
+        <tr><td>Bed / tape coat</td><td>The first coat, which embeds the tape.</td></tr>
+        <tr><td>Skim</td><td>A thin coat over the whole surface, not just the joints.</td></tr>
+        <tr><td>Feather</td><td>Thinning the mud out to nothing at the edges so there's no detectable line.</td></tr>
+        <tr><td>Scrape</td><td>Shaving high spots off with a knife instead of sanding them off later.</td></tr>
+        <tr><td>Raking light</td><td>Light hitting the wall at a low angle. It reveals every flaw — it's how the work gets judged.</td></tr>
+        <tr><td>Telegraph</td><td>When something underneath shows through the finished surface.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>Ceiling words</h3>
+    <div class="table-wrap"><table class="tight">
+      <tbody>
+        <tr><td>ACT / CT</td><td>Acoustical ceiling tile — the lay-in tile ceiling in a grid.</td></tr>
+        <tr><td>Grid</td><td>The metal framework the tiles sit in.</td></tr>
+        <tr><td>Wall angle</td><td>The L-shaped trim around the room perimeter that the grid lands on.</td></tr>
+        <tr><td>Border tile</td><td>The cut tiles at the edges of the room. Making these big and equal is the whole art of ceiling layout.</td></tr>
+        <tr><td>Plenum</td><td>The space above the ceiling.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>Jobsite words</h3>
+    <div class="table-wrap"><table class="tight">
+      <tbody>
+        <tr><td>GC</td><td>General contractor — who we work for on most jobs.</td></tr>
+        <tr><td>Submittal</td><td>The product data we send for approval before installing. Once approved, it governs.</td></tr>
+        <tr><td>Spec</td><td>The written project specification. It beats habit, always.</td></tr>
+        <tr><td>Punch list</td><td>The final list of items to fix before the job is accepted.</td></tr>
+        <tr><td>T&amp;M</td><td>Time and material — work billed by hours and materials instead of a fixed price. Document everything.</td></tr>
+        <tr><td>Change order (CO)</td><td>Extra work outside the original contract, priced and approved separately. If it's not on a CO, we're doing it for free.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+</section>
+
+<!-- ==================== FRAMING ==================== -->
+<section class="doc" id="framing">
+  <div class="doc-head">
+    <span class="stage-line">Job Check · Framing Status</span>
+    <h2>Metal Stud Framing</h2>
+    <p class="lede">Lay out the whole floor first. Then build by operation, not by wall.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>You mark every wall on the floor first, for the whole floor. Then you go around and set <b>all</b> the bottom track. Then <b>all</b> the top track. Then fill in <b>all</b> the studs. One tool in your hand at a time, one motion repeated. It feels slower and it isn't — the walking and the tool-swapping is what costs the money, not the screwing.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why we work this way</span>
+    <p>Most crews build one wall completely, then walk to the next. That means picking up and setting down four or five tools at every wall, and re-reading the plan every time you move. <b>The real cost in framing is transitions</b>, not cutting or fastening. Batching kills transitions. The layout carries all the thinking; everything after it is muscle memory.</p>
+    <p><b>When not to batch:</b> scattered patch and rework, or when another trade has only released you part of the floor. Then build complete walls in the area you've got.</p>
+  </div>
+
+  <div class="block">
+    <h3>Phase 0 — before you snap a line</h3>
+    <p class="sub">Every mistake here gets multiplied by the number of walls on the floor.</p>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Pull the <b>current</b> drawing set and confirm the revision.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Find the building control lines / column grid. Every dimension comes off grid — never off an existing wall or a slab edge. Existing walls lie.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Verify control is square: 3-4-5 at the biggest multiple that fits — <span class="spec">12-16-20</span> or <span class="spec">30-40-50</span>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Shoot the slab along the wall runs for high spots and dips.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Read the wall type legend: gauge, width, spacing, height (to ceiling vs. to deck), rating.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the <b>head-of-wall detail</b>. This one detail governs your whole top track operation.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Get the door/frame schedule for rough opening dimensions.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Build the backing list from casework and equipment drawings — before layout.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Phase 1 — layout, the phase that pays</h3>
+    <p class="sub">Put your best hand here and let them run a day or two ahead of the crew.</p>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Snap the primary control line off grid, then a perpendicular. <b>Verify square before snapping anything else.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Chain every wall from a single reference point. Never measure wall-to-wall cumulatively — error stacks down the corridor.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Snap both faces, <b>or</b> one line plus a keel X on the track side. Pick one convention for the whole crew.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Write the wall type on the slab: <span class="spec">A1 · 3-5/8 25GA @16 · 1HR · TO DECK</span></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Mark every opening with its rough opening dimension and swing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Mark off-module studs now: jambs, corners, intersections, backing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Transfer to the deck with a plumb laser as you go. Coming back later means a second lift trip for every wall.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Walk the layout with the super before any track goes down.</span></label></li>
+    </ul>
+    <div class="note stop">
+      <span class="tag">Get this right</span>
+      <p><b>Run the stud module from the same end the board runs from</b> so sheet edges land on studs. Hold the first stud so the first sheet's edge lands on stud center, then it's a clean 16 all the way down. If layout and board start from opposite ends, you fight that wall its entire length.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Phases 2–5 — the batched passes</h3>
+    <h4>Stage material to the layout</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Count studs off the layout on the floor, not the plan. You just walked it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Drop bundles at the walls they belong to. Cut a story pole for the repeat stud length.</span></label></li>
+    </ul>
+    <h4>Bottom track — whole floor, one tool</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Track tight to the line, all of it, before you look at a top track.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Run long and continuous; lap splices per spec, don't butt them.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Fastener spacing per the approved submittal, plus one near <b>every end and splice</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Rated walls: track sits in the sealant bed per the listed detail. Not retrofittable.</span></label></li>
+    </ul>
+    <h4>Top track — one lift trip, whole floor</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Build the head of wall per the <b>approved detail</b>, not per habit. See the systems reference below.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Studs cut short of the track web by the gap the detail calls for.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Rated walls: the head-of-wall joint is a listed assembly. Build it as listed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Photograph the head of wall as you go, by area.</span></label></li>
+    </ul>
+    <h4>Stud fill — two fast passes</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Pass one:</b> stand loose studs in the track down every wall, roughly spaced. No measuring, no screws.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Pass two:</b> set exact spacing and fasten.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Every stud <b>open side the same direction</b>, facing the run. MEP and board hangers both depend on it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Line the knockouts up down the wall so the electrician pulls straight.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Attachment per the submittal — see the note below, it's a large labor number.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">At deflection heads, fasten only where the detail permits so the joint can move.</span></label></li>
+    </ul>
+    <div class="note money">
+      <span class="tag">The one to check before you start</span>
+      <p>Some specs allow non-structural studs to sit <b>friction-fit</b> in the track with fasteners only at jambs, ends, terminations and bracing. Others require <b>every stud attached</b>. That's a big labor swing either way — confirm it off the submittal before the crew starts, not after.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Phases 6–9 — openings, backing, bracing, QC</h3>
+    <h4>Openings, jambs, headers</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">RO = frame dimension plus the manufacturer's clearance. Off the schedule, never guessed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Jamb studs per the detail — doubled, boxed, or heavier gauge. Wider and heavier doors take more.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Header track over the opening, cripples above back on module.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check every opening plumb and square as you build it, not at punch.</span></label></li>
+    </ul>
+    <h4>Backing — before anything closes</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Work from the written list, not memory: casework, countertops, grab bars, handrails, TVs and mounts, wall-hung fixtures, headwalls, marker boards, signage, corner guards, door stops, extinguisher cabinets.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Heights from the casework/equipment shop drawings when they exist — they beat the elevations.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Keel-mark every backing location on the stud face.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph every wall with backing, tagged by room</b>, before it's covered.</span></label></li>
+    </ul>
+    <h4>QC before anything covers it</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">String line or laser the walls — straight and plumb.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Every RO: dimension, plumb, square, header, jambs.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All backing in, right height, marked.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">No stud hard-bearing on a deflection track anywhere.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Bridging/bracing installed <b>and anchored</b> per the detail.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Photo record, then framing inspection — before rock.</span></label></li>
+    </ul>
+  </div>
+
+  <!-- ---------- EXPERT: SYSTEMS ---------- -->
+  <div class="expert" id="sys-deflection">
+    <span class="tag">Full detail · head of wall</span>
+    <h4>Deflection track — the four ways to do it</h4>
+    <p>Every non-loadbearing partition that runs to structure has to let that structure move without the wall taking the load. The structural drawings say <b>how much</b> movement; the detail says <b>which system</b>. Never carry one job's answer to the next.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">System</th><th scope="col">How it works</th><th scope="col">Pick it when</th></tr></thead>
+      <tbody>
+        <tr><td>Slotted deflection track</td><td>Vertical slots in the track legs. The stud is screwed <b>through the slot</b>, and the fastener slides in the slot as the structure moves. Common products accommodate up to about 1½" of vertical movement.</td><td>You want the studs positively attached for lateral load while still allowing vertical movement. Fast, one piece, hard to install wrong.</td></tr>
+        <tr><td>Double / slip track</td><td>Two tracks nested. The outer is fixed to the structure; the inner is attached to the studs. The inner assembly slides inside the outer.</td><td>No special product available, or the detail calls for it. Simple and cheap — but the studs are <b>not</b> attached to the structure, so lateral load has to go somewhere else.</td></tr>
+        <tr><td>Deflection clips</td><td>A bracket with a slotted leg connects each stud to the structure, used with standard track or in place of deflection track.</td><td>Higher loads, in-fill curtain wall, or where the track alone can't do the job. Also used in combination with track.</td></tr>
+        <tr><td>2D drift track / drift clips</td><td>Slots in the legs <b>and</b> the web, so the connection allows vertical deflection <i>and</i> horizontal in-plane drift.</td><td>Seismic designs that call for drift accommodation. Vertical-only products do not cover drift.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The rules that get broken:</b></p>
+    <ul class="plain">
+      <li><b>Cut studs short of the track web</b> by the gap the detail requires. A stud bearing hard on the track defeats the whole system and is the most common failed head-of-wall inspection.</li>
+      <li><b>Never screw through the legs of a plain slip track into the stud.</b> That pins it solid. On slotted track you screw through the slot — that's different and it's correct.</li>
+      <li><b>Deflection and drift are different problems.</b> Vertical movement is deflection; sideways is drift. A vertical-only product doesn't handle drift.</li>
+      <li><b>On rated walls the head of wall is a listed joint system</b> — track type, gap, fill material, and fastener pattern are all part of the listing. Build it as listed or it fails.</li>
+    </ul>
+  </div>
+
+  <div class="expert" id="sys-bridging">
+    <span class="tag">Full detail · bracing the studs</span>
+    <h4>Bridging and bracing — what it's actually for</h4>
+    <p>An unbraced steel stud doesn't fail by snapping — it <b>twists and buckles sideways</b> about its weak axis. Bridging is the horizontal restraint that stops that. It's a completely different job from diagonal shear bracing, and mixing the two up is a common mistake.</p>
+    <p><b>The point almost everyone misses:</b> bridging only works if it's <b>anchored</b>. The bracing force accumulates along the run, and it has to be delivered into something — a wall end, a corner, a strut, or a designed anchorage point. A run of channel threaded through fifty studs and attached to nothing at the ends is decoration.</p>
+    <p>Spacing comes from the design. For reference, the maximum spacing for mechanical bracing of curtain wall framing is commonly cited at <b>6 feet on center</b>, and for code-prescribed horizontal straps: mid-height on an 8' wall, third points on 9' and 10' walls. <b>Your project detail governs.</b></p>
+  </div>
+
+  <div class="expert" id="sys-crc">
+    <h4>Cold-rolled channel (CRC)</h4>
+    <p>Solid steel channel, threaded horizontally <b>through the stud knockouts</b> and attached to each stud web — usually with a clip angle. Commonly stocked in <span class="spec">3/4"</span> and <span class="spec">1-1/2"</span> depths.</p>
+    <ul class="plain">
+      <li><b>Why it's the workhorse:</b> it sits inside the wall cavity, so it doesn't add thickness and doesn't interfere with the board.</li>
+      <li><b>Line up the knockouts during stud fill</b> or you'll be fighting every stud to get the channel through. This is why knockout alignment is on the stud-fill checklist.</li>
+      <li>Attachment to each stud is what makes it work — a channel floating loose in the holes braces nothing.</li>
+      <li><b>Anchor the ends.</b> See above — this is the failure mode.</li>
+    </ul>
+  </div>
+
+  <div class="expert" id="sys-strap">
+    <h4>Flat strapping, strap and block, and diagonal bracing</h4>
+    <p><b>Flat strap</b> is flat steel banding run horizontally across the stud flanges and screwed to each one. Code-prescribed horizontal straps are commonly <b>not less than 1½" wide and 33 mils thick, with one #8 screw per stud flange</b>. Straps normally go on <b>both sides</b> of the wall — a strap on one face alone can still let the stud roll.</p>
+    <p><b>Strap and block</b> adds a short piece of stud or track blocked between studs at intervals along the strap run. This is the method to reach for <b>once studs get deeper than about 6"</b> — U-channel bridging alone doesn't adequately brace members that wide. The block gives the strap something solid to work against and delivers the accumulated force.</p>
+    <p><b>Diagonal strap bracing — X-bracing, sometimes called Z bracing on drawings</b> — is a different animal. It runs on a diagonal across the wall frame to resist <b>racking and lateral load</b>, not stud rotation. It's a shear element. If a drawing shows diagonal straps, they are not a substitute for horizontal bridging, and horizontal bridging is not a substitute for them. Read which one is called for and install both if both are shown.</p>
+  </div>
+
+  <div class="expert" id="sys-blocking">
+    <h4>Blocking — two different things with the same name</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Type</th><th scope="col">What it does</th><th scope="col">Who decides it</th></tr></thead>
+      <tbody>
+        <tr><td>Backing blocking</td><td>Gives something a place to be screwed to later — cabinets, grab bars, TVs, handrails, fixtures. Structurally it only has to hold what's hung on it.</td><td>The backing list, from casework and equipment shop drawings. <b>Our job to catch.</b></td></tr>
+        <tr><td>Structural blocking</td><td>Braces the studs against rotation and buckling, usually as part of a strap-and-block system. Part of how the wall carries load.</td><td>The structural detail. Not optional and not a field call.</td></tr>
+      </tbody>
+    </table></div>
+    <p>They get confused because they look identical in the wall. If someone asks "do we need blocking here," the first question back is <b>"for hanging something, or for bracing?"</b> — the answers come from completely different places.</p>
+  </div>
+
+  <div class="expert" id="sys-zfur">
+    <h4>Z-furring channel</h4>
+    <p>Z-shaped channel used to <b>fur out concrete or masonry walls</b> — it holds rigid insulation tight against the substrate and gives you a surface to screw drywall to, all in one member.</p>
+    <ul class="plain">
+      <li><b>Depths:</b> commonly <span class="spec">1"</span>, <span class="spec">1-1/2"</span>, <span class="spec">2"</span>, <span class="spec">2-1/2"</span>, <span class="spec">3"</span>. Stock length is usually 10'.</li>
+      <li><b>Orientation:</b> installed <b>vertically</b>, with the narrow (about ¾") flange against the wall.</li>
+      <li><b>Spacing:</b> typically <b>16" o.c.</b> with gypsum board; can go out toward 24" with thicker, more rigid facing material. Follow the detail.</li>
+      <li><b>Anchoring:</b> masonry anchors or concrete screws roughly every 16"–24" vertically.</li>
+      <li><b>Expansion gap:</b> leave about ¼" at floor and ceiling.</li>
+      <li><b>Insulation</b> fits between the channels; the Z shape traps it against the substrate.</li>
+      <li>Board can run parallel or perpendicular to the channels.</li>
+    </ul>
+    <p><b>Where it goes wrong:</b> shimming for an out-of-plane masonry wall. The channel follows whatever it's screwed to, so a wavy block wall gives you a wavy drywall wall. Check the substrate with a string line first and shim the channels, or the finish will show it.</p>
+  </div>
+
+  <div class="expert" id="sys-tall">
+    <span class="tag">Full detail · tall walls</span>
+    <h4>Getting height — the four levers</h4>
+    <p>How tall a stud can go isn't a judgment call; it comes off a <b>limiting height table</b> published by the manufacturer for that exact stud. There are four ways to buy more height, and they can be combined:</p>
+    <ol class="ranked">
+      <li><b>Deeper stud</b> — go from 3-5/8" to 6" to 8". The single biggest lever.</li>
+      <li><b>Heavier gauge</b> — thicker steel, lower gauge number. 25ga → 20ga → 18ga → 16ga → 14ga.</li>
+      <li><b>Tighter spacing</b> — 24" o.c. → 16" o.c. → 12" o.c.</li>
+      <li><b>More bracing</b> — bridging at closer intervals shortens the unbraced length and raises the allowable height.</li>
+    </ol>
+    <p>Flange width matters too — a wider flange stiffens the stud. To give a sense of the range involved: published tables show a 6" 25ga stud at 16" o.c. with single-layer board both sides reaching roughly 20', the same stud at 24" o.c. dropping to around 15', 20ga reaching into the 30s, and 8" 14ga going to around 40'. <b>These are illustrative of one manufacturer's table — always pull the actual table for the actual product.</b></p>
+
+    <h4>The deflection criterion drives everything</h4>
+    <p>Every limiting height is tied to a deflection limit — how much the wall is allowed to bow under load. <b>Gypsum board is normally designed to L/240.</b> More brittle finishes — plaster, tile, stucco, cement board — call for <b>L/360</b> or tighter. The tighter the limit, the stiffer the wall has to be, which means deeper, heavier, closer-spaced, or more braced.</p>
+    <p><b>This is the number to check before pricing a tall wall.</b> The same 20' wall priced at L/240 and built at L/360 is a different wall and a different cost. If the finish schedule shows tile on a tall wall, go find the deflection criterion before the bid goes out.</p>
+
+    <h4>Stacked walls vs. one continuous stud</h4>
+    <p>Two ways to reach a tall height:</p>
+    <ul class="plain">
+      <li><b>One continuous stud</b> full height. Simplest structurally and usually preferred — but it's limited by what length you can get, handle, and stand in the space.</li>
+      <li><b>Stacked walls</b> — build a wall, then build another on top of it, usually landing on an intermediate structure line or a designed horizontal member. Common in atriums, high corridors, and anywhere the material length runs out.</li>
+    </ul>
+    <p><b>Splicing studs is not a field decision.</b> If a stud has to be spliced, the lap length, nesting arrangement, and screw pattern come from the engineer. A field-invented splice is a hinge in the middle of a tall wall.</p>
+    <p>Stacked walls generally need a real horizontal element at the joint to transfer load, and the deflection detail may repeat at each structure line the wall passes. <b>Anything above the published limiting height table is engineered work</b> — that's the engineer of record's call, and it should be a written answer, not a phone call nobody wrote down.</p>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what actually kills the number</h3>
+    <ol class="ranked">
+      <li>Bad or missing layout — every hour downstream turns into rework.</li>
+      <li>Walking for material that should have been staged at the wall.</li>
+      <li>Tool switching — building wall-by-wall instead of by operation.</li>
+      <li>Coming back for backing after the wall is closed.</li>
+      <li>Framing ahead of MEP or door frame coordination, then opening walls back up.</li>
+      <li>Measuring each stud instead of using a story pole.</li>
+      <li>Nothing written on the slab — the crew re-derives the plan at every wall.</li>
+      <li>Bridging installed but never anchored — found at inspection, fixed at the worst time.</li>
+    </ol>
+  </div>
+
+  <div class="block">
+    <h3>Crew and tools</h3>
+    <ul class="plain">
+      <li><b>One layout hand</b> — your most experienced, running one to two days ahead.</li>
+      <li><b>Two-man setting teams</b> — one sets and holds, one fastens. Same roles all day.</li>
+      <li><b>One dedicated stocker/cutter</b> ahead of the teams. Cheaper than four framers walking.</li>
+      <li><b>Multi-line plumb laser</b> — the single best tool spend in framing. Layout and deck transfer in one setup.</li>
+      <li><b>Strip-magazine powder tool</b> for bottom track — the reload is the bottleneck.</li>
+      <li><b>Metal shears</b> over snips — faster, cleaner, no sparks, no hot work permit.</li>
+      <li><b>Story pole, keel, and a chalk box that holds a line.</b> Unglamorous, and they're in every step above.</li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Sequence and batching are GVC practice. Bridging, bracing, and strapping requirements derive from AISI cold-formed steel standards (S100 and S211 govern wall stud bracing design) and code-prescribed strap dimensions; limiting heights come from manufacturer tables. Deflection track behavior follows manufacturer product literature and CFSEI technical notes on head-of-wall design. Z-furring dimensions and spacing follow manufacturer product data. <b>Every specific number here must be confirmed against the project's approved submittal and structural detail — this document is orientation, not the specification.</b> See Sources.</p>
+  </div>
+</section>
+
+<!-- ==================== STOCK GENERAL ==================== -->
+<section class="doc" id="stock-general">
+  <div class="doc-head">
+    <span class="stage-line">Pre-production · all trades</span>
+    <h2>Stocking Any Material</h2>
+    <p class="lede">Stocking looks like the cheapest task on the job, so it gets the least planning. That's exactly why it quietly sets the labor cost of every stage after it.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Put the material <b>in the room where it gets used</b>. Not by the door, not in one big pile. Every time somebody has to pick a thing up and move it again, that's time nobody paid for.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why we work this way</span>
+    <p>Material handled twice is pure loss — it produces nothing, it damages material, and it's where people get hurt. The goal of a stocking plan is that a crew member never carries anything further than the room it gets installed in.</p>
+  </div>
+
+  <div class="block">
+    <h3>Before the truck is scheduled</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm <b>where it lands</b>, by floor and by room — not "the third floor."</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm access: gate hours, delivery window, dock, hoist or elevator reservation, and who has the key.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the <b>route</b> is still open — a corridor framed since you last walked it kills a delivery.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm <b>floor loading</b> with the GC before staging heavy material on a suspended slab. Structural question, not a convenience question.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the area is weather-tight if the material can't get wet.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm who receives, counts, and signs.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Timing</h3>
+    <ul class="plain">
+      <li><b>Too early is the more expensive mistake.</b> Material sitting on a job gets damaged, gets stolen, blocks other trades, and gets handled three extra times.</li>
+      <li><b>Too late</b> stops a crew cold, and an idle crew is the most expensive thing on a jobsite.</li>
+      <li><b>Target:</b> just far enough ahead that the crew never waits, and no further. Days, not weeks.</li>
+      <li><b>Stage in waves</b> on long jobs — floor by floor — instead of one giant drop.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Placement and receiving</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">In the room it gets used in, or the closest space that isn't a work surface.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Never block</b> egress, exit doors, electrical panels, extinguishers, sprinkler risers, or another trade's active work.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Spread the weight. Get it off a slab that could be wet — sleepers, dunnage, pallets. Cover what needs covering.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Count it against the order before the driver leaves.</b> A shortage found tomorrow is our shortage.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Inspect and reject damaged material at the truck. Note shortages and damage on the ticket <b>before</b> signing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Photograph the load in place. Send the ticket to the office same day.</span></label></li>
+    </ul>
+    <div class="note money">
+      <span class="tag">Why the photo matters</span>
+      <p>A dated photo of material staged and undamaged settles two arguments that both cost real money: whether the supplier shorted us, and whether another trade damaged our material after we set it. Neither is winnable from memory.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Closing out</h3>
+    <ul class="plain">
+      <li><b>Track the overage.</b> Returnable material is real money — it only comes back if someone counts it and calls it in before the return window closes.</li>
+      <li><b>Consolidate scrap early.</b> Scrap collected as you go costs a fraction of scrap collected at the end.</li>
+      <li><b>Report actual vs. ordered</b> back to the estimator. That's the only way our waste factors get more accurate.</li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>General construction material-handling practice plus GVC field experience. Receiving and documentation steps are standard subcontractor practice for protecting against supplier shortages and cross-trade damage claims. Floor-loading coordination is a life-safety item — always the GC's and structural engineer's call.</p>
+  </div>
+</section>
+
+<!-- ==================== STOCK DRYWALL ==================== -->
+<section class="doc" id="stock-drywall">
+  <div class="doc-head">
+    <span class="stage-line">Pre-production · drywall</span>
+    <h2>Stocking Drywall</h2>
+    <p class="lede">Board is heavy, fragile, awkward, and moisture-sensitive all at once. Nothing else we handle punishes a bad plan this hard — in damaged material and in backs.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Board goes <b>in the room where it gets hung, stacked in the order it gets hung.</b> Flat, off the floor, out of the weather. On a good job the hanger's first move of the day is picking up a sheet, not looking for one.</p>
+  </div>
+
+  <div class="block">
+    <h3>Get it to the floor, not to the ground</h3>
+    <p class="sub">The single biggest decision in drywall stocking, and it's made when the delivery is ordered.</p>
+    <ul class="plain">
+      <li><b>Boom truck / crane delivery</b> places board directly on the working floor or through a window opening, several stories up. Default for anything above grade — it does the heavy lifting and it's a safer lift than people on stairs.</li>
+      <li><b>Telehandler or forklift</b> where the site and openings allow.</li>
+      <li><b>Window stocking</b> — board through a designated opening before glazing. Needs coordination well in advance; the window open today may be glazed next week.</li>
+      <li><b>Hand-carrying board up stairs is the last resort</b>, not the plan. If it's the plan, the labor number is wrong.</li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Floor loading — ask, don't assume</span>
+    <p>A stack of board is one of the heaviest concentrated loads that will ever sit on a suspended floor. <b>Confirm the allowable load with the GC before staging, and spread stacks out</b> rather than piling one large stack in a single spot. Keep stacks away from the middle of long unsupported spans. If nobody can tell you the number, that's your answer — split the load.</p>
+  </div>
+
+  <div class="block">
+    <h3>How to stack it</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Flat, not on edge</b>, for anything but short-term staging. Board stored on edge bows, and a bowed sheet fights you all day.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Off the slab on sleepers or dunnage — concrete wicks moisture into the bottom sheets.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">On a flat, level base. A stack on uneven ground bows every sheet in it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">If it must lean, lean it close to vertical against something solid.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Away from unsealed exterior walls, open windows, and anywhere water can find it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Stacked in the order it gets used, with the first sheets on top.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Out of the middle of the room where it blocks layout and ceiling work.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Distribute by room, off the takeoff</h3>
+    <ul class="plain">
+      <li>Split per room or zone from the takeoff, <b>not one pile per floor.</b></li>
+      <li><b>Separate the specialty board clearly</b> — moisture-resistant, abuse-resistant, shaftwall, and rated-assembly board are not interchangeable. A hanger reaching into the wrong stack causes a failed inspection or a tear-out.</li>
+      <li>Label the specialty stacks. A marker on the top sheet takes five seconds.</li>
+      <li>Include a working overage per room so nobody hunts one sheet at the end.</li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Injury — the real cost center</span>
+    <p>Board handling is where our people get hurt: backs, hands, and crush injuries when a stack shifts. Use <b>panel carts and panel carriers</b>, two-person lifts on full sheets, gloves, and a stable stack that can't tip. A single lost-time back injury costs more than the equipment for a whole year — and costs the person a great deal more than that.</p>
+  </div>
+
+  <div class="block">
+    <h3>Before you call it stocked</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Count matches the ticket; ticket matches the order.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Damaged sheets pulled out and noted — not buried mid-stack for a hanger to find.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Specialty board separated and labeled.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Nothing blocking egress, panels, or another trade.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Stacks stable, flat, off the slab, out of the weather.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Photos taken, ticket to the office.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Manufacturer storage-and-handling guidance (keep board flat, dry, off the ground, supported) is consistent across USG, National Gypsum, and CertainTeed. Boom-truck and specialty delivery practice is standard supplier-side material handling. Floor-loading limits are project-specific.</p>
+  </div>
+</section>
+
+<!-- ==================== HANG ==================== -->
+<section class="doc" id="hang">
+  <div class="doc-head">
+    <span class="stage-line">Job Check · Hanging Status</span>
+    <h2>Hanging Drywall</h2>
+    <p class="lede">Hanging decides how much finishing there is. Every joint you avoid creating is a joint nobody has to tape, coat three times, sand, and touch up.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Use the <b>longest sheets that fit</b>, ceilings before walls, top sheet before bottom, and never let a joint land on the corner of a door. Set the screws so they dimple the paper without tearing it. Fewer seams is the whole game — the finishers inherit whatever you leave them.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why we work this way</span>
+    <p>A hanger's real job is <b>joint reduction</b>. The board goes up either way; what separates a fast job from a slow one is how many linear feet of seam the finishers inherit. A tapered seam is cheap — the factory built a recess for the tape. A <b>butt joint has no recess</b>, so the finisher has to build a wide feathered crown over three coats and it's still the first thing that shows in raking light.</p>
+  </div>
+
+  <div class="block">
+    <h3>Before the first sheet</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Framing accepted: plumb, straight, backing in, no protruding fasteners, no twisted studs.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">MEP rough-in complete <b>and inspected</b>. Board over uninspected rough-in comes back off.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Insulation in where it belongs behind the board.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm board type per wall — thickness, rated vs. non-rated, moisture/abuse-resistant, layer count.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm fastener type and spacing for each condition from the spec.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Board acclimated and conditions reasonable.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Sheet layout — where the money is</h3>
+    <ul class="plain">
+      <li><b>Ceilings before walls.</b> Wall sheets then support the ceiling edge and close the joint.</li>
+      <li><b>Longest sheet that fits</b> and can be handled safely. Fewer sheets, fewer joints.</li>
+      <li><b>Perpendicular to the framing</b> where the assembly calls for it — stiffens the wall and puts the tapered edges where you want them.</li>
+      <li><b>Top sheet first, then bottom</b> on walls, so factory tapered edges meet at the horizontal seam.</li>
+      <li><b>Stagger butt joints</b> between courses and between adjacent walls. Never let them line up.</li>
+      <li><b>Keep butt joints out of sight lines</b> — away from the wall a room looks at, away from raking light.</li>
+      <li><b>Never land a joint on the corner of a door or window opening.</b> That corner is a stress concentration and the crack will find it. Cut so the opening falls in the field of the board.</li>
+      <li>Where a butt joint is unavoidable in a critical area, <b>back-block it</b> to create a slight recess so the finisher has somewhere to put mud.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Fit and fasten</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Cut for a snug fit, but <b>don't force a sheet in</b> — forced board bows, breaks at the corners, and pushes framing out of plane.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Push tight to the neighbor before fastening. Gaps mean more mud.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Fasten <b>from the center outward</b>, holding the board tight as you go. Edges-first traps a belly in the middle.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Set gun depth so the head <b>dimples the paper without breaking it.</b> A broken-paper screw holds nothing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Keep fasteners back from the edges per spec — too close and the edge crumbles.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Leave the specified gap at the floor so board isn't wicking off the slab and isn't bearing.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="hang-board">
+    <span class="tag">Full detail · picking the right board</span>
+    <h4>Board types and where each one belongs</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Type</th><th scope="col">Where it goes</th></tr></thead>
+      <tbody>
+        <tr><td>Standard</td><td>General interior walls and ceilings with no special requirement.</td></tr>
+        <tr><td>Type X / Type C</td><td>Fire-rated assemblies. <b>Type C is not a substitute for Type X and vice versa</b> — the listing names one specific product. Check before you hang.</td></tr>
+        <tr><td>Moisture / mold resistant</td><td>Wet and humid areas — restrooms, kitchens, locker rooms. Not the same as a tile backer.</td></tr>
+        <tr><td>Tile backer / cement board</td><td>Behind tile in wet areas. Note this usually carries a tighter deflection criterion for the framing behind it.</td></tr>
+        <tr><td>Abuse / impact resistant</td><td>Corridors, gyms, classrooms, back-of-house — anywhere carts and traffic hit walls.</td></tr>
+        <tr><td>Shaftwall liner</td><td>Elevator and mechanical shafts, in a specific proprietary system. Not interchangeable with anything.</td></tr>
+        <tr><td>Ceiling board / sag-resistant</td><td>Ceilings, especially at wider framing spacing. Standard board on a ceiling at wide spacing will sag.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The one that costs money:</b> a hanger pulling from the wrong stack on a rated wall. That's why specialty board gets separated and labeled at stocking — see <b>Stocking Drywall</b>.</p>
+  </div>
+
+  <div class="expert" id="hang-rated">
+    <h4>Rated assemblies — what's actually locked in</h4>
+    <p>On a fire-rated wall the board is part of a <b>tested assembly</b>, and every one of these is part of the listing:</p>
+    <ul class="plain">
+      <li>Board type and thickness</li>
+      <li>Number of layers, and the <b>joint offset between layers</b> — layer two's joints must not land on layer one's</li>
+      <li>Fastener type, length, and spacing — which differs between the base layer and the face layer</li>
+      <li>Joint treatment, including whether joints in the base layer get treated</li>
+      <li>Board orientation</li>
+      <li>Treatment at penetrations, boxes, and the head of wall</li>
+    </ul>
+    <p>Substituting board, stretching fastener spacing, or lining up joints between layers <b>voids the rating</b>. Build it exactly as listed, and <b>photograph layer one before layer two covers it</b> — that photo is the only evidence that exists afterward.</p>
+    <p>Electrical box placement and the required separation between boxes on opposite sides of a rated wall are also part of the listing. Don't move a box to make the board easier.</p>
+  </div>
+
+  <div class="expert" id="hang-control">
+    <h4>Control joints — cracking where you chose</h4>
+    <p>Large continuous areas of board move, and if you don't give that movement somewhere to go, it shows up as a crack in the middle of a wall. A <b>control joint</b> is a deliberate break in the board with a trim piece over it, so the movement happens at a straight line you picked.</p>
+    <ul class="plain">
+      <li>Spacing and location come from the <b>project detail and manufacturer guidance</b> — long runs, large ceiling areas, and wherever the structure changes.</li>
+      <li>The board itself must actually be <b>broken</b> at the joint. A control joint bead installed over continuous board does nothing.</li>
+      <li>Framing behind a control joint is usually broken too — a double stud, one on each side.</li>
+      <li>Rated walls need a <b>rated</b> control joint detail; the joint is a gap through the assembly.</li>
+      <li>Also install where a ceiling meets a wall on long runs, and where dissimilar substrates meet.</li>
+    </ul>
+    <p><b>Why it matters commercially:</b> cracks in long corridors are one of the most common warranty callbacks in this trade, and nearly all of them trace to missing or ineffective control joints.</p>
+  </div>
+
+  <div class="block">
+    <h3>Openings and crew rhythm</h3>
+    <ul class="plain">
+      <li>Cut electrical and mechanical openings <b>accurately and tight</b> — oversized cutouts are a finisher's problem, a fire-caulker's problem, and sometimes a code problem.</li>
+      <li>A router is much faster than measure-and-knife for boxes, <b>if</b> the rough-in is where the drawings say. Measure-and-cut where locations are unreliable.</li>
+      <li><b>Two-person team:</b> one measuring and cutting, one placing and fastening, with the cutter staying a sheet ahead. <b>Three on volume:</b> one cutting, two hanging.</li>
+      <li><b>Keep crews intact.</b> People who've worked together for years are substantially faster than the same three newly paired.</li>
+      <li><b>Ceilings get the lift.</b> Not a luxury — the difference between a productive crew and a wrecked one.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before you call the room hung</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Walk it with a knife and a gun. Every screw set, none proud, none broken through.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">No torn paper left un-addressed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Gaps within tolerance; oversized gaps pre-filled, not left for tape.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All openings cut, none missed, none oversized.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Control joints where the detail shows them, with the board actually broken.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Rated walls photographed, layer one before layer two.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Room updated in Job Check.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Application practice follows the Gypsum Association's <b>GA-216, Application and Finishing of Gypsum Panel Products</b>, the standard most specs reference. Board orientation, joint stagger, fastener placement, and edge distances are governed there and by the board manufacturer's instructions — <b>which override this document when they conflict.</b> Rated-assembly requirements come from the specific UL or equivalent listing named in the wall type schedule.</p>
+  </div>
+</section>
+
+<!-- ==================== SCRAPE ==================== -->
+<section class="doc" id="scrape">
+  <div class="doc-head">
+    <span class="stage-line">Job Check · Scrapping Status</span>
+    <h2>Scraping</h2>
+    <p class="lede">The cheapest labor in the entire drywall sequence, and it directly replaces the most expensive. This is why it's a tracked stage of its own.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Before the tapers come in, somebody walks every room with a knife and cleans it up — shave the bumps off the seams, set every proud screw, cut out the boxes that got missed, sweep out the scrap. Then between coats, you shave the ridges off <b>while the mud is still soft.</b> That's it. It's simple work and it saves more time than almost anything else we do.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why we work this way</span>
+    <p><b>A knife removes in one second what a sanding pole removes in thirty.</b> Scraping is fast, quiet, dust-free, needs no power, and barely touches the schedule. Sanding is slow, filthy, wrecks the air in the building, requires cleanup, and gets charged at a finisher's rate. Anything you can take off with a blade should never reach a sanding sponge.</p>
+  </div>
+
+  <div class="block">
+    <h3>Two scrapes, two different jobs</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Pass</th><th scope="col">When</th><th scope="col">What it removes</th></tr></thead>
+      <tbody>
+        <tr><td>Scrap-out / prep</td><td>After hanging, before tape</td><td>Torn paper, board crumbs, proud screws, missed cutouts, loose debris — everything that would make a taper stop and fix something.</td></tr>
+        <tr><td>Between-coat scrape</td><td>After each coat, before the next</td><td>Ridges, tool lines, lumps, and squeeze-out from the previous coat, while it's still soft enough to shave.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>Pass one — the scrap-out</h3>
+    <p class="sub">This is the handoff pass. The taper should be able to start the moment they walk in.</p>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Run a knife over every seam and edge — knock off crumbs, dust ridges, and loose torn paper.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check <b>every screw.</b> Proud ones get set. Broken-paper ones get a new screw beside them.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Find and cut the <b>missed openings</b> — boxes, sprinkler drops, access panels. Found here, not by an electrician with a hammer.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Knock down high spots at butt joints and anywhere board isn't sitting flat.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Pre-fill oversized gaps and voids with setting compound now, so the taper isn't building a bridge.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Clear scrap and debris out of the room and off the floor.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Walk it the way the taper will: if you'd have to stop and fix something, fix it now.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Pass two — between coats</h3>
+    <ul class="plain">
+      <li><b>Timing is the whole trick.</b> Scrape ridges before they harden. Soft compound shaves off with almost no effort; cured compound has to be sanded or chipped.</li>
+      <li>Wide knife held flat — you're shaving high spots, not scraping the joint back open.</li>
+      <li><b>Don't dig.</b> A gouge creates a low spot that costs another coat to fill. Light pressure, flat blade.</li>
+      <li>Corners and angles collect the worst ridges — the fastest wins are there.</li>
+      <li>Scrape the walls, the ceilings, <b>and the floor.</b> Dropped mud that cures on the slab becomes somebody's chisel work.</li>
+      <li>Squeeze-out at screw heads and butt joints is the classic target — one pass, seconds per wall.</li>
+    </ul>
+  </div>
+
+  <div class="note money">
+    <span class="tag">The trade-off that pays for this stage</span>
+    <p>Clean thin coats plus a fast scrape between them reduces sanding to <b>blending edges</b> rather than reshaping the wall. Sanding is the slowest, dirtiest, and most disliked task in the sequence — and dust control, containment, and cleanup all scale with how much of it there is. Everything that reduces sanding pays twice.</p>
+  </div>
+
+  <div class="block">
+    <h3>Tools</h3>
+    <ul class="plain">
+      <li><b>A 6" knife</b> does most of the work. Keep the edge true — a nicked blade leaves lines instead of removing them.</li>
+      <li><b>A wide knife (10–12")</b> for shaving joint crowns flat without digging.</li>
+      <li><b>A pole scraper</b> for ceilings and high walls — keeps people off stilts for a task that doesn't need them.</li>
+      <li><b>A carbide scraper</b> for cured compound that got away from you. This is the tool for when you missed the window.</li>
+      <li><b>A sharp utility knife</b> for torn paper and missed cutouts.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>What "scraped" means before you flip the status</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Every seam and edge clean of crumbs and loose paper.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Every screw set; broken ones addressed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All openings cut, including the missed ones.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Oversized gaps and voids pre-filled.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Floor clear of scrap and cured mud.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">A taper could start without stopping. Scrapping Status updated.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>"Scrape ridges before they harden" and "smooth squeeze-out with a knife before sanding" are standard finisher practice and appear in manufacturer sanding guidance, including National Gypsum's. The scrap-out-before-tape pass is GVC's own workflow — already a tracked stage in Job Check between Hanging and Taped. The claim that scraping displaces sanding is a labor-rate argument, not a manufacturer claim; validate the magnitude against our own job costing.</p>
+  </div>
+</section>
+
+<!-- ==================== FINISH ==================== -->
+<section class="doc" id="finish">
+  <div class="doc-head">
+    <span class="stage-line">Job Check · Taped → 2nd Bed → 3rd Coat → Sanded → Text/Skim</span>
+    <h2>Finishing Drywall</h2>
+    <p class="lede">Finishing is where the labor is, where the reputation is, and where the two get traded against each other by accident.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Three coats, each one <b>wider and thinner</b> than the last, each one only over a coat that's fully dry. Scrape between them. Then sand — and if you did the coats right, sanding is just blending the edges, not reshaping the wall. The biggest mistake isn't doing it badly; it's doing it <b>better than the job was priced for</b>.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why we work this way</span>
+    <p><b>Finish to the level that was specified — not higher, not lower.</b> Under-finishing gets rejected. Over-finishing is unpaid work, and at scale it's an enormous amount of unpaid work. Getting the specified level confirmed in writing at the start of the job is the single highest-leverage thing anyone does on this scope.</p>
+  </div>
+
+  <div class="block">
+    <h3>The coat sequence</h3>
+    <h4>Prep — before any mud</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Room is scraped and accepted. Don't start tape in a room that isn't ready — you'll do the scrapper's work at a taper's rate.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Pre-fill oversized gaps with setting compound and let them set before taping over.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Conditions reasonable — mud needs temperature and air movement. Cold, damp, still air turns a three-day finish into a week.</span></label></li>
+    </ul>
+    <h4>Tape / bed coat</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Full bed of compound behind the tape — tape bedded in a starved joint blisters and comes back.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Squeeze the tape down firmly and clean out the excess. <b>Every bit you leave now is something somebody sands later.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Corner bead set straight and secure — a wavy bead can't be fixed with mud, only hidden badly.</span></label></li>
+    </ul>
+    <h4>Second coat</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Only over a <b>fully dry</b> previous coat. Coating over damp compound causes shrinkage cracks and delamination that show up after paint.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Wider than the first. Every coat gets wider — that's how a joint disappears.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Butt joints get the widest treatment on the wall. Scrape the ridges before they harden.</span></label></li>
+    </ul>
+    <h4>Third coat, sanding, texture</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Thin, wide, feathered. This coat blends, it doesn't fill.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Lightweight or topping compound — sands far easier, on the coat that gets sanded most.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Sanding blends edges. <b>Don't over-sand</b> — cutting into the paper creates fuzz that telegraphs through paint.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check with a bright light at a <b>low angle</b>. That's the light a paint job will reveal.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Vacuum-assisted sanding where dust control matters — occupied buildings, phased work, other trades nearby.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Match specified texture and any existing texture on a tie-in. Make a sample and get it approved.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="fin-levels">
+    <span class="tag">Full detail · levels of finish</span>
+    <h4>GA-214 Levels 0 through 5</h4>
+    <p>The Gypsum Association's <b>GA-214, Levels of Finish for Gypsum Panel Products</b> gives the architect, GC, painter and us one shared vocabulary. It's a free download and it's what most specs reference.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Level</th><th scope="col">Typically used for</th></tr></thead>
+      <tbody>
+        <tr><td>Level 0</td><td>No finishing required — temporary construction, or finish undecided.</td></tr>
+        <tr><td>Level 1</td><td>Concealed spaces — above ceilings, plenums, areas not normally seen. Often still needs joints taped for smoke or fire reasons.</td></tr>
+        <tr><td>Level 2</td><td>Where a substrate goes over it — tile backing, garages, warehouses.</td></tr>
+        <tr><td>Level 3</td><td>Heavy texture, or heavy wall covering going over it.</td></tr>
+        <tr><td>Level 4</td><td>The workhorse. Flat paint, light texture, light wall coverings.</td></tr>
+        <tr><td>Level 5</td><td>Full skim coat over the entire surface. Gloss and semi-gloss paint, and critical or raking lighting.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The Level 4 / Level 5 trap — this is the money item.</b> A job specified at Level 4 but painted with a sheen, or lit with a wall-washing fixture, will produce complaints that look like our defect and are actually a specification problem. Level 4 does not promise a flawless surface under raking light; only Level 5 does.</p>
+    <p><b>Flag it in writing before finishing starts.</b> A Level 5 skim on a job priced at Level 4 is a change order, not a favor. Once the painter is on site, that conversation gets expensive. The two things to check on every job: <b>what sheen is the paint</b>, and <b>is there any wall-grazing or raking light.</b></p>
+  </div>
+
+  <div class="expert" id="fin-hotmud">
+    <h4>Compound selection</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Type</th><th scope="col">Behavior</th><th scope="col">Use it for</th></tr></thead>
+      <tbody>
+        <tr><td>Setting compound<br>("hot mud")</td><td><b>Chemically sets</b> rather than air-drying, so it doesn't wait on humidity and it shrinks less. Comes in set times from very fast to several hours. Much harder to sand.</td><td>Pre-fills, deep voids, patches, first coats where you need to recoat the same day, and cold or damp conditions where drying compound won't cooperate.</td></tr>
+        <tr><td>All-purpose</td><td>Air-dries. Strong bond, moderate sanding, good all-round.</td><td>Bedding tape and general coats.</td></tr>
+        <tr><td>Topping / lightweight</td><td>Air-dries. Weaker bond, but sands much easier.</td><td>Final coats and skim. <b>Not for bedding tape</b> — it doesn't have the bond for it.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The practical rules:</b> mix only what you can use before it goes off; clean tools <b>before</b> it sets, not after; and don't put setting compound on the last coat if you can avoid it — you'll pay for it in sanding. Choosing an easy-sanding material for the coat that gets sanded most is the most direct labor reduction available in finishing.</p>
+  </div>
+
+  <div class="expert" id="fin-bead">
+    <h4>Corner bead options</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Type</th><th scope="col">Trade-off</th></tr></thead>
+      <tbody>
+        <tr><td>Metal (nail-on / crimp)</td><td>Cheapest and stiffest. Dents, and can rust if it ever gets wet. Requires a straight, well-framed corner.</td></tr>
+        <tr><td>Vinyl / plastic</td><td>Won't rust or dent as easily; good in wet areas. Usually adhesive- or staple-applied.</td></tr>
+        <tr><td>Paper-faced metal</td><td>Bonds with compound over the paper flange, so it resists edge cracking well. Popular where quality matters.</td></tr>
+        <tr><td>Bullnose</td><td>Rounded corner instead of square. An architectural choice — <b>confirm it's specified</b>, and note it changes the base and trim details.</td></tr>
+        <tr><td>Reveal / trim beads</td><td>L-bead, J-bead, and reveals where board terminates against another material. These are detail items — read the drawings.</td></tr>
+      </tbody>
+    </table></div>
+    <p>A bead is only as straight as the framing behind it. If the corner isn't straight, fix the framing — mud will not save it, and the corner is the most visible line in the room.</p>
+  </div>
+
+  <div class="expert" id="fin-tools">
+    <h4>Hand tools vs. automatic tools</h4>
+    <p>The biggest equipment decision in the finishing scope.</p>
+    <ul class="plain">
+      <li><b>Reported gains are large.</b> Contractors converting from hand finishing to automatic taping and finishing tools commonly report roughly <b>double the crew production</b>, with more conservative reports around 50%. Bazooka operators report at least 40% faster than hand taping, and some report savings on the order of several man-days per week per crew.</li>
+      <li><b>The catch is real.</b> Full auto-taper rigs are a significant capital cost, they're heavy, and the chains, gears and pumps need constant maintenance. They pay off at <b>high, steady volume</b> — not on scattered small work.</li>
+      <li><b>The banjo is the middle ground</b> — faster than hand taping, slower than a bazooka, cheap and nearly maintenance-free. Often the right first step.</li>
+      <li><b>Hand tools stay</b> for small jobs, remodels, patch work, and detail-heavy areas, where setup and cleanup on a rig costs more than it saves.</li>
+      <li><b>Budget the learning curve.</b> Manual tools are quick to pick up; automatic tools take real practice before the production gain appears. The first jobs will be slower, not faster.</li>
+    </ul>
+    <div class="note money">
+      <span class="tag">How to decide it for GVC</span>
+      <p>These figures come from tool manufacturers and contractor forums and describe crews at volume. <b>Before buying a rig, run one job with a rented set and measure it against our own historical rate on comparable work.</b> That number is worth more than any published claim.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what actually costs us on finishing</h3>
+    <ol class="ranked">
+      <li><b>Finishing above the specified level</b> — invisible, unpaid, enormous at scale.</li>
+      <li><b>Heavy coats</b> — every extra pound of mud is sanding labor plus drying time.</li>
+      <li><b>Coating over damp compound</b> — cracks and delamination that come back after paint.</li>
+      <li><b>Skipping the scrape</b> — converts seconds of knife work into minutes of sanding.</li>
+      <li><b>Bad conditions</b> — no heat or air movement stretches the schedule and nobody makes it up.</li>
+      <li><b>Starting in a room that wasn't scraped</b> — tapers doing prep at a taper's rate.</li>
+      <li><b>Over-sanding into the paper</b> — fuzz, then another coat.</li>
+      <li><b>Not checking with a raking light</b> — defects found by the painter instead of by us.</li>
+    </ol>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Finish levels are from the Gypsum Association's <b>GA-214</b>; application procedure follows <b>GA-216</b>. Compound selection and dry-time behavior follow manufacturer technical guidance. Automatic-tool production figures are vendor and contractor-forum reported and given as ranges, not guarantees. The Level 4/5 sheen-and-lighting warning is standard commercial finishing practice and the most common source of finish disputes.</p>
+  </div>
+</section>
+
+<!-- ==================== ACT ==================== -->
+<section class="doc" id="act">
+  <div class="doc-head">
+    <span class="stage-line">Ceilings · CT / ACT</span>
+    <h2>Acoustical Ceilings</h2>
+    <p class="lede">A ceiling is judged from across the room, all at once, by people with nothing else to look at. Level and layout are the whole job.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>You hang a metal grid from the structure on wires, then drop tiles into it. Two things make it look right: <b>the grid is dead level</b>, and <b>the cut tiles around the edges are big and even</b>. Get those two and it looks professional. Miss either one and everybody notices, even people who don't know why.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why layout comes first</span>
+    <p>Same principle as framing: <b>the layout carries all the thinking.</b> You work out the tile layout on paper or on the floor before a single wire goes up, because the border tile size is decided the moment you place the first main runner — and it can't be fixed later without taking the grid apart.</p>
+  </div>
+
+  <div class="block">
+    <h3>Layout — the part that decides how it looks</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Find the room's centerlines both directions and work the tile layout out from center.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Aim for <b>border tiles that are equal on opposite sides</b> and <b>as large as possible.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Never end with a sliver border.</b> A 2" strip against a wall is the single most common ceiling complaint. Shift the whole layout half a tile to fix it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check the layout against light fixtures, diffusers, sprinklers, and speakers — they want to land in the grid sensibly, and the mechanical drawings assume a layout.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Establish the ceiling height off the drawings, then <b>laser a level line all the way around the room</b> and snap it. Don't measure down from a deck that isn't level.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">In a corridor, run the layout down the length so the borders stay consistent the whole way — a corridor shows a drifting layout worse than any other space.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Install sequence</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Wall angle first</b>, on the snapped line, all the way around. This is the reference for everything after it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Mark main runner locations from the tile layout.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Hang the wires. <b>Minimum 12 gauge, maximum 4 feet on center</b> along each main runner, and within the required distance of each end.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Wrap each wire <b>a minimum of three full turns within 3 inches.</b> This is inspected and it's the most commonly failed item.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Wires must attach to <b>structure</b> — never to ductwork, pipe, conduit, or another trade's hangers.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Set main tees, typically on <b>4' centers</b>, and level them as you go.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Install cross tees to form the module.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Square the grid before any tile goes in</b> — measure the diagonals. A grid that's out of square shows in every tile.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm light fixtures and diffusers are <b>independently supported</b> where required — most fixtures need their own wires, not the grid.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Tile goes in <b>last</b>, after the dusty trades are done. Clean gloves — a fingerprint on a white tile is a replacement.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note money">
+    <span class="tag">The scheduling rule that saves the most money</span>
+    <p><b>Grid early, tile late.</b> The grid can go in while other trades are still working above the ceiling — they need it for their layout anyway. Tile is the last thing in the room. Tiling early means damaged, dirty, and lifted tile, and every tile another trade lifts and drops back badly is one you come back for.</p>
+  </div>
+
+  <div class="expert" id="act-maintee">
+    <span class="tag">Full detail · the system</span>
+    <h4>Grid components</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Part</th><th scope="col">What it does</th></tr></thead>
+      <tbody>
+        <tr><td>Wall angle / molding</td><td>Perimeter trim the grid lands on. Sizes vary; seismic conditions often require a wider (commonly 2") angle.</td></tr>
+        <tr><td>Main tee / main runner</td><td>The long load-carrying members, typically at 4' centers, supported by hanger wires.</td></tr>
+        <tr><td id="act-crosstee">Cross tee</td><td>Shorter members clipping between mains to form the module — commonly 2' and 4' lengths for a 2x2 or 2x4 grid.</td></tr>
+        <tr><td>Hanger wire</td><td>Minimum 12 gauge, maximum 4' on center along mains, wrapped three full turns within 3". Attached to structure only.</td></tr>
+        <tr><td>Tile / panel</td><td>The acoustical panel itself. Edge type must match the grid face.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>Grid face profile — the visible choice</h4>
+    <ul class="plain">
+      <li><b>15/16" exposed</b> — the standard wide face. Most common, most economical, most forgiving of small alignment errors.</li>
+      <li><b>9/16" narrow</b> — a slimmer, more refined line. Costs more, and it's less forgiving: an out-of-square grid shows more on a narrow face.</li>
+      <li><b>Slotted grid</b> — required for certain tegular and reveal-edge tiles, where the tile edge engages the grid.</li>
+      <li><b>Concealed</b> — grid not visible at all. A different system with different access characteristics.</li>
+    </ul>
+    <p><b>The grid face and the tile edge are a matched pair.</b> Ordering a tegular tile against a standard grid, or the wrong face width, means the whole ceiling comes back. Confirm both off the same submittal.</p>
+
+    <h4 id="act-tile">Tile edge types</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Edge</th><th scope="col">How it sits</th></tr></thead>
+      <tbody>
+        <tr><td>Square lay-in</td><td>Flat on top of the grid flange. Simplest and cheapest. The grid reads as a continuous flat plane.</td></tr>
+        <tr><td>Tegular</td><td>Stepped edge so the tile face <b>drops below</b> the grid, giving a recessed, more finished look. Requires the matching grid profile.</td></tr>
+        <tr><td>Reveal / vector</td><td>Tile sits in a reveal with a shadow line. More architectural, less forgiving of cut quality on borders.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Border cuts on tegular and reveal tile are skilled work</b> — the cut edge has to be reworked to match the factory edge profile, or the border reads as obviously cut. Price this differently than square lay-in.</p>
+  </div>
+
+  <div class="expert" id="act-wire">
+    <h4>Seismic — what changes and why</h4>
+    <p>Suspended ceilings are treated as a life-safety item in a seismic event, because a falling ceiling blocks egress and injures people. The requirements come from the project's <b>seismic design category</b>, which comes from the code and the location — <b>never carry the last job's answer to this one.</b></p>
+    <p>In higher categories, expect some combination of:</p>
+    <ul class="plain">
+      <li><b>Wider wall angle</b> — commonly 2" — to give the grid room to move without falling off.</li>
+      <li><b>Two adjacent walls attached, the opposite two free</b> with a required clearance so the grid can move within the perimeter. The grid end typically needs a minimum clearance (commonly 3/4") from the wall and must be free to slide on the closure angle or a perimeter clip.</li>
+      <li><b>Splay wires and compression posts</b> at intervals to brace the ceiling laterally and hold it down.</li>
+      <li><b>Independent support for light fixtures</b> and heavy items, with their own wires.</li>
+      <li><b>Perimeter clips</b> as an alternative to a wide angle in some systems.</li>
+      <li><b>Clearance around penetrations</b> — sprinkler heads and anything passing through need room to move.</li>
+    </ul>
+    <p><b>The one that gets missed:</b> the ceiling has to be able to move. Fastening all four sides tight to the wall angle feels tidy and defeats the entire design.</p>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what actually goes wrong on ceilings</h3>
+    <ol class="ranked">
+      <li><b>Sliver borders</b> — a layout decision that can't be fixed afterward.</li>
+      <li><b>Out of level</b> — visible from across the room and from every angle.</li>
+      <li><b>Out of square</b> — every tile in the room shows it.</li>
+      <li><b>Wires not wrapped properly, or tied to ductwork instead of structure</b> — an inspection failure and a safety issue.</li>
+      <li><b>Fixtures hung off the grid</b> without their own support.</li>
+      <li><b>Tile installed before the dirty trades finished</b> — damaged and soiled tile, all of it replaced.</li>
+      <li><b>Grid and tile edge mismatched</b> — a submittal error that shows up as a full reorder.</li>
+      <li><b>Handling tile without clean gloves</b> — fingerprints don't clean off.</li>
+    </ol>
+  </div>
+
+  <div class="block">
+    <h3>Crew and rhythm</h3>
+    <ul class="plain">
+      <li><b>Two-person team:</b> one on the laser and layout, one hanging wire and setting grid.</li>
+      <li><b>Do all the wall angle in the space first</b>, then all the wire, then all the main tees — the same batching that works everywhere else in this manual.</li>
+      <li><b>A rotating laser</b> pays for itself on the first ceiling. Level is the whole job and eyeballing it doesn't work.</li>
+      <li><b>Keep tile boxed and off the floor</b> until the grid is complete and the room is clean.</li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Hanger wire gauge and spacing (12 gauge minimum, 4' on center maximum), the three-full-turns-within-3-inches wrap, main runners at 4' centers, and perimeter clearance requirements follow manufacturer installation instructions from Armstrong, USG, and Rockfon, and are consistent with code requirements for suspended ceilings. Seismic requirements are driven by the project's seismic design category and by the code edition in force — <b>this section orients you, the project documents govern.</b> Grid profile and tile edge compatibility come from the approved submittal.</p>
+  </div>
+</section>
+
+<!-- ==================== PATCH ==================== -->
+<section class="doc" id="patch">
+  <div class="doc-head">
+    <span class="stage-line">Repair · patch work</span>
+    <h2>Drywall Patch</h2>
+    <p class="lede">Patching is judgment work. Picking the right method for the size of the hole is most of the job.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Small hole, one method. Big hole, a different one. Then <b>spread the mud out much wider than you think you need to</b> and feather it to nothing. Patches show because the mud stopped too soon, not because the hole was too big.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why we work this way</span>
+    <p><b>The patch fails at its edges, not in its middle.</b> Almost every visible patch is visible because the mud was feathered over too small an area, so there's a detectable bump or halo where the repair meets the wall. A wide, thin, well-feathered patch disappears; a small thick one always shows.</p>
+  </div>
+
+  <div class="block">
+    <h3>Pick the method by the size of the hole</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Size</th><th scope="col">Method</th></tr></thead>
+      <tbody>
+        <tr><td>Nail pops, dings, dents</td><td>Set or replace the fastener, then two to three thin coats, each wider than the last. No tape needed unless the paper is broken.</td></tr>
+        <tr><td>Small holes<br>(up to about fist-size)</td><td><b>California / butterfly patch.</b> A scrap piece with the paper flange left on. No backing required — the fastest reliable method at this size.</td></tr>
+        <tr><td>Medium to large</td><td>Cut back to a clean square, install <b>backing</b>, screw in a fitted piece, tape all four sides, coat out.</td></tr>
+        <tr><td>Very large / rated wall</td><td>Cut back to framing and restore the <b>full assembly</b> — same board type, layer count, fastener pattern, joint treatment. This is reconstruction, not patching.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>The California / butterfly patch</h3>
+    <p class="sub">Uses the board's own paper as the tape, so there's nothing to blister and no backing to install.</p>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Square up the hole and cut back to sound board.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Take a scrap piece roughly <b>3–4" larger than the hole in both directions.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">On the back, score a rectangle about <b>1½–2" in from each edge</b> — the inner rectangle is sized to the hole.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Snap the gypsum off the border and peel it away, <b>leaving the face paper intact</b> as a flange all around.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Butter compound around the hole, set the plug in, press the paper flange into the mud.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Squeeze the excess out from under the paper</b> with a knife — trapped mud under the flange is what bubbles later.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Coat out over the whole flange, each coat wider, then feather.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>The backed patch, for anything bigger</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Check for wiring, plumbing, and conduit before cutting.</b> Always, no exceptions.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Cut to a clean rectangle with square corners. Ragged holes are impossible to fit.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Install backing — furring or scrap wood behind the opening, screwed through the existing board.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Cut a piece to fit with a small gap, not a forced fit, and screw it to the backing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Tape all four sides, then coat out in progressively wider passes.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Match the existing board thickness.</b> A patch sitting proud or low can't be hidden.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Rated walls and smoke barriers</span>
+    <p>A hole in a fire-rated wall is a <b>breach of a tested assembly</b>, and a cosmetic patch does not restore it. Repair with the same board type and thickness, same number of layers, same fastener pattern, and the specified joint treatment. Penetrations get the listed firestop system. <b>If you don't know the assembly, stop and find out</b> — this is life safety and it gets inspected.</p>
+  </div>
+
+  <div class="block">
+    <h3>Speed without shortcuts</h3>
+    <ul class="plain">
+      <li><b>Setting compound for the fill coats.</b> It sets chemically instead of drying, so you can put multiple coats on in one visit instead of one coat a day. The single biggest time saver in patch work.</li>
+      <li>Pick a set time you can actually use, and clean tools <b>before</b> it sets.</li>
+      <li><b>Topping or lightweight for the final coat</b>, even if the fills were hot mud — setting compound is hard to sand and the last coat is the one you sand.</li>
+      <li><b>Batch the work.</b> Walk the whole area, mark every patch, then do all the cut-outs, then all the fills, then all the coats. Same logic as production framing.</li>
+      <li><b>Feather wider than feels necessary.</b> This is the difference between an invisible patch and a callback.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Finishing the patch out</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Sand the patch and its feathered edge smooth, checking with a light at a low angle.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Match the surrounding texture</b> before paint. An invisible flat patch in a textured wall is still an obvious patch.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Prime the patch.</b> Bare compound absorbs paint differently than the wall around it — the #1 cause of a repair showing through.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Then follow the <b>Touch-Up</b> procedure for the paint.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph before and after</b>, room identified. On T&amp;M work that's the backup for the ticket.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>California/butterfly patch dimensions (a scrap 3–4" oversize with a 1½–2" paper flange) are the standard published method and consistent across trade sources. Setting-compound behavior and same-day recoating follow manufacturer guidance. Rated-assembly repair requirements come from the listing for the specific assembly.</p>
+  </div>
+</section>
+
+<!-- ==================== TOUCHUP ==================== -->
+<section class="doc" id="touchup">
+  <div class="doc-head">
+    <span class="stage-line">Punch · paint touch-up</span>
+    <h2>Touch-Up</h2>
+    <p class="lede">The last thing anyone sees and the easiest thing to get visibly wrong. The failure has a name — flashing — and it has specific, avoidable causes.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p><b>Same paint, same can, same tool, and prime anything bare first.</b> If you rolled it originally, roll the touch-up; if you brushed it, brush it. And if the paint has any shine to it, spot touch-up usually won't work — plan on recoating the whole wall from corner to corner.</p>
+  </div>
+
+  <div class="expert" id="tu-why">
+    <span class="tag">Full detail · the physics</span>
+    <h4>Why touch-ups flash</h4>
+    <p><b>A touch-up that shows is almost never a color problem. It's a sheen and porosity problem.</b> The paint matches; what doesn't match is how the surface reflects light and how much paint it absorbed. So the fix is about surface preparation and application method, not a better color match.</p>
+    <ul class="plain">
+      <li><b>Different porosity.</b> A bare or patched spot absorbs paint at a different rate than the wall around it. It drinks the binder in, the sheen drops, and you get a dull spot.</li>
+      <li><b>Different applicator.</b> A roller leaves stipple; a brush leaves a different texture. Brushing over a rolled wall shows in the light even at identical color.</li>
+      <li><b>Different batch.</b> Small variations between batches show up as sheen or tone differences across a large flat surface.</li>
+      <li><b>Different conditions.</b> Temperature, humidity, and dry time all affect how a coating lays down and cures.</li>
+      <li><b>Sheen level.</b> The higher the sheen, the less forgiving. This is the biggest single factor.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>The rules</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Prime any bare spot, patch, or repair first.</b> This fixes the porosity difference, and skipping it is the most common cause of a visible touch-up.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Same product</b> — not just the same color. Same manufacturer, same line, same sheen.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Same batch</b> where possible. Keep labeled leftover paint from the original job for exactly this.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Apply it the way it was originally applied</b> — roller over rolled, brush over brushed, same nap length.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Feather the edges. Don't stop the touch-up with a hard edge.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Thinning slightly can help it blend — test it before doing it on a finished wall.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Check it under the light the owner will see it under</b> — same fixtures, same time of day, same viewing angle.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">When to stop touching up and recoat</span>
+    <p>Spot touch-up works on <b>flat paint in normal light</b>. It fights you on eggshell and satin, and it essentially does not work on <b>semi-gloss and gloss</b>, or on any surface under raking or critical light. In those conditions the right call is to <b>recoat the full plane — corner to corner, break to break</b> — rather than chase spots. Recognizing this early saves an afternoon of making the wall worse. On a job with a lot of sheen or critical lighting, <b>price the recoat rather than assume touch-up.</b></p>
+  </div>
+
+  <div class="block">
+    <h3>Working a punch list efficiently</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Walk and mark first.</b> Go through the whole area marking every defect — low-tack tape or a pencil dot outside the defect, never a marker on the wall.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Sort what you find: <b>drywall repair</b> vs. <b>paint-only touch-up</b> vs. <b>somebody else's damage.</b> Three different jobs, often three different bills.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Do all the drywall repairs first and let them prime, then do all the paint in one pass.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph other trades' damage before repairing it.</b> Otherwise it silently becomes our cost.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Re-walk with the GC or owner after, in the same light, and get it signed off.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Note anything that will keep getting damaged — the fix is protection or a corner guard, not another touch-up next month.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Keep on the truck</h3>
+    <ul class="plain">
+      <li><b>Labeled paint from every job</b> — job name, room, product, sheen, color code, date. Worth more than anything else on this list.</li>
+      <li>Roller covers in the naps used on the job, and a clean brush.</li>
+      <li>Fast-setting compound and a small selection of knives.</li>
+      <li>Stain-blocking primer and a general-purpose primer.</li>
+      <li>A bright work light for checking at a low angle.</li>
+      <li>Low-tack tape for marking, and drop cloths — a touch-up that leaves a drip is a net loss.</li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Flashing causes and remedies follow published guidance from paint manufacturers — Sherwin-Williams' material on paint flashing, plus trade-press coverage of why patches telegraph. The rules (prime the patch, same product, same batch, brush-over-brush and roller-over-roller, thin slightly to blend) are consistent across those sources. The "recoat the full plane on sheens above flat" guidance is standard painting-contractor practice and the item most likely to save GVC money on punch work.</p>
+  </div>
+</section>
+
+<!-- ==================== SOURCES ==================== -->
+<section class="doc" id="sources">
+  <div class="doc-head">
+    <span class="stage-line">Reference · method</span>
+    <h2>Sources &amp; Method</h2>
+    <p class="lede">What's an industry standard, what's a working benchmark, and what still needs GVC's own numbers behind it.</p>
+  </div>
+
+  <div class="block">
+    <h3>How to read this manual</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Tier</th><th scope="col">What it means</th></tr></thead>
+      <tbody>
+        <tr><td>Standard</td><td>Published industry standards and manufacturer instructions. These govern. Where a project spec or manufacturer's instructions conflict with anything here, <b>they win.</b></td></tr>
+        <tr><td>Benchmark</td><td>Production figures and tool-gain claims from vendors and contractor forums. Useful as ranges to plan against. <b>Not guarantees</b>, and no substitute for our own history.</td></tr>
+        <tr><td>GVC practice</td><td>How we work, including our own Job Check stage sequence. Owned by us, changed by us.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>Standards referenced</h3>
+    <ul class="plain">
+      <li><b>GA-216 — Application and Finishing of Gypsum Panel Products.</b> The application standard most specs point at.</li>
+      <li><b>GA-214 — Levels of Finish for Gypsum Panel Products.</b> Defines Levels 0–5; revised 2021 and now a free download.</li>
+      <li><b>AISI S100 and S211</b> — the cold-formed steel design standards governing wall stud and bracing design. S211 requires bracing designed for 2% of the stud design compression force.</li>
+      <li><b>Manufacturer installation instructions</b> — USG, National Gypsum, CertainTeed, American Gypsum, ClarkDietrich, Armstrong, Rockfon. Project-specific, and they override general guidance.</li>
+      <li><b>The listed assembly</b> for any rated wall — UL or equivalent, named in the wall type schedule.</li>
+      <li><b>The building code in force on the project</b> — governs suspended ceiling seismic requirements, which change by seismic design category.</li>
+    </ul>
+  </div>
+
+  <div class="block sources">
+    <h3>Research sources</h3>
+    <p class="sub">Consulted July 2026 while building this manual.</p>
+
+    <h4>Framing — bracing, bridging, deflection, tall walls</h4>
+    <ul>
+      <li><a href="https://www.structuremag.org/article/mechanical-bridging-of-axially-loaded-cold-formed-steel-studs/">STRUCTURE magazine — Mechanical bridging of axially loaded cold-formed steel studs</a> — bridging must be periodically anchored; CRC behavior in tension and compression.</li>
+      <li><a href="https://buildsteel.org/technical/codes-and-standards/mechanical-bridging-of-axially-loaded-cold-formed-steel-studs/">BuildSteel — Mechanical bridging of axially loaded CFS studs</a> — AISI S100 D3.3 and S211 B3.1 references; 6' o.c. max mechanical bracing for curtain wall framing.</li>
+      <li><a href="https://seblog.strongtie.com/2015/07/brace-for-impact-bracing-design-for-cold-formed-steel-studs/">Simpson Strong-Tie — Bracing design for cold-formed steel studs</a></li>
+      <li><a href="https://cfsei.memberclicks.net/assets/docs/technotes/tn-w101-09.pdf">CFSEI Tech Note W101 — Common design issues for deflection track (PDF)</a></li>
+      <li><a href="https://cfsei.memberclicks.net/assets/docs/technotes/tn-w100-08a.pdf">CFSEI Tech Note W100 — Single slip track design (PDF)</a></li>
+      <li><a href="https://www.clarkdietrich.com/articles/2021-12-06/specifying-optimal-head-wall-framing-assembly-your-next-project">ClarkDietrich — Specifying the optimal head-of-wall framing assembly</a></li>
+      <li><a href="https://www.clarkdietrich.com/products/maxtrak-slotted-deflection-track">ClarkDietrich — Slotted deflection track</a> — vertical movement range; 2D drift track for horizontal drift.</li>
+      <li><a href="https://up.codes/s/stud-bracing">UpCodes — Stud bracing</a> — horizontal strap dimensions (1½" × 33 mil, one #8 screw per flange) and mid-height / third-point placement.</li>
+      <li><a href="https://www.clarkdietrich.com/products/flat-strapping">ClarkDietrich — Flat strapping</a> and <a href="https://www.negwer.com/catalog/blocking/strapping.aspx">blocking/strapping</a> — strap-and-block required above 6" studs.</li>
+      <li><a href="https://theformetal.com/metal-stud-limiting-heights-spans-tables/">Formetal — Metal stud limiting heights and span tables</a></li>
+      <li><a href="https://usframefactory.com/sizing-metal-studs-for-tall-interior-partitions/">US Frame Factory — Sizing metal studs for tall interior partitions</a> — the four levers, and L/240 vs L/360 deflection criteria.</li>
+      <li><a href="https://www.clarkdietrich.com/products/z-furring-channel">ClarkDietrich — Z-furring channel</a> and <a href="https://studcosystems.com/news-and-tech-tips/studco-furring-channels/">Studco — Furring and Z-furring channels</a> — depths, 16" o.c. spacing, vertical orientation, anchoring interval.</li>
+    </ul>
+
+    <h4>Finish levels and drywall application</h4>
+    <ul>
+      <li><a href="https://gypsum.org/2022/02/revised-levels-of-finish-for-gypsum-panel-products-released/">Gypsum Association — Revised Levels of Finish released</a></li>
+      <li><a href="https://www.americangypsum.com/sites/default/files/2022-05/ga-214-2021_17.pdf">GA-214-2021, Levels of Finish (PDF)</a></li>
+      <li><a href="https://www.nationalgypsum.com/ngconnects/blog/building-knowledge/gypsum-board-finish-levels">National Gypsum — Gypsum board finish levels</a></li>
+      <li><a href="https://krieserdrywall.com/wp-content/uploads/2021/11/GA-214-2017-Levels-of-Finish-Quick-Reference-Guide.pdf">GA-214 Quick Reference Guide (PDF)</a></li>
+    </ul>
+
+    <h4>Scraping and sanding</h4>
+    <ul>
+      <li><a href="https://www.nationalgypsum.com/ngconnects/blog/time-saving-solutions/tips-drywall-sanding">National Gypsum — Drywall sanding tips</a> — scrape ridges before they harden; knife down squeeze-out before sanding.</li>
+      <li><a href="https://www.lowes.com/n/how-to/sand-drywall">Lowe's — How to sand drywall for a paint-ready finish</a></li>
+    </ul>
+
+    <h4>Finishing tools and production</h4>
+    <ul>
+      <li><a href="https://wallboardtrim.com/conversion-from-traditional-hand-finishing-to-automatic-tools/">Wallboard Trim &amp; Tool — Conversion to automatic tools</a> — source of the "roughly double production" and "3–5 man-days per week per crew" figures. <b>Vendor-published; treat as an upper bound.</b></li>
+      <li><a href="https://canamtool.com/hand-taping-vs-semi-automatic-drywall-tools/">CanAm — Hand taping vs. semi-automatic tools</a></li>
+      <li><a href="https://timothystoolbox.com/blogs/blog/the-pros-and-cons-of-using-automatic-vs-manual-taping-tools">Timothy's Toolbox — Automatic vs. manual taping tools</a></li>
+    </ul>
+
+    <h4>Acoustical ceilings</h4>
+    <ul>
+      <li><a href="https://www.armstrongceilings.com/content/dam/armstrongceilings/commercial/north-america/installation-and-maintenance/suspended-ceilings-installation-instructions.pdf">Armstrong — Suspended ceilings installation instructions (PDF)</a></li>
+      <li><a href="https://www.armstrongceilings.com/content/dam/armstrongceilings/commercial/north-america/brochures/seismic-design-what-you-need-to-know-brochure.pdf">Armstrong — Seismic design, what you need to know (PDF)</a></li>
+      <li><a href="https://www.usg.com/content/dam/USG_Marketing_Communications/united_states/product_promotional_materials/finished_assets/seismic-technical-guide-light-fixture-hanger-wire-requirements-en-SC2493.pdf">USG — Seismic technical guide, light fixture and hanger wire requirements (PDF)</a> — 12 gauge minimum, 4' o.c. maximum.</li>
+      <li><a href="https://www.rockfon.com/syssiteassets/rockfon-na/installation/install-guide/rockfon_standard_exposed_grid_system_installation_guide.pdf">Rockfon — Standard exposed grid system installation guide (PDF)</a> — three full turns within 3"; perimeter clearance.</li>
+      <li><a href="https://www.rockfon.com/siteassets/rockfon-na/brochures/rockfon-seismic-relief-brochure.pdf">Rockfon — Seismic ceiling suspension guide (PDF)</a></li>
+      <li><a href="https://www.muni.org/Departments/OCPD/development-services/codes-handouts/Handouts%20Temp/handouta04.pdf">Municipality of Anchorage — Suspended ceilings code handout (PDF)</a></li>
+    </ul>
+
+    <h4>Patching, touch-up, and flashing</h4>
+    <ul>
+      <li><a href="https://drywall101.com/articles/taping/californiapatch.php">Drywall101 — California patch</a></li>
+      <li><a href="https://wallboardtrim.com/how-to-patch-holes-in-drywall/">Wallboard Trim &amp; Tool — How to patch holes in drywall</a> — 3–4" oversize / 1½–2" flange dimensions; hot-mud same-day recoating.</li>
+      <li><a href="https://www.jlconline.com/how-to/interiors/preventing-drywall-patches-from-telegraphing-through_o">JLC — Preventing drywall patches from telegraphing through</a></li>
+      <li><a href="https://www.sherwin-williams.com/en-us/project-center/maintenance-repair/paint-flashing">Sherwin-Williams — How to fix paint flashing</a></li>
+      <li><a href="https://hydetools.com/blogs/better-finish-blog/flashing-paint-defects">Hyde — Flashing paint defects</a></li>
+      <li><a href="https://swppc.com/from-flashing-to-flawless-finish-how-to-make-drywall-patches-invisible">SWPPC — Making drywall patches invisible</a></li>
+    </ul>
+
+    <h4>Stocking and material handling</h4>
+    <ul>
+      <li><a href="https://www.knezinc.com/material-handling/boom-trucks/">Knez Building Materials — Boom trucks and material handling</a></li>
+      <li><a href="https://jonesheartz.com/boom-truck-delivery/">Jones Heartz — Boom truck delivery</a></li>
+    </ul>
+
+    <h4>Production rate benchmarks — use with caution</h4>
+    <ul>
+      <li><a href="https://www.drywalltalk.com/threads/how-many-sheets-per-day.323/">Drywall Talk — How many sheets per day</a></li>
+      <li><a href="https://www.contractortalk.com/threads/production-expectations-for-boarders-tapers-finishers.39095/">Contractor Talk — Production expectations for boarders, tapers, finishers</a></li>
+      <li><a href="https://hd.construction/blog/commercial-drywall-installation-timeline-and-process-explained">HD Construction — Commercial drywall installation timeline and process</a></li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Why this manual has no production rates in it</span>
+    <p>The published figures range widely — roughly 35–40 sheets per man-day in some sources, 40 sheets per two-man crew in others, 2,500–3,500 SF of ceiling per day for a two-person crew, 4,000–5,000 SF for walls. <b>These disagree by a factor of two or more</b>, because they describe different work, conditions, and crews. Publishing any of them as a GVC standard would give our estimators and PMs a number that feels authoritative and isn't. <b>GVC's own job history is the only source worth planning against</b> — and now that Job Check stamps stage completions per project, we can start building it.</p>
+  </div>
+
+  <div class="block">
+    <h3>Open items</h3>
+    <ul class="plain">
+      <li><b>Real production rates from our own jobs</b> — per stage, per crew, per job type. The Job Check stage data is the raw material.</li>
+      <li><b>The automatic-tool decision</b> — needs one measured job against our own hand-finishing baseline before any capital commitment.</li>
+      <li><b>A GVC backing list template</b> so framing and hanging have a real list instead of memory.</li>
+      <li><b>The rest of our scope</b> — insulation, paint, and demo don't have procedures yet.</li>
+      <li><b>Photos and diagrams.</b> Several of these sections — deflection track types, grid profiles, tile edges, the butterfly patch — would land much harder with a picture than a paragraph.</li>
+    </ul>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <button class="reset" type="button" id="reset">Clear all check marks</button>
+  <p><b>Green Valley Contractors — Field Manual.</b> Procedures and sequence are GVC practice. Standards, dimensions, fastener spacings, finish levels, limiting heights, and rated-assembly requirements come from the project specification, the approved submittals, the structural drawings, and the manufacturer's instructions — <b>those govern, and this manual does not replace them.</b></p>
+  <p>Check marks and your detail-level choice save on this device only. Nothing here is transmitted anywhere.</p>
+</footer>
+
+<script>
+  (function () {
+    var CHECK_KEY = "gvc-field-manual-v2";
+    var LVL_KEY = "gvc-field-manual-level";
+    var docs = Array.prototype.slice.call(document.querySelectorAll(".doc"));
+    var body = document.body;
+
+    /* ---------- view switching ---------- */
+    function show(id, anchor, push) {
+      var target = document.getElementById(id);
+      if (!target || !target.classList.contains("doc")) { target = document.getElementById("home"); }
+      docs.forEach(function (d) { d.classList.toggle("active", d === target); });
+      body.classList.toggle("in-doc", target.id !== "home");
+
+      var hash = "#" + target.id + (anchor ? "/" + anchor : "");
+      if (push) {
+        try { history.pushState({ doc: target.id, anchor: anchor || "" }, "", hash); }
+        catch (e) { location.hash = hash.slice(1); }
+      }
+
+      if (anchor) {
+        var el = document.getElementById(anchor);
+        if (el) { el.scrollIntoView({ block: "start" }); return; }
+      }
+      window.scrollTo(0, 0);
+    }
+
+    document.querySelectorAll("[data-go]").forEach(function (btn) {
+      btn.addEventListener("click", function () { show(btn.getAttribute("data-go"), null, true); });
+    });
+
+    /* index entries: "docId|anchorId" */
+    document.querySelectorAll("[data-jump]").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        var parts = btn.getAttribute("data-jump").split("|");
+        setLevel("full");                    // expert content is the point of a jump
+        show(parts[0], parts[1], true);
+      });
+    });
+
+    document.getElementById("back").addEventListener("click", function () { show("home", null, true); });
+
+    function fromHash(h, push) {
+      var raw = (h || "").replace(/^#/, "");
+      if (!raw) { show("home", null, false); return; }
+      var parts = raw.split("/");
+      show(parts[0], parts[1] || null, !!push);
+    }
+
+    window.addEventListener("popstate", function (e) {
+      if (e.state && e.state.doc) { show(e.state.doc, e.state.anchor || null, false); }
+      else { fromHash(location.hash, false); }
+    });
+
+    /* ---------- detail level ---------- */
+    var btnPlain = document.getElementById("lvl-plain");
+    var btnFull = document.getElementById("lvl-full");
+
+    function setLevel(level, persist) {
+      var plain = level === "plain";
+      body.classList.toggle("plain", plain);
+      btnPlain.setAttribute("aria-pressed", plain ? "true" : "false");
+      btnFull.setAttribute("aria-pressed", plain ? "false" : "true");
+      if (persist !== false) {
+        try { window.localStorage.setItem(LVL_KEY, level); } catch (e) { /* no-op */ }
+      }
+    }
+
+    btnPlain.addEventListener("click", function () { setLevel("plain"); });
+    btnFull.addEventListener("click", function () { setLevel("full"); });
+
+    try { setLevel(window.localStorage.getItem(LVL_KEY) === "plain" ? "plain" : "full", false); }
+    catch (e) { setLevel("full", false); }
+
+    /* ---------- checkbox persistence ---------- */
+    var boxes = Array.prototype.slice.call(document.querySelectorAll("label.step input"));
+    boxes.forEach(function (b, i) { b.dataset.idx = i; });
+
+    function save() {
+      try {
+        var on = boxes.filter(function (b) { return b.checked; })
+                      .map(function (b) { return Number(b.dataset.idx); });
+        window.localStorage.setItem(CHECK_KEY, JSON.stringify(on));
+      } catch (e) { /* storage unavailable; checks still work for the session */ }
+    }
+
+    try {
+      var raw = window.localStorage.getItem(CHECK_KEY);
+      if (raw) { JSON.parse(raw).forEach(function (i) { if (boxes[i]) boxes[i].checked = true; }); }
+    } catch (e) { /* no-op */ }
+
+    boxes.forEach(function (b) { b.addEventListener("change", save); });
+
+    document.getElementById("reset").addEventListener("click", function () {
+      boxes.forEach(function (b) { b.checked = false; });
+      save();
+    });
+
+    /* initial view from hash */
+    fromHash(location.hash, false);
+  })();
+</script>
+</body>
+</html>
