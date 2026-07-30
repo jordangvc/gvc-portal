@@ -775,6 +775,37 @@ def auth_logout() -> RedirectResponse:
 def portal_home(request: Request) -> HTMLResponse:
     """Portal hub: tiles for each tool the signed-in user can reach.
     Unauthenticated GETs are 303'd to /auth/login by require_ui_access."""
+    return _portal_home_impl(request)
+
+
+@app.get("/ui/gvc.css")
+def portal_stylesheet() -> Response:
+    """
+    The shared GVC design system (web/gvc.css), served to every portal page.
+
+    Deliberately NOT behind require_ui_access: a stylesheet carries no data, and
+    gating it would mean the sign-in page itself renders unstyled. Cached for an
+    hour — long enough to stop refetching on every page, short enough that a
+    redeploy shows up without anyone clearing a cache.
+
+    Before this existed each page carried its own private <style> block, so a
+    restyle meant editing twelve files and they drifted apart (activity.html was
+    still carrying rules for form cards it doesn't have).
+    """
+    path = WEB_DIR / "gvc.css"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(content=path.read_text(encoding="utf-8"),
+                    media_type="text/css",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+def _portal_home_impl(request: Request) -> HTMLResponse:
     email = require_ui_access(request)
     path = WEB_DIR / "hub.html"
     if not path.exists():
