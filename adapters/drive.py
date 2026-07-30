@@ -191,6 +191,11 @@ def _ext_from_drive_metadata(meta: dict) -> str:
     }.get(mime, "")
 
 
+# Jake's "01 - Completed Plans" folder — the root of the per-job folder tree the
+# Job Start packet reads (Jordan supplied it 2026-07-29). Env-overridable so a
+# reorganised Drive is a config change, not a deploy.
+DEFAULT_PLANS_FOLDER_ID = "1X1vuutnTuCN0hxTZSANmm3QC6SQ41Gc0"
+
 # Words that appear in almost every GVC job name and therefore identify
 # nothing. Matching on these is how you prefill one job from another job's
 # scope review, so they're stripped before scoring.
@@ -676,61 +681,105 @@ class DriveUploader:
         files = result.get("files", [])
         return files[0] if files else None
 
+    def _list_children(self, parent_id: str, *, folders_only: bool = False,
+                       page_size: int = 200) -> list:
+        """Children of a Drive folder. Read-only."""
+        q = f"'{parent_id}' in parents and trashed = false"
+        if folders_only:
+            q += " and mimeType = 'application/vnd.google-apps.folder'"
+        out: list = []
+        token = None
+        while True:
+            result = (
+                self.service.files()
+                .list(q=q,
+                      fields="nextPageToken, files(id, name, mimeType, webViewLink, modifiedTime)",
+                      orderBy="modifiedTime desc",
+                      corpora="allDrives", includeItemsFromAllDrives=True,
+                      supportsAllDrives=True, pageSize=page_size,
+                      pageToken=token)
+                .execute()
+            )
+            out.extend(result.get("files", []))
+            token = result.get("nextPageToken")
+            if not token or len(out) >= 600:
+                break
+        return out
+
+    def find_job_documents(self, *, job_hint: str,
+                           extra_hints: Optional[list] = None) -> dict:
+        """
+        Find a job's folder inside Jake's "01 - Completed Plans" tree and pull the
+        documents the Job Start packet needs out of it.
+
+        Structure verified live 2026-07-29 against folder 1X1vuutn… —
+        `01 - Completed Plans/{seq} - {GC} - {project} - {status}/` containing e.g.
+            Jent-Bryant Res - Scope Review.pdf        ← the packet's primary source
+            Jent - Bryant Res - Takeoff Totals.xlsx   ← the takeoff link, free
+            Jent - Bryant Res - Planswift Takeoffs.pdf
+            Plan - 2026-01 PLAN REVISIONS.pdf
+
+        FOLDER-FIRST, not a global filename search: scoping to the known tree is
+        both faster and far safer, because a global "Scope Review" search can
+        match some other job's document. Folder matching uses
+        naming.best_folder(), which is built for these `### - GC - project -
+        status` names — the leading number is a job counter, not a street number,
+        and containment beats Jaccard because folder names legitimately omit the
+        address. An ambiguous match returns nothing rather than the wrong job.
+
+        Returns {folder, scope_review, takeoff, detail} — any of which may be None.
+        """
+        from subsystems.jobstart import naming
+
+        root = (os.environ.get("GVC_JAKE_PLANS_FOLDER_ID")
+                or DEFAULT_PLANS_FOLDER_ID)
+        out: dict = {"folder": None, "scope_review": None, "takeoff": None,
+                     "detail": None}
+        if not root:
+            out["detail"] = "No completed-plans folder configured."
+            return out
+
+        folders = self._list_children(root, folders_only=True)
+        if not folders:
+            out["detail"] = ("Couldn't read the completed-plans folder — the "
+                             "service account may not have access to it.")
+            return out
+
+        hint = " ".join(str(h) for h in
+                        [job_hint, *(extra_hints or [])] if h)
+        hit = naming.best_folder(hint, [{"id": f["id"], "name": f["name"]}
+                                        for f in folders])
+        if not hit:
+            out["detail"] = (f"No job folder in Completed Plans matched this job "
+                             f"({len(folders)} folders checked).")
+            return out
+        out["folder"] = hit
+
+        files = [f for f in self._list_children(hit["id"])
+                 if f.get("mimeType") != "application/vnd.google-apps.folder"]
+
+        def _pick(*needles) -> Optional[dict]:
+            for f in files:
+                low = (f.get("name") or "").lower()
+                if all(n in low for n in needles):
+                    return f
+            return None
+
+        out["scope_review"] = _pick("scope", "review")
+        # Prefer the totals workbook; fall back to the PlanSwift export.
+        out["takeoff"] = (_pick("takeoff", "total") or _pick("takeoff")
+                          or _pick("planswift"))
+        if not out["scope_review"]:
+            out["detail"] = (f"Found the job folder \"{hit['name']}\" but no "
+                             f"Scope Review file in it.")
+        return out
+
     def find_scope_review(self, *, job_hint: str,
                           extra_hints: Optional[list] = None) -> Optional[dict]:
-        """
-        Find a job's SCOPE REVIEW document — the Job Start packet's primary
-        source (Jordan, 2026-07-29: "your scope review is going to be the most
-        valuable… the project handoff sheet to the operations initially is built
-        off of your scope review").
-
-        Jake writes one per job in his Drive `completed plans` folder, named e.g.
-        "KPMG Cincinnati Renovation Scope Review" or
-        "4270_Glendale_Milford_Road_Scope_Review.pdf". Both Google Docs and PDF
-        exports exist in the wild, so both are accepted.
-
-        Matching: every file whose name contains "scope review" is listed, then
-        scored against tokens from the job name / address. A distinctive token
-        (street number, builder name) is what actually identifies the job, so a
-        match needs at least one token hit — otherwise we return None and the
-        caller falls back to the Bid Board rather than prefilling from some
-        other job's document.
-
-        Returns {id, name, mimeType, webViewLink, score} or None.
-        """
-        q = ("name contains 'Scope Review' and "
-             "mimeType != 'application/vnd.google-apps.folder' and "
-             "trashed = false")
-        result = (
-            self.service.files()
-            .list(
-                q=q,
-                fields="files(id, name, mimeType, webViewLink, modifiedTime)",
-                orderBy="modifiedTime desc",
-                corpora="allDrives",
-                includeItemsFromAllDrives=True,
-                supportsAllDrives=True,
-                pageSize=100,
-            )
-            .execute()
-        )
-        candidates = result.get("files", [])
-        if not candidates:
-            return None
-
-        tokens = _match_tokens(job_hint, extra_hints)
-        if not tokens:
-            return None
-
-        best, best_score = None, 0
-        for f in candidates:
-            name_tokens = _match_tokens(f.get("name", ""))
-            score = len(tokens & name_tokens)
-            if score > best_score:
-                best, best_score = f, score
-        if best is None or best_score == 0:
-            return None
-        return {**best, "score": best_score}
+        """Back-compat shim: just the scope-review file from find_job_documents."""
+        found = self.find_job_documents(job_hint=job_hint, extra_hints=extra_hints)
+        sr = found.get("scope_review")
+        return {**sr, "score": (found.get("folder") or {}).get("score", 0)} if sr else None
 
     def read_document_text(self, file_id: str, mime_type: str) -> str:
         """

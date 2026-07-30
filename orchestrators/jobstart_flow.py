@@ -242,10 +242,13 @@ def _scope_review_values(bid: dict) -> tuple[dict, dict]:
         from adapters.drive import DriveUploader
 
         uploader = DriveUploader()
-        found = uploader.find_scope_review(job_hint=hint, extra_hints=extra)
+        docs = uploader.find_job_documents(job_hint=hint, extra_hints=extra)
+        found = docs.get("scope_review")
         if not found:
             return {}, {"found": False,
-                        "detail": "No scope review matched this job in Drive."}
+                        "folder": (docs.get("folder") or {}).get("name"),
+                        "detail": docs.get("detail")
+                                  or "No scope review matched this job in Drive."}
         text = uploader.read_document_text(found["id"], found.get("mimeType") or "")
         parsed = scope_review.parse(text)
         if not parsed.get("found"):
@@ -254,10 +257,17 @@ def _scope_review_values(bid: dict) -> tuple[dict, dict]:
                         "detail": "Found the document but couldn't read its "
                                   "sections — prefilling from Monday instead."}
         values = ingest.from_scope_review(parsed)
+        # The takeoff sits in the same job folder — link it rather than making
+        # Jake paste a URL he already has on disk.
+        takeoff = docs.get("takeoff") or {}
+        if takeoff.get("webViewLink") and not values.get("takeoff_link"):
+            values["takeoff_link"] = takeoff["webViewLink"]
         return values, {
             "found": True,
             "name": found.get("name"),
             "url": found.get("webViewLink"),
+            "folder": (docs.get("folder") or {}).get("name"),
+            "takeoff": takeoff.get("name"),
             "trades": parsed.get("trades") or [],
             "questions": len(parsed.get("clarifications") or []),
             "exclusions": len(parsed.get("exclusion_lines") or []),

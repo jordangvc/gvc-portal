@@ -299,6 +299,118 @@ def match_score(a: str, b: str) -> float:
 MATCH_THRESHOLD = 0.5
 
 
+# ---------------------------------------------------------------------------
+# Jake's job-folder names are a DIFFERENT shape from Monday item names, verified
+# against the real "01 - Completed Plans" tree (folder 1X1vuutn…) on 2026-07-29:
+#
+#     349 - HDG - AutoZone #11053 - Highland Heights, KY
+#     331 - Jent - Bryant Res - Sent
+#     345 - Ludlow High School Fieldhouse - Build Estimate
+#     347 - CMS - Axis Communications Cincinnati - Pricing 7/27
+#
+# i.e. `{job sequence #} - {GC} - {project} - {status}`. Two consequences:
+#   1. The LEADING NUMBER is a job counter (312–351), not a street number, so it
+#      must never be treated as the distinctive identifier — and must never earn
+#      the shared-number boost.
+#   2. Folder names are SHORTER than Monday names (no street, no city, no job
+#      type), so Jaccard punishes them for what they legitimately omit. Bid
+#      "9761 Gertrude Lane, Cincinnati OH 45231 - Bryant - Jent Construction -
+#      New House" vs folder "331 - Jent - Bryant Res - Sent" scores 0.33 on
+#      Jaccard and would have been MISSED. Containment is the right measure.
+# ---------------------------------------------------------------------------
+
+# Trailing workflow status on a job folder, not part of the job's identity.
+_FOLDER_STATUS = {
+    "sent", "gt", "build", "estimate", "pricing", "draft", "wip", "pending",
+    "lost", "won", "hold", "onhold", "review", "revised", "final", "takeoff",
+    "res",          # "Bryant Res" — abbreviation, identifies nothing on its own
+}
+
+_LEADING_SEQ_RE = re.compile(r"^\s*\d{1,4}\s*[-–—_.]\s*")
+
+
+def strip_folder_decoration(name: str) -> str:
+    """
+    PURE. Job-folder name → just the identifying part. Drops the leading job
+    sequence number and any trailing status segment.
+    "331 - Jent - Bryant Res - Sent" → "Jent - Bryant Res"
+    """
+    s = _LEADING_SEQ_RE.sub("", (name or "").strip())
+    for _ in range(2):
+        parts = re.split(r"\s*[-–—]\s*", s)
+        if len(parts) > 1:
+            tail = re.sub(r"[^a-z0-9 ]", " ", parts[-1].lower()).split()
+            if tail and all(w in _FOLDER_STATUS or w.isdigit() for w in tail):
+                s = " - ".join(parts[:-1]).strip()
+                continue
+        break
+    return s.strip(" -–—_")
+
+
+def folder_tokens(name: str) -> set:
+    """
+    PURE. Job-folder name → distinctive tokens, decoration removed.
+
+    Also drops the workflow-status vocabulary, which `tokens()` doesn't know
+    about: a status word left in ("res", "sent") inflates the denominator and
+    weakens an otherwise clean match.
+    """
+    return {t for t in tokens(strip_folder_decoration(name))
+            if t not in _FOLDER_STATUS}
+
+
+def folder_match_score(job_name: str, folder_name: str) -> float:
+    """
+    PURE. 0.0–1.0 that this job folder belongs to this job.
+
+    CONTAINMENT (overlap coefficient), not Jaccard: the folder legitimately omits
+    the street address and city that the Monday name carries, so it must not be
+    penalised for being shorter. Guarded so one weak token can't carry a match:
+    a single shared token only counts when it's a distinctive brand/number-like
+    token AND it's most of the folder's identity.
+    """
+    tj, tf = tokens(job_name), folder_tokens(folder_name)
+    if not tj or not tf:
+        return 0.0
+    inter = tj & tf
+    if not inter:
+        return 0.0
+    if len(inter) == 1:
+        only = next(iter(inter))
+        # A lone generic word is not evidence. A lone distinctive token is, but
+        # only if the folder is essentially about that one thing.
+        if len(only) < 4 or len(tf) > 2:
+            return 0.0
+    return len(inter) / min(len(tj), len(tf))
+
+
+# Folders match on containment, which runs higher than Jaccard, so it needs its
+# own (stricter) bar.
+FOLDER_MATCH_THRESHOLD = 0.6
+
+
+def best_folder(job_name: str, folders: list) -> Optional[dict]:
+    """
+    PURE. Pick the job folder for `job_name`, or None.
+
+    `folders` are dicts with at least {id, name}. Same refusal rule as
+    best_match: an ambiguous top-2 returns None, because reading the wrong job's
+    scope review would prefill a handoff with another job's scope — worse than
+    prefilling nothing.
+    """
+    if not job_name or not folders:
+        return None
+    scored = sorted(
+        ({**f, "score": folder_match_score(job_name, f.get("name") or "")}
+         for f in folders),
+        key=lambda f: f["score"], reverse=True)
+    if not scored or scored[0]["score"] < FOLDER_MATCH_THRESHOLD:
+        return None
+    if len(scored) > 1 and scored[1]["score"] >= scored[0]["score"] - 0.05:
+        return None
+    return scored[0]
+
+
 def best_match(name: str, candidates: list) -> Optional[dict]:
     """
     PURE. Pick the candidate that is the same job as `name`, or None.
