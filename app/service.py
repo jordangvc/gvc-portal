@@ -1396,6 +1396,32 @@ def ui_timeoff(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+@app.get("/ui/fieldguide", response_class=HTMLResponse)
+def ui_fieldguide(request: Request) -> HTMLResponse:
+    """
+    Field Manual: GVC's own production procedures (framing, drywall hang/scrape/
+    finish, acoustical ceilings, patch, touch-up, stocking). Static page, no
+    external calls — the detail-level toggle and the checklist state live in the
+    browser's localStorage, so nothing is written server-side.
+
+    `fieldguide` is a BASELINE grant, so every signed-in employee reaches it
+    without an admin having to provision anything. It carries no customer or
+    financial data, and crew need it in one tap from a phone.
+    """
+    email = require_feature(request, "fieldguide")
+    activity.log_event("tool.open", actor=email, target="fieldguide")
+    path = WEB_DIR / "fieldguide.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    html = path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html)
+
+
 # ---------------------------------------------------------------------------
 # Change Order routes — standalone CO program. Gated by the `estimate` grant
 # (a CO is estimate-adjacent; Jake already has estimate). Mirrors /ui/estimate:

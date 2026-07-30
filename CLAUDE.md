@@ -1862,3 +1862,206 @@ page in `web/` carries its own inline `<style>` with a duplicated `:root`
 token block — twelve copies. That is why the Jul 2026 rebrand needed an
 eleven-file sweep and why one page kept its blues after the others changed.
 Extracting a single shared stylesheet is a wanted change, not a side quest.
+
+### 2026-07-29 — 📘 FIELD MANUAL (`/ui/fieldguide`) — BUILT on branch `design/field-manual`, NOT merged, NOT deployed
+Jordan's ask: written procedures the crews can actually use, readable by a beginner but carrying
+the expert detail a lead needs. Built as a static portal page — no new deps, no new env, no
+Dockerfile change (`COPY web ./web` already takes the directory).
+CONTENT — 11 procedures + 3 reference sections, all one page: Metal Stud Framing (layout-first,
+batch-by-operation), Stocking Any Material, Stocking Drywall, Hanging, **Scraping**, Finishing,
+Acoustical Ceilings (CT/ACT), **Installing Cabinets**, Drywall Patch, **Drywall Touch-Up**,
+**Paint Touch-Up**, plus a Component Index (A–Z, tap a term →
+jumps to the detail), a Glossary, and Sources & Method. The drywall docs are deliberately named
+and ordered to match the **Job Check** stage columns (Hanging Status → Scrapping Status → Taped →
+… ) so a crew member moves between the two tools without translating.
+TWO REGISTERS — every doc opens with an "In plain words" summary, and 17 `.expert` blocks carry
+the deep detail (deflection track: slotted vs double/slip vs clips vs 2D drift; bridging +
+anchorage; cold-rolled channel; flat strap / strap-and-block / diagonal bracing; blocking's two
+meanings; Z-furring; tall-wall levers + L/240 vs L/360 + stacked walls and stud splicing; board
+types; rated assemblies; control joints; GA-214 levels; compound chemistry; corner bead; auto
+tools; ACT grid profiles, tile edges, hanger wire, seismic). A **Plain / Full detail** toggle in
+the control bar hides or shows every expert block; the choice and all 165 checkbox states persist
+in `localStorage` — nothing is written server-side.
+⚠ CABINETS IS THE ONE OUT-OF-SCOPE DOC. Casework install is NOT in GVC's trade list (drywall,
+metal framing, ACT, insulation, paint, demo, patch) — Jordan asked for it 2026-07-29. It is written
+from standard cabinet-install practice, not from our own hard experience, and its provenance block
+says so plainly. It deliberately leans on the parts we DO own: the casework **backing** is already
+on our framing checklist, and the ledger-hole patch + wall touch-up at the end are our trades. The
+real risk it flags: anchoring loaded upper cabinets into STEEL studs with no backing — drywall
+anchors are not an answer, and drywall screws (brittle, hardened) are a genuine sudden-failure mode
+vs. ductile washer-head cabinet screws. If GVC starts quoting casework, that doc needs a review by
+someone who installs cabinets for a living before it's anyone's only reference.
+SOURCING — every section ends with a "Where this came from" note, and Sources & Method separates
+**Standard** (GA-214/GA-216, AISI S100/S211, manufacturer instructions, the listed assembly) from
+**Benchmark** (vendor/forum production claims, flagged as ranges not guarantees) from **GVC
+practice**. DELIBERATE OMISSION: no production rates. Published figures disagree by 2×+, and
+publishing one would hand estimators a number that looks authoritative and isn't — the note says
+so and points at Job Check stage data as the real source once we have history.
+ACCESS — NEW `fieldguide` feature in `shared/access.py`, added to **BASELINE** alongside `timeoff`
+(Jordan's call): every provisioned user gets it with no admin action. Verified via `_expand`:
+`[]` → `{fieldguide, timeoff}`. It holds no customer or financial data and the point is one-tap
+reach from a phone.
+FILES: NEW `web/fieldguide.html` (~140KB, self-contained, portal header standard + sticky control
+bar, mobile-first 48px targets, light+dark themed, print stylesheet). `app/service.py`: GET
+/ui/fieldguide (require_feature "fieldguide", logs `tool.open`, same UI_MISSING guard as
+/ui/timeoff). `shared/access.py`: FEATURES += fieldguide, BASELINE += fieldguide.
+`web/hub.html`: Field Manual tile + footer r7 → **r9**.
+⚠ THREE THINGS FOR WHOEVER MERGES:
+1. **r9, not r8, on purpose.** The uncommitted Job Start work in the main tree also bumps the
+   footer (r7 → r8) and also edits `access.py` FEATURES, `service.py`, and `hub.html`. This branch
+   was cut from committed `master` via a git worktree so that in-flight work was never touched —
+   which means all three files will conflict on merge. The conflicts are small and additive (a
+   tuple entry, a route, a tile, the version span). If Job Start does NOT land first, change r9
+   to r8.
+2. **This is the 13th inline `:root` block — and `web/gvc.css` landed mid-build.** Master gained
+   `4be3520 "Add web/gvc.css — the approved GVC portal design system"` while this page was being
+   written; that commit is merged into this branch (`da1feaf`) so the branch is current, but the
+   PAGE has not been migrated onto it. Two honest reasons, both worth a decision rather than a
+   silent choice:
+   (a) **gvc.css is light-only** — zero `prefers-color-scheme` / `data-theme` hooks. This page is
+       themed for both. Migrating means either dropping dark mode (fine, it matches the rest of
+       the portal) or layering dark overrides on top of gvc.css (better, and it's the change the
+       whole portal will eventually want — a crew member reading this on a phone at 6am in an
+       unlit building is the actual use case).
+   (b) **gvc.css was still moving** — 38 further uncommitted lines in the main tree at the time
+       of writing. Migrating onto a file mid-edit invites a pointless conflict.
+   The mapping is mostly mechanical: `.tile`→`.gvc-tile`, `.note`→`.gvc-banner--*`,
+   `.table-wrap`→`.gvc-tablewrap`, `label.step`→`.gvc-check`, `.seg`/buttons→`.gvc-btn--*`,
+   plus the `--gvc-*` tokens. Do it as its own commit so the diff is reviewable.
+3. **Not deployed.** Merge, then `gcloud run deploy` separately. Smoke: sign in as a non-admin
+   with no grants → Field Manual tile shows on the hub → opens → Plain/Full toggle flips the
+   expert blocks → tap a Component Index term → lands on that section in Full detail.
+NEXT (not built): deep-link each Job Check stage chip to its procedure; insulation, paint and demo
+procedures; photos/diagrams for deflection track types, grid profiles, tile edges, butterfly patch.
+
+### 2026-07-29 — Field Manual r2: touch-up SPLIT into drywall vs. paint (Jordan's call)
+One "Touch-Up" doc became two, because they are different trades with different economics and the
+split is the point:
+  • **Drywall Touch-Up** (`#touchup-drywall`) — fixing the WALL. Owns the raking-light walk (bright
+    light held near-parallel to the surface; mark OUTSIDE the defect with low-tack tape or pencil,
+    never marker — marker bleeds through primer) and the walk-and-mark/sort-into-three-buckets step
+    that used to sit in the paint doc. Expert block `#tud-defects` is a cause→fix table for nine
+    defects, and its real value is the two entries that are NOT touch-ups: **a crack** (movement —
+    filling it brings it back; find the control joint / framing cause) and **a wall covered in
+    defects** (the finish never hit the specified level — that's a Finishing skim, and chasing a
+    hundred spots costs more than doing the wall). Ends by REQUIRING primer on every repair.
+  • **Paint Touch-Up** (`#touchup-paint`, was `#touchup`) — unchanged physics content (flashing =
+    sheen + porosity, not colour; same product/batch/tool; recoat the plane above flat sheen). Its
+    punch-list section was rewritten to be paint-only and now cross-references the drywall pass
+    rather than duplicating it.
+  • The economic argument that justifies the split, stated in both: a defect found BEFORE the
+    painter costs a knife, some mud and a dab of primer; the SAME defect found after paint costs
+    that repair plus prime plus repainting the whole plane corner-to-corner.
+⚠ ID RENAME: `#touchup` → `#touchup-paint`. Anything linking to the old anchor needs updating; the
+in-page Component Index was updated (26 jumps, all verified to resolve).
+
+### 2026-07-29 — Field Manual r3: +Reading Drawings, +Firestopping, +Spotting a Change Order
+Jordan picked the next batch and added one of his own (blueprints). Now **14 procedures**.
+  • **Reading Drawings** (`#drawings`) — Jordan's addition, and it's placed FIRST in a new "Start
+    here" group because it unlocks every other doc for a new hire. Discipline/sheet-type/sequence
+    numbering, title block, scale, grid bubbles, dimension strings, detail callouts, revision
+    clouds, and a walkthrough of chasing a wall tag through the partition schedule → life safety →
+    finish schedule → door schedule. Two expert blocks: `#dwg-precedence` (document hierarchy, and
+    the rule that **a conflict between contract documents is an RFI, not a field decision** — plus
+    how to write an RFI that gets answered in a day instead of a week) and `#dwg-res-comm` (the
+    residential↔commercial comparison Jordan asked for; the real trap is the DIMENSIONING
+    CONVENTION — face of stud vs. face of finish vs. centerline — and the note that our change-order
+    documentation matters MORE on residential because changes arrive verbally there).
+    ⚠ Deliberately did NOT answer the spec-vs-drawings precedence question: it's decided by each
+    project's own precedence clause, so the doc tells you to go read that clause.
+  • **Firestopping** (`#firestop`) — placed with Framing since the head-of-wall joint is a wall we
+    built. Splits joint systems (ours) from through-penetrations (usually whoever made the hole).
+    Expert block `#fs-numbers` decodes the UL number, which is the actual teachable skill:
+    `HW-D-1000` = head-of-wall / **D**ynamic / joint width band >2"–6" (bands: 0000-0999 ≤2",
+    1000-1999 >2–6", 2000-2999 >6–12"). Plus F rating (stops flame) vs T rating (unexposed side
+    under 325°F above ambient), and when specs demand T=F. THE point of the doc: our head-of-wall
+    moves, so it needs a **dynamic** system — a static system in a moving joint passes inspection
+    day and tears the first time the structure loads. `#fs-install` covers annular space min/max,
+    packing depth, fill depth, and intumescent vs elastomeric.
+    ⚠ Includes a STOP note: "who firestops the penetrations" is a classic scope gap that **lands on
+    the drywall contractor by default** when nobody claims it. Get it in writing at job start.
+  • **Spotting a Change Order** (`#changeorder`) — the highest-dollar page in the manual and the
+    only one that makes money rather than saving it. The three-question test, the five ways extra
+    work arrives (verbal add / un-issued revision / another trade's mistake / forced remobilization
+    / conditions not matching the drawings), the two nobody ever bills (**standing-by time** and
+    stacked-trade inefficiency), the four-step response (stop, photograph, write it down, call —
+    then WAIT for written authorization), who can actually authorize (never another sub), and T&M
+    ticket discipline. Deliberately includes a **"when it is NOT a change order"** section — our own
+    rework, our own damage, work we missed at bid — because claiming bad ones spends the credibility
+    needed for the real ones. Provenance flags that subcontracts often carry a **written-notice
+    deadline** in days, which is the real reason to report same-day.
+Component Index now 34 entries (added annular space, dynamic vs static, F/T rating, grid lines,
+partition schedule, RFI, standing-by time, T&M ticket). All 34 jumps verified to resolve; no
+duplicate ids; 249 checkboxes; 26 expert blocks; 14 provenance blocks.
+STILL QUEUED (Jordan picked these too, not yet written): Insulation, Painting, Demolition, and the
+three estimate-catalog stubs FRP / Doors & Hardware / Tectum — writing those three doubles as the
+scope text those catalog entries are still waiting for.
+ALSO AGREED, NOT BUILT — **live resumable checklists** (Jordan, 2026-07-29): start a checklist for a
+Monday job, save, resume later. Decisions locked: **no Monday writeback for v1** (Job Check keeps
+sole ownership of the stage columns — two features writing the same column is how a stale run
+regresses a status the office set) and **runs are SHARED across the crew** (estimate-drafts model, so
+Mark can start a hang checklist and Robert can finish it). Build it on the existing patterns, do not
+invent: `subsystems/estimate/drafts.py` for the localStorage-working-copy + shared-GCS-object shape
+with last-writer-wins on `updated_at`, and `adapters/monday/jobcheck.py fetch_active_jobs()` for the
+job picker. **Offline-first is mandatory, not a nice-to-have** — jobsite signal is bad and a
+checklist that loses a half-finished pass in a stairwell is worse than paper.
+
+### 2026-07-29 — Field Manual r4: the last six. **20 procedures, scope complete.**
+Jordan: "proceed with all these." Added Demolition, Insulation, Painting, FRP, Doors & Hardware,
+Tectum. Every trade GVC lists now has a procedure, plus the three estimate-catalog stubs.
+  • **Demolition** (`#demo`) — the only doc here whose FIRST step is a legal question, and it is
+    deliberately conservative. Hard-stop callout up top: **pre-1981** construction (OSHA presumes
+    thermal system insulation + surfacing material are asbestos-containing — PACM — and absent a
+    survey you must presume suspect material IS ACM); **pre-1978** housing/child-occupied (EPA lead
+    RRP, certified renovator); anything structural; any untraceable conduit. Expert block
+    `#demo-regs` separates **OSHA 1926.1101 (protects the worker)** from **EPA NESHAP (protects the
+    air)** — they are not alternatives — and notes state/local rules are frequently stricter with
+    their own pre-demo notification windows. Also carries **silica / 1926.1153 Table 1** (controls
+    for handheld grinders = continuous water OR vacuum collection; implementing Table 1 fully =
+    compliance), flagged as applying to our EVERYDAY drywall sanding and cutting, not just demo.
+    THE FRAMING OF THE WHOLE PAGE: the field's job is not to decide whether something is asbestos —
+    it's to recognise that a decision is required and STOP.
+    ⚠ Its provenance block states plainly this is orientation, NOT compliance advice, and calls out
+    that the written programs behind it (hazcom, respiratory protection w/ fit testing, silica
+    exposure control plan) **need to exist before GVC takes on more demo, not after.** Open item.
+  • **Insulation** (`#insulation`) — one physical principle (traps still air ⇒ gaps and compression
+    are the only two failure modes, both invisible an hour later). Split-the-batt-around-pipe rather
+    than compress; full height INCLUDING above the ceiling on to-deck walls. Expert `#ins-sound`:
+    STC belongs to the whole assembly not the batt — seal the perimeter and penetrations, offset
+    back-to-back boxes, and **if the drawings show STC but the wall stops at a suspended ceiling with
+    an open plenum, ask the question** because no amount of batt fixes flanking over the top. Also
+    separates **fire safing** (mineral wool, a rated component in a listed assembly) from insulation,
+    since they look identical in the wall.
+  • **Painting** (`#painting`) — "paint reveals, it doesn't hide." Protect → prep → prime → coats.
+    Primer on new board is non-optional (same porosity mechanism as touch-up flashing, at whole-wall
+    scale). Expert `#paint-sheen` is a forgiveness table (flat→gloss) whose payoff is the Level-4-
+    under-semi-gloss trap already flagged in Finishing, plus spray/backroll/roll trade-offs and the
+    warning that a sprayed wall beside a rolled wall reads as two different colours.
+  • **FRP** (`#frp`) — two permanent failures: substrate not flat (furring + substrate over CMU,
+    never FRP straight to masonry) and no expansion allowance. Expert `#frp-install`: 100% cross-hatch
+    adhesive coverage, laminate-roller the air out, **1/4" top+bottom and 1/8" between panels on a
+    4×8**, 1/8" between panel edge and molding stem, silicone in the molding channel and to
+    floor/ceiling in washdown areas.
+  • **Doors & Hardware** (`#doors`) — the frame decides everything; ties back to our framing pass
+    (jamb studs, RO, anchor locations). Expert `#doors-rated`: a labeled opening is ONE assembly
+    (door+frame+hardware+gasketing), labels stay legible, and **no field modification of a labeled
+    door or frame** — a wrong prep is a supplier problem, not a field fix. Accessibility items are
+    listed but **deliberately WITHOUT numbers**, because they depend on the standard the project is
+    built to and the approach geometry per door.
+  • **Tectum** (`#tectum`) — aspen fiber + cementitious binder. Expert `#tectum-attach`: screw-head
+    pull-through is adequate alone (no washers, no adhesive), min 24" o.c. from panel edge, 12" o.c.
+    on furring, fasteners must account for total system weight, standard 1" thick in 2×4/2×8/4×8.
+    **Do not countersink** — heads flush; countersinking crushes the fiber and no filler hides it,
+    because the texture IS the finish. Heavy field paint clogs the texture and kills the acoustic
+    performance the panel exists for.
+⚠ THE THREE STUB TRADES CARRY AN EXPLICIT SCOPE QUESTION FOR JORDAN, in their provenance blocks:
+FRP, Doors & Hardware and Tectum are all **title-only** in the estimate scope catalog
+(portal/estimate/scope-catalog.json), meaning GVC's actual inclusions were never written down. Each
+asks the same three: furnish-or-install-only, who preps the substrate, and who owns the
+sealant/keying/field-painting tail. Those answers change the price materially — **do not let these
+docs be used for pricing until they're answered.** Answering them also fills the catalog scope text
+that's been outstanding since 2026-07-14.
+TOTALS: 24 sections (20 procedures + home/index/glossary/sources), 329 checkboxes, 32 expert blocks,
+20 provenance blocks, 41 Component Index jumps. Verified: JS node --check clean, CSS braces balanced,
+every tile target resolves, every index jump resolves to a real anchor, no duplicate ids, all tag
+pairs balanced, py compileall clean.

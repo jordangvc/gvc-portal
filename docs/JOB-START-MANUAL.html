@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Job Start — How it works | Green Valley Contractors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Open+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --dark:#548427; --bright:#7EB438; --light:#AECB89; --cream:#D6D2C4;
+          --gold:#B6985A; --ink:#17210F; --muted:#6B7360; --line:#E4E2DA; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:#F7F7F4; color:var(--ink);
+         font:16px/1.6 'Open Sans','Segoe UI',Helvetica,Arial,sans-serif; }
+  h1,h2,h3,.mont { font-family:'Montserrat','Segoe UI',Helvetica,Arial,sans-serif; }
+  header { background:var(--dark); color:#fff; padding:22px 20px 26px; }
+  header .eyebrow { font-size:11px; font-weight:700; letter-spacing:.18em;
+                    text-transform:uppercase; color:var(--light); }
+  header h1 { margin:4px 0 6px; font-size:26px; font-weight:800; letter-spacing:-.02em; }
+  header p { margin:0; color:#E6EFDC; font-size:15px; }
+  main { max-width:820px; margin:0 auto; padding:22px 18px 70px; }
+  .card { background:#fff; border:1px solid var(--line); border-radius:12px;
+          padding:20px; margin-bottom:16px; }
+  .card > h2 { margin:0 0 12px; font-size:13px; font-weight:700; letter-spacing:.12em;
+               text-transform:uppercase; color:var(--muted);
+               border-bottom:2px solid var(--cream); padding-bottom:7px; }
+  h3 { font-size:17px; margin:18px 0 6px; }
+  h3:first-of-type { margin-top:0; }
+  p { margin:0 0 10px; }
+  ol,ul { margin:0 0 10px; padding-left:22px; }
+  li { margin-bottom:7px; }
+  code { background:#F2F5EE; border:1px solid #DDE5D4; border-radius:4px;
+         padding:1px 6px; font-family:Consolas,'Courier New',monospace; font-size:14px; }
+  .rule { background:var(--dark); color:#fff; border-radius:10px; padding:16px 18px;
+          margin-bottom:16px; }
+  .rule .big { font-family:'Montserrat',sans-serif; font-size:19px; font-weight:700; }
+  .rule .sub { color:var(--light); font-size:14px; margin-top:3px; }
+  .who { display:inline-block; font-size:11px; font-weight:700; letter-spacing:.08em;
+         text-transform:uppercase; color:#fff; background:var(--gold);
+         border-radius:4px; padding:3px 9px; vertical-align:2px; margin-right:8px; }
+  .who.ops { background:var(--dark); }
+  .step { border-left:3px solid var(--bright); padding:2px 0 2px 15px; margin-bottom:18px; }
+  .step h3 { margin:0 0 4px; }
+  .note { background:#FCFAF4; border-left:3px solid var(--gold); padding:11px 14px;
+          border-radius:0 6px 6px 0; font-size:15px; margin:12px 0; }
+  .warn { background:#FDF1F1; border-left:3px solid #C0392B; padding:11px 14px;
+          border-radius:0 6px 6px 0; font-size:15px; margin:12px 0; }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  th,td { text-align:left; padding:8px 10px; border-bottom:1px solid var(--line);
+          vertical-align:top; }
+  th { font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--muted); }
+  .q { font-weight:700; margin:16px 0 4px; }
+  .q:first-child { margin-top:0; }
+  footer { color:var(--muted); font-size:13px; text-align:center; padding:0 18px 40px;
+           max-width:820px; margin:0 auto; }
+  @media print { body{background:#fff;} .card{break-inside:avoid;} header{padding:16px 0;} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Green Valley Contractors · Portal</div>
+  <h1>Job Start — how it works</h1>
+  <p>Handing a won job from Sales to Operations. Read once, then just use it.</p>
+</header>
+
+<main>
+
+  <div class="rule">
+    <div class="big">Operations accepts before we mobilize.</div>
+    <div class="sub">No acceptance means no crew, no material, and no promised start date.</div>
+  </div>
+
+  <div class="card">
+    <h2>The short version</h2>
+    <p>Open <code>portal.greenvalleycontractors.com/ui/jobstart</code> and pick a won bid.
+      Most of the packet is <b>already filled in</b> — it reads your scope review out of
+      Drive, the bid off the Bid Board, and any updates posted on the Projects or
+      Operations boards. You fill the few things it can't know, then send it to Ops.
+      Ops accepts, and the job becomes real everywhere at once.</p>
+    <p>Nothing is handwritten and nothing gets printed. The packet comes out as a PDF
+      that files itself into the job's Drive folder.</p>
+  </div>
+
+  <div class="card">
+    <h2>Job names — the standard</h2>
+    <p>One format, everywhere — Monday, Drive, estimates, invoices, photos:</p>
+    <p><code>Street Number Name | Builder</code></p>
+    <table>
+      <tr><th>Right</th><th>Wrong</th></tr>
+      <tr><td><code>9195 Silva | Willow Creek</code></td>
+          <td><code>9195 Silva Drive, Cincinnati OH 45241 - Willow Creek - New House</code></td></tr>
+      <tr><td><code>3776 Susanna | Martin</code></td><td><code>3776 Susanna – Martin</code></td></tr>
+      <tr><td><code>CO_9195 Silva | Willow Creek</code></td><td><code>Change Order 9195 Silva</code></td></tr>
+    </table>
+    <p style="margin-top:12px;">Pipe character, not a dash. No city, state, ZIP or job type in
+      the name — those all live in fields on the record. Prefixes we already use stay:
+      <code>CO_</code>, <code>STU-</code>, <code>PL-</code>, <code>WAR-</code>.</p>
+    <div class="note"><b>Job Start renames it for you.</b> It converts the bid's messy name to
+      the standard and shows you what it changed. If it can't work out the builder it will
+      say so and ask — it will never invent one.</div>
+    <div class="note"><b>Old jobs still match.</b> Everything created before this standard has
+      an old-style name. Job Start recognises those and <b>updates the existing project</b>
+      instead of creating a second one, so you won't get duplicates during the switchover.</div>
+  </div>
+
+  <div class="card">
+    <h2>Sales — sending a job over</h2>
+
+    <div class="step">
+      <h3><span class="who">Sales</span>1 · Pick the won bid</h3>
+      <p>Only bids at stage <b>Accepted</b> show up. Anything already waiting on Ops sits at
+        the top of the list, so you can see what's outstanding.</p>
+    </div>
+
+    <div class="step">
+      <h3><span class="who">Sales</span>2 · Check what it filled in</h3>
+      <p>A green bar at the top names the scope review it read and what it found —
+        trades in scope, how many exclusions, how many open questions. Each field that was
+        filled automatically has a small tag saying where it came from
+        (<i>from the scope review</i>, <i>from a board update</i>, <i>from the bid</i>).</p>
+      <p>Read it over and correct anything the document got wrong. <b>Anything you type is
+        never overwritten</b> by the automatic sources.</p>
+      <div class="note">No scope review found? It says so and falls back to the bid. Write
+        the scope review into the job folder and reload — it'll pick it up.</div>
+    </div>
+
+    <div class="step">
+      <h3><span class="who">Sales</span>3 · Fill the eight required fields</h3>
+      <p>The bar at the bottom counts what's left ("3 still needed"). The eight are:</p>
+      <table>
+        <tr><td>Project type</td><td>Residential or Commercial</td></tr>
+        <tr><td>Builder</td><td>Who we're working for on site</td></tr>
+        <tr><td>Site supervisor</td><td>Name and number — who the crew calls</td></tr>
+        <tr><td>Scope of work</td><td>What we sold</td></tr>
+        <tr><td><b>What we did NOT sell</b></td><td>Exclusions. The field that saves us.</td></tr>
+        <tr><td>Start date</td><td>Best known — Ops reschedules from there</td></tr>
+        <tr><td>Board count</td><td>Ops stocks from this number</td></tr>
+        <tr><td>Lock box / access</td><td>Day-one blocker. Say "none needed" if the site is open.</td></tr>
+      </table>
+      <div class="note"><b>It saves as you type.</b> Start it on your phone in a driveway,
+        lose signal, finish at your desk. You'll never retype a packet.</div>
+    </div>
+
+    <div class="step">
+      <h3><span class="who">Sales</span>4 · Email the scope to the GC</h3>
+      <p>Tap <b>Draft the scope confirmation</b>. It writes an email to the GC's PM (copying
+        the site super) with our scope, our exclusions, the start date, and a 3-business-day
+        reply window. It also tells them in writing that our field crew doesn't price
+        work — so the super stops asking our foreman for numbers.</p>
+      <p>It lands in <b>hello@ Drafts</b>. Read it, then send it yourself. Nothing sends
+        automatically.</p>
+      <div class="note">Every correction a GC sends back is a change order we didn't eat.
+        This is the highest-value two minutes in the whole process.</div>
+      <p style="font-size:14px;color:var(--muted);">The email strips square footage and
+        "1-side / 2-side" phrasing automatically, per our bid-description rules — the scope
+        review is an internal document and is full of both.</p>
+    </div>
+
+    <div class="step">
+      <h3><span class="who">Sales</span>5 · Send to Operations</h3>
+      <p>The button unlocks once the eight are filled. It builds the packet PDF and pings
+        Ops in Slack. <b>Nothing is written to Monday yet</b> — the job isn't real until Ops
+        accepts it.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Operations — accepting a job</h2>
+    <div class="step">
+      <h3><span class="who ops">Ops</span>Read it, then accept or send it back</h3>
+      <p>You'll get a Slack message: <b>📋 Job packet ready for Operations</b>, with a link
+        to the packet PDF. Open the job in Job Start and you'll see the whole packet plus
+        an <b>Open questions</b> section — the items the scope review flagged as unresolved.
+        Those are the ones that turn into change orders if nobody chases them.</p>
+      <ul>
+        <li><b>Accept this job</b> — everything below happens at once.</li>
+        <li><b>Send back</b> — type what's missing. It goes back to Sales with your note,
+          editable again, and the reason is posted in Slack. No form to fill out.</li>
+      </ul>
+      <div class="note"><b>You can't accept a packet you sent.</b> Two people, always —
+        that's the whole point of the acceptance step.</div>
+    </div>
+    <h3>What happens the moment you accept</h3>
+    <ul>
+      <li>The <b>Projects</b> item is created (or updated, if one already exists)</li>
+      <li>The <b>Operations</b> task is created — this is the one that never used to happen</li>
+      <li>The bid is stamped with the Accepted Date and linked to both boards</li>
+      <li>The accepted packet PDF is filed to the job's <code>Handoff/</code> folder in Drive</li>
+      <li>Slack gets one message with links to all four</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h2>Where a job can sit</h2>
+    <table>
+      <tr><th>State</th><th>Means</th><th>Who's up</th></tr>
+      <tr><td><b>Draft</b></td><td>Sales is still filling it in. Nobody notified.</td><td>Sales</td></tr>
+      <tr><td><b>Waiting on Operations</b></td><td>Sent. Packet PDF exists.</td><td>Ops</td></tr>
+      <tr><td><b>Sent back</b></td><td>Ops needs something. Note attached.</td><td>Sales</td></tr>
+      <tr><td><b>Accepted</b></td><td>Job is live. Packet is read-only from here.</td><td>—</td></tr>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>Common questions</h2>
+
+    <div class="q">The packet is mostly blank.</div>
+    <p>No scope review was found for that job. Check it's in the job folder and that the
+      name shares the street number with the bid — that's what it matches on.</p>
+
+    <div class="q">It says Monday rejected the Job Location or Customer.</div>
+    <p>Known Monday API limitation, not a portal fault. The job was still created — set
+      those two fields by hand on the project.</p>
+
+    <div class="q">I need to change an accepted packet.</div>
+    <p>Accepted packets are a record, not a form. Edit the Projects or Operations item
+      directly, or use Job Check for field updates.</p>
+
+    <div class="q">A field is wrong and it came from the scope review.</div>
+    <p>Just type over it. Typed values always win, and they stick.</p>
+
+    <div class="q">Can I hand off the same job twice?</div>
+    <p>Yes, safely. It updates the existing project and ops task in place rather than
+      creating duplicates.</p>
+
+    <div class="warn"><b>Still true today:</b> the packet records the date the GC
+      confirmation was <i>drafted</i>, not when it was sent — nobody can tell the portal
+      when you hit send. Send it the same day you draft it and the date stays honest.</div>
+  </div>
+
+  <div class="card">
+    <h2>Who to tell when it breaks</h2>
+    <p>Anything that looks wrong goes to Jordan with the job name and what you expected.
+      Portal errors post themselves to <b>#portal-bugs-and-improvements</b> automatically,
+      so don't worry about capturing screenshots.</p>
+  </div>
+
+</main>
+
+<footer>
+  Job Start Manual v1.0 · Green Valley Contractors · July 2026<br>
+  Full technical design: <code>docs/portal-job-start-design.md</code>
+</footer>
+
+</body>
+</html>
