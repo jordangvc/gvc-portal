@@ -22,15 +22,17 @@ session doesn't re-derive any of it.
 > Status: **deployed and live** as Cloud Run revision `gvc-invoice-00075-tqg`,
 > serving 100% of traffic. Health is green (Monday, Slack, Drive, Gmail all ✔).
 >
-> Three things are outstanding, in this order:
-> 1. Grant the `jobstart` feature in `/ui/admin` to Jordan, Jake, Mark, Robert —
->    nobody holds it yet, so the tile is invisible to everyone.
-> 2. Field-test on the **Bryant / Jent** bid specifically. It already has a Projects
->    item, so it exercises the duplicate safeguard. Confirm (a) the green
->    "Prefilled from Jent-Bryant Res - Scope Review.pdf" banner appears, and (b)
->    accepting **updates** the existing project rather than creating a second one.
+> Outstanding, in priority order:
+> 1. **A smoke test may still be pending** — see `§5 First smoke test` in the handoff
+>    doc. Ask me whether I ran it and what the four answers were before you build
+>    anything, because a grey banner changes priorities.
+> 2. **Build the open-bids change** — this is the top feature request and it's
+>    specified in `§6` of the handoff doc. Job Start currently only shows bids
+>    already at stage `Accepted`, so Jake has to go to Monday and flip the stage
+>    before he can even see the job. He should see open bids and be able to accept
+>    the bid from inside Job Start.
 > 3. The packet PDF has **never rendered as a binary** — WeasyPrint isn't installed
->    on this PC. First live send is that test.
+>    on this PC, so the first live send is that test.
 >
 > Read the two files, then tell me what you'd do first. Don't start editing yet.
 
@@ -123,7 +125,82 @@ Customers `1919766765`. Jake's plans tree: Drive folder
 
 ---
 
-## 5. Open items, roughly by value
+## 5. First smoke test — the Bryant / Jent job
+
+Verified live on the Bid Board 2026-07-29, so use these facts rather than re-deriving:
+
+| | |
+|---|---|
+| Bid item | **`2776470967`** |
+| Name | `9761 Gertrude Lane, Cincinnati, OH 45231 — Jent Construction — Bryant Residence` (em-dash separators) |
+| Stage | `Accepted` — **but sitting in the "Open Deals" group** (see §6) |
+| Estimate # | `2026-0710-004` |
+| `date6` Accepted Date | **empty** |
+| `connect_boards4` → Projects | **empty** |
+| `connect_boards1` → Operations | **empty** |
+
+⚠ **An earlier draft of this doc claimed this bid already has a Projects item. It does
+not.** Both link columns are empty, so accepting exercises the *create* path and
+name-based adoption — NOT the link-based duplicate safeguard. If you want to test the
+link path, find a bid whose `connect_boards4` is populated (several exist; the earlier
+board sweep found ~22 of the first 30 accepted bids with a Projects link).
+
+Two things already confirmed by unit check, so don't re-verify them:
+- `naming.to_standard()` converts that bid name to
+  **`9761 Gertrude | Jent Construction | Bryant Residence`** (3 parts, valid).
+- `naming.folder_match_score()` against Jake's real folder
+  `331 - Jent - Bryant Res - Sent` = **1.00**, well over the 0.6 threshold — so the
+  scope review *should* be found, provided the service account can read the folder.
+
+**The four answers that matter.** Ask Jordan for these before building:
+1. Banner green ("Prefilled from Jent-Bryant Res - Scope Review.pdf") or grey?
+2. Result said "Project **created**" or "Project **updated**"?
+3. Did the Handoff Packet PDF land in Drive? *(first-ever real WeasyPrint render)*
+4. Did the Operations task appear? *(the thing that never used to happen)*
+
+Grey banner ⇒ share folder `1X1vuutnTuCN0hxTZSANmm3QC6SQ41Gc0` with
+`gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com` as Viewer. That is the
+single highest-value unblock in the project — without it the whole ingest is dead and
+the tool degrades to manual entry, which Jordan has explicitly rejected.
+
+---
+
+## 6. NEXT BUILD — open bids + accept in place (Jordan's request, 2026-07-29)
+
+> *"this should have access to the open bids, not just the accepted bids. He should be
+> able to accept the bid in here as well."*
+
+**The gap.** `adapters/monday/jobstart.fetch_accepted_bids()` hard-filters to
+`deal_stage == JOBSTART_ACCEPTED_STAGE`. So a bid is invisible to Job Start until
+someone has gone to Monday and flipped the stage — backwards for a tool meant to be
+where Sales works.
+
+**Evidence it's a real problem, not a preference:** bid `2776470967` is stage
+`Accepted` while still in the **"Open Deals"** group. Stage and group have already
+drifted apart because both are maintained by hand, in two places.
+
+**Shape of the change:**
+1. `fetch_accepted_bids()` → return open **and** accepted bids, each carrying its
+   stage; rename it (`fetch_bids`) since the name will otherwise lie.
+2. Picker shows a stage badge and sorts: waiting-on-Ops → accepted-not-handed-off →
+   open. Don't hide open bids behind a filter toggle Jake has to find.
+3. Write `deal_stage` (and move the group) from inside Job Start.
+4. `JOBSTART_ACCEPTED_STAGE` already exists in `shared/boards.py`; the group id will
+   need adding alongside it.
+
+**Open design decision — put it to Jordan.** Should marking-accepted be its own
+explicit tap, or implicit when Sales sends the packet to Ops? My recommendation was
+**implicit**: if Jake is sending a job-start packet, the bid is won, and one less tap
+is one less thing to forget. The counter-argument is that an implicit write to
+`deal_stage` is a silent side effect on a board other people watch — and the estimate
+flow deliberately does NOT auto-advance stage for exactly that reason (see the
+"Stage 'Sent to Client' at draft time is UNCHANGED — other automations key off it"
+note in `CLAUDE.md`). **Check which automations trigger on `deal_stage` before
+writing it.**
+
+---
+
+## 7. Open items, roughly by value
 
 1. **The GC scope-confirmation email is the highest-ROI thing left.** It exists and
    drafts to hello@, but `gc_confirmed_on` records when it was **drafted**, not sent —
@@ -145,7 +222,7 @@ Customers `1919766765`. Jake's plans tree: Drive folder
 
 ---
 
-## 6. The historical defect this feature exists to fix
+## 8. The historical defect this feature exists to fix
 
 Worth knowing, because it's the reason for several design choices. A Bid Board
 automation (`1939926355`) already fired on **Stage → Accepted**, created a Projects
