@@ -70,8 +70,25 @@ importing each other's internals. Full guide: `GVC_Portal_System/AGENTS.md` +
 ---
 *Build history, locked decisions, board IDs, and the dated session log follow. Entries before 2026-06-25 reference the OLD flat module names — use the 'Old flat → new home' map above to translate.*
 
-## 🤝 JOB START — Sales → Operations handoff, BUILT 2026-07-29, ships next --source . deploy
-Jake's ask (via Jordan): a real way to hand a won job from Sales to Ops. NOT deployed yet.
+## 🤝 JOB START — Sales → Operations handoff, BUILT + ✅ DEPLOYED 2026-07-29
+Jake's ask (via Jordan): a real way to hand a won job from Sales to Ops.
+✅ **LIVE: revision `gvc-invoice-00075-tqg`** (deployed from portal-current as hello@, 100% traffic,
+was 00074-gn7). Post-deploy /health: monday_configured ✔ · slack_token_ok ✔ (bot gvcreporting) ·
+drive_configured ✔ · gmail_ready ✔ · grants_backend gcs, store ok, 6 users. Route probe:
+/ui/jobstart 303 (auth redirect, not 404) · /ui/api/jobstart/bids 401 · /ui/fieldguide 303.
+⚠ GOTCHA (cost two failed calls): **gcloud is NOT on the Git Bash PATH on Jordan's PC.** Use the
+PowerShell tool with the full path `C:\Users\jorda\AppData\Local\Google\Cloud SDK\google-cloud-sdk\
+bin\gcloud.cmd`, and pass `--source "C:\Claude\GVC Invoice portal\portal-current"` explicitly rather
+than relying on cwd.
+REMAINING BEFORE FIELD USE (admin, in this order): (1) **grant `jobstart`** in /ui/admin to Jordan,
+Jake, Mark, Robert — it is deliberately NOT implied by `estimate`, so NOBODY holds it yet and the tile
+is invisible to everyone; (2) confirm the service account can read Jake's Completed Plans folder — the
+definitive 10-second test is to open /ui/jobstart, pick the Bryant/Jent bid, and look for the green
+"Prefilled from Jent-Bryant Res - Scope Review.pdf" banner. If it says no scope review matched, share
+folder 1X1vuutnTuCN0hxTZSANmm3QC6SQ41Gc0 with gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com
+as Viewer (the folder's permission list shows a domain-reader for greenvalleycontractors.com, which
+does NOT cover the service account's own domain); (3) optional
+--update-env-vars GVC_JOBSTART_SLACK_CHANNEL=<id> (falls back to GVC_JOBCHECK_SLACK_CHANNEL).
 ROOT-CAUSE FINDING (verified live on the boards, not assumed): a handoff automation ALREADY
 existed and was doing a third of the job. Bid Board workflow **1939926362** fires on Stage →
 Accepted, creates a Projects item in "New Projects (Not Started)", and posts to Slack
