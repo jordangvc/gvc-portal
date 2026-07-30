@@ -366,9 +366,14 @@
       <span class="name">Drywall Patch</span>
       <span class="desc">Match the method to the hole. Four methods and when each one wins.</span>
     </button>
-    <button class="tile" data-go="touchup">
-      <span class="icon">🖌️</span><span class="stage">Punch</span>
-      <span class="name">Touch-Up</span>
+    <button class="tile" data-go="touchup-drywall">
+      <span class="icon">🔧</span><span class="stage">Punch · step 1</span>
+      <span class="name">Drywall Touch-Up</span>
+      <span class="desc">Fixing the wall, not the paint. The raking-light walk, and what each defect actually means. Cheap before the painter, expensive after.</span>
+    </button>
+    <button class="tile" data-go="touchup-paint">
+      <span class="icon">🖌️</span><span class="stage">Punch · step 2</span>
+      <span class="name">Paint Touch-Up</span>
       <span class="desc">Why touch-ups flash, and the rules that make them disappear. Sheen decides everything.</span>
     </button>
   </div>
@@ -415,7 +420,7 @@
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection clip</button><span>A slotted bracket that does the deflection job when the track can't.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Drift</button><span>Sideways building movement, usually seismic. Different problem from vertical deflection.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-shim">Filler &amp; scribing</button><span>The strip that closes a gap, cut to follow the wall's actual shape.</span></div>
-      <div class="idx-item"><button data-jump="touchup|tu-why">Flashing</button><span>When a touch-up or patch shows as a different sheen. The most common paint complaint.</span></div>
+      <div class="idx-item"><button data-jump="touchup-paint|tu-why">Flashing</button><span>When a touch-up or patch shows as a different sheen. The most common paint complaint.</span></div>
       <div class="idx-item"><button data-jump="act|act-wire">Hanger wire</button><span>The wire that holds a ceiling grid up. 12 gauge, 4 feet apart, wrapped three turns.</span></div>
       <div class="idx-item"><button data-jump="cabinets">High point of floor</button><span>Where every cabinet measurement starts. Measure from the low point and the run ends up wrong.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-hotmud">Hot mud</button><span>Setting compound. Hardens chemically instead of drying, so you can recoat the same day.</span></div>
@@ -424,6 +429,7 @@
       <div class="idx-item"><button data-jump="act|act-maintee">Main tee / main runner</button><span>The long grid members that carry the ceiling. Usually 4 feet apart.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-reveal">Reveal</button><span>The gap between cabinet doors. Consistent reveals are what customers read as quality.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Stacked walls</button><span>Getting height by building one wall on top of another instead of one tall stud.</span></div>
+      <div class="idx-item"><button data-jump="touchup-drywall|tud-defects">Screw pop</button><span>A fastener backed out and pushed the board off the framing. Reset it, don't just fill it.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strapping / flat strap</button><span>Flat steel banding screwed across stud flanges to brace them.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strap and block</button><span>Strap plus a short block between studs. Required once studs get deep.</span></div>
       <div class="idx-item"><button data-jump="act|act-tile">Tegular tile</button><span>Ceiling tile with a stepped edge that drops below the grid. Needs matching grid.</span></div>
@@ -1643,7 +1649,7 @@
       <li><label class="step"><input type="checkbox"><span class="txt">Sand the patch and its feathered edge smooth, checking with a light at a low angle.</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt"><b>Match the surrounding texture</b> before paint. An invisible flat patch in a textured wall is still an obvious patch.</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt"><b>Prime the patch.</b> Bare compound absorbs paint differently than the wall around it — the #1 cause of a repair showing through.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Then follow the <b>Touch-Up</b> procedure for the paint.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Then follow <b>Paint Touch-Up</b> for the paint.</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph before and after</b>, room identified. On T&amp;M work that's the backup for the ticket.</span></label></li>
     </ul>
   </div>
@@ -1654,17 +1660,122 @@
   </div>
 </section>
 
-<!-- ==================== TOUCHUP ==================== -->
-<section class="doc" id="touchup">
+<!-- ==================== DRYWALL TOUCH-UP ==================== -->
+<section class="doc" id="touchup-drywall">
   <div class="doc-head">
-    <span class="stage-line">Punch · paint touch-up</span>
-    <h2>Touch-Up</h2>
+    <span class="stage-line">Punch · step 1 · drywall finish repair</span>
+    <h2>Drywall Touch-Up</h2>
+    <p class="lede">Fixing the wall itself, not the paint. Found before the painter it costs minutes. Found after, it costs the repair plus a repainted wall.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>This is fixing <b>the drywall</b> — screw pops, dings, ridges you can see in a seam, fuzzy spots where somebody sanded through the paper. Walk the room with a bright light held flat against the wall; that's how you find them. Fill thin, <b>feather it out wide</b>, match the texture, and prime it before anybody paints over it.</p>
+  </div>
+
+  <div class="note money">
+    <span class="tag">Why this is its own step, before paint</span>
+    <p>A drywall defect found <b>before</b> the painter costs a knife, a little mud, and a dab of primer. <b>The identical defect found after paint</b> costs that same repair, plus priming, plus repainting the entire plane corner to corner — because a spot repaint on a finished wall flashes (that's the whole subject of <b>Paint Touch-Up</b>).</p>
+    <p>So the economics of the whole punch phase come down to one thing: <b>find the drywall defects before the paint goes on.</b> One careful raking-light walk before the painter mobilizes is the cheapest hour in the finishing scope.</p>
+  </div>
+
+  <div class="block">
+    <h3>The raking-light walk</h3>
+    <p class="sub">You cannot find these defects in flat, even light. You have to make the light betray them.</p>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Take a bright work light and hold it <b>close to the wall and nearly parallel to it</b>, so the light rakes across the surface. Every high and low spot throws a shadow.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Work <b>one wall at a time</b>, top to bottom. Sweeping a whole room at once misses things.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Also look from the angle and in the light <b>the room is actually used in</b> — a defect nobody can ever see from a normal standing position may not be worth chasing, and one under a wall-wash fixture absolutely is.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Mark outside the defect</b> with low-tack tape or a light pencil dot. Never a marker on the wall — marker bleeds through primer and paint and becomes a second defect.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Sort what you mark into three buckets:</b> drywall finish repair (this document), a real hole needing a patch (see <b>Drywall Patch</b>), and someone else's damage.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph other trades' damage before you touch it.</b> Otherwise it silently becomes our cost.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Then work in batches — all the cut-outs, all the fills, all the coats — rather than one defect start-to-finish at a time.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="tud-defects">
+    <span class="tag">Full detail · reading the defect</span>
+    <h4>What each defect is actually telling you</h4>
+    <p>Most of these are quick fixes. Two of them are symptoms of something else, and filling those just brings them back.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">What you see</th><th scope="col">What caused it</th><th scope="col">Fix</th></tr></thead>
+      <tbody>
+        <tr><td>Screw or nail pop</td><td>Fastener backed out, or the framing moved and pushed the board off it.</td><td>Reset the fastener or add a new one beside it holding the board tight, then two to three thin coats.</td></tr>
+        <tr><td>Blister or bubble in the tape</td><td>Starved bed coat — there wasn't enough compound behind the tape.</td><td><b>Cut the blistered section out</b>, re-bed that length of tape properly, coat out. Filling over a blister does not bond it.</td></tr>
+        <tr><td>Ridge or line down a seam</td><td>A tool line, or a coat applied too heavy and never scraped.</td><td>Scrape or sand the ridge flat, then skim <b>wider</b> than the original coat and feather.</td></tr>
+        <tr><td>Fuzzy or furry patch</td><td>Over-sanded through the compound into the paper face.</td><td>Don't sand it more — that makes it worse. Skim it to seal the raised fibers, let it dry, sand lightly.</td></tr>
+        <tr><td>Dings and dents</td><td>Traffic, carts, other trades.</td><td>Fill and feather wide. If the paper is broken, treat it as a small patch.</td></tr>
+        <tr><td>Shadow or dark band at a butt joint</td><td>The crown was built too narrow, so there's a visible transition.</td><td>Widen it substantially — feather much further out than feels necessary. This is the most commonly under-fixed defect.</td></tr>
+        <tr><td>Dented corner bead</td><td>Impact.</td><td>Shallow dents fill. A deep dent or a kinked bead means <b>replacing the bead</b> — mud over a bent bead reads as a wavy corner forever.</td></tr>
+        <tr><td><b>A crack</b></td><td><b>Movement.</b> A missing or ineffective control joint, framing movement, or a joint landed on an opening corner.</td><td><b>Stop — this is not a touch-up.</b> Filling a moving crack brings it back, usually within a season. Find the cause. See <b>Hanging Drywall → control joints</b>.</td></tr>
+        <tr><td><b>Defects everywhere on a wall</b></td><td>The finish never reached the specified level.</td><td><b>Not punch work.</b> That's a finishing problem — go back to <b>Finishing Drywall</b> and skim the plane properly. Chasing a hundred spots individually costs more than doing the wall.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The two judgment calls above are the valuable part of this page.</b> A crack and a bad wall both look like a long list of punch items, and both get worse if you treat them as one.</p>
+  </div>
+
+  <div class="block">
+    <h3>How to fix them</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Setting compound for anything with depth</b> — it sets chemically, so you can recoat the same visit instead of coming back tomorrow.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Topping or lightweight for the final coat</b>, even if the fill was hot mud. The last coat is the one you sand.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Thin coats, each one <b>wider</b> than the last. Same rule as everywhere else in finishing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Feather much further than feels necessary.</b> The repair fails at its edge, not its middle.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Sand lightly and check again with the raking light before you call it done.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Match the surrounding texture.</b> A perfectly smooth repair in a textured wall is still an obvious repair.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Prime every repair.</b> Bare compound absorbs paint differently than the wall around it — this is the single handoff item that decides whether the painter's work shows.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before you hand it to the painter</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Raking-light walk done on every wall and ceiling, not just the ones somebody complained about.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All repairs coated, sanded, textured to match, and <b>primed.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Any crack investigated for cause, not just filled.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Any wall that needed a full skim identified and dealt with as finishing, not punch.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Other trades' damage photographed and reported before repair.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Tape and pencil marks removed. Floors cleaned of sanding dust.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Walk it with the GC in the same light and get agreement <b>before</b> the painter starts.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what actually costs us here</h3>
+    <ol class="ranked">
+      <li><b>Defects found after paint instead of before</b> — the repair price doubles or worse.</li>
+      <li><b>Not priming the repair</b> — guarantees the painter's touch-up flashes and it comes back to us.</li>
+      <li><b>Feathering too small</b> — the repair is visible, so it gets done twice.</li>
+      <li><b>Filling a crack instead of finding why it cracked</b> — a warranty callback with our name on it.</li>
+      <li><b>Chasing a hundred spots on a wall that needed skimming</b> — more labor than doing it right.</li>
+      <li><b>Marker instead of pencil or tape</b> — bleeds through and becomes a new defect.</li>
+      <li><b>Sanding a fuzzy spot instead of sealing it</b> — makes it worse every pass.</li>
+      <li><b>Not documenting other trades' damage</b> — we absorb somebody else's cost.</li>
+    </ol>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Defect causes and remedies follow standard finishing practice and manufacturer guidance on joint treatment and sanding. The raking-light inspection is how commercial drywall work is actually judged, and it's the same check that appears in the <b>Finishing Drywall</b> procedure — this document is that check applied at punch. The "prime before paint" requirement traces to the same porosity mechanism documented in <b>Paint Touch-Up</b>. The crack-versus-touch-up and bad-wall-versus-punch distinctions are judgment calls; they reflect GVC practice and the cost logic above, not a published standard.</p>
+  </div>
+</section>
+
+<!-- ==================== PAINT TOUCH-UP ==================== -->
+<section class="doc" id="touchup-paint">
+  <div class="doc-head">
+    <span class="stage-line">Punch · step 2 · paint touch-up</span>
+    <h2>Paint Touch-Up</h2>
     <p class="lede">The last thing anyone sees and the easiest thing to get visibly wrong. The failure has a name — flashing — and it has specific, avoidable causes.</p>
   </div>
 
   <div class="plainwords">
     <span class="tag">In plain words</span>
     <p><b>Same paint, same can, same tool, and prime anything bare first.</b> If you rolled it originally, roll the touch-up; if you brushed it, brush it. And if the paint has any shine to it, spot touch-up usually won't work — plan on recoating the whole wall from corner to corner.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Do the drywall first</span>
+    <p>This step assumes the <b>Drywall Touch-Up</b> pass is done and every repair is primed. Painting over an unprimed repair is the number one cause of a touch-up that shows, and no amount of care with the paint will fix it.</p>
   </div>
 
   <div class="expert" id="tu-why">
@@ -1699,14 +1810,15 @@
   </div>
 
   <div class="block">
-    <h3>Working a punch list efficiently</h3>
+    <h3>Working the paint pass</h3>
+    <p class="sub">The walk-and-mark and all the drywall repairs happened in <b>Drywall Touch-Up</b>. This pass is paint only.</p>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Walk and mark first.</b> Go through the whole area marking every defect — low-tack tape or a pencil dot outside the defect, never a marker on the wall.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Sort what you find: <b>drywall repair</b> vs. <b>paint-only touch-up</b> vs. <b>somebody else's damage.</b> Three different jobs, often three different bills.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Do all the drywall repairs first and let them prime, then do all the paint in one pass.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph other trades' damage before repairing it.</b> Otherwise it silently becomes our cost.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Re-walk with the GC or owner after, in the same light, and get it signed off.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm every drywall repair is <b>coated, textured to match, and primed</b> before you open a can.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Do the paint in one pass through the area rather than following the drywall crew around room by room.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Decide per wall: <b>spot touch-up or recoat the plane.</b> Make that call before you start on it, not halfway through.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Re-walk with the GC or owner afterward, <b>in the same light</b>, and get it signed off.</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Note anything that will keep getting damaged — the fix is protection or a corner guard, not another touch-up next month.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Leave labeled paint on site or log what was used, so the next touch-up starts from the right can.</span></label></li>
     </ul>
   </div>
 

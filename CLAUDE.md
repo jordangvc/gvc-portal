@@ -1707,10 +1707,10 @@ Extracting a single shared stylesheet is a wanted change, not a side quest.
 Jordan's ask: written procedures the crews can actually use, readable by a beginner but carrying
 the expert detail a lead needs. Built as a static portal page — no new deps, no new env, no
 Dockerfile change (`COPY web ./web` already takes the directory).
-CONTENT — 10 procedures + 3 reference sections, all one page: Metal Stud Framing (layout-first,
+CONTENT — 11 procedures + 3 reference sections, all one page: Metal Stud Framing (layout-first,
 batch-by-operation), Stocking Any Material, Stocking Drywall, Hanging, **Scraping**, Finishing,
-Acoustical Ceilings (CT/ACT), **Installing Cabinets**, Drywall Patch, Touch-Up, plus a Component
-Index (A–Z, tap a term →
+Acoustical Ceilings (CT/ACT), **Installing Cabinets**, Drywall Patch, **Drywall Touch-Up**,
+**Paint Touch-Up**, plus a Component Index (A–Z, tap a term →
 jumps to the detail), a Glossary, and Sources & Method. The drywall docs are deliberately named
 and ordered to match the **Job Check** stage columns (Hanging Status → Scrapping Status → Taped →
 … ) so a crew member moves between the two tools without translating.
@@ -1773,3 +1773,24 @@ bar, mobile-first 48px targets, light+dark themed, print stylesheet). `app/servi
    expert blocks → tap a Component Index term → lands on that section in Full detail.
 NEXT (not built): deep-link each Job Check stage chip to its procedure; insulation, paint and demo
 procedures; photos/diagrams for deflection track types, grid profiles, tile edges, butterfly patch.
+
+### 2026-07-29 — Field Manual r2: touch-up SPLIT into drywall vs. paint (Jordan's call)
+One "Touch-Up" doc became two, because they are different trades with different economics and the
+split is the point:
+  • **Drywall Touch-Up** (`#touchup-drywall`) — fixing the WALL. Owns the raking-light walk (bright
+    light held near-parallel to the surface; mark OUTSIDE the defect with low-tack tape or pencil,
+    never marker — marker bleeds through primer) and the walk-and-mark/sort-into-three-buckets step
+    that used to sit in the paint doc. Expert block `#tud-defects` is a cause→fix table for nine
+    defects, and its real value is the two entries that are NOT touch-ups: **a crack** (movement —
+    filling it brings it back; find the control joint / framing cause) and **a wall covered in
+    defects** (the finish never hit the specified level — that's a Finishing skim, and chasing a
+    hundred spots costs more than doing the wall). Ends by REQUIRING primer on every repair.
+  • **Paint Touch-Up** (`#touchup-paint`, was `#touchup`) — unchanged physics content (flashing =
+    sheen + porosity, not colour; same product/batch/tool; recoat the plane above flat sheen). Its
+    punch-list section was rewritten to be paint-only and now cross-references the drywall pass
+    rather than duplicating it.
+  • The economic argument that justifies the split, stated in both: a defect found BEFORE the
+    painter costs a knife, some mud and a dab of primer; the SAME defect found after paint costs
+    that repair plus prime plus repainting the whole plane corner-to-corner.
+⚠ ID RENAME: `#touchup` → `#touchup-paint`. Anything linking to the old anchor needs updating; the
+in-page Component Index was updated (26 jumps, all verified to resolve).
