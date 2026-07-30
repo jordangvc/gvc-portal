@@ -1,0 +1,541 @@
+"""
+Monday reads + writes for the Job Start handoff (Sales → Operations).
+=========================================================================
+The portal's second write surface into Monday (docs/portal-job-start-design.md,
+2026-07-29) and the first that CREATES items. Where Job Check updates columns on
+one existing item, Job Start is the sanctioned path a won bid becomes an
+operations job:
+
+  fetch_accepted_bids()  — Bid Board rows at Stage = Accepted, paged, with the
+                           handoff-state flags the picker needs (does a Projects
+                           item already exist? an Operations one?).
+  get_bid_detail()       — ONE bid's full prefill payload: the read-only context
+                           header plus every JOBSTART_FIELDS prefill source.
+  get_field_labels()     — live status-label sets for the packet's status
+                           fields, so the form renders real chips and the
+                           validator can reject an invented label.
+  hand_off()             — THE write: adopt-or-create the Projects item,
+                           adopt-or-create the Operations item, stamp the bid.
+
+ADOPT-OR-CREATE is the load-bearing property. The legacy Bid Board automation
+(workflow 1939926355) still fires on Accepted and creates a Projects item; this
+module must never race it into a duplicate. Resolution order, per board:
+  Projects    — the bid's existing `connect_boards4` link → match by name → create
+  Operations  — match by name (the _find_ops_task pattern from monday/co.py) → create
+A second handoff of the same bid therefore UPDATES both items in place.
+
+Guardrail: this module trusts orchestrators/jobstart_flow to have validated the
+packet against shared/boards.JOBSTART_FIELDS (required-field gate + hard
+exclusions), but it never invents a Customers record and never writes a column
+the caller didn't hand it.
+"""
+from __future__ import annotations
+
+import json
+import sys
+from typing import Any, Optional
+
+from shared import boards
+from shared.boards import (
+    BID_BOARD_ID,
+    OPERATIONS_BOARD_ID,
+    PROJECTS_BOARD_ID,
+)
+
+# Mirrors/relations return text = NULL; their readable value is display_value
+# (same finding as adapters/monday/jobcheck.py, verified 2026-07-28). `value`
+# carries the raw JSON we need to copy a location column across verbatim.
+_VALUE_FRAGMENT = """
+          id
+          text
+          value
+          ... on MirrorValue { display_value }
+          ... on BoardRelationValue { display_value }
+"""
+
+
+def _item_url(board_id: int, item_id) -> str:
+    return (f"https://greenvalleycontractors.monday.com/boards/"
+            f"{board_id}/pulses/{item_id}")
+
+
+def _column_text(cv: dict) -> Optional[str]:
+    """Readable value of one column_value: display_value (mirrors/relations)
+    falling back to text. None when empty."""
+    for key in ("display_value", "text"):
+        raw = cv.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return None
+
+
+def _linked_ids(cv: Optional[dict]) -> list[int]:
+    """Item ids out of a board_relation column's raw JSON value."""
+    if not cv:
+        return []
+    try:
+        parsed = json.loads(cv.get("value") or "{}")
+    except (json.JSONDecodeError, TypeError):
+        return []
+    out = []
+    for entry in parsed.get("linkedPulseIds") or []:
+        pid = entry.get("linkedPulseId")
+        if pid:
+            out.append(int(pid))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Reads
+# ---------------------------------------------------------------------------
+
+def _bid_read_columns() -> list[str]:
+    """Every Bid Board column the picker + prefill need, deduped."""
+    ids = [
+        boards.JOBSTART_BID_STAGE_COL,
+        boards.JOBSTART_BID_ACCEPTED_DATE_COL,
+        boards.JOBSTART_BID_PROJECT_LINK_COL,
+        boards.JOBSTART_BID_OPS_LINK_COL,
+        boards.JOBSTART_BID_CUSTOMER_COL,
+        boards.JOBSTART_BID_LOCATION_COL,
+        boards.JOBSTART_BID_ESTIMATE_NUM_COL,
+        boards.JOBSTART_BID_ESTIMATE_TOTAL_COL,
+        boards.JOBSTART_BID_SERVICES_COL,
+        boards.JOBSTART_BID_ESTIMATE_PDF_COL,
+    ]
+    ids += [f["prefill"] for f in boards.JOBSTART_FIELDS if f.get("prefill")]
+    return list(dict.fromkeys([i for i in ids if i]))
+
+
+def fetch_accepted_bids(mc) -> list[dict]:
+    """
+    Every Bid Board row at Stage = Accepted, normalized for the picker:
+      {item_id, name, url, group_title, estimate_number, estimate_total,
+       location, accepted_date, has_project, has_ops}
+    Paged at 200, read-only. `has_project`/`has_ops` drive the "already handed
+    off" badge — they are the honest state, not an assumption.
+    """
+    col_ids = json.dumps(_bid_read_columns())
+    query = """
+    query ($boardId: [ID!], $cursor: String) {
+      boards(ids: $boardId) {
+        items_page(limit: 200, cursor: $cursor) {
+          cursor
+          items {
+            id
+            name
+            group { id title }
+            column_values(ids: %s) { %s }
+          }
+        }
+      }
+    }
+    """ % (col_ids, _VALUE_FRAGMENT)
+
+    rows: list[dict] = []
+    cursor: Optional[str] = None
+    while True:
+        data = mc._query(query, {"boardId": [str(BID_BOARD_ID)], "cursor": cursor})
+        board_list = data.get("boards") or []
+        if not board_list:
+            break
+        page = board_list[0]["items_page"]
+        for item in page.get("items") or []:
+            row = _normalize_bid(item)
+            if row is not None:
+                rows.append(row)
+        cursor = page.get("cursor")
+        if not cursor:
+            break
+    return rows
+
+
+def _normalize_bid(item: dict) -> Optional[dict]:
+    """One raw Bid Board item → picker row, or None when it isn't Accepted."""
+    cvs = {cv["id"]: cv for cv in item.get("column_values") or []}
+    stage = _column_text(cvs.get(boards.JOBSTART_BID_STAGE_COL) or {})
+    if (stage or "").strip().lower() != boards.JOBSTART_ACCEPTED_STAGE.lower():
+        return None
+    group = item.get("group") or {}
+    return {
+        "item_id": int(item["id"]),
+        "name": (item.get("name") or "").strip(),
+        "url": _item_url(BID_BOARD_ID, item["id"]),
+        "group_title": group.get("title"),
+        "estimate_number": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_NUM_COL) or {}),
+        "estimate_total": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_TOTAL_COL) or {}),
+        "location": _column_text(cvs.get(boards.JOBSTART_BID_LOCATION_COL) or {}),
+        "accepted_date": _column_text(cvs.get(boards.JOBSTART_BID_ACCEPTED_DATE_COL) or {}),
+        "has_project": bool(_linked_ids(cvs.get(boards.JOBSTART_BID_PROJECT_LINK_COL))),
+        "has_ops": bool(_linked_ids(cvs.get(boards.JOBSTART_BID_OPS_LINK_COL))),
+    }
+
+
+def get_bid_detail(mc, item_id: int) -> Optional[dict]:
+    """
+    ONE bid: the read-only context header, the prefill values keyed by
+    JOBSTART_FIELDS key, and the raw location/customer values the flow copies
+    across verbatim. None when the item doesn't exist.
+    """
+    query = """
+    query ($itemId: [ID!], $cols: [String!]) {
+      items(ids: $itemId) {
+        id
+        name
+        group { id title }
+        column_values(ids: $cols) { %s }
+      }
+    }
+    """ % _VALUE_FRAGMENT
+    data = mc._query(query, {"itemId": [str(item_id)],
+                             "cols": _bid_read_columns()})
+    items = data.get("items") or []
+    if not items:
+        return None
+    item = items[0]
+    cvs = {cv["id"]: cv for cv in item.get("column_values") or []}
+
+    prefill: dict[str, str] = {}
+    for field in boards.JOBSTART_FIELDS:
+        src = field.get("prefill")
+        if not src:
+            continue
+        text = _column_text(cvs.get(src) or {})
+        if text:
+            prefill[field["key"]] = text
+
+    return {
+        "item_id": int(item["id"]),
+        "name": (item.get("name") or "").strip(),
+        "url": _item_url(BID_BOARD_ID, item["id"]),
+        "group_title": (item.get("group") or {}).get("title"),
+        "context": {
+            "estimate_number": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_NUM_COL) or {}),
+            "estimate_total": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_TOTAL_COL) or {}),
+            "customer": _column_text(cvs.get(boards.JOBSTART_BID_CUSTOMER_COL) or {}),
+            "location": _column_text(cvs.get(boards.JOBSTART_BID_LOCATION_COL) or {}),
+            "services": _column_text(cvs.get(boards.JOBSTART_BID_SERVICES_COL) or {}),
+            "accepted_date": _column_text(cvs.get(boards.JOBSTART_BID_ACCEPTED_DATE_COL) or {}),
+        },
+        "prefill": prefill,
+        # Copied across verbatim by the flow — never retyped by a human.
+        "copy": {
+            "location_raw": (cvs.get(boards.JOBSTART_BID_LOCATION_COL) or {}).get("value"),
+            "customer_ids": _linked_ids(cvs.get(boards.JOBSTART_BID_CUSTOMER_COL)),
+        },
+        "existing_project_ids": _linked_ids(cvs.get(boards.JOBSTART_BID_PROJECT_LINK_COL)),
+        "existing_ops_ids": _linked_ids(cvs.get(boards.JOBSTART_BID_OPS_LINK_COL)),
+    }
+
+
+def fetch_item_updates(mc, item_ids: list, *, limit: int = 25) -> list[str]:
+    """
+    Update bodies for the given Projects/Operations items, newest first.
+
+    This is what keeps a handoff CURRENT instead of a snapshot: Jake writes
+    "lock box is 4417" as a Project-board update, and the packet picks it up
+    without anyone re-keying it (Jordan, 2026-07-29 — "it will check the updates
+    there and then keep the handoff up to date essentially"). Read-only.
+    """
+    if not item_ids:
+        return []
+    query = """
+    query ($itemIds: [ID!], $limit: Int!) {
+      items(ids: $itemIds) {
+        id
+        updates(limit: $limit) { id body created_at }
+      }
+    }
+    """
+    data = mc._query(query, {"itemIds": [str(int(i)) for i in item_ids],
+                             "limit": int(limit)})
+    rows: list[tuple[str, str]] = []
+    for item in data.get("items") or []:
+        for upd in item.get("updates") or []:
+            body = (upd.get("body") or "").strip()
+            if body:
+                rows.append((upd.get("created_at") or "", body))
+    # Newest first so the freshest value wins in ingest.from_updates().
+    rows.sort(key=lambda r: r[0], reverse=True)
+    return [body for _, body in rows]
+
+
+def get_field_labels(mc) -> dict[str, list[dict]]:
+    """
+    Live status-label sets for every status field in JOBSTART_FIELDS, keyed by
+    field key: {field_key: [{label, hex}, ...]} in board display order.
+    Fetched live so the form can't offer — and the validator can't accept — a
+    label the board doesn't actually have.
+    """
+    from adapters.monday.jobcheck import parse_status_labels
+
+    wanted: dict[str, list[str]] = {"projects": [], "operations": []}
+    key_of: dict[tuple[str, str], str] = {}
+    for field in boards.JOBSTART_FIELDS:
+        if field["type"] != "status":
+            continue
+        for board_name, col_id in field["targets"]:
+            wanted.setdefault(board_name, []).append(col_id)
+            key_of[(board_name, col_id)] = field["key"]
+
+    query = """
+    query ($boardId: [ID!], $cols: [String!]) {
+      boards(ids: $boardId) {
+        columns(ids: $cols) { id title type settings_str }
+      }
+    }
+    """
+    out: dict[str, list[dict]] = {}
+    for board_name, col_ids in wanted.items():
+        if not col_ids:
+            continue
+        board_id = (PROJECTS_BOARD_ID if board_name == "projects"
+                    else OPERATIONS_BOARD_ID)
+        data = mc._query(query, {"boardId": [str(board_id)],
+                                 "cols": list(dict.fromkeys(col_ids))})
+        for board in data.get("boards") or []:
+            for col in board.get("columns") or []:
+                key = key_of.get((board_name, col["id"]))
+                if key and col.get("type") == "status":
+                    out[key] = parse_status_labels(col.get("settings_str"))
+    return out
+
+
+# ---------------------------------------------------------------------------
+# Writes — adopt-or-create, never duplicate
+# ---------------------------------------------------------------------------
+
+_CREATE = """
+mutation ($boardId: ID!, $groupId: String, $name: String!, $values: JSON!) {
+  create_item(board_id: $boardId, group_id: $groupId, item_name: $name,
+              column_values: $values, create_labels_if_missing: true) { id }
+}
+"""
+
+_UPDATE = """
+mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
+  change_multiple_column_values(board_id: $boardId, item_id: $itemId,
+                                column_values: $values,
+                                create_labels_if_missing: true) { id }
+}
+"""
+
+
+def _create_item(mc, board_id: int, group_id: Optional[str], name: str,
+                 values: dict) -> int:
+    data = mc._query(_CREATE, {
+        "boardId": str(board_id), "groupId": group_id,
+        "name": name, "values": json.dumps(values),
+    })
+    return int(data["create_item"]["id"])
+
+
+def _update_item(mc, board_id: int, item_id: int, values: dict) -> None:
+    if not values:
+        return
+    mc._query(_UPDATE, {
+        "boardId": str(board_id), "itemId": str(int(item_id)),
+        "values": json.dumps(values),
+    })
+
+
+# Columns Monday's API is known to reject on write. From Jake's Estimating
+# Pipelines Reference ("Make Opp"): Job Location `location5` is "API-blocked;
+# use text23 as address-text workaround, flag for manual map pin", and the
+# customer link `connect_boards5` is "API-blocked, attempt anyway, flag for
+# manual entry".
+#
+# Everything below goes out in ONE change_multiple_column_values mutation, so a
+# single rejected column would fail the entire handoff. These are therefore
+# attempted, and on failure dropped and retried — the job still lands, and the
+# caller surfaces "set these by hand" instead of losing the write.
+FRAGILE_COLUMNS = frozenset({"location5", "connect_boards9", "connect_boards5"})
+
+
+def _write_with_fallback(mc, board_id: int, group_id, name: str, values: dict,
+                         *, item_id: Optional[int] = None) -> tuple[int, list[str]]:
+    """
+    Create-or-update, retrying without the known-fragile columns if the first
+    attempt is rejected. Returns (item_id, dropped_column_ids).
+    """
+    def _go(payload: dict) -> int:
+        if item_id:
+            _update_item(mc, board_id, item_id, payload)
+            return int(item_id)
+        return _create_item(mc, board_id, group_id, name, payload)
+
+    try:
+        return _go(values), []
+    except Exception as first_err:  # noqa: BLE001 — retry without the fragile bits
+        fragile = [c for c in values if c in FRAGILE_COLUMNS]
+        if not fragile:
+            raise
+        reduced = {k: v for k, v in values.items() if k not in FRAGILE_COLUMNS}
+        print(f"[jobstart] write rejected on board {board_id} "
+              f"({type(first_err).__name__}); retrying without {fragile}",
+              file=sys.stderr)
+        return _go(reduced), fragile
+
+
+def find_item_by_name(mc, board_id: int, name: str) -> Optional[int]:
+    """
+    Find the existing item for this job — ACROSS naming conventions.
+
+    Jordan adopted Jake's pipe standard ("9761 Gertrude | Jent Construction") on
+    2026-07-29, but every item created before that is named some older way
+    ("9761 Gertrude Lane, Cincinnati OH 45231 - Bryant - Jent Construction - New
+    House", "…_Warwick_Commercial"). An exact-name-only lookup would miss those
+    and CREATE A DUPLICATE — the exact failure mode Joe's copy-pasted automation
+    caused and that Jordan asked to be safeguarded against.
+
+    So: search Monday on the most distinctive token (the street number, when
+    there is one), then let subsystems/jobstart/naming.best_match pick the same
+    job by token similarity. Exact matches always win; an AMBIGUOUS match returns
+    None, because adopting the wrong job is worse than creating a new item.
+    """
+    from subsystems.jobstart import naming
+
+    name = (name or "").strip()
+    if not name:
+        return None
+
+    # Monday's contains_text can't do fuzzy, so query on the strongest single
+    # token and score the candidates locally. A street number is near-unique per
+    # job; failing that, the longest word.
+    toks = naming.tokens(name)
+    nums = sorted((t for t in toks if t.isdigit()), key=len, reverse=True)
+    probe = nums[0] if nums else (max(toks, key=len) if toks else name)
+
+    query = """
+    query ($boardId: [ID!], $value: CompareValue!) {
+      boards(ids: $boardId) {
+        items_page(limit: 50, query_params: {
+          rules: [{column_id: "name", compare_value: $value,
+                   operator: contains_text}]}) {
+          items { id name }
+        }
+      }
+    }
+    """
+    candidates: list[dict] = []
+    seen: set[int] = set()
+    for value in dict.fromkeys([probe, name]):
+        try:
+            data = mc._query(query, {"boardId": [str(board_id)], "value": value})
+        except Exception as e:  # noqa: BLE001 — a failed probe just narrows us
+            print(f"[jobstart] name probe {value!r} failed: {e}", file=sys.stderr)
+            continue
+        for board in data.get("boards") or []:
+            for item in (board.get("items_page") or {}).get("items") or []:
+                iid = int(item["id"])
+                if iid not in seen:
+                    seen.add(iid)
+                    candidates.append({"id": iid, "name": item.get("name") or ""})
+
+    hit = naming.best_match(name, candidates)
+    if hit:
+        if hit.get("how") != "exact":
+            print(f"[jobstart] adopted '{hit['name']}' for '{name}' "
+                  f"(score {hit['score']:.2f}) — naming-convention change",
+                  file=sys.stderr)
+        return int(hit["id"])
+    return None
+
+
+def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
+             ops_values: dict, accepted_date: str) -> dict:
+    """
+    THE handoff write. Order matters: Projects first (Operations links to it),
+    then Operations, then the Bid Board stamp that records both.
+
+    `bid` is a get_bid_detail() payload. `projects_values` / `ops_values` are
+    already-shaped, already-validated column dicts from the flow.
+
+    Returns a report dict. Projects failure is fatal to the handoff (raises);
+    Operations and the bid stamp are reported as failures without unwinding the
+    Projects write — an ops task the flow couldn't create is visible and
+    retryable, whereas a half-rolled-back Monday state is not.
+    """
+    report: dict[str, Any] = {}
+    bid_id = int(bid["item_id"])
+
+    # ---- Projects: adopt the linked item, else by name, else create --------
+    project_id: Optional[int] = None
+    for candidate in bid.get("existing_project_ids") or []:
+        project_id = int(candidate)
+        report["project_source"] = "adopted-link"
+        break
+    if project_id is None:
+        found = find_item_by_name(mc, PROJECTS_BOARD_ID, job_name)
+        if found:
+            project_id = found
+            report["project_source"] = "adopted-name"
+
+    p_values = dict(projects_values)
+    p_values[boards.JOBSTART_P_COL_OPPORTUNITY] = {"item_ids": [bid_id]}
+    customer_ids = (bid.get("copy") or {}).get("customer_ids") or []
+    if customer_ids:
+        p_values[boards.JOBSTART_P_COL_CUSTOMER] = {"item_ids": customer_ids}
+    location_raw = (bid.get("copy") or {}).get("location_raw")
+    if location_raw:
+        # Copied verbatim — a location column round-trips its own JSON, and
+        # reconstructing lat/lng from a typed address would be a downgrade.
+        try:
+            p_values[boards.JOBSTART_P_COL_LOCATION] = json.loads(location_raw)
+        except (json.JSONDecodeError, TypeError):
+            pass
+
+    project_id, dropped = _write_with_fallback(
+        mc, PROJECTS_BOARD_ID, boards.JOBSTART_PROJECTS_GROUP, job_name,
+        p_values, item_id=project_id)
+    if report.get("project_source") is None:
+        report["project_source"] = "created"
+    if dropped:
+        report["manual_columns"] = dropped
+    report["project_id"] = project_id
+    report["project_url"] = _item_url(PROJECTS_BOARD_ID, project_id)
+
+    # ---- Operations: the item that was never being created ----------------
+    o_values = dict(ops_values)
+    o_values[boards.JOBSTART_OPS_COL_LINK_PROJECTS] = {"item_ids": [project_id]}
+    o_values[boards.JOBSTART_OPS_COL_LINK_OPPORTUNITY] = {"item_ids": [bid_id]}
+    try:
+        ops_id: Optional[int] = None
+        for candidate in bid.get("existing_ops_ids") or []:
+            ops_id = int(candidate)
+            report["ops_source"] = "adopted-link"
+            break
+        if ops_id is None:
+            found = find_item_by_name(mc, OPERATIONS_BOARD_ID, job_name)
+            if found:
+                ops_id = found
+                report["ops_source"] = "adopted-name"
+        if ops_id is None:
+            ops_id = _create_item(mc, OPERATIONS_BOARD_ID,
+                                  boards.JOBSTART_OPS_GROUP, job_name, o_values)
+            report["ops_source"] = "created"
+        else:
+            _update_item(mc, OPERATIONS_BOARD_ID, ops_id, o_values)
+        report["ops_id"] = ops_id
+        report["ops_url"] = _item_url(OPERATIONS_BOARD_ID, ops_id)
+    except Exception as e:  # noqa: BLE001 — Projects already landed; report it
+        report["ops_error"] = f"{type(e).__name__}: {e}"
+        print(f"[jobstart] Operations write failed for bid {bid_id}: {e}",
+              file=sys.stderr)
+
+    # ---- Bid Board stamp: the columns the legacy automation never wrote ----
+    stamp: dict[str, Any] = {
+        boards.JOBSTART_BID_ACCEPTED_DATE_COL: {"date": accepted_date},
+        boards.JOBSTART_BID_PROJECT_LINK_COL: {"item_ids": [project_id]},
+    }
+    if report.get("ops_id"):
+        stamp[boards.JOBSTART_BID_OPS_LINK_COL] = {"item_ids": [report["ops_id"]]}
+    try:
+        _update_item(mc, BID_BOARD_ID, bid_id, stamp)
+        report["bid_stamped"] = True
+    except Exception as e:  # noqa: BLE001 — the job exists; the stamp can retry
+        report["bid_stamp_error"] = f"{type(e).__name__}: {e}"
+        print(f"[jobstart] Bid stamp failed for bid {bid_id}: {e}",
+              file=sys.stderr)
+
+    return report

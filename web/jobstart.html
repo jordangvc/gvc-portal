@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Job Start</title>
+<style>
+  :root {
+    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
+    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
+    --err-bg: #FEE7E7; --err-line: #DC2626; --ok-bg: #F2F7EE; --ok-line: #bcd6c8;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px; }
+  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
+  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
+  .who a { color: #fff; text-decoration: underline; }
+  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
+  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
+  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 130px; display: grid; gap: 16px; }
+  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 18px; }
+  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
+  /* Standard GVC Portal header (shared across all tool pages) */
+  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  header h1 { text-align: center; }
+  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
+    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
+    border-radius: 8px; opacity: .95; }
+  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
+  header .home-link .chev { font-size: 17px; line-height: 1; }
+  header #health, header .who { justify-self: end; }
+  @media (max-width: 720px) {
+    header { grid-template-columns: auto 1fr; }
+    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
+    header #health, header .who { grid-row: 1; }
+  }
+  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
+  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
+    display: flex; align-items: center; gap: 9px; justify-content: center; }
+  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
+    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
+
+  /* Job Start page */
+  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status.show { display: block; }
+  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
+  #status.ok  { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
+  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); color: #6B4E12; }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
+  #status ul { margin: 6px 0 0; padding-left: 20px; }
+  #status a { color: inherit; font-weight: 700; }
+
+  #search { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+  #search:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  #bidlist { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; gap: 6px; }
+  .bidbtn { display: block; width: 100%; text-align: left; min-height: 48px; padding: 10px 14px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; cursor: pointer; }
+  .bidbtn:hover { border-color: var(--green); }
+  .bidbtn .jname { font-weight: 600; }
+  .bidbtn .jmeta { font-size: 12.5px; color: var(--muted); }
+  .bidbtn.done { opacity: .62; }
+  .linkish { background: none; border: 0; padding: 8px 0; color: var(--green-dark);
+    text-decoration: underline; font: inherit; font-size: 14px; cursor: pointer; min-height: 44px; }
+
+  .pill { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; margin-left: 6px; }
+  .pill.done { background: var(--ok-bg); color: var(--green-dark); border: 1px solid var(--ok-line); }
+  .pill.draft { background: #FBF3E1; color: var(--gold-dark); border: 1px solid #E3CFA0; }
+
+  .ctx { display: grid; gap: 4px; }
+  .ctx .jobname { font-size: 17px; font-weight: 700; }
+  .ctx .jobname a { color: var(--ink); text-decoration: none; }
+  .ctx .jobname a:hover { color: var(--green-dark); text-decoration: underline; }
+  .ctx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; color: var(--muted); }
+  .ctx-meta b { color: var(--ink); font-weight: 600; }
+
+  .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid #f1ece0; }
+  .field:last-child { border-bottom: 0; }
+  .field > label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--muted); }
+  .field.req > label::after { content: " *"; color: var(--err-line); font-size: 15px; }
+  /* A required field that's still empty is the gate talking. Show it plainly
+     rather than only counting it in the bar — the person filling this in on a
+     phone should see WHICH box is holding up the handoff. */
+  .field.missing { background: #FFF8F8; border-radius: 8px; padding-left: 10px; padding-right: 10px;
+    box-shadow: inset 3px 0 0 var(--err-line); }
+  .field .fhelp { font-size: 12.5px; color: var(--muted); }
+  .srctag { margin-left: 8px; font-size: 10.5px; font-weight: 600; text-transform: none;
+    letter-spacing: 0; color: var(--gold-dark); background: #FBF3E1;
+    border: 1px solid #E3CFA0; border-radius: 999px; padding: 1px 8px; }
+  .srcnote { background: #F2F7EE; border: 1px solid var(--ok-line); border-radius: 8px;
+    padding: 10px 13px; font-size: 13.5px; color: var(--green-dark); margin-bottom: 12px; }
+  .srcnote.none { background: #F6F5F0; border-color: var(--line); color: var(--muted); }
+  .srcnote a { color: inherit; font-weight: 700; }
+  .select-wrap { position: relative; display: block; width: 100%; }
+  .status-select { -webkit-appearance: none; appearance: none;
+    width: 100%; min-height: 48px; padding: 10px 42px 10px 16px; border-radius: 10px;
+    border: 1px solid var(--line); background-color: #F6F5F0; color: var(--ink);
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
+  .status-select.unset { color: var(--muted); font-weight: 600; }
+  .status-select:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  .select-chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
+    pointer-events: none; font-size: 13px; opacity: .85; }
+  .status-select option { background: #fff; color: var(--ink); font-weight: 600; }
+  .field input[type="text"], .field input[type="date"], .field input[type="url"],
+  .field input[type="number"], .field textarea {
+    width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
+  .field textarea { min-height: 96px; resize: vertical; }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+
+  #jobname { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
+  #jobname:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(250,250,248,.96);
+    border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
+    display: none; }
+  .savebar.show { display: block; }
+  .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
+  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700;
+    border: 0; border-radius: 10px; min-height: 52px; padding: 12px 22px; font-size: 17px;
+    cursor: pointer; flex: 1; }
+  .btn.gold:hover { filter: brightness(1.06); }
+  .btn.gold:disabled { opacity: .55; cursor: not-allowed; filter: none; }
+  .btn.ghost { background: #fff; color: var(--green-dark); border: 1px solid var(--line);
+    border-radius: 10px; min-height: 52px; padding: 12px 18px; font-size: 15px;
+    font-weight: 700; cursor: pointer; flex: 0 0 auto; }
+  .btn.ghost:hover { border-color: var(--green); }
+
+  /* Handoff state banner — the first thing you should see on opening a job. */
+  .state { border-radius: 8px; padding: 11px 14px; font-size: 14px; margin-bottom: 4px; }
+  .state .lead { font-weight: 700; }
+  .state.draft { background: #F6F5F0; border: 1px solid var(--line); color: var(--muted); }
+  .state.with_ops { background: var(--warn-bg); border: 1px solid var(--warn-line); color: #6B4E12; }
+  .state.sent_back { background: var(--err-bg); border: 1px solid #F3C7C2; color: #7A1F1F; }
+  .state.accepted { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
+  .state a { color: inherit; font-weight: 700; }
+  .readonly-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+  fieldset.lock { border: 0; padding: 0; margin: 0; opacity: .72; }
+  #gatecount { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  #gatecount.blocked { color: #7A1F1F; font-weight: 700; }
+  #savestate { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; min-height: 16px; }
+</style>
+</head>
+<body>
+<header>
+  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
+  <h1>Job Start</h1>
+  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+</header>
+
+<main>
+  <div id="status"></div>
+
+  <div class="card" id="pickcard">
+    <h2>Pick a won bid</h2>
+    <input id="search" type="search" placeholder="Search accepted bids — name, address, estimate #…"
+           autocomplete="off" />
+    <div id="bidlist"><div class="hint">Loading accepted bids from Monday…</div></div>
+    <div class="hint">Bid Board rows at stage <b>Accepted</b>. Jobs already handed off show a
+      Handed off tag — opening one lets you correct the packet and re-send it.</div>
+  </div>
+
+  <div class="card" id="ctxcard" style="display:none;">
+    <h2>Bid <span style="float:right"><button class="linkish" id="changebid" type="button">Change bid</button></span></h2>
+    <div id="statebox"></div>
+    <div class="ctx" id="ctx"></div>
+  </div>
+
+  <div class="card" id="namecard" style="display:none;">
+    <h2>Job name</h2>
+    <input id="jobname" type="text" placeholder="Street Number Name | Builder" />
+    <div id="namenote" class="hint"></div>
+    <div class="hint"><b>GVC standard:</b> <code>Street Number Name | Builder</code> — pipe,
+      no city, state, ZIP or job type. Those live in the fields.
+      Example: <code>9195 Silva | Willow Creek</code></div>
+  </div>
+
+  <div class="card" id="reqcard" style="display:none;">
+    <h2>Required to hand off</h2>
+    <div id="srcnote"></div>
+    <div id="reqfields"></div>
+    <div class="hint">Operations can't start a job without these. Nothing is written to Monday
+      until they're all filled.</div>
+  </div>
+
+  <div class="card" id="optcard" style="display:none;">
+    <h2>The rest of the packet <span style="text-transform:none;font-weight:400;">— optional, but it saves a phone call</span></h2>
+    <div id="optfields"></div>
+    <div class="hint">Every one of these is something a PM would otherwise have to chase down
+      from a driveway.</div>
+  </div>
+
+  <div class="card" id="gccard" style="display:none;">
+    <h2>Confirm the scope with the GC</h2>
+    <p style="margin:0 0 12px;font-size:14px;">
+      Sends the GC's PM and super our scope <b>and our exclusions</b> in writing, with a
+      3-business-day reply window. Every correction they send back is a change order we
+      don't eat.
+    </p>
+    <button class="btn ghost" id="gcemail" type="button" style="width:100%;">
+      Draft the scope confirmation
+    </button>
+    <div id="gcresult" class="hint"></div>
+    <div class="hint">Creates a draft in hello@ — nothing sends until a person reviews it
+      and clicks send.</div>
+  </div>
+</main>
+
+<div class="savebar" id="savebar">
+  <div class="inner">
+    <span id="gatecount">Loading…</span>
+    <button class="btn gold" id="send" type="button" disabled>Send to Operations</button>
+    <button class="btn gold" id="accept" type="button" style="display:none;">Accept this job</button>
+    <button class="btn ghost" id="sendback" type="button" style="display:none;">Send back</button>
+  </div>
+  <div id="savestate"></div>
+</div>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let bids = [];          // picker rows
+let detail = null;      // current bid detail payload
+let values = {};        // field_key -> raw UI value
+let jobName = "";
+let saveTimer = null;   // autosave debounce
+let savingNow = false;
+
+function showStatus(kind, html) {
+  const el = $("#status");
+  el.className = "show " + kind;
+  el.innerHTML = html;
+  el.scrollIntoView({ block: "nearest" });
+}
+function hideStatus() { $("#status").className = ""; }
+
+/* ---------- bid list ---------- */
+
+function bidButton(b) {
+  const meta = [
+    b.estimate_number ? "Est " + b.estimate_number : null,
+    b.estimate_total ? "$" + b.estimate_total : null,
+    b.location,
+  ].filter(Boolean).join(" · ");
+  const S = {
+    with_ops:  ['draft', 'Waiting on Ops'],
+    sent_back: ['draft', 'Sent back'],
+    accepted:  ['done',  'Accepted'],
+    draft:     ['draft', 'Packet started'],
+  };
+  const s = S[b.packet_status] || (b.draft_filled ? S.draft : null);
+  const tags = s ? `<span class="pill ${s[0]}">${s[1]}</span>` : "";
+  return `<button class="bidbtn${b.handed_off ? " done" : ""}" type="button" data-id="${b.item_id}">
+    <div class="jname">${esc(b.name)}${tags}</div>
+    ${meta ? `<div class="jmeta">${esc(meta)}</div>` : ""}
+  </button>`;
+}
+
+function renderBidList() {
+  const q = ($("#search").value || "").trim().toLowerCase();
+  const hits = !q ? bids : bids.filter((b) =>
+    [b.name, b.estimate_number, b.location].some((f) => (f || "").toLowerCase().includes(q)));
+  $("#bidlist").innerHTML = hits.length
+    ? hits.map(bidButton).join("")
+    : `<div class="hint">No accepted bid matches "${esc(q)}".</div>`;
+  document.querySelectorAll("#bidlist .bidbtn").forEach((b) =>
+    b.addEventListener("click", () => loadBid(+b.dataset.id)));
+}
+
+async function loadBids() {
+  try {
+    const r = await fetch("/ui/api/jobstart/bids");
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the bid list.")}<br>${esc(d.advice || "")}`);
+      $("#bidlist").innerHTML = `<div class="hint">Bid list unavailable.</div>`;
+      return;
+    }
+    bids = body.bids || [];
+    renderBidList();
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+    $("#bidlist").innerHTML = `<div class="hint">Bid list unavailable.</div>`;
+  }
+}
+
+/* ---------- bid detail + packet form ---------- */
+
+function textColorFor(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || "");
+  if (!m) return "#1C1917";
+  const n = parseInt(m[1], 16);
+  const lum = 0.299 * (n >> 16) + 0.587 * ((n >> 8) & 255) + 0.114 * (n & 255);
+  return lum > 150 ? "#1C1917" : "#ffffff";
+}
+
+function renderContext(bid, d) {
+  const rows = [
+    bid.estimate_number ? `<span>Estimate <b>${esc(bid.estimate_number)}</b></span>` : "",
+    bid.estimate_total ? `<span>Total <b>$${esc(bid.estimate_total)}</b></span>` : "",
+    bid.customer ? `<span>Customer <b>${esc(bid.customer)}</b></span>` : "",
+    bid.location ? `<span>${esc(bid.location)}</span>` : "",
+    bid.services ? `<span>${esc(bid.services)}</span>` : "",
+  ].filter(Boolean).join("");
+  const notes = [];
+  if (d.already && (d.already.project || d.already.ops)) {
+    const which = [d.already.project ? "a project" : null, d.already.ops ? "an ops task" : null]
+      .filter(Boolean).join(" and ");
+    notes.push(`This bid already has ${which} on Monday. Handing off again updates them in place — it won't create duplicates.`);
+  }
+  if (!d.customer_linked) {
+    notes.push(`No Customer is linked on this bid, so the project will be created without one.`);
+  }
+  if (d.draft_updated_at) {
+    const who = (d.draft_updated_by || "").split("@")[0];
+    notes.push(`Packet last saved ${esc(d.draft_updated_at.slice(0, 16).replace("T", " "))}${who ? " by " + esc(who) : ""}.`);
+  }
+  $("#ctx").innerHTML = `
+    <div class="jobname"><a href="${esc(bid.url)}" target="_blank" rel="noopener">${esc(bid.name)}</a></div>
+    <div class="ctx-meta">${rows}</div>
+    ${notes.map((n) => `<div class="hint">${n}</div>`).join("")}`;
+}
+
+function statusSelectHtml(f) {
+  const val = values[f.key] ?? "";
+  const labels = f.labels || [];
+  const chosen = labels.find((l) => l.label === val);
+  const bg = chosen && chosen.hex ? chosen.hex : "";
+  const fg = bg ? textColorFor(bg) : "";
+  const style = bg ? `background-color:${esc(bg)};color:${fg};border-color:${esc(bg)};` : "";
+  const opts = [`<option value=""${val === "" ? " selected" : ""}>(not set)</option>`].concat(
+    labels.map((l) =>
+      `<option value="${esc(l.label)}"${l.label === val ? " selected" : ""}>${esc(l.label)}</option>`)
+  );
+  return `<span class="select-wrap">
+    <select class="status-select${bg ? "" : " unset"}" data-key="${esc(f.key)}"
+      aria-label="${esc(f.label)}" style="${style}">${opts.join("")}</select>
+    <span class="select-chev"${fg ? ` style="color:${fg};"` : ""}>▼</span></span>`;
+}
+
+function fieldHtml(f) {
+  const v = values[f.key];
+  let control = "";
+  if (f.type === "status") {
+    control = statusSelectHtml(f);
+  } else if (f.type === "date") {
+    control = `<input type="date" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+  } else if (f.type === "number") {
+    control = `<input type="number" inputmode="decimal" step="any" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+  } else if (f.type === "link") {
+    control = `<input type="url" inputmode="url" placeholder="https://…" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+  } else if (f.type === "long_text") {
+    control = `<textarea data-key="${esc(f.key)}">${esc(v || "")}</textarea>`;
+  } else {
+    control = `<input type="text" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+  }
+  const empty = !String(v ?? "").trim();
+  const cls = ["field", f.required ? "req" : "", f.required && empty ? "missing" : ""]
+    .filter(Boolean).join(" ");
+  // Show where a prefilled value came from. A value Jake can't trace is a value
+  // he'll retype, which defeats the point of ingesting it.
+  const SRC = { scope_review: "from the scope review", updates: "from a board update",
+                bid: "from the bid" };
+  const src = !empty && SRC[(detail?.sources || {})[f.key]]
+    ? `<span class="srctag">${SRC[(detail.sources)[f.key]]}</span>` : "";
+  return `<div class="${cls}" data-field="${esc(f.key)}">
+    <label>${esc(f.label)}${src}</label>${control}
+    ${f.help ? `<div class="fhelp">${esc(f.help)}</div>` : ""}</div>`;
+}
+
+function wireField(f) {
+  const root = document.querySelector(`.field[data-field="${CSS.escape(f.key)}"]`);
+  if (!root) return;
+  if (f.type === "status") {
+    const sel = root.querySelector("select");
+    sel.addEventListener("change", () => {
+      values[f.key] = sel.value === "" ? "" : sel.value;
+      // Re-render so the control repaints in the chosen label's board color.
+      root.outerHTML = fieldHtml(f);
+      wireField(f);
+      onEdit();
+    });
+  } else {
+    const input = root.querySelector("input, textarea");
+    input.addEventListener("input", () => {
+      values[f.key] = input.value;
+      root.classList.toggle("missing", f.required && !input.value.trim());
+      onEdit();
+    });
+  }
+}
+
+function renderSourceNote() {
+  const sr = detail?.scope_review || {};
+  const el = $("#srcnote");
+  if (sr.found) {
+    const bits = [];
+    if ((sr.trades || []).length) bits.push(`${sr.trades.join(", ")}`);
+    if (sr.questions) bits.push(`${sr.questions} open question${sr.questions === 1 ? "" : "s"}`);
+    if (sr.exclusions) bits.push(`${sr.exclusions} exclusion${sr.exclusions === 1 ? "" : "s"}`);
+    const link = sr.url
+      ? ` <a href="${esc(sr.url)}" target="_blank" rel="noopener">Open it</a>` : "";
+    el.className = "srcnote";
+    el.innerHTML = `✔ Prefilled from <b>${esc(sr.name || "the scope review")}</b>${
+      bits.length ? ` — ${esc(bits.join(" · "))}` : ""}.${link}
+      <br>Check it over and fix anything the document got wrong.`;
+  } else {
+    el.className = "srcnote none";
+    el.innerHTML = `No scope review found for this job, so these are prefilled from
+      the bid only. ${esc(sr.detail || "")}`;
+  }
+}
+
+function renderForm() {
+  const fields = detail.fields || [];
+  renderSourceNote();
+  const req = fields.filter((f) => f.required);
+  const opt = fields.filter((f) => !f.required);
+  $("#reqfields").innerHTML = req.map(fieldHtml).join("");
+  $("#optfields").innerHTML = opt.map(fieldHtml).join("");
+  fields.forEach(wireField);
+  refreshGate();
+}
+
+/* ---------- the gate (client mirror; the server is the enforcement) ---------- */
+
+function missingRequired() {
+  return (detail?.fields || [])
+    .filter((f) => f.required && !String(values[f.key] ?? "").trim())
+    .map((f) => f.label);
+}
+
+function refreshGate() {
+  const missing = missingRequired();
+  const el = $("#gatecount");
+  const status = detail?.status || "draft";
+  const editable = !!detail?.editable;
+
+  if (!editable) {
+    el.className = "";
+    el.textContent = status === "accepted" ? "Accepted" : "With Operations";
+  } else if (missing.length) {
+    el.className = "blocked";
+    el.textContent = `${missing.length} still needed`;
+  } else {
+    el.className = "";
+    el.textContent = "Packet complete";
+  }
+  $("#send").disabled = missing.length > 0 || savingNow || !editable;
+}
+
+/* ---------- state banner + which buttons are live ---------- */
+
+function renderState() {
+  const d = detail || {};
+  const status = d.status || "draft";
+  const who = (s) => (s || "").split("@")[0];
+  let html = "";
+
+  if (status === "with_ops") {
+    const pdf = d.preview_url
+      ? ` <a href="${esc(d.preview_url)}" target="_blank" rel="noopener">Read the packet PDF</a>`
+      : "";
+    html = `<div class="state with_ops"><span class="lead">Waiting on Operations.</span>
+      Sent by ${esc(who(d.sent_by)) || "Sales"}.${pdf}</div>`;
+  } else if (status === "sent_back") {
+    html = `<div class="state sent_back"><span class="lead">Sent back by Operations.</span>
+      ${d.sent_back_note ? esc(d.sent_back_note) : "No note given."}
+      <div class="readonly-note">Fix it and send again.</div></div>`;
+  } else if (status === "accepted") {
+    const pdf = d.packet_url
+      ? ` <a href="${esc(d.packet_url)}" target="_blank" rel="noopener">Open the packet in Drive</a>`
+      : "";
+    html = `<div class="state accepted"><span class="lead">Accepted by ${esc(who(d.accepted_by)) || "Operations"}.</span>
+      This job is live.${pdf}</div>`;
+  } else {
+    html = `<div class="state draft"><span class="lead">Draft.</span>
+      Nobody has been notified yet — it saves as you type.</div>`;
+  }
+  $("#statebox").innerHTML = html;
+
+  // Buttons. Ops sees Accept / Send back only while the packet is with them.
+  const showOps = status === "with_ops";
+  $("#send").style.display = d.editable ? "" : "none";
+  $("#accept").style.display = showOps && d.can_accept ? "" : "none";
+  $("#sendback").style.display = showOps ? "" : "none";
+
+  if (showOps && !d.can_accept && d.self_sent) {
+    $("#savestate").textContent =
+      "You sent this packet — someone in Operations needs to accept it.";
+  }
+
+  // An accepted or in-review packet is a record, not a form.
+  const lock = !d.editable;
+  document.querySelectorAll("#reqfields, #optfields").forEach((el) => {
+    el.querySelectorAll("input, textarea, select").forEach((c) => { c.disabled = lock; });
+  });
+  $("#jobname").disabled = lock;
+}
+
+/* ---------- autosave (the reason a hard gate is survivable in the field) ---------- */
+
+function onEdit() {
+  // A packet with ops, or already accepted, is a record — never autosave over it.
+  if (detail && !detail.editable) { refreshGate(); return; }
+  refreshGate();
+  $("#savestate").textContent = "Saving…";
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(saveDraft, 800);
+}
+
+async function saveDraft() {
+  if (!detail) return;
+  try {
+    const r = await fetch(`/ui/api/jobstart/bid/${detail.bid.item_id}/draft`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        values, job_name: jobName, label: detail.bid.name,
+        updated_at: new Date().toISOString(),
+      }),
+    });
+    if (!r.ok) { $("#savestate").textContent = "Not saved — check your connection"; return; }
+    const body = await r.json();
+    $("#savestate").textContent = body.stale
+      ? "Someone else edited this packet more recently — reload to see theirs"
+      : "Saved — you can finish this later on any device";
+  } catch (e) {
+    $("#savestate").textContent = "Not saved — check your connection";
+  }
+}
+
+async function loadBid(itemId, opts) {
+  const keepStatus = !!(opts && opts.keepStatus);
+  if (!keepStatus) hideStatus();
+  if (!keepStatus) $("#bidlist").innerHTML = `<div class="hint">Loading bid…</div>`;
+  try {
+    const r = await fetch(`/ui/api/jobstart/bid/${itemId}`);
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the bid.")}<br>${esc(d.advice || "")}`);
+      renderBidList();
+      return;
+    }
+    detail = body;
+    values = Object.assign({}, body.values || {});
+    jobName = body.job_name || body.bid.name || "";
+    $("#jobname").value = jobName;
+    renderNameNote();
+    renderContext(detail.bid, detail);
+    renderForm();          // calls refreshGate()
+    renderState();         // banner + which buttons are live + lock state
+    $("#pickcard").style.display = "none";
+    ["#ctxcard", "#namecard", "#reqcard", "#optcard", "#gccard"].forEach((s) => { $(s).style.display = ""; });
+    $("#savebar").classList.add("show");
+    if (!keepStatus) { $("#savestate").textContent = ""; window.scrollTo({ top: 0 }); }
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+    renderBidList();
+  }
+}
+
+function backToList() {
+  clearTimeout(saveTimer);
+  detail = null;
+  ["#ctxcard", "#namecard", "#reqcard", "#optcard"].forEach((s) => { $(s).style.display = "none"; });
+  $("#savebar").classList.remove("show");
+  $("#pickcard").style.display = "";
+  hideStatus();
+  loadBids();
+}
+
+/* ---------- the three actions: send · accept · send back ---------- */
+
+function showActionError(d) {
+  if (d.missing && d.missing.length) {
+    // The server gate is the real one; if it disagrees with us, believe it.
+    d.missing.forEach((m) => {
+      const el = document.querySelector(`.field[data-field="${CSS.escape(m.key)}"]`);
+      if (el) el.classList.add("missing");
+    });
+    showStatus("err",
+      `<strong>Packet incomplete.</strong> ${esc(d.detail || "")}` +
+      `<ul>${d.missing.map((m) => `<li>${esc(m.label)}</li>`).join("")}</ul>` +
+      `${esc(d.advice || "")}`);
+  } else {
+    showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "That didn't work.")}<br>${esc(d.advice || "")}`);
+  }
+}
+
+async function act(path, payload, btn, busyLabel, onDone) {
+  if (!detail) return;
+  const restore = btn.textContent;
+  savingNow = true;
+  btn.disabled = true;
+  btn.textContent = busyLabel;
+  hideStatus();
+  clearTimeout(saveTimer);
+  try {
+    const r = await fetch(`/ui/api/jobstart/bid/${detail.bid.item_id}/${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    const body = await r.json();
+    if (!r.ok) { showActionError(body.detail || body); return; }
+    onDone(body);
+    // Re-read the job so the banner, buttons and lock state come from the
+    // server's view of the packet rather than what we assumed happened.
+    await loadBid(detail.bid.item_id, { keepStatus: true });
+    loadBids();
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}. Reopen this job to see whether it landed before trying again.`);
+  } finally {
+    savingNow = false;
+    btn.textContent = restore;
+    refreshGate();
+  }
+}
+
+function sendToOps() {
+  const missing = missingRequired();
+  if (missing.length) { refreshGate(); return; }
+  act("send", { values, job_name: jobName }, $("#send"), "Sending…", (body) => {
+    const pdf = body.preview_url
+      ? ` <a href="${esc(body.preview_url)}" target="_blank" rel="noopener">Read the packet</a>`
+      : "";
+    showStatus("ok",
+      `✔ <strong>Sent to Operations.</strong> They've been pinged in Slack and
+       need to accept before this job goes on the schedule.${pdf}`);
+  });
+}
+
+function acceptJob() {
+  act("accept", {}, $("#accept"), "Accepting…", (body) => {
+    const links = [
+      body.packet_url ? `<a href="${esc(body.packet_url)}" target="_blank" rel="noopener">Packet PDF in Drive</a>` : "",
+      body.project_url ? `<a href="${esc(body.project_url)}" target="_blank" rel="noopener">Project</a>` : "",
+      body.ops_url ? `<a href="${esc(body.ops_url)}" target="_blank" rel="noopener">Ops task</a>` : "",
+    ].filter(Boolean).join(" · ");
+    const made = [
+      body.project_source === "created" ? "Project created" : "Project updated",
+      body.ops_source === "created" ? "ops task created" : (body.ops_id ? "ops task updated" : null),
+    ].filter(Boolean).join(", ");
+    const warnings = body.warnings || [];
+    if (body.ok && !warnings.length) {
+      showStatus("ok", `✔ <strong>Accepted.</strong> ${esc(made)}.<br>${links}`);
+    } else {
+      showStatus("warn",
+        `<strong>Accepted with warnings.</strong> ${esc(made)}.` +
+        `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${links}`);
+    }
+  });
+}
+
+async function draftGcEmail() {
+  if (!detail) return;
+  const btn = $("#gcemail");
+  const out = $("#gcresult");
+  btn.disabled = true;
+  btn.textContent = "Drafting…";
+  out.textContent = "";
+  clearTimeout(saveTimer);
+  try {
+    // Make sure the server has the latest packet before it composes from it.
+    await saveDraft();
+    const r = await fetch(`/ui/api/jobstart/bid/${detail.bid.item_id}/gc-email`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const body = await r.json();
+    if (!r.ok) {
+      const d = body.detail || body;
+      out.innerHTML = `<span style="color:#7A1F1F;"><b>${esc(d.detail || "Couldn't draft it.")}</b><br>${esc(d.advice || "")}</span>`;
+      return;
+    }
+    const link = body.gmail_url
+      ? ` <a href="${esc(body.gmail_url)}" target="_blank" rel="noopener">Open the draft in Gmail</a>`
+      : "";
+    out.innerHTML =
+      `✔ <b>${body.replaced_existing ? "Draft updated" : "Draft created"}</b> in hello@ —
+       to ${esc(body.to)}${body.cc ? `, cc ${esc(body.cc)}` : ""}.${link}
+       <br>Read it, then hit send yourself.`;
+  } catch (e) {
+    out.innerHTML = `<span style="color:#7A1F1F;">Network error — ${esc(e.message)}</span>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Draft the scope confirmation";
+  }
+}
+
+function sendBackToSales() {
+  const note = window.prompt(
+    "What does Sales still need to give you?\n\nBe specific — this note is what they'll fix.");
+  if (note === null) return;
+  if (!note.trim()) {
+    showStatus("err", "Say what's missing so Sales knows what to fix.");
+    return;
+  }
+  act("send-back", { note }, $("#sendback"), "Sending back…", () => {
+    showStatus("ok", "✔ <strong>Sent back to Sales</strong> with your note.");
+  });
+}
+
+/* ---------- boot ---------- */
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML = `<span>${dot(h.monday_configured)} Monday</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+$("#search").addEventListener("input", renderBidList);
+$("#changebid").addEventListener("click", backToList);
+$("#send").addEventListener("click", sendToOps);
+$("#accept").addEventListener("click", acceptJob);
+$("#sendback").addEventListener("click", sendBackToSales);
+$("#gcemail").addEventListener("click", draftGcEmail);
+$("#jobname").addEventListener("input", () => { jobName = $("#jobname").value; onEdit(); });
+checkHealth();
+loadBids();
+</script>
+</body>
+</html>

@@ -111,3 +111,241 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
     {"id": "text_mkz49r0m",    "label": "Lock Box",           "type": "text"},
     {"id": "text_mm14mhpm",    "label": "Shower Instructions", "type": "text"},
 )
+
+
+# ---------------------------------------------------------------------------
+# Job Start — the Sales → Operations handoff contract (designed 2026-07-29;
+# docs/portal-job-start-design.md). Jake's ask, Jordan's calls: portal-hosted,
+# HARD GATE, history left alone.
+#
+# JOBSTART_FIELDS below IS the contract: one spec drives the form, the gate,
+# and the Monday writes. Adding a field to the handoff is a config edit here,
+# not a code change — same principle as JOBCHECK_COLUMNS above.
+#
+# Each entry:
+#   key       stable form/draft key (never reuse one for a different meaning)
+#   label     what Jake sees
+#   type      status | text | long_text | date | number | link
+#   targets   ((board, column_id), ...) — board is "projects" or "operations".
+#             A field may write to MORE than one board; GVC genuinely carries
+#             the same fact in two places (Scaffold lives on both boards).
+#   required  True ⇒ part of the gate. Keep this set SMALL — over-requiring a
+#             hard gate is how gates get routed around (design doc §The gate).
+#   prefill   Bid Board column id to prefill from, or None.
+#   help      one line of field guidance shown under the input.
+#
+# Column ids/types verified live against boards 1918846405 (Projects) and
+# 1920364853 (Operations) via get_board_info on 2026-07-29.
+# ---------------------------------------------------------------------------
+
+# Where a handed-off job lands. Projects group = the same one the legacy Bid
+# Board automation targets, so an adopted item stays where the team expects it.
+JOBSTART_PROJECTS_GROUP = os.environ.get(
+    "GVC_MONDAY_JOBSTART_PROJECTS_GROUP", "new_group25317__1")   # New Projects (Not Started)
+JOBSTART_OPS_GROUP = os.environ.get(
+    "GVC_MONDAY_JOBSTART_OPS_GROUP", "group_mm3khfvc")           # Upcoming Projects (Not Started)
+
+# Bid Board stage that makes a bid eligible for handoff.
+JOBSTART_ACCEPTED_STAGE = os.environ.get("GVC_MONDAY_JOBSTART_STAGE", "Accepted")
+
+# Render types the Job Start form supports (and the only ones the spec may use).
+JOBSTART_RENDER_TYPES = ("status", "text", "long_text", "date", "number", "link")
+
+# Columns Job Start may NEVER write, whatever the config says. Contract/money
+# columns are owned by the estimate + invoice flows; a handoff form must not be
+# able to restate the contract value.
+JOBSTART_HARD_EXCLUDED_IDS = frozenset({
+    "lookup_mm40txvs",    # Projects "Contract Value (from Opportunity)" (mirror)
+    "lookup_mkzm8dqa",    # Projects "Estimate $" (mirror)
+    "numeric_mm3fcjmn",   # Projects "Pay App #" — AIA billing sequence
+    "numeric_mm5ahj91",   # Projects "CO Amount"
+    "date_mm3zry96",      # Operations "Ready for Invoice Date" — triggers billing
+    "color_mm2xd40t",     # Operations "BIllable" — set by the flow, not the form
+})
+
+# Types that can never be written through the packet form (people columns need
+# Monday user ids; relations/mirrors are set by the flow's own link logic).
+JOBSTART_HARD_EXCLUDED_TYPES = frozenset({
+    "people", "multiple_person", "board_relation", "mirror", "lookup",
+    "formula", "auto_number", "creation_log", "last_updated", "button",
+    "subtasks", "file", "progress", "timeline", "integration", "location",
+})
+
+JOBSTART_FIELDS: tuple[dict, ...] = (
+    # ---- The gate: what ops genuinely cannot start a job without -----------
+    {"key": "project_type", "label": "Project type", "type": "status",
+     "targets": (("projects", "status"),), "required": True,
+     "prefill": "status",
+     "help": "Residential or Commercial — drives crew, rates and billing."},
+
+    {"key": "builder", "label": "Who is the builder?", "type": "text",
+     "targets": (("projects", "text"),), "required": True, "prefill": None,
+     "help": "The GC, builder or homeowner we're working for on site."},
+
+    {"key": "supervisor", "label": "Site supervisor / contact", "type": "text",
+     "targets": (("projects", "text5"),), "required": True, "prefill": None,
+     "help": "Who the crew calls from the driveway. Name and number."},
+
+    # Packet-only, but load-bearing: these address the GC scope-confirmation
+    # email. Getting the GC to reconcile our scope in writing BEFORE we
+    # mobilize is the cheapest change order we'll ever avoid.
+    {"key": "gc_pm", "label": "GC project manager", "type": "text",
+     "targets": (), "required": False, "prefill": None,
+     "help": "Name of the GC's PM — the person who signs off on scope."},
+
+    {"key": "gc_email", "label": "GC PM email", "type": "text",
+     "targets": (), "required": False, "prefill": "mirror34",
+     "help": "Where the scope confirmation goes. Prefilled from the bid's "
+             "customer record when we have it."},
+
+    {"key": "super_email", "label": "Site super email", "type": "text",
+     "targets": (), "required": False, "prefill": None,
+     "help": "Copied on the scope confirmation, so the super can't say they "
+             "never saw it."},
+
+    {"key": "scope", "label": "Scope of work", "type": "long_text",
+     "targets": (("projects", "details"),), "required": True,
+     "prefill": "details",
+     "help": "What we sold, in the crew's language. Prefilled from the bid — "
+             "edit it for the field."},
+
+    # The single highest-value field in the packet. Ops finding out mid-job what
+    # was NOT sold is breakage #1 in the handoff standard — this is the line
+    # that stops us eating the difference.
+    {"key": "exclusions", "label": "What we did NOT sell", "type": "long_text",
+     "targets": (("projects", "notes7"),), "required": True, "prefill": None,
+     "help": "Exclusions, in writing. The part that saves us when the GC "
+             "assumes it was included."},
+
+    {"key": "start_date", "label": "Start date", "type": "date",
+     "targets": (("projects", "date"), ("operations", "date")), "required": True,
+     "prefill": None,
+     "help": "Best known start. Ops reschedules — this just gets it on the board."},
+
+    {"key": "board_count", "label": "Board count", "type": "text",
+     "targets": (("projects", "board_counts"),), "required": True,
+     "prefill": "numbers0",
+     "help": "Sheets of board. Ops stocks from this number."},
+
+    {"key": "lock_box", "label": "Lock box / site access", "type": "text",
+     "targets": (("operations", "text_mkz49r0m"),), "required": True,
+     "prefill": None,
+     "help": "Code, key location, or who lets the crew in. Day-one blocker "
+             "when it's missing — say \"none needed\" if the site is open."},
+
+    # ---- From the scope review, not typed --------------------------------
+    # Jake's scope review flags these itself with [NEEDS CLARIFICATION]. Per
+    # Jake (2026-07-29): the scope review "lists a lot of things that Rob might
+    # have minor questions on". They are the items that become change orders
+    # when they reach the field unread, so they ride the packet to Ops.
+    {"key": "open_questions", "label": "Open questions for Ops",
+     "type": "long_text", "targets": (("operations", "long_text_mkpzf3je"),),
+     "required": False, "prefill": None,
+     "help": "Pulled from the [NEEDS CLARIFICATION] lines in the scope review. "
+             "Answer what you can before handing off."},
+
+    {"key": "allowances", "label": "Allowances & walkthrough notes",
+     "type": "long_text", "targets": (), "required": False, "prefill": None,
+     "help": "Pulled from the scope review's walkthrough notes — allowance "
+             "line items, decisions, anything agreed on site."},
+
+    # ---- Prompted but optional -------------------------------------------
+    {"key": "expected_finish", "label": "Expected finish", "type": "date",
+     "targets": (("projects", "date_mm1gnhtf"),), "required": False,
+     "prefill": None, "help": "If the builder gave a date to hit."},
+
+    {"key": "lot", "label": "Lot # / type", "type": "text",
+     "targets": (("projects", "text_mm47fvr7"),), "required": False,
+     "prefill": "text23", "help": "Subdivision lot number, where there is one."},
+
+    {"key": "ceiling_finish", "label": "Ceiling finish", "type": "status",
+     "targets": (("projects", "color_mkzab319"),), "required": False,
+     "prefill": None, "help": "Knockdown, smooth, etc."},
+
+    {"key": "garage_finish", "label": "Garage finish", "type": "status",
+     "targets": (("projects", "color_mkzaf1eq"),), "required": False,
+     "prefill": None, "help": "How far the garage goes — a classic rework cause."},
+
+    {"key": "window_type", "label": "Window type", "type": "status",
+     "targets": (("operations", "color_mm02xmc0"),), "required": False,
+     "prefill": None, "help": "Drywall, wood, or both."},
+
+    {"key": "window_returns", "label": "Window returns", "type": "text",
+     "targets": (("projects", "status7"),), "required": False,
+     "prefill": None, "help": "Any special return detail the crew should expect."},
+
+    {"key": "scaffold", "label": "Scaffold", "type": "text",
+     "targets": (("projects", "text76"), ("operations", "text_mkz4p9tk")),
+     "required": False, "prefill": "text7",
+     "help": "Needed? Whose? Written to both boards."},
+
+    {"key": "heater_cans", "label": "Heater / cans", "type": "text",
+     "targets": (("operations", "text_mkz4q570"),), "required": False,
+     "prefill": None, "help": "Heat on site, or what the crew needs to bring."},
+
+    {"key": "shower", "label": "Shower instructions", "type": "text",
+     "targets": (("operations", "text_mm14mhpm"),), "required": False,
+     "prefill": None, "help": "Tile/shower detail if this job has one."},
+
+    {"key": "takeoff_link", "label": "Take-off / stocking sheet", "type": "link",
+     "targets": (("projects", "link"),), "required": False, "prefill": "link_1",
+     "help": "Google Sheet link, if a takeoff was done."},
+
+    # Packet-only: no Monday column, appears on the PDF. Reconciling our scope
+    # with the GC's in writing before mobilization is the cheapest change order
+    # we will ever avoid — but there's no board column for it, and inventing one
+    # to hold a date isn't worth it.
+    {"key": "gc_confirmed_on", "label": "Scope emailed to the GC on",
+     "type": "date", "targets": (), "required": False, "prefill": None,
+     "help": "Date you sent the scope to the GC's PM and super. Their reply is "
+             "what catches a mismatch before the crew is on site."},
+)
+
+
+# --- Bid Board source columns (reads + the post-handoff stamp) --------------
+# Verified live 2026-07-29. The stamp columns are the ones the legacy automation
+# never wrote: Accepted Date is null on EVERY won deal to date.
+JOBSTART_BID_STAGE_COL = "deal_stage"
+JOBSTART_BID_ACCEPTED_DATE_COL = "date6"          # "Accepted Date"
+JOBSTART_BID_PROJECT_LINK_COL = "connect_boards4"  # "Projects"
+JOBSTART_BID_CUSTOMER_COL = "connect_boards5"      # "Customer Name"
+JOBSTART_BID_LOCATION_COL = "location5"
+JOBSTART_BID_ESTIMATE_NUM_COL = "numbers18"
+JOBSTART_BID_ESTIMATE_TOTAL_COL = "number"
+JOBSTART_BID_SERVICES_COL = "dropdown"
+JOBSTART_BID_ESTIMATE_PDF_COL = "file_mkvk7hyz"
+
+# The Bid Board has TWO relation columns pointing at Operations —
+# connect_boards1 ("Team Tasks") and board_relation_mm44jdnw ("Operations").
+# Both are empty on 100% of accepted bids and `settings_str` does NOT expose a
+# column's reciprocal partner, so neither the data nor the API can break the
+# tie (checked 2026-07-29). Resolved by naming + id provenance:
+#   • board_relation_mm44jdnw is literally titled "Operations"
+#   • its Operations-side counterpart board_relation_mm44mja shares the `mm44`
+#     generation prefix — Monday mints reciprocal pairs together, so these two
+#     were created as a pair, while "Team Tasks"/connect_boards1 is an older
+#     column from the subitem-era naming scheme
+# Both sides stay env-overridable: the first live handoff proves it, because a
+# true pair shows the link on BOTH boards from a single write.
+JOBSTART_BID_OPS_LINK_COL = os.environ.get(
+    "GVC_MONDAY_BID_OPS_LINK_COL", "board_relation_mm44jdnw")
+
+# --- Projects/Operations columns the FLOW owns (not packet fields) ----------
+JOBSTART_P_COL_CUSTOMER = "connect_boards9"
+JOBSTART_P_COL_LOCATION = "location5"
+JOBSTART_P_COL_OPPORTUNITY = "board_relation_mm40rg52"
+JOBSTART_P_COL_PROJECT_STATUS = "deal_stage"
+JOBSTART_P_COL_INVOICE_STATUS = "status0"
+JOBSTART_P_NOT_STARTED_LABEL = "Not Started"
+
+JOBSTART_OPS_COL_STAGE = "status"
+JOBSTART_OPS_COL_BILLABLE = "color_mm2xd40t"
+JOBSTART_OPS_COL_LINK_PROJECTS = "link_to_projects"
+# Paired with JOBSTART_BID_OPS_LINK_COL above (the `mm44` generation). The
+# Operations board ALSO has an older board_relation_mkzt3d6b with the identical
+# title "link to Opportunities" — deliberately not used, so the bid↔ops link
+# lives on exactly one pair of columns instead of being split across two.
+JOBSTART_OPS_COL_LINK_OPPORTUNITY = os.environ.get(
+    "GVC_MONDAY_OPS_OPPORTUNITY_LINK_COL", "board_relation_mm44mja")
+JOBSTART_OPS_STAGE_LABEL = "Upcoming"
+JOBSTART_OPS_BILLABLE_LABEL = "Yes"

@@ -76,6 +76,7 @@ from orchestrators import check_flow
 from orchestrators import coi_flow
 from orchestrators import lien_flow
 from orchestrators import jobcheck_flow
+from orchestrators import jobstart_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
@@ -1980,6 +1981,275 @@ def ui_jobcheck_save(item_id: int, req: JobCheckSaveRequest, request: Request) -
             status_code=status,
             detail={"ok": False, "code": code, "detail": detail, "advice": advice},
         )
+
+
+# ---------------------------------------------------------------------------
+# Job Start routes — the Sales → Operations handoff (designed 2026-07-29,
+# docs/portal-job-start-design.md). Gated by the `jobstart` grant.
+#
+# This is a HARD GATE (Jordan's call): the handoff POST refuses with 422 and a
+# named missing-field list until the packet is complete. The UI's disabled
+# button is a courtesy — jobstart_flow.require_complete() is the enforcement,
+# re-run server-side on every submit.
+#
+# The draft PUT is deliberately NOT gated: autosaving a partial packet is the
+# whole mitigation that makes a hard gate survivable in the field.
+# ---------------------------------------------------------------------------
+
+class JobStartDraftRequest(BaseModel):
+    values: dict = Field(..., description="{field_key: raw value} — partial is fine.")
+    job_name: Optional[str] = Field(
+        None, description="Item name to create on Projects/Operations.")
+    label: Optional[str] = Field(None, description="Bid name, for the draft list.")
+    updated_at: Optional[str] = Field(
+        None, description="Client ISO timestamp; older than stored ⇒ ignored as stale.")
+
+
+class JobStartSendRequest(BaseModel):
+    values: dict = Field(..., description="{field_key: raw value} — the full packet.")
+    job_name: Optional[str] = Field(
+        None, description="Item name to create on Projects/Operations.")
+
+
+class JobStartSendBackRequest(BaseModel):
+    note: str = Field(..., description="What Operations still needs.")
+
+
+@app.get("/ui/jobstart", response_class=HTMLResponse)
+def ui_jobstart_page(request: Request) -> HTMLResponse:
+    """Serve the Job Start page (Sales → Operations handoff)."""
+    email = require_feature(request, "jobstart")
+    activity.log_event("tool.open", actor=email, target="jobstart")
+    path = WEB_DIR / "jobstart.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+
+
+@app.get("/ui/api/jobstart/bids")
+def ui_jobstart_bids(request: Request) -> dict:
+    """Accepted bids awaiting handoff, with draft + handed-off state. Read-only."""
+    require_feature(request, "jobstart")
+    try:
+        return jobstart_flow.list_open_handoffs()
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] bids error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
+@app.get("/ui/api/jobstart/bid/{bid_id}")
+def ui_jobstart_bid(bid_id: int, request: Request) -> dict:
+    """One bid's context, packet spec, prefilled values and gate state."""
+    actor = require_feature(request, "jobstart")
+    try:
+        detail = jobstart_flow.get_handoff_detail(bid_id, actor)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] bid error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail_msg, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail_msg, "advice": advice},
+        )
+    if detail is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"ok": False, "code": "BID_NOT_FOUND",
+                    "detail": f"Bid {bid_id} doesn't exist on the Bid Board.",
+                    "advice": "Reload the list and pick again."},
+        )
+    return detail
+
+
+@app.put("/ui/api/jobstart/bid/{bid_id}/draft")
+def ui_jobstart_save_draft(bid_id: int, req: JobStartDraftRequest,
+                           request: Request) -> dict:
+    """
+    Autosave a partial packet. NEVER gated — this is what lets a salesperson
+    start the packet in a driveway and finish it at a desk.
+    """
+    actor = require_feature(request, "jobstart")
+    try:
+        return jobstart_flow.save_packet_draft(
+            bid_id, req.values, actor, job_name=req.job_name,
+            label=req.label, updated_at=req.updated_at)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] draft error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
+def _jobstart_guard(result: dict) -> dict:
+    """Shared result → HTTP mapping for the three handoff actions."""
+    if result.get("blocked"):
+        missing = result.get("missing") or []
+        names = ", ".join(m["label"] for m in missing)
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "PACKET_INCOMPLETE",
+                    "detail": f"The packet needs {len(missing)} more "
+                              f"field(s): {names}.",
+                    "advice": "Fill the highlighted fields. Your packet is "
+                              "saved — you can come back to it.",
+                    "missing": missing},
+        )
+    if result.get("field_errors"):
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "PACKET_INVALID",
+                    "detail": result.get("detail") or "Some fields couldn't be saved.",
+                    "advice": "Fix the highlighted fields and try again.",
+                    "field_errors": result["field_errors"]},
+        )
+    if not result.get("ok"):
+        raise HTTPException(
+            status_code=409,
+            detail={"ok": False,
+                    "code": "SELF_ACCEPT" if result.get("self_accept") else "HANDOFF_STATE",
+                    "detail": result.get("detail") or "That action isn't available.",
+                    "advice": "Reload the job to see where the packet stands."},
+        )
+    return result
+
+
+@app.post("/ui/api/jobstart/bid/{bid_id}/send")
+def ui_jobstart_send(bid_id: int, req: JobStartSendRequest,
+                     request: Request) -> dict:
+    """
+    Sales sends the packet to Operations. Gated: an incomplete packet is refused
+    with 422 and the named missing fields. Renders the packet PDF and pings ops.
+    NOTHING is written to Monday here — that happens on acceptance.
+    """
+    actor = require_feature(request, "jobstart")
+    try:
+        result = jobstart_flow.send_to_ops(bid_id, req.values, actor,
+                                           job_name=req.job_name)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] send error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+    return _jobstart_guard(result)
+
+
+@app.post("/ui/api/jobstart/bid/{bid_id}/accept")
+def ui_jobstart_accept(bid_id: int, request: Request) -> dict:
+    """
+    THE handoff. Operations accepts, and only now does the job become real:
+    adopt-or-create the Projects item, adopt-or-create the Operations item (the
+    one the legacy automation never made), stamp the bid, file the accepted
+    packet PDF into the job's Drive folder, and post the links to Slack.
+
+    Refused (409) if the packet isn't waiting on ops, or if the accepter is the
+    person who sent it — a handoff with one signature isn't a handoff.
+    """
+    actor = require_feature(request, "jobstart")
+    try:
+        result = jobstart_flow.accept(bid_id, actor)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] accept error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+    return _jobstart_guard(result)
+
+
+@app.post("/ui/api/jobstart/bid/{bid_id}/gc-email")
+def ui_jobstart_gc_email(bid_id: int, request: Request) -> dict:
+    """
+    Draft the GC scope-confirmation email into hello@ Drafts. DRAFT ONLY — the
+    locked architecture never auto-sends to a customer; a human reviews and hits
+    send. Re-running updates the same draft in place.
+    """
+    actor = require_feature(request, "jobstart")
+    try:
+        result = jobstart_flow.email_scope_to_gc(bid_id, actor)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] gc-email error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+    if not result.get("ok"):
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": result.get("code") or "GC_EMAIL_BLOCKED",
+                    "detail": result.get("detail") or "Couldn't draft the email.",
+                    "advice": result.get("advice")
+                              or "Fill in the missing detail and try again."},
+        )
+    return result
+
+
+@app.post("/ui/api/jobstart/bid/{bid_id}/send-back")
+def ui_jobstart_send_back(bid_id: int, req: JobStartSendBackRequest,
+                          request: Request) -> dict:
+    """Operations returns a packet to Sales naming what's missing."""
+    actor = require_feature(request, "jobstart")
+    try:
+        result = jobstart_flow.send_back(bid_id, req.note, actor)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] send-back error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+    return _jobstart_guard(result)
 
 
 # ---------------------------------------------------------------------------

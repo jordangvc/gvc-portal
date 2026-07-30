@@ -1,0 +1,250 @@
+{#
+  Sales → Operations handoff packet (designed 2026-07-29,
+  docs/portal-job-start-design.md). Rendered by WeasyPrint from the portal
+  packet — every field is populated from Monday, Drive, or what Sales typed.
+  Nothing on this page is ever handwritten.
+
+  Brand palette per GVC Brand Guidelines 2026: dark green #548427, bright
+  #7EB438, light #AECB89, cream #D6D2C4, matte gold #B6985A.
+#}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<style>
+  @page { size: letter portrait; margin: 0.5in 0.55in 0.6in; }
+  * { box-sizing: border-box; }
+  body { font-family: "Open Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+         font-size: 9.5pt; line-height: 1.42; color: #17210F; margin: 0; }
+  h1, h2, .mont { font-family: "Montserrat", "Segoe UI", Helvetica, Arial, sans-serif; }
+
+  .top { display: flex; justify-content: space-between; align-items: flex-end;
+         border-bottom: 2.5pt solid #548427; padding-bottom: 6pt; margin-bottom: 11pt; }
+  .brandline { font-size: 7pt; font-weight: 700; letter-spacing: .16em;
+               text-transform: uppercase; color: #548427; margin-bottom: 2pt; }
+  h1 { font-size: 18pt; font-weight: 800; margin: 0; letter-spacing: -.015em; }
+  .logo { height: 34pt; }
+  .statusbox { text-align: right; }
+  .chip { display: inline-block; font-family: "Montserrat", sans-serif; font-size: 8pt;
+          font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+          padding: 3pt 9pt; border-radius: 3pt; color: #fff; background: #B6985A; }
+  .chip.accepted { background: #548427; }
+  .statusbox .sub { font-size: 7.5pt; color: #6B7360; margin-top: 3pt; }
+
+  .jobbar { background: #F6F8F2; border: 0.75pt solid #D6D2C4; border-radius: 4pt;
+            padding: 7pt 10pt; margin-bottom: 11pt; }
+  .jobbar .name { font-family: "Montserrat", sans-serif; font-weight: 700; font-size: 12pt; }
+  .jobbar .meta { font-size: 8.5pt; color: #43503A; margin-top: 2pt; }
+
+  h2 { font-size: 7.5pt; font-weight: 700; letter-spacing: .13em; text-transform: uppercase;
+       color: #6B7360; margin: 0 0 5pt; padding-bottom: 3pt;
+       border-bottom: 0.75pt solid #D6D2C4; }
+  .blk { margin-bottom: 10pt; }
+  .blk.keep { page-break-inside: avoid; }
+
+  .kv { width: 100%; border-collapse: collapse; }
+  .kv td { padding: 3pt 0; vertical-align: top; font-size: 9.5pt;
+           border-bottom: 0.5pt solid #EFEDE4; }
+  .kv td.k { width: 34%; color: #6B7360; font-size: 8pt; font-weight: 700;
+             letter-spacing: .06em; text-transform: uppercase; padding-right: 8pt; }
+  .kv tr:last-child td { border-bottom: 0; }
+  .empty { color: #A6AE9C; font-style: italic; }
+
+  .scope { border: 0.75pt solid #D6D2C4; border-radius: 4pt; padding: 8pt 10pt; }
+  .scope .lbl { font-size: 7.5pt; font-weight: 700; letter-spacing: .08em;
+                text-transform: uppercase; color: #6B7360; margin-bottom: 3pt; }
+  .scope .body { white-space: pre-wrap; }
+  .excl { background: #FCFAF4; border: 0.75pt solid #E8DFC8; border-radius: 4pt;
+          padding: 8pt 10pt; margin-top: 7pt; }
+  .excl .lbl { color: #8A6E2B; }
+
+  /* Open questions get their own visual weight — they're the items that turn
+     into change orders when they reach the field unread. */
+  .questions { border: 0.75pt solid #E8DFC8; border-left: 2.5pt solid #B6985A;
+               background: #FCFAF4; border-radius: 4pt; padding: 8pt 10pt; }
+  .questions .qhd { font-size: 8pt; color: #8A6E2B; margin-bottom: 5pt; }
+  .questions .body { white-space: pre-wrap; }
+
+  .two { display: flex; gap: 14pt; }
+  .two > div { flex: 1; }
+
+  .accept { border: 0.75pt solid #D6D2C4; border-top: 2.5pt solid #548427;
+            border-radius: 4pt; padding: 9pt 11pt; page-break-inside: avoid; }
+  .accept .hd { font-family: "Montserrat", sans-serif; font-weight: 700; font-size: 10pt;
+                margin-bottom: 5pt; }
+  .accept .row { display: flex; gap: 16pt; margin-top: 5pt; }
+  .accept .row > div { flex: 1; }
+  .accept .who { font-size: 7.5pt; font-weight: 700; letter-spacing: .08em;
+                 text-transform: uppercase; color: #548427; margin-bottom: 2pt; }
+  .accept .who.sales { color: #B6985A; }
+  .accept .val { font-size: 10pt; font-weight: 600; }
+  .accept .when { font-size: 8pt; color: #6B7360; }
+  .pending { color: #A6AE9C; font-style: italic; font-weight: 400; }
+
+  .note { background: #FCFAF4; border-left: 2.5pt solid #B6985A; padding: 6pt 9pt;
+          font-size: 9pt; margin-top: 7pt; }
+
+  footer { position: fixed; bottom: -0.38in; left: 0; right: 0;
+           border-top: 0.75pt solid #D6D2C4; padding-top: 4pt;
+           font-size: 7.5pt; color: #6B7360;
+           display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div>
+    <div class="brandline">Green Valley Contractors</div>
+    <h1>Job Handoff Packet</h1>
+  </div>
+  <div class="statusbox">
+    {% if accepted_by %}
+      <span class="chip accepted">Accepted by Operations</span>
+    {% else %}
+      <span class="chip">Awaiting Operations</span>
+    {% endif %}
+    <div class="sub">Ops accepts before we mobilize.</div>
+  </div>
+</div>
+
+<div class="jobbar">
+  <div class="name">{{ job_name }}</div>
+  <div class="meta">
+    {%- set bits = [] -%}
+    {%- if customer %}{% set _ = bits.append("Customer: " ~ customer) %}{% endif -%}
+    {%- if estimate_number %}{% set _ = bits.append("Estimate " ~ estimate_number) %}{% endif -%}
+    {%- if estimate_total %}{% set _ = bits.append("$" ~ estimate_total) %}{% endif -%}
+    {%- if location %}{% set _ = bits.append(location) %}{% endif -%}
+    {{ bits | join("  ·  ") }}
+  </div>
+</div>
+
+<div class="blk keep">
+  <h2>1 · Scope</h2>
+  <div class="scope">
+    <div class="lbl">What we sold</div>
+    <div class="body">{% if scope %}{{ scope }}{% else %}<span class="empty">Not provided.</span>{% endif %}</div>
+    <div class="excl">
+      <div class="lbl">What we did NOT sell — exclusions</div>
+      <div class="body">{% if exclusions %}{{ exclusions }}{% else %}<span class="empty">None recorded.</span>{% endif %}</div>
+    </div>
+  </div>
+</div>
+
+<div class="two">
+  <div class="blk keep">
+    <h2>2 · Takeoff &amp; quantities</h2>
+    <table class="kv">
+      <tr><td class="k">Takeoff / stocking</td>
+          <td>{% if takeoff_link %}{{ takeoff_link }}{% else %}<span class="empty">Not linked</span>{% endif %}</td></tr>
+      <tr><td class="k">Board count</td>
+          <td>{% if board_count %}{{ board_count }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Ceiling finish</td>
+          <td>{% if ceiling_finish %}{{ ceiling_finish }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Garage finish</td>
+          <td>{% if garage_finish %}{{ garage_finish }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Window returns</td>
+          <td>{% if window_returns %}{{ window_returns }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    </table>
+  </div>
+
+  <div class="blk keep">
+    <h2>3 · Who to call</h2>
+    <table class="kv">
+      <tr><td class="k">Site supervisor</td>
+          <td>{% if supervisor %}{{ supervisor }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Builder / GC</td>
+          <td>{% if builder %}{{ builder }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Project type</td>
+          <td>{% if project_type %}{{ project_type }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Start date</td>
+          <td>{% if start_date %}{{ start_date }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+      <tr><td class="k">Expected finish</td>
+          <td>{% if expected_finish %}{{ expected_finish }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    </table>
+  </div>
+</div>
+
+<div class="blk keep">
+  <h2>4 · Site conditions — what the crew needs before they drive out</h2>
+  <table class="kv">
+    <tr><td class="k">Lock box / access</td>
+        <td>{% if lock_box %}{{ lock_box }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    <tr><td class="k">Scaffold</td>
+        <td>{% if scaffold %}{{ scaffold }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    <tr><td class="k">Heater / cans</td>
+        <td>{% if heater_cans %}{{ heater_cans }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    <tr><td class="k">Window type</td>
+        <td>{% if window_type %}{{ window_type }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    <tr><td class="k">Shower instructions</td>
+        <td>{% if shower %}{{ shower }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+    <tr><td class="k">Lot #</td>
+        <td>{% if lot %}{{ lot }}{% else %}<span class="empty">—</span>{% endif %}</td></tr>
+  </table>
+</div>
+
+{% if open_questions %}
+<div class="blk keep">
+  <h2>5 · Open questions — answer before the crew mobilizes</h2>
+  <div class="questions">
+    <div class="qhd">Pulled from the scope review's clarification flags. These are the
+      items that become change orders when they reach the field unanswered.</div>
+    <div class="body">{{ open_questions }}</div>
+  </div>
+</div>
+{% endif %}
+
+{% if allowances %}
+<div class="blk keep">
+  <h2>Allowances &amp; walkthrough notes</h2>
+  <div class="scope"><div class="body">{{ allowances }}</div></div>
+</div>
+{% endif %}
+
+{% if gc_confirmed_on or drive_folder_path %}
+<div class="blk keep">
+  <h2>5 · Paper trail</h2>
+  <table class="kv">
+    {% if gc_confirmed_on %}
+    <tr><td class="k">Scope sent to GC</td><td>{{ gc_confirmed_on }}</td></tr>
+    {% endif %}
+    {% if drive_folder_path %}
+    <tr><td class="k">Job folder</td><td>{{ drive_folder_path }}</td></tr>
+    {% endif %}
+    {% if bid_url %}
+    <tr><td class="k">Bid</td><td>{{ bid_url }}</td></tr>
+    {% endif %}
+  </table>
+</div>
+{% endif %}
+
+<div class="accept">
+  <div class="hd">Acceptance</div>
+  <div class="row">
+    <div>
+      <div class="who sales">Handed off by — Sales</div>
+      <div class="val">{% if sent_by %}{{ sent_by }}{% else %}<span class="pending">Not sent</span>{% endif %}</div>
+      {% if sent_at %}<div class="when">{{ sent_at }}</div>{% endif %}
+    </div>
+    <div>
+      <div class="who">Accepted by — Operations</div>
+      <div class="val">{% if accepted_by %}{{ accepted_by }}{% else %}<span class="pending">Awaiting acceptance</span>{% endif %}</div>
+      {% if accepted_at %}<div class="when">{{ accepted_at }}</div>{% endif %}
+    </div>
+  </div>
+  {% if sent_back_note %}
+  <div class="note"><b>Sent back by Operations:</b> {{ sent_back_note }}</div>
+  {% endif %}
+  {% if not accepted_by %}
+  <div class="note">Operations has not accepted this job yet. No crew, no material,
+    and no promised start date until they do.</div>
+  {% endif %}
+</div>
+
+<footer>
+  <span>Job Handoff Packet · Green Valley Contractors</span>
+  <span>{{ generated_at }}</span>
+</footer>
+
+</body>
+</html>

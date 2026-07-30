@@ -480,6 +480,126 @@ def notify_jobcheck_saved(info: dict, *, channel: Optional[str] = None) -> Optio
 
 
 # ---------------------------------------------------------------------------
+# Job Start → #operations (Sales → Operations handoff)
+# ---------------------------------------------------------------------------
+# This notice REPLACES the legacy Bid Board automation's message, which claimed
+# "a new item was created in the Projects Dashboard and Operations Dashboard"
+# on every won job while never creating the Operations one (design doc §Why
+# this exists). The rule here: only name what was actually created, and link it.
+# Falls back to the Job Check channel so a handoff and a field update land in
+# the same room — ops watches one place.
+
+def _jobstart_channel(channel: Optional[str]) -> Optional[str]:
+    return (channel or os.environ.get("GVC_JOBSTART_SLACK_CHANNEL")
+            or os.environ.get("GVC_JOBCHECK_SLACK_CHANNEL") or None)
+
+
+def _jobstart_message(info: dict) -> str:
+    """
+    PURE. info: {job, actor, bid_url, project_url, ops_url, estimate_number,
+    estimate_total, start_date, supervisor, warnings}.
+    Every claim is conditional on the URL actually existing — the whole point
+    of this tool is that the handoff notice stops lying.
+    """
+    parts = [f"🤝 *Job accepted by Operations* — {info.get('job', 'Unknown job')}"]
+
+    actor = (info.get("actor") or "").split("@")[0] or "someone"
+    sender = (info.get("sent_by") or "").split("@")[0]
+    parts.append(f"_accepted by {actor}_" if not sender
+                 else f"_{sender} handed off · {actor} accepted_")
+
+    if info.get("estimate_number"):
+        line = f"• Estimate: {info['estimate_number']}"
+        if info.get("estimate_total"):
+            line += f" · {info['estimate_total']}"
+        parts.append(line)
+    if info.get("start_date"):
+        parts.append(f"• Start date: {info['start_date']}")
+    if info.get("supervisor"):
+        parts.append(f"• Site contact: {info['supervisor']}")
+
+    links = []
+    if info.get("packet_url"):
+        links.append(f"<{info['packet_url']}|Handoff packet PDF>")
+    if info.get("project_url"):
+        links.append(f"<{info['project_url']}|Project>")
+    if info.get("ops_url"):
+        links.append(f"<{info['ops_url']}|Operations task>")
+    if info.get("bid_url"):
+        links.append(f"<{info['bid_url']}|Bid>")
+    if links:
+        parts.append("• " + " · ".join(links))
+
+    for warning in info.get("warnings") or []:
+        parts.append(f"⚠️ {warning}")
+    return "\n".join(parts)
+
+
+def notify_job_start_handoff(info: dict, *,
+                             channel: Optional[str] = None) -> Optional[dict]:
+    """Post a completed Sales → Operations handoff. Returns None when no channel
+    is configured (clean skip). Raises like any other notice — the caller treats
+    a Slack problem as non-fatal, because Monday already holds the truth."""
+    target = _jobstart_channel(channel)
+    if not target:
+        raise SlackNotConfigured(
+            "Neither GVC_JOBSTART_SLACK_CHANNEL nor GVC_JOBCHECK_SLACK_CHANNEL is set.")
+    return post_message(_jobstart_message(info), channel=target)
+
+
+def _job_start_sent_message(info: dict) -> str:
+    """PURE. Sales has sent a packet; ops needs to act. This is the message that
+    makes the acceptance step real — without it, a packet sits unseen."""
+    parts = [f"📋 *Job packet ready for Operations* — {info.get('job', 'Unknown job')}"]
+    actor = (info.get("actor") or "").split("@")[0] or "someone"
+    parts.append(f"_from {actor} — needs an accept or a send-back_")
+    if info.get("start_date"):
+        parts.append(f"• Start date: {info['start_date']}")
+    if info.get("supervisor"):
+        parts.append(f"• Site contact: {info['supervisor']}")
+    links = []
+    if info.get("preview_url"):
+        links.append(f"<{info['preview_url']}|Read the packet>")
+    if info.get("bid_url"):
+        links.append(f"<{info['bid_url']}|Bid>")
+    if links:
+        parts.append("• " + " · ".join(links))
+    return "\n".join(parts)
+
+
+def notify_job_start_sent(info: dict, *,
+                          channel: Optional[str] = None) -> Optional[dict]:
+    """Tell ops a packet is waiting on them."""
+    target = _jobstart_channel(channel)
+    if not target:
+        raise SlackNotConfigured(
+            "Neither GVC_JOBSTART_SLACK_CHANNEL nor GVC_JOBCHECK_SLACK_CHANNEL is set.")
+    return post_message(_job_start_sent_message(info), channel=target)
+
+
+def _job_start_sent_back_message(info: dict) -> str:
+    """PURE. Ops returned a packet. Names what's missing so the fix is obvious —
+    this list, over time, IS the defect list for the sales process."""
+    parts = [f"↩️ *Job packet sent back* — {info.get('job', 'Unknown job')}"]
+    actor = (info.get("actor") or "").split("@")[0] or "someone"
+    back_to = (info.get("sent_by") or "").split("@")[0]
+    parts.append(f"_{actor} needs more from {back_to or 'Sales'}_")
+    if info.get("note"):
+        parts.append(f"• Missing: {info['note']}")
+    return "\n".join(parts)
+
+
+def notify_job_start_sent_back(info: dict, *,
+                               channel: Optional[str] = None) -> Optional[dict]:
+    """Tell the room a packet went back to Sales, and why."""
+    target = _jobstart_channel(channel)
+    if not target:
+        raise SlackNotConfigured(
+            "Neither GVC_JOBSTART_SLACK_CHANNEL nor GVC_JOBCHECK_SLACK_CHANNEL is set.")
+    return post_message(_job_start_sent_back_message(info), channel=target)
+
+
+# ---------------------------------------------------------------------------
 # Ops failure alerts (Portal → #gvc-ops-alerts)
 # ---------------------------------------------------------------------------
 # Fire-and-forget so a Slack-first ops model SEES failures instead of burying

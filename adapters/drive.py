@@ -20,6 +20,7 @@ from shared import paths
 import json
 import os
 import re
+import sys
 from pathlib import Path
 from typing import Optional
 
@@ -188,6 +189,39 @@ def _ext_from_drive_metadata(meta: dict) -> str:
         "image/heic": ".heic",
         "application/pdf": ".pdf",
     }.get(mime, "")
+
+
+# Words that appear in almost every GVC job name and therefore identify
+# nothing. Matching on these is how you prefill one job from another job's
+# scope review, so they're stripped before scoring.
+_STOPWORDS = frozenset({
+    "the", "and", "inc", "llc", "co", "company", "contractors", "construction",
+    "scope", "review", "job", "project", "new", "house", "home", "residence",
+    "remodel", "addition", "commercial", "residential", "building", "bldg",
+    "st", "street", "rd", "road", "ave", "avenue", "dr", "drive", "ln", "lane",
+    "ct", "court", "way", "blvd", "suite", "ste", "unit", "lot", "oh", "ohio",
+    "in", "indiana", "ky", "kentucky", "usa", "cincinnati", "pdf", "copy",
+})
+
+
+def _match_tokens(*parts) -> set:
+    """
+    PURE. Text → the set of distinctive lowercase tokens used to match a job to
+    its scope review. Street numbers and builder names survive; boilerplate and
+    geography do not. Flattens strings and lists of strings.
+    """
+    words: list = []
+    for part in parts:
+        if part is None:
+            continue
+        if isinstance(part, (list, tuple, set)):
+            words.extend(str(p) for p in part if p)
+        else:
+            words.append(str(part))
+    text = " ".join(words).lower()
+    raw = re.findall(r"[a-z0-9]+", text)
+    return {t for t in raw
+            if t not in _STOPWORDS and (len(t) > 2 or t.isdigit())}
 
 
 class DriveUploader:
@@ -642,6 +676,101 @@ class DriveUploader:
         files = result.get("files", [])
         return files[0] if files else None
 
+    def find_scope_review(self, *, job_hint: str,
+                          extra_hints: Optional[list] = None) -> Optional[dict]:
+        """
+        Find a job's SCOPE REVIEW document — the Job Start packet's primary
+        source (Jordan, 2026-07-29: "your scope review is going to be the most
+        valuable… the project handoff sheet to the operations initially is built
+        off of your scope review").
+
+        Jake writes one per job in his Drive `completed plans` folder, named e.g.
+        "KPMG Cincinnati Renovation Scope Review" or
+        "4270_Glendale_Milford_Road_Scope_Review.pdf". Both Google Docs and PDF
+        exports exist in the wild, so both are accepted.
+
+        Matching: every file whose name contains "scope review" is listed, then
+        scored against tokens from the job name / address. A distinctive token
+        (street number, builder name) is what actually identifies the job, so a
+        match needs at least one token hit — otherwise we return None and the
+        caller falls back to the Bid Board rather than prefilling from some
+        other job's document.
+
+        Returns {id, name, mimeType, webViewLink, score} or None.
+        """
+        q = ("name contains 'Scope Review' and "
+             "mimeType != 'application/vnd.google-apps.folder' and "
+             "trashed = false")
+        result = (
+            self.service.files()
+            .list(
+                q=q,
+                fields="files(id, name, mimeType, webViewLink, modifiedTime)",
+                orderBy="modifiedTime desc",
+                corpora="allDrives",
+                includeItemsFromAllDrives=True,
+                supportsAllDrives=True,
+                pageSize=100,
+            )
+            .execute()
+        )
+        candidates = result.get("files", [])
+        if not candidates:
+            return None
+
+        tokens = _match_tokens(job_hint, extra_hints)
+        if not tokens:
+            return None
+
+        best, best_score = None, 0
+        for f in candidates:
+            name_tokens = _match_tokens(f.get("name", ""))
+            score = len(tokens & name_tokens)
+            if score > best_score:
+                best, best_score = f, score
+        if best is None or best_score == 0:
+            return None
+        return {**best, "score": best_score}
+
+    def read_document_text(self, file_id: str, mime_type: str) -> str:
+        """
+        Plain text of a Drive document, for parsing. Google Docs export as
+        text/plain; PDFs come back as bytes and are handed to the PDF text
+        extractor already in the image (pypdf, shipped for the COI stamper).
+        Returns "" on anything unreadable — a scope review we can't read must
+        degrade to Bid Board prefill, never raise into the handoff page.
+        """
+        import io as _io
+
+        try:
+            if mime_type == "application/vnd.google-apps.document":
+                data = (self.service.files()
+                        .export(fileId=file_id, mimeType="text/plain")
+                        .execute())
+                return data.decode("utf-8") if isinstance(data, bytes) else str(data)
+
+            from googleapiclient.http import MediaIoBaseDownload
+
+            request = self.service.files().get_media(fileId=file_id,
+                                                     supportsAllDrives=True)
+            buf = _io.BytesIO()
+            downloader = MediaIoBaseDownload(buf, request)
+            done = False
+            while not done:
+                _, done = downloader.next_chunk()
+            raw = buf.getvalue()
+
+            if mime_type == "application/pdf":
+                from pypdf import PdfReader
+
+                reader = PdfReader(_io.BytesIO(raw))
+                return "\n".join((p.extract_text() or "") for p in reader.pages)
+            return raw.decode("utf-8", errors="replace")
+        except Exception as e:  # noqa: BLE001 — unreadable ⇒ fall back to Monday
+            print(f"[drive] scope review unreadable ({file_id}): "
+                  f"{type(e).__name__}: {e}", file=sys.stderr)
+            return ""
+
     def download_json(self, file_id: str) -> dict:
         """Download a small Drive file by ID and parse it as JSON."""
         import io as _io
@@ -819,6 +948,40 @@ class DriveUploader:
         folder_id = self.ensure_folder(root_name, self.shared_drive_id)
         folder_id = self.ensure_folder(str(year), folder_id)
         return {"folder_id": folder_id, "folder_path": f"{root_name}/{year}"}
+
+    def ensure_handoff_folder(
+        self,
+        *,
+        customer: str,
+        project_label: str,
+        project_type: str,
+        year: int,
+    ) -> dict:
+        """
+        Find-or-create the Sales → Operations handoff folder chain (mirrors
+        ensure_estimate_folder / ensure_invoice_folder, added 2026-07-29):
+
+            <Projects root>/<year>/<Residential|Commercial>/<customer>/
+                <project_label>/Handoff/
+
+        Derived from the SAME customer / project_label / project_type / year the
+        estimate and invoice flows use, so the accepted handoff packet lands in
+        the same project folder as the estimate that won the job — one folder per
+        job, no pasted link required.
+
+        Returns {folder_id, folder_path}. Idempotent at every level.
+        """
+        root_name = (os.environ.get("GVC_PROJECTS_ROOT_FOLDER") or "Projects").strip()
+        type_name = "Commercial" if (project_type or "").lower().startswith("c") else "Residential"
+        customer_slug = slug_for_path(customer)
+        project_slug = slug_for_path(project_label)
+
+        folder_id = self.ensure_folder(root_name, self.shared_drive_id)
+        path_parts = [root_name]
+        for name in (str(year), type_name, customer_slug, project_slug, "Handoff"):
+            folder_id = self.ensure_folder(name, folder_id)
+            path_parts.append(name)
+        return {"folder_id": folder_id, "folder_path": "/".join(path_parts)}
 
     def ensure_change_order_folder(
         self,

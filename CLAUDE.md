@@ -70,6 +70,166 @@ importing each other's internals. Full guide: `GVC_Portal_System/AGENTS.md` +
 ---
 *Build history, locked decisions, board IDs, and the dated session log follow. Entries before 2026-06-25 reference the OLD flat module names — use the 'Old flat → new home' map above to translate.*
 
+## 🤝 JOB START — Sales → Operations handoff, BUILT 2026-07-29, ships next --source . deploy
+Jake's ask (via Jordan): a real way to hand a won job from Sales to Ops. NOT deployed yet.
+ROOT-CAUSE FINDING (verified live on the boards, not assumed): a handoff automation ALREADY
+existed and was doing a third of the job. Bid Board workflow **1939926362** fires on Stage →
+Accepted, creates a Projects item in "New Projects (Not Started)", and posts to Slack
+C0B5J4P16AH claiming "a new item was created in the Projects Dashboard **and Operations
+Dashboard**". That workflow has ONE create node, targeting Projects only.
+⚠ CORRECTION (2026-07-29, after Jake-meeting transcripts): an earlier draft of this entry said
+the handoff "has NEVER touched the Operations board." That was OVERREACH — what was actually
+verified is that the BID BOARD's ops-link columns are empty, which is a different claim. Per the
+10:43 meeting, Jordan **deliberately disabled the accepted-bid automation a few days ago** because
+it was creating DUPLICATES ("it creates like 2 projects, 2 operations"), root-caused to Joe
+copy-pasting the recipe. THE DUPLICATE IS FOUND: legacy automation **19062630** (active=FALSE,
+trigger deal_stage index 1 = Accepted, action = create item on 1918846405 group
+new_group25317__1) duplicates workflow 1939926362 exactly. So the ~8 accepted bids with no
+Projects item are explained by the automation being OFF, not by it being subtly broken.
+ALSO FOUND (legacy automations, all still ACTIVE, all pointing at PRE-PORTAL Job Start forms that
+this tool replaces — retire them or Jake gets sent to the wrong surface): **10484288** "To Send the
+Job Start Form" (button0 → PandaDoc eform b28624b9-8a12-4496-b238-8e06d02d958d to deal_owner);
+**13529570** (deal_stage index 12 "Complete Job Start Form" → "THIS PROJECT IS READY! PLEASE
+COMPLETE JOB START FORM here https://wkf.ms/3CcJlp4"); **10484181** "To Send Job Check Form"
+(button2 → PandaDoc eform d19b40ee-b490-4aa7-bb9f-b7c6cde1f169). Separately **10483015** (ACTIVE)
+creates a "Site Measure - {name}" item on Operations from button_1 — that one is unrelated to the
+handoff and should stay.
+Evidence over the first 30 accepted bids: `connect_boards1`/`board_relation_mm44jdnw` (both →
+Operations) empty on 100%; `board_relation_mm40ymfz` (dup of connect_boards4) empty on 100%;
+**`date6` Accepted Date null on EVERY won deal**; ~8 accepted bids have no Projects item at all;
+Tedesco links to TWO projects (one an unrelated RestoPros job); Kaiker + Esquire are Accepted but
+sitting in the Lost Deals group. The group title "Won Deals (Verify in Projects Board)" is a
+warning someone already encoded. Deeper gap: nobody had defined WHAT a complete handoff contains —
+Ops carries Lock Box/Scaffolding/Heater-Cans/Shower/Window Type and Projects carries Builder/
+Supervisor/Ceiling+Garage Finish/Window Returns/Board Count, and the handoff filled none of them.
+Fossils of a prior attempt: a DEACTIVATED "Complete Job Start Form" Bid Board label + an unused
+"Job Start" button on Operations.
+DESIGN ARC THIS SESSION (recorded because the reversals matter): Jordan first picked portal +
+hard gate; then surfaced a Drive-based Handoff Standard v1.0 (Google Doc + wall card) whose own
+closing section said "runs on Drive discipline right now — deliberately… automating a broken
+process just breaks it faster", and picked "Drive process, nothing else"; then rejected the
+paper artifacts outright — **"no handwriting, any motherfucking thing anywhere… Everything should
+be done online and be able to be sent out as a PDF or Google Drive link."** FINAL MODEL = portal,
+prefilled, two-party, generated document. Two contradictions in v1.0 were fixed on the way:
+"no signature → no crew" vs "silence is acceptance" (kept the signature, DROPPED silence-as-
+acceptance), and a wall card tagline off the brand guide's own Collaborative/Respectful voice.
+LOCKED — TWO PARTIES, ONE GATE: field completeness gates the **SEND**; **ops acceptance gates the
+JOB**. Monday items are created ONLY in `accept()` — that is what makes "a job belongs to Sales
+until Ops accepts it" true in the system. Sender cannot accept their own packet (admins excepted,
+logged). Completeness re-checked on send AND accept. Accepted/in-review packets are READ-ONLY.
+BUILT: shared/boards.py += JOBSTART_FIELDS (**the handoff contract as editable config** — one spec
+drives form + gate + writes; 19 fields, 8 required: project_type/builder/supervisor/scope/
+**exclusions**/start_date/board_count/lock_box) + JOBSTART_HARD_EXCLUDED_IDS/TYPES (contract+money
+columns unreachable even if added to config — regression-tested) + group/stamp column ids. A field
+may target BOTH boards (Scaffold genuinely lives on each) and `targets: ()` means PACKET-ONLY (no
+Monday column — gc_confirmed_on). adapters/monday/jobstart.py (NEW): fetch_accepted_bids /
+get_bid_detail (prefill + raw location copied verbatim rather than reconstructing lat/lng) /
+get_field_labels (live label sets) / **hand_off = ADOPT-OR-CREATE** (Projects: existing
+connect_boards4 link → by name → create; Operations: by name → create) so the still-live legacy
+automation races into an UPDATE, never a duplicate; stamps date6 + both link columns.
+subsystems/jobstart/{drafts,packet}.py (NEW): drafts = per-BID packet store w/ the 4-state machine
+(draft → with_ops → sent_back/accepted, EDITABLE_STATUSES, last-writer-wins, keyed by bid so two
+people collaborate instead of racing); packet = pure build_context + render_packet_pdf.
+templates/job_handoff.html.j2 (NEW, brand palette #548427/#7EB438/#D6D2C4/#B6985A) w/ an acceptance
+block naming who sent + who accepted. orchestrators/jobstart_flow.py (NEW): pure packet_fields/
+missing_required/shape_value/build_writes + send_to_ops / send_back / accept. accept() = create
+Monday → mark accepted → render → **DriveUploader.ensure_handoff_folder** (NEW in adapters/drive.py:
+Projects/<year>/<Res|Comm>/<customer>/<job>/Handoff/, same tree as the estimate) → upload_or_replace
+→ Slack. slack_notify += notify_job_start_sent / _sent_back / _handoff — each claims ONLY what
+happened (the whole point: the legacy notice lied). app/service.py += 7 routes (71 total, was 58);
+access.py += `jobstart` feature (NO implication from `estimate` — admin grants it); web/jobstart.html
+(mobile-first, autosave, sales-fill + ops-review modes); hub tile; footer r7 → r8.
+VERIFIED: py_compile clean across all touched modules; `import app.service` OK (71 routes, all 7
+jobstart paths present); jobstart.html JS `node --check` clean; Jinja template renders w/ real
+sample data (9 content probes pass); gate/shaping/hard-exclusion/state-machine logic all asserted
+green incl. the "contract column added to config stays blocked" regression and "status survives an
+edit" regression. ⚠ NOT verified locally: the WeasyPrint PDF binary — weasyprint isn't installed on
+Jordan's PC (tests/ + venv still lost post-Joe). The render call is byte-identical in shape to
+estimate/CO/invoice, and weasyprint>=60 is in requirements.txt so the Cloud Run image has it, but
+**the first live send is the real PDF smoke test**. No Dockerfile change needed (COPYs whole packages).
+🔁 SESSION PART 2 — INGEST + JAKE'S CONVENTIONS (same day, after the 10:43/11:12 Jake-meeting
+transcripts + Jake's "Estimating Pipelines Reference" doc 1tFBHnyXxidyXb4Vfr8D43p3FpNXmu-1wztytugeY2ZY
+were surfaced). Jordan's driver: "the handoff has to pull the data from somewhere or it becomes an
+input job for you. We don't want an input job for you."
+  • **subsystems/jobstart/scope_review.py (NEW)** — PURE parser for Jake's scope review, the packet's
+    PRIMARY source per Jordan ("your scope review is going to be the most valuable"). Verified against
+    the REAL doc 1s2bmD96CArGcfuiphwsXvmY2cyI_AimGk5-BZWblgQg ("KPMG Cincinnati Renovation Scope
+    Review") — structure is PROJECT INFO key/values, then trade sections FRAMING/INSULATION/DRYWALL/
+    FRP/ACT/PLYWOOD/CEMENT BOARD/PAINTING, then NOTES, then "Walk Through Notes". THREE extractions in
+    value order: (1) **[NEEDS CLARIFICATION] lines → open questions** (Jake: the scope review "lists a
+    lot of things that Rob might have minor questions on" — nothing else in GVC holds these, and they
+    are what become change orders when unread); (2) **exclusions** (NIC / not-in-GVC-scope / by others
+    / "No X scope found"); (3) **scope** (only trades with real work — a section whose sole line is
+    "No FRP scope found" is NOT in scope). 🐛 TWO BUGS CAUGHT BY TESTING AGAINST THE REAL DOC: Google
+    Docs export ESCAPES the marker as `\[NEEDS CLARIFICATION\]`, so unescaping must happen before any
+    match (first run silently found ZERO questions); and ACT/FRP must not be `.title()`d into
+    "Act"/"Frp". Contractor-contact extraction is greedy-to-last-paren (a contact's own phone carries
+    parens — "Dave K (513) 555-0142" — and non-greedy stopped inside the area code) and tolerates a
+    plain hyphen as well as the template's em-dash, preferring whichever fragment holds a phone number.
+  • **subsystems/jobstart/ingest.py (NEW)** — the PURE merge layer implementing Jordan's stated
+    precedence: **packet (typed) > scope review (Drive) > board updates > Bid Board columns**. A value
+    a human typed is NEVER overwritten by an automatic source. Returns a `sources` map so the UI can
+    tag each prefilled field ("from the scope review") — a value Jake can't trace is one he'll retype.
+    `from_updates()` parses Monday update bodies for "Label: value" lines. 🐛 BUG CAUGHT: Monday update
+    bodies are HTML and `</p><p>` collapsed to a space, so the first label swallowed every later field
+    ("Lock box: 4417 front door  Board count: 340") — block-close tags must become newlines BEFORE
+    tags are stripped. Newest update wins.
+  • **adapters/drive.py** += `find_scope_review()` (lists every "Scope Review" file across all shared
+    drives, scores against distinctive job tokens with a _STOPWORDS list so geography/boilerplate can't
+    match one job to another job's document; zero token hits ⇒ None ⇒ fall back to Monday) +
+    `read_document_text()` (Docs via text/plain export, PDFs via the pypdf already shipped for the COI
+    stamper; returns "" on anything unreadable) + `ensure_handoff_folder()`. `import sys` added — it
+    was missing and py_compile can't catch a NameError.
+  • **adapters/monday/jobstart.py** += `fetch_item_updates()` (keeps the handoff CURRENT rather than a
+    snapshot) and **`_write_with_fallback()` / `FRAGILE_COLUMNS`**. The latter is straight off Jake's
+    doc: `location5` is "API-blocked; use text23 as address-text workaround" and `connect_boards5` is
+    "API-blocked, attempt anyway, flag for manual entry". Everything went out in ONE
+    change_multiple_column_values mutation, so one rejected column would have failed the WHOLE handoff
+    — now the write is attempted, and on rejection the fragile columns are dropped, retried, and
+    surfaced to the user as "set these by hand (Monday API limitation, not a portal bug)".
+  • **subsystems/jobstart/gc_confirm.py** += `scope_warnings()` / `scrub_client_scope()` enforcing
+    JAKE'S OWN client-facing rules from his Bid Description pipeline: **never show square footage** and
+    **never say 1-side/2-side**. This was a live defect — the GC email piped the scope straight
+    through, and the scope is often ingested from the scope review, which is an INTERNAL document full
+    of both ("~8,775 SF per occupant load calc", "2 layers on symbol side"). His doc says "re-scan
+    specifically for stray square footage and 1-side/2-side phrasing — the two most common slip-ups",
+    so that re-scan is now automated. A parenthetical that exists BECAUSE of the figure is dropped
+    whole (removing just the number left "Floor 34 ( per occupant load calc)"), while legitimate ACT
+    spec parens survive — his rules REQUIRE specific ACT callouts ("Suprafine XL", 9/16", 2'x2').
+  • shared/boards.py += packet fields `open_questions` (→ Operations `long_text_mkpzf3je`),
+    `allowances`, `gc_pm`/`gc_email`/`super_email` (packet-only). 24 fields, 8 required.
+  • templates/job_handoff.html.j2 += "Open questions — answer before the crew mobilizes" (gold-ruled,
+    its own visual weight) + Allowances section. web/jobstart.html += per-field source tags and a
+    "Prefilled from {doc} — {trades} · N open questions · N exclusions" banner.
+⚠ NAMING: Jake's doc sets the standard as **`[Street Name/Number] | [Builder/Client]`** — PIPE, not a
+dash — and says it "applies everywhere: Monday.com, Drive, estimates, invoices, photos". That
+CONTRADICTS the dash convention in the (now-dead) v1.0 wall card AND the three boards' own
+item_terminology strings. Not forced anywhere: `job_name` stays editable and defaults to the bid's
+existing name, and scope-review matching is separator-agnostic (token-based). Reconciling the three
+conventions is an open decision for Jordan, not something to impose from here.
+VERIFIED (part 2): py_compile clean; `import app.service` OK (72 routes, 8 jobstart); jobstart.html JS
+`node --check` clean; parser asserted against the real KPMG doc (contractor/contact/project-type/
+trades/3 questions/6 exclusions, FRP+Cement Board correctly excluded, clarifications never leaking
+into exclusions, garbage input ⇒ found=False); ingest precedence asserted (typed value survives all
+three automatic sources, whitespace never wins a slot, newest update wins); scrubber asserted (SF and
+side-phrasing gone, ACT specs kept, no "( " husks); packet PDF renders with the new sections.
+DEPLOY (admin): full suite in the WeasyPrint venv → `--source .` → grant `jobstart` to Jake/Jordan/
+Mark/Robert in /ui/admin → optional --update-env-vars GVC_JOBSTART_SLACK_CHANNEL (falls back to
+GVC_JOBCHECK_SLACK_CHANNEL) → smoke: open /ui/jobstart, pick an accepted bid, confirm prefill, send
+→ ops user accepts → Projects + **Operations** items exist, Bid Board Accepted Date + both links
+stamped, packet PDF in the job's Handoff/ folder, Slack shows all four links.
+OPEN: (1) ⚠ **turn OFF the create node in workflow 1939926362** (or retire it) — until then every
+Accepted bid still gets an automation-created Projects item this flow adopts, and the misleading
+"and Operations Dashboard" line keeps posting; same family as the "Bid Sent Notice" open item.
+(2) ⚠ UNCONFIRMED: Bid Board has TWO Operations relation columns — `connect_boards1` ("Team Tasks")
+and `board_relation_mm44jdnw` ("Operations"), both empty on 100% of accepted bids so live data
+can't break the tie. We write connect_boards1; env `GVC_MONDAY_BID_OPS_LINK_COL` flips it with no
+deploy. Jordan to confirm which is canonical. (3) No GC scope-confirmation email template yet —
+highest-ROI item in Jordan's own standard (every GC correction = a change order not eaten); the
+packet only records the date it was sent. (4) Historical breakage above deliberately NOT backfilled
+("leave history alone"). (5) Superseded paper artifacts live in Jordan's Downloads
+(GVC_Handoff_Wall_Card_v1.1.html / GVC_Handoff_Sheet_v1.1.html) — dead, kept only as a record.
+
 ## ✨ SENT-WATCHER (true "emailed to client" detection) — BUILT + DEPLOYED + LIVE 2026-07-26
 Context: Joe left GVC; this session was driven by Jordan (owner) + Claude on Jordan's Windows PC.
 The canonical repo was RECOVERED from the Cloud Run deploy bundle (gs://run-sources-…/1784748266…zip,
