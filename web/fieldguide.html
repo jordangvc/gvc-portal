@@ -313,6 +313,15 @@
     </button>
   </div>
 
+  <p class="sect-label">Before construction</p>
+  <div class="tiles">
+    <button class="tile" data-go="demo">
+      <span class="icon">🧱</span><span class="stage">Demo</span>
+      <span class="name">Demolition</span>
+      <span class="desc">The one where step one is a legal question. Hard stops for asbestos, lead and structure, then protection, containment and sequence.</span>
+    </button>
+  </div>
+
   <p class="sect-label">Framing</p>
   <div class="tiles">
     <button class="tile" data-go="firestop">
@@ -341,6 +350,15 @@
     </button>
   </div>
 
+  <p class="sect-label">In the wall</p>
+  <div class="tiles">
+    <button class="tile" data-go="insulation">
+      <span class="icon">🧯</span><span class="stage">Before the 2nd side</span>
+      <span class="name">Insulation</span>
+      <span class="desc">Gaps and compression are the only two ways to get it wrong, and both are invisible an hour later. Plus sound walls and fire safing.</span>
+    </button>
+  </div>
+
   <p class="sect-label">Drywall — the Job Check sequence</p>
   <div class="tiles">
     <button class="tile" data-go="hang">
@@ -366,6 +384,30 @@
       <span class="icon">▦</span><span class="stage">CT / ACT</span>
       <span class="name">Acoustical Ceilings</span>
       <span class="desc">Grid layout, hanging, and tile. Full detail covers grid face profiles, tile edge types, hanger wire rules, and seismic bracing.</span>
+    </button>
+    <button class="tile" data-go="tectum">
+      <span class="icon">🪵</span><span class="stage">Acoustic panel</span>
+      <span class="name">Tectum Panels</span>
+      <span class="desc">Direct-attach wood-fiber acoustic panel. Flush screw heads, never countersunk, and don't crush the corners.</span>
+    </button>
+  </div>
+
+  <p class="sect-label">Finishes &amp; specialty</p>
+  <div class="tiles">
+    <button class="tile" data-go="painting">
+      <span class="icon">🎨</span><span class="stage">Finishes</span>
+      <span class="name">Painting</span>
+      <span class="desc">Paint reveals, it doesn't hide. Prep, primer selection, wet edge, and how sheen decides what the wall can get away with.</span>
+    </button>
+    <button class="tile" data-go="frp">
+      <span class="icon">🧴</span><span class="stage">Wall panel</span>
+      <span class="name">FRP Panels</span>
+      <span class="desc">Two failures, both permanent: a substrate that isn't flat, and no room for the panel to move.</span>
+    </button>
+    <button class="tile" data-go="doors">
+      <span class="icon">🚪</span><span class="stage">Openings</span>
+      <span class="name">Doors &amp; Hardware</span>
+      <span class="desc">The frame decides everything. Setting it right, plus labeled openings and the accessibility items that get checked.</span>
     </button>
   </div>
 
@@ -428,6 +470,7 @@
   <div class="block">
     <h3>A–Z</h3>
     <div class="idx">
+      <div class="idx-item"><button data-jump="demo|demo-regs">Asbestos / PACM</button><span>Pre-1981 thermal and surfacing material is presumed to contain asbestos. No survey means stop.</span></div>
       <div class="idx-item"><button data-jump="firestop|fs-install">Annular space</button><span>The gap around a pipe through a rated wall. Has a listed minimum and maximum — inspectors measure it.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-bridging">Bridging</button><span>Horizontal members that stop studs from twisting. Not the same as shear bracing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-blocking">Blocking</button><span>Two different meanings — backing to hang things on, and structural blocking to brace studs.</span></div>
@@ -439,6 +482,7 @@
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection track</button><span>Top-of-wall track that lets the building move without loading the wall.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection clip</button><span>A slotted bracket that does the deflection job when the track can't.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Drift</button><span>Sideways building movement, usually seismic. Different problem from vertical deflection.</span></div>
+      <div class="idx-item"><button data-jump="frp|frp-install">Expansion gap (FRP)</button><span>1/4" top and bottom, 1/8" between panels on a 4×8. Skip it and the panel buckles.</span></div>
       <div class="idx-item"><button data-jump="firestop|fs-numbers">Dynamic vs. static (firestop)</button><span>D or S in the system number. Our head-of-wall moves, so it needs a dynamic system.</span></div>
       <div class="idx-item"><button data-jump="firestop|fs-numbers">F rating / T rating</button><span>F = how long it stops flame. T = how long the far side stays cool. Some specs need both.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-shim">Filler &amp; scribing</button><span>The strip that closes a gap, cut to follow the wall's actual shape.</span></div>
@@ -450,6 +494,8 @@
       <div class="idx-item"><button data-jump="finish|fin-levels">Levels of finish (0–5)</button><span>The industry scale for how smooth a wall has to be. Getting this right is the biggest money item in finishing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Limiting height</button><span>The published table that says how tall a given stud can go. The authority on tall walls.</span></div>
       <div class="idx-item"><button data-jump="act|act-maintee">Main tee / main runner</button><span>The long grid members that carry the ceiling. Usually 4 feet apart.</span></div>
+      <div class="idx-item"><button data-jump="insulation">Fire safing</button><span>Mineral wool at slab edges and shafts. Looks like insulation, is actually a rated component.</span></div>
+      <div class="idx-item"><button data-jump="doors|doors-rated">Labeled opening</button><span>Door, frame, hardware and gasketing are one assembly. No field modifications, labels stay legible.</span></div>
       <div class="idx-item"><button data-jump="drawings">Partition schedule</button><span>Turns a wall tag into stud, gauge, spacing, board, and rating. Our most important sheet.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-reveal">Reveal</button><span>The gap between cabinet doors. Consistent reveals are what customers read as quality.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Stacked walls</button><span>Getting height by building one wall on top of another instead of one tall stud.</span></div>
@@ -458,6 +504,9 @@
       <div class="idx-item"><button data-jump="changeorder|co-five">Standing-by time</button><span>Crew on site unable to work. Recoverable only if somebody wrote it down that day.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strapping / flat strap</button><span>Flat steel banding screwed across stud flanges to brace them.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strap and block</button><span>Strap plus a short block between studs. Required once studs get deep.</span></div>
+      <div class="idx-item"><button data-jump="painting|paint-sheen">Sheen</button><span>Flat forgives, gloss shows everything. Decides how flat the wall underneath has to be.</span></div>
+      <div class="idx-item"><button data-jump="demo|demo-regs">Silica</button><span>Off cutting and grinding concrete, and off sanding drywall. OSHA Table 1 gives the controls.</span></div>
+      <div class="idx-item"><button data-jump="insulation|ins-sound">STC</button><span>Belongs to the whole wall, not the batt. Unsealed gaps undo it.</span></div>
       <div class="idx-item"><button data-jump="changeorder">T&amp;M ticket</button><span>Signed by the GC before you leave site, or it's a negotiation instead of a bill.</span></div>
       <div class="idx-item"><button data-jump="act|act-tile">Tegular tile</button><span>Ceiling tile with a stepped edge that drops below the grid. Needs matching grid.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-zfur">Z-furring</button><span>Z-shaped channel that furs out masonry, holds insulation, and gives you a drywall surface.</span></div>
@@ -1835,6 +1884,292 @@
   </div>
 </section>
 
+<!-- ==================== DEMOLITION ==================== -->
+<section class="doc" id="demo">
+  <div class="doc-head">
+    <span class="stage-line">Before construction · selective demolition</span>
+    <h2>Demolition</h2>
+    <p class="lede">The only procedure in this manual where the first step is a legal question, not a construction one. Get that part wrong and nothing else matters.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p><b>Before anything comes down, find out what's in it.</b> In an older building that means asbestos and lead, and that is not a judgment call — there's a survey and a paper trail, and somebody has to hand it to you. Then protect what's staying, contain the dust, kill the power, and take it apart in the reverse order it went together. <b>If you find something you don't recognize, stop and don't disturb it.</b></p>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Hard stops — do not proceed, call the office</span>
+    <p><b>Pre-1981 construction.</b> OSHA <b>presumes</b> that thermal system insulation and surfacing material in buildings constructed no later than 1980 contain asbestos — that's what "PACM" means. Commercial and multi-unit residential buildings scheduled for demolition or major renovation require a formal survey. <b>If nobody can produce a survey, you must presume suspect material contains asbestos</b> until sampling proves otherwise.</p>
+    <p><b>Pre-1978 housing and child-occupied facilities.</b> EPA's lead Renovation, Repair and Painting rule applies, which requires a certified renovator and specific containment and cleanup practices. Not something to discover halfway through.</p>
+    <p><b>Anything structural.</b> Never remove a wall, post, beam, or bearing element without an engineer's direction in writing. "It's just a partition" is a conclusion, not an observation.</p>
+    <p><b>Any pipe, conduit, or wire you can't positively trace.</b> Assume it's live and in service.</p>
+    <p><b>Disturbing suspect material turns a survey into an abatement</b>, with our name on it. There is no version of this where guessing is cheaper than asking.</p>
+  </div>
+
+  <div class="expert" id="demo-regs">
+    <span class="tag">Full detail · who regulates what</span>
+    <h4>Two agencies, two different concerns, both apply</h4>
+    <ul class="plain">
+      <li><b>OSHA — 29 CFR 1926.1101</b> protects the <b>worker</b>. It's the source of the PACM presumption for pre-1981 thermal system insulation and surfacing material, and it defines removal to include demolition operations.</li>
+      <li><b>EPA — NESHAP</b> protects the <b>air</b>, and governs notification and work practices for structural changes to regulated facilities.</li>
+      <li>They are not alternatives. Complying with one does not satisfy the other.</li>
+      <li><b>State and local rules are often stricter</b>, with their own notification windows before demolition begins. That's the office's job to confirm, but it's why "we're starting Monday" can become "we're starting in two weeks."</li>
+    </ul>
+    <p><b>What this means for the field:</b> you are not the person who decides whether something is asbestos. You are the person who <b>recognizes that a decision is required and stops.</b> That's the whole job on this page.</p>
+
+    <h4>Silica — the one that applies to our everyday work too</h4>
+    <p>OSHA <b>29 CFR 1926.1153</b> covers respirable crystalline silica, which comes off cutting, grinding, and breaking concrete and masonry. Its <b>Table 1</b> pairs common construction tasks with required dust controls and respiratory protection — and an employer who <b>fully implements the controls Table 1 specifies for that task is deemed compliant</b>, which is why working to Table 1 is the practical path. For handheld grinders the control is continuous water to the wheel <b>or</b> vacuum dust collection.</p>
+    <p>This isn't only a demo issue. Drywall workers are exposed when cutting board and sanding joints, which is a live reason to use vacuum-assisted sanding — see <b>Finishing Drywall</b>. <b>Whether GVC has a written exposure control plan and fit-tested respirators is a question for the office, not a field improvisation.</b></p>
+  </div>
+
+  <div class="block">
+    <h3>Before the first swing</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Hazardous materials survey <b>in hand</b>, or written confirmation from the GC that none is required.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Walk the scope with the GC and mark it.</b> What comes out, what stays, and where the line is. Tape, paint, or tags on the actual walls.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph existing conditions before you touch anything</b> — every room, every finished surface that's staying, every pre-existing crack, stain and dent. This is the most valuable ten minutes on a demo job. See <b>Spotting a Change Order</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm utilities are <b>isolated and locked out</b>, and verify dead rather than trusting a label.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm what's designated for <b>salvage</b> — doors, hardware, fixtures, ceiling tile. Salvage broken by demo is a back-charge.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the <b>debris route and the dumpster</b>, and the building's rules on freight elevator use and hours.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm whether the building is <b>occupied</b> — that changes containment, noise windows, and everything about the schedule.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Fire watch and hot work permit if anything cuts or sparks. Sprinkler impairment coordinated if applicable.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Protection and containment</h3>
+    <ul class="plain">
+      <li><b>Protect what's staying, before you start.</b> Floors, casework, glass, elevator cabs, finished walls at the boundary. Cheaper than repairing, and far cheaper than arguing about who damaged it.</li>
+      <li><b>Dust containment</b> — poly walls with zipper doors, taped seams, and a real boundary rather than a suggestion.</li>
+      <li><b>Negative air with HEPA filtration</b> in occupied buildings and anywhere the GC requires it. It also keeps our dust out of other trades' finished work.</li>
+      <li><b>Mask return air grilles and shut down affected HVAC</b> — otherwise the building's own air system distributes your dust into finished space.</li>
+      <li><b>Protect egress.</b> Exits stay clear and exit signage stays visible, even mid-demo.</li>
+      <li><b>Walk the boundary daily</b> and re-tape what's come loose.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Taking it apart</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Reverse order of construction:</b> loose fixtures and salvage, then finishes, then board, then framing. Working out of order creates unsupported material overhead.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Pull ceilings and tile before wall demo where possible, so nothing lands on a finished grid.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Cut board out in manageable pieces rather than wrecking it — <b>less dust, faster cleanup, and you can see what's behind it before it's gone.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Watch for MEP inside walls as you open them. Something unmarked and live is the normal case, not the exception.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">De-nail and de-screw as you go so the debris pile isn't a hazard.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Don't overload the floor with debris.</b> Same floor-loading question as <b>Stocking Any Material</b> — a concentrated debris pile is a structural load.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Haul continuously. Debris that accumulates costs more to move and hides trip hazards.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Sort for recycling if the project has a waste diversion requirement — many do, and it's a documentation item.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what goes wrong on demo</h3>
+    <ol class="ranked">
+      <li><b>Disturbing suspect hazardous material</b> — turns a survey into an abatement, with liability attached.</li>
+      <li><b>Not photographing existing conditions first</b> — every pre-existing defect becomes ours.</li>
+      <li><b>Cutting something live.</b></li>
+      <li><b>Removing something that was supposed to stay</b> — the reason the walk-and-mark is a written, photographed step.</li>
+      <li><b>Damaging designated salvage.</b></li>
+      <li><b>Containment failure in an occupied building</b> — dust in finished space is somebody's cleanup bill and usually ours.</li>
+      <li><b>Silica exposure with no controls</b> on concrete and masonry cutting.</li>
+      <li><b>Overloading a floor with debris.</b></li>
+      <li><b>Blocking egress</b> — the one that stops the whole job when it's spotted.</li>
+    </ol>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from — read this one</span>
+    <p>The asbestos content follows <b>OSHA 29 CFR 1926.1101</b> (the PACM presumption for thermal system insulation and surfacing material in buildings constructed no later than 1980, and the requirement to presume suspect material is ACM absent a survey) and <b>EPA NESHAP</b> for air emissions and notification. Lead follows <b>EPA's RRP rule</b> for pre-1978 housing and child-occupied facilities. Silica follows <b>OSHA 29 CFR 1926.1153</b> and its Table 1.</p>
+    <p><b>This section is orientation, not compliance advice, and it is deliberately conservative.</b> Actual obligations depend on the building, its age, the jurisdiction, and the project — and state and local rules are frequently stricter than federal, including notification periods before demolition may begin. Determining what applies is the office's job with the GC. <b>The field's job is to recognize a stop condition and stop.</b> If GVC is taking on more demolition work, the written programs behind this — hazard communication, respiratory protection with fit testing, and a silica exposure control plan — need to exist before the work does, not after.</p>
+  </div>
+</section>
+
+<!-- ==================== INSULATION ==================== -->
+<section class="doc" id="insulation">
+  <div class="doc-head">
+    <span class="stage-line">In the wall · insulation</span>
+    <h2>Insulation</h2>
+    <p class="lede">The fastest trade in this manual to install badly in a way nobody can see. It gets covered the same day, and it either performs or it doesn't.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Insulation works by <b>trapping still air</b>. That means it has to <b>fill the cavity completely</b> and it must <b>not be squashed</b>. Cut batts to fit snug — a batt jammed in behind a pipe or stuffed short at the top is doing a fraction of its job. Gaps and compression are the only two ways to get this wrong, and they're both invisible an hour later.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why care, when nobody will ever see it</span>
+    <p>Because the two things it's usually there for are things people complain about for the life of the building: <b>energy bills and sound</b>. A sound wall with a two-inch gap at the top of every cavity is not a sound wall, and the complaint arrives after the building is occupied — when opening the wall costs a hundred times what filling the gap would have.</p>
+  </div>
+
+  <div class="block">
+    <h3>Know which one you're installing</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Type</th><th scope="col">What it's for</th><th scope="col">Watch for</th></tr></thead>
+      <tbody>
+        <tr><td>Thermal batt</td><td>Exterior walls and anywhere an R-value is specified.</td><td>Faced or unfaced, and which way the facing goes.</td></tr>
+        <tr><td>Sound attenuation batt (SAB)</td><td>Interior partitions where an STC is specified — offices, exam rooms, restrooms, corridors.</td><td>Usually unfaced. <b>Full height matters more than anything else.</b></td></tr>
+        <tr><td>Rigid board</td><td>Behind Z-furring on masonry, at slab edges, under some assemblies.</td><td>Cut tight between furring — see <b>Metal Stud Framing → Z-furring</b>.</td></tr>
+        <tr><td>Fire safing</td><td>Mineral wool at slab edges, shafts, and rated penetrations.</td><td><b>Life safety, and part of a listed assembly.</b> See <b>Firestopping</b>.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note stop">
+      <span class="tag">Safing is not the same as insulation</span>
+      <p><b>Fire safing looks like insulation and isn't.</b> It's a rated component in a listed assembly, with a specified material, density, thickness, and compression. Substituting a thermal batt for mineral wool safing, or packing it loose, is a rated-assembly failure, not an insulation shortcut.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Installing batts</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Only after MEP rough-in is complete <b>and inspected</b>, and before the second side of board goes on.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Friction fit</b> — cut slightly wide of the cavity so it holds itself, then let it relax to full thickness.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Fill the cavity top to bottom.</b> If the wall runs to deck, the insulation runs to deck — including the part above the ceiling nobody will ever look at.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Never compress to get around something.</b> At pipes and conduit, <b>split the batt</b> and pass half behind and half in front. Compressing it in front of a pipe leaves a cold, loud void behind it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">At electrical boxes, cut the batt to fit around the box, not squash against it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Cut narrow cavities to fit rather than folding a full-width batt into them.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">On faced batts, confirm the <b>facing direction</b> from the drawings and staple the flanges without compressing the batt.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Don't leave batts sagging or falling out ahead of the board crew — support them if there's any delay.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="ins-sound">
+    <span class="tag">Full detail · sound walls</span>
+    <h4>The batt is only part of the STC</h4>
+    <p>An STC rating belongs to <b>the whole assembly</b>, not the insulation. Board layers, stud type and spacing, whether the wall runs to deck, and — most of all — <b>whether the assembly is sealed</b> all matter as much as the batt. A sound wall leaks like a bucket with a hole.</p>
+    <ul class="plain">
+      <li><b>Seal the perimeter.</b> Acoustic sealant at the top and bottom track and at the edges, where the detail calls for it. An unsealed gap at the floor undoes the batt above it.</li>
+      <li><b>Seal penetrations</b> — boxes, sleeves, conduit. Sound goes through every hole you leave.</li>
+      <li><b>Back-to-back electrical boxes</b> on opposite sides of a sound wall are an acoustic hole. Offset them where you can, and flag it where you can't.</li>
+      <li><b>The wall has to go where the sound goes.</b> A sound-rated partition stopped at a suspended ceiling, with an open plenum above it, transmits straight over the top — and no amount of batt in the wall below fixes that. If the drawings show STC and the wall stops at the ceiling, <b>ask the question.</b></li>
+      <li>Full-height insulation above the ceiling line, on to-deck walls, is not optional detail work — it's the part that makes the rating real.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Working safely with it</h3>
+    <ul class="plain">
+      <li><b>Long sleeves, gloves, and eye protection</b>, always. Fiberglass and mineral wool both irritate skin and eyes, and mineral wool is the rougher of the two.</li>
+      <li><b>Respiratory protection</b> per the manufacturer's guidance and GVC's program — overhead work drops fibers straight into your face.</li>
+      <li>Wash work clothes separately.</li>
+      <li>Keep bags closed until you're at the wall; loose batts fill a room with fiber.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before the board covers it</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Every cavity full, top to bottom, no gaps at the track.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">No compression anywhere — especially behind pipe, conduit, and boxes.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Correct type in the correct wall, and facing the correct direction.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Sound walls: perimeter and penetrations sealed per the detail.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">To-deck walls insulated above the ceiling line.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Safing installed as the listed assembly requires, and <b>photographed</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Photos of insulated walls by room before they're closed.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Friction fit, full-cavity coverage, splitting batts around obstructions, and avoiding compression are standard manufacturer installation guidance across the batt makers, and the reason for all of them is the same physics — trapped still air. <b>R-values, STC ratings, facing and vapor retarder direction, and safing materials are all project-specific</b> and come from the wall type schedule, the specification, and the listed assembly. Vapor retarder orientation in particular depends on climate zone and assembly design and should never be decided in the field. Safing requirements come from the listed firestop assembly, not from this page.</p>
+  </div>
+</section>
+
+<!-- ==================== PAINTING ==================== -->
+<section class="doc" id="painting">
+  <div class="doc-head">
+    <span class="stage-line">Finishes · production painting</span>
+    <h2>Painting</h2>
+    <p class="lede">Paint doesn't hide anything. It reveals. Every hour of prep buys back more than an hour of paint, and no amount of good paint rescues bad preparation.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p><b>Protect everything, clean everything, prime everything bare.</b> Then cut in the edges and roll while the cut-in is still wet so it blends. Two coats means two coats — one heavy coat is not the same thing. And check the sheen on the drawings before you start, because the shinier the paint, the more it shows every flaw underneath it.</p>
+  </div>
+
+  <div class="note money">
+    <span class="tag">The handoff that decides the whole job</span>
+    <p>The paint job is only as good as the drywall under it, and the drywall is only as good as the <b>finish level that was specified</b>. A Level 4 wall under semi-gloss paint in raking light will generate complaints that look like painting defects and aren't. See <b>Finishing Drywall → levels of finish</b>. Catch that mismatch before the first coat, not after.</p>
+  </div>
+
+  <div class="block">
+    <h3>Sequence</h3>
+    <h4>Protect</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Floors, glass, hardware, fixtures, casework, and anything already finished. <b>The cheapest insurance on the job.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Mask rather than rely on a steady hand for anything that's expensive to fix.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Remove or mask hardware, plates, and covers instead of cutting around them.</span></label></li>
+    </ul>
+    <h4>Prep</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Get the sanding dust off.</b> Paint over drywall dust is an adhesion failure waiting to peel. Vacuum and wipe, don't just blow it around.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Walk it with a raking light and fix what you find <b>now</b> — see <b>Drywall Touch-Up</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Caulk where the detail calls for it. Clean, tooled joints only.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm temperature, humidity, and surface moisture are within the product's stated range. Cold or damp will cost you a coat.</span></label></li>
+    </ul>
+    <h4>Prime</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>New board always gets primed.</b> Board face and joint compound absorb at different rates — without primer, every joint and every screw photographs through the finish coats. It's the same porosity mechanism as touch-up flashing, at whole-wall scale.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Match the primer to the problem: <b>drywall primer/sealer</b> on new board, <b>stain-blocking</b> over water stains, marker, smoke or tannin, <b>bonding primer</b> over glossy or unknown coatings, <b>block filler</b> on CMU.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Spot-prime every repair, even small ones.</span></label></li>
+    </ul>
+    <h4>Finish coats</h4>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Cut in, then roll into the wet cut-in.</b> If the cut-in dries first you get a visible band around the whole room.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Maintain a wet edge</b> and work in manageable sections. Lap marks come from rolling into paint that's already setting.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Correct roller nap for the texture — too short starves it, too long stipples it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Respect the <b>spread rate</b> on the can. Stretching coverage to save material costs you a third coat.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Full dry time between coats</b>, not "it feels dry."</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">De-nib lightly between coats where needed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Keep a labeled sample of every colour and product used — that's what makes future touch-up possible. See <b>Paint Touch-Up</b>.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="paint-sheen">
+    <span class="tag">Full detail · sheen and method</span>
+    <h4>Sheen decides how forgiving the wall is</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Sheen</th><th scope="col">Hides flaws</th><th scope="col">Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Flat / matte</td><td><b>Best</b></td><td>Most forgiving, and the easiest to touch up. Hardest to clean.</td></tr>
+        <tr><td>Eggshell</td><td>Good</td><td>The common commercial compromise. Touch-up starts getting fussy.</td></tr>
+        <tr><td>Satin</td><td>Fair</td><td>More washable, noticeably less forgiving. Spot touch-up often shows.</td></tr>
+        <tr><td>Semi-gloss / gloss</td><td><b>Worst</b></td><td>Durable and cleanable, and it shows <b>everything</b> — every flaw, every roller mark, every touch-up. Plan on coating full planes.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>The rule that follows from this table:</b> the higher the sheen, the more the wall underneath has to be genuinely flat, and the less you can rely on fixing things later. If the finish schedule shows semi-gloss on a wall finished to Level 4, that's a conversation to have <b>before</b> anyone paints.</p>
+
+    <h4>Spray, roll, or both</h4>
+    <ul class="plain">
+      <li><b>Spray</b> is fastest by a wide margin on open, unoccupied space — but overspray travels much further than people expect, and containment plus masking eats into the gain.</li>
+      <li><b>Backrolling</b> — spraying then immediately rolling — works the coating into the surface and evens the texture. Often the right answer on new board.</li>
+      <li><b>Rolling</b> gives the most control, needs the least masking, and is usually correct in occupied buildings, tight spaces, and anywhere a neighbouring finish can't be risked.</li>
+      <li><b>Match the method between coats and between areas.</b> A sprayed wall next to a rolled wall in the same colour reads as two different colours because the textures differ.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what costs us on painting</h3>
+    <ol class="ranked">
+      <li><b>Painting over dust</b> — adhesion failure, and it fails after handover.</li>
+      <li><b>Skipping or skimping primer on new board</b> — every joint telegraphs through.</li>
+      <li><b>Sheen and finish-level mismatch not caught before starting.</b></li>
+      <li><b>Cut-in drying before the roller reaches it</b> — a visible band around the room.</li>
+      <li><b>Stretching the spread rate</b> — buys a third coat.</li>
+      <li><b>Recoating before dry</b> — and the failure shows up later, not now.</li>
+      <li><b>Inadequate protection</b> — overspray and drips on somebody else's finished work.</li>
+      <li><b>Mixing spray and roll</b> in the same visual field.</li>
+      <li><b>Not keeping labeled leftovers</b> — makes every future touch-up worse.</li>
+    </ol>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Sequence, primer selection, wet-edge and cut-in practice, and sheen behaviour follow paint manufacturer application guidance and standard commercial painting practice. <b>Products, spread rates, dry and recoat times, and temperature and humidity limits are all product-specific and come off the data sheet</b> for the actual specified coating — those numbers are never carried between products. The finish-level and sheen interaction is documented in <b>Finishing Drywall</b>; the flashing mechanism behind the priming requirement is in <b>Paint Touch-Up</b>.</p>
+  </div>
+</section>
+
 <!-- ==================== PATCH ==================== -->
 <section class="doc" id="patch">
   <div class="doc-head">
@@ -2105,6 +2440,243 @@
   </div>
 </section>
 
+<!-- ==================== FRP ==================== -->
+<section class="doc" id="frp">
+  <div class="doc-head">
+    <span class="stage-line">Wall panels · FRP</span>
+    <h2>FRP Panels</h2>
+    <p class="lede">A plastic panel glued to a wall, which sounds simple and punishes two specific mistakes: a substrate that isn't flat, and not leaving the panel room to move.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>FRP is a tough plastic sheet, glued flat to the wall, with plastic trim covering the joints. It goes in kitchens, restrooms and anywhere that gets hosed down. Two things decide whether it looks right: <b>the wall behind it has to be genuinely flat</b>, because FRP telegraphs every bump underneath it — and <b>you have to leave gaps</b> at the edges, because the panels grow and shrink. Butt them tight and they buckle.</p>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">The two failures, and they're both permanent</span>
+    <p><b>1. An uneven substrate.</b> High and low spots must be leveled before installation. On concrete block or brick — which are almost never flat enough — the accepted approach is <b>furring strips with a suitable substrate over them</b>, not FRP straight onto the masonry. A wavy wall behind FRP reads as a wavy glossy wall, and gloss makes it worse.</p>
+    <p><b>2. No expansion allowance.</b> FRP moves with temperature and humidity. Every manufacturer specifies gaps, and a panel installed tight has nowhere to go but outward.</p>
+  </div>
+
+  <div class="block">
+    <h3>Before you glue anything</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Acclimate the panels</b> in the space they're going into, flat, per the manufacturer's stated period.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>String or straightedge the wall.</b> Level the high and low spots first — this is the step that gets skipped.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the substrate is the one the adhesive is rated for, and that it's clean, dry, and free of dust and debris that would break the bond.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Plan the layout so joints land sensibly and you don't finish on a sliver.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Dry-fit and mark every penetration — fixtures, outlets, plumbing — before adhesive is on anything.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="frp-install">
+    <span class="tag">Full detail · adhesive, gaps, moldings</span>
+    <h4>Adhesive</h4>
+    <ul class="plain">
+      <li><b>100% coverage of the panel back</b>, applied in a cross-hatch pattern with the trowel the adhesive manufacturer specifies.</li>
+      <li>The adhesive must make contact across the <b>entire</b> substrate. Incomplete contact is what causes bubbles, and a bubble in FRP cannot be fixed — the panel comes off.</li>
+      <li><b>Roll the panel with a laminate roller</b> to drive out air pockets. Work from the centre outward.</li>
+      <li>Follow the adhesive's open time. Too soon and it slides; too late and it doesn't grab.</li>
+    </ul>
+
+    <h4>Expansion gaps — the numbers</h4>
+    <p>For a standard 4' × 8' panel, the typical published requirement is a minimum <b>1/4" gap at top and bottom</b> of each panel and <b>1/8" between panels</b>. Gaps are also required <b>around fixtures and anything penetrating the panel</b>. <b>Confirm against the actual manufacturer's instructions</b> — these vary by product and panel size, and they govern.</p>
+
+    <h4>Moldings and sealant</h4>
+    <ul class="plain">
+      <li>Trim family: inside corner, outside corner, division bar between panels, and cap at the top edge.</li>
+      <li><b>Silicone sealant into the channel of the molding</b> — that's what makes the installation moisture resistant rather than just moisture shedding.</li>
+      <li>Fit moldings leaving a minimum <b>1/8" between the panel edge and the molding stem</b>, so the panel can still move inside the trim.</li>
+      <li>In washdown and high-moisture areas, <b>silicone between the moldings and the floor and ceiling</b> as well — otherwise water finds its way behind the panel, and behind the panel is the one place you can't inspect.</li>
+    </ul>
+
+    <h4>Cutting</h4>
+    <ul class="plain">
+      <li>Fine-tooth blade, cut with the finished face up to keep the chip-out on the back.</li>
+      <li>Support the panel fully so it doesn't flex and crack at the cut.</li>
+      <li>Cut penetrations slightly generous — the gap gets covered by the escutcheon or sealed, and a tight cut has no expansion room.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before you call it done</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">No bubbles or hollow spots — sound the panel with your hand across the whole face.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Expansion gaps present at top, bottom, between panels, and at penetrations.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Silicone in every molding channel, continuous.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Moldings tight and straight, and sealed to floor and ceiling in washdown areas.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Panel faces clean, protective film removed, no adhesive on the face.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from — read this one</span>
+    <p>Substrate flatness, 100% cross-hatch adhesive coverage, laminate rolling, silicone in molding channels, and the 1/4" / 1/8" expansion gaps for a 4×8 panel all come from published FRP manufacturer installation guides (Crane Composites, Glasliner, Marlite and similar). <b>Those numbers are product-specific and the actual manufacturer's instructions govern.</b></p>
+    <p><b>Scope question for GVC:</b> FRP is one of three trades seeded <b>title-only</b> in the portal's estimate scope catalog, so what GVC actually includes on an FRP scope has never been written down. Before this is used for pricing, confirm: do we furnish the panels and trim or install owner-furnished material, do we prepare the substrate or receive it flat, and do we own the sealant work. Those three answers change the number substantially.</p>
+  </div>
+</section>
+
+<!-- ==================== DOORS & HARDWARE ==================== -->
+<section class="doc" id="doors">
+  <div class="doc-head">
+    <span class="stage-line">Openings · doors, frames &amp; hardware</span>
+    <h2>Doors &amp; Hardware</h2>
+    <p class="lede">The frame decides everything. Set it plumb, square, and the right width, anchored to real framing — and the door hangs and latches. Set it wrong and no amount of hardware adjustment will rescue it.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Get the frame right and the rest is easy. <b>Both jambs plumb, the head level, the throat the right width, and anchored where the frame is made to be anchored.</b> Keep the spreader on the bottom until it's fastened so the frame can't pinch in. Then hang the door, fit the hardware off the template, and adjust the closer last. If a door won't latch, the problem is almost always the frame, not the lock.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why this connects to our framing</span>
+    <p>Hollow metal frames in steel stud walls get set <b>while the wall is being framed</b>, and they anchor into the jamb studs we build. That means the rough opening, the jamb stud detail, and the frame anchor locations are all part of the framing pass — see <b>Metal Stud Framing → openings</b>. A frame is only as straight as the studs beside it.</p>
+  </div>
+
+  <div class="block">
+    <h3>Setting a hollow metal frame</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Work off the <b>door and frame schedule</b> — size, handing, frame type, throat depth, label, and hardware prep. Never off the plan alone.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the <b>rough opening</b> is the frame dimension plus the manufacturer's clearance.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Set the frame, then <b>plumb both jambs and level the head</b> — and check the throat width at top, middle, and bottom.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Leave the shipping spreader on the bottom</b> until the frame is anchored, so the jambs can't pull in.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Anchor at <b>the frame's own anchor locations</b> into the jamb studs. Not wherever's convenient.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check the diagonals. A frame can be plumb and level and still be racked.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Grout-fill where the schedule or the label requires it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Protect the frame — a dented frame at a main entrance is a replacement, not a repair.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="doors-rated">
+    <span class="tag">Full detail · labeled openings and ADA</span>
+    <h4>Rated openings — the whole opening is the assembly</h4>
+    <p>On a fire-rated opening, the <b>door, the frame, the hardware, and the gasketing are all part of one listed assembly.</b> Every component carries a label, and the assembly is only rated if all of them are correct together.</p>
+    <ul class="plain">
+      <li><b>Labels must remain legible.</b> Painting over a label, or removing one, fails inspection — a label is the only proof the assembly is what it claims to be.</li>
+      <li><b>No field modification of a labeled door or frame.</b> Cutting a new hardware prep, drilling a new hole, or trimming a labeled door voids the label. If the prep is wrong, that's a supplier problem, not a field fix.</li>
+      <li>Rated openings generally require a <b>self-closing and positive-latching</b> assembly. A closer that doesn't close it, or a latch that doesn't engage, is a rated-assembly failure even though everything is installed.</li>
+      <li>Undercut is limited on rated doors — you cannot simply trim the bottom to clear new flooring.</li>
+      <li>The rated opening sits in a rated wall, which means <b>the wall around it</b> matters too. See <b>Firestopping</b>.</li>
+    </ul>
+
+    <h4>Accessibility — code, and it gets checked</h4>
+    <p>Accessible openings carry requirements that are easy to defeat accidentally during installation:</p>
+    <ul class="plain">
+      <li><b>Clear width</b> when the door is open — measured to the door face, not the frame.</li>
+      <li><b>Maneuvering clearance</b> on both sides, which depends on approach direction and whether the door is push or pull side. This is the one most often lost to a wall built slightly in the wrong place — which is why it's worth catching at framing.</li>
+      <li><b>Opening force</b> limits on interior non-rated doors — a closer cranked down too tight fails this.</li>
+      <li><b>Hardware operable without tight grasping, pinching, or twisting of the wrist</b> — lever handles rather than knobs — and mounted within the required height range.</li>
+      <li><b>Threshold height</b> limits, and smooth-surface requirements at the bottom of the door.</li>
+      <li><b>Closer timing</b> — minimum closing time from a specified angle.</li>
+      <li>The exact dimensions come from the applicable accessibility standard for the project. <b>Get them from the drawings, not from memory.</b></li>
+    </ul>
+
+    <h4>Hardware</h4>
+    <ul class="plain">
+      <li>Work from the <b>hardware schedule / hardware sets</b>. Each set lists every item for that opening.</li>
+      <li>Confirm <b>handing</b> before you prep or install anything. A reversed lever is a reorder.</li>
+      <li>Use the manufacturer's <b>template</b> for every prep. Backset and centerline are not eyeball dimensions.</li>
+      <li>Install order: hinges, then lock or latch, then closer, then stop and silencers. <b>Adjust closers last</b> — closing speed, latch speed, and backcheck.</li>
+      <li>Check the door swings clear of everything through its full arc, including anything another trade installed after the frame went in.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before you call the opening done</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Frame plumb, level, square, and correct throat, anchored at its anchor points.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Door hangs without rubbing and <b>latches without being pushed or pulled</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Gaps consistent around the door — top, both sides, and bottom.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All hardware in the set installed, correct handing, tight.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Closer adjusted: closes fully, latches, opening force reasonable.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Rated openings: labels present and legible, self-closing and positive-latching verified, gasketing in place, <b>no field modifications</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Accessible openings: clearances, hardware type and height, and opening force checked against the drawings.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Keys and cores handled per the project's keying instructions, and frames touched up where the paint got marked.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from — read this one</span>
+    <p>Frame setting practice, spreader use, anchoring at the frame's anchor locations, and hardware install order are standard hollow metal and door hardware practice; frame and hardware manufacturer instructions and templates govern the specifics. <b>Rated opening requirements come from the individual listing</b> and from the applicable door and hardware code — the prohibition on field modification of labeled assemblies is the one to remember. <b>Accessibility dimensions are deliberately not given as numbers here</b>, because they depend on which standard the project is built to and on the approach geometry at each door; take them from the drawings.</p>
+    <p><b>Scope question for GVC:</b> Doors &amp; Hardware is a title-only stub in the portal's estimate scope catalog, and this document covers a wider range than GVC may actually sell. Before pricing, confirm: do we set frames only (the natural extension of our framing work), or do we also hang doors and install hardware; do we furnish or install-only; and who owns keying and the final closer adjustments. Setting frames and installing finish hardware are very different scopes with very different risk.</p>
+  </div>
+</section>
+
+<!-- ==================== TECTUM ==================== -->
+<section class="doc" id="tectum">
+  <div class="doc-head">
+    <span class="stage-line">Acoustic panels · Tectum</span>
+    <h2>Tectum Panels</h2>
+    <p class="lede">Cementitious wood-fiber acoustic panel. Genuinely easy to install and genuinely easy to wreck — almost every defect is a crushed edge or an over-driven screw.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Tectum is a stiff panel made of wood shreds held together with cement. It absorbs sound and takes a beating, so it goes in gyms, corridors, pools and mechanical rooms. It screws straight to framing or furring. Two rules do most of the work: <b>screw heads flush with the face — never countersunk</b>, and <b>don't bang the corners</b>, because a crushed corner can't be repaired.</p>
+  </div>
+
+  <div class="block">
+    <h3>What it is and where it goes</h3>
+    <ul class="plain">
+      <li><b>Aspen wood fibers with a cementitious binder</b> — that's why it's abrasive to cut and why it holds a screw well.</li>
+      <li>Chosen for <b>acoustic absorption plus impact resistance</b>, which is why it shows up where a soft acoustic tile would get destroyed.</li>
+      <li><b>Direct-attach</b> panels go straight to a ceiling or wall structure, unlike lay-in ACT which needs a grid — see <b>Acoustical Ceilings</b>.</li>
+      <li>Standard direct-attach panels are <b>1" thick</b>, in nominal <b>2×4', 2×8' and 4×8'</b> sizes. Other thicknesses and product lines exist — check the submittal.</li>
+    </ul>
+  </div>
+
+  <div class="expert" id="tectum-attach">
+    <span class="tag">Full detail · attachment</span>
+    <h4>Fasteners and spacing</h4>
+    <ul class="plain">
+      <li>Panels can be attached with <b>screws, nails, or adhesive</b> depending on the substrate and the submittal.</li>
+      <li>With screws, the <b>pull-through resistance of the screw head is adequate on its own</b> — no washers and no adhesive are required alongside them.</li>
+      <li><b>Minimum 24" o.c.</b>, starting at the panel edge.</li>
+      <li>When <b>mechanically attached to furring</b>, fasten every <b>12" o.c.</b></li>
+      <li><b>Fastener selection has to account for total system weight</b> — the panel, plus anything the assembly carries. Substrate governs the fastener type.</li>
+    </ul>
+
+    <h4>The two mistakes</h4>
+    <p><b>Do not countersink.</b> Screw heads sit <b>flush with the face</b> of the panel. Driving them in crushes the fiber around the head, leaves a dark dimple, and there is no filler that makes it disappear — the texture is the finish. Set the clutch and test on a scrap first.</p>
+    <p><b>Do not let the substrate telegraph.</b> Tectum is stiff but it won't bridge a wavy wall or an out-of-plane furring run. String the substrate and shim the furring before you start, the same as with <b>Z-furring</b>.</p>
+
+    <h4>Cutting and handling</h4>
+    <ul class="plain">
+      <li><b>Carbide blade</b> — the cementitious binder eats ordinary blades, and a dull blade tears the fiber instead of cutting it.</li>
+      <li><b>Dusty and abrasive.</b> Eye protection and dust control, and it's a cut worth doing outside the finished space.</li>
+      <li><b>Cut edges are visible</b> and don't match the factory edge. Plan the layout so cuts land where they're least seen, and check the submittal for whether cut edges get treated or painted.</li>
+      <li><b>Corners crush.</b> Carry panels on edge, stack them flat, and don't lean them against anything.</li>
+    </ul>
+
+    <h4>Layout and finish</h4>
+    <ul class="plain">
+      <li>Lay it out like a ceiling: <b>plan the joints, keep border pieces large and even, don't finish on a sliver.</b> Same principle as <b>Acoustical Ceilings</b>.</li>
+      <li>Keep joints tight and aligned — the panel texture is busy, but a wandering joint line still reads.</li>
+      <li>If it's field painted, follow the manufacturer's method. <b>Heavy rolled paint fills the texture and kills the acoustic performance</b> — which is the entire reason the panel is there.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before you call it done</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Every screw head <b>flush</b> — none countersunk, none proud.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Fastener spacing per the submittal, starting at panel edges.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Joints tight and aligned; layout even, no sliver borders.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">No crushed corners or edges — replace, don't patch.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Cut edges treated per the submittal.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Panel faces clean and the texture not clogged with paint or dust.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from — read this one</span>
+    <p>Panel composition, the fact that screw-head pull-through is adequate without washers or adhesive, the 24" o.c. minimum starting at panel edges, the 12" o.c. spacing when attached to furring, the instruction not to countersink, the requirement that fasteners account for total system weight, and the 1"-thick 2×4 / 2×8 / 4×8 standard direct-attach sizes all come from <b>Armstrong's Tectum direct-attach installation guides</b>. Product lines vary — Finale and other systems have their own instructions — so <b>the submittal for the actual specified product governs.</b></p>
+    <p><b>Scope question for GVC:</b> Tectum is the third title-only stub in the portal's estimate scope catalog. Confirm before pricing whether we furnish or install-only, whether we own the furring and substrate preparation behind it, and whether field painting is ours.</p>
+  </div>
+</section>
+
 <!-- ==================== CHANGE ORDER ==================== -->
 <section class="doc" id="changeorder">
   <div class="doc-head">
@@ -2272,6 +2844,29 @@
       <li><a href="https://www.clarkdietrich.com/products/z-furring-channel">ClarkDietrich — Z-furring channel</a> and <a href="https://studcosystems.com/news-and-tech-tips/studco-furring-channels/">Studco — Furring and Z-furring channels</a> — depths, 16" o.c. spacing, vertical orientation, anchoring interval.</li>
     </ul>
 
+    <h4>Demolition — regulatory</h4>
+    <ul>
+      <li><a href="https://www.ecfr.gov/current/title-29/subtitle-B/chapter-XVII/part-1926/subpart-Z/section-1926.1101">29 CFR 1926.1101 — Asbestos (construction)</a> — the PACM definition and the presumption for buildings constructed no later than 1980.</li>
+      <li><a href="https://www.osha.gov/laws-regs/standardinterpretations/1997-08-20">OSHA interpretation — Asbestos surveying and sampling for remodeling, renovation and demolition</a> — presume suspect material is ACM where no survey exists.</li>
+      <li><a href="https://www.osha.gov/laws-regs/standardinterpretations/2005-06-27">OSHA interpretation — 1926.1101 applied to demolition of buildings containing installed asbestos</a></li>
+      <li><a href="https://www.ecfr.gov/current/title-29/subtitle-B/chapter-XVII/part-1926/subpart-Z/section-1926.1153">29 CFR 1926.1153 — Respirable crystalline silica</a>, and <a href="https://www.osha.gov/sites/default/files/publications/OSHA3681.pdf">OSHA's construction silica guidance (PDF)</a> — Table 1 task-based controls; implementing Table 1 fully constitutes compliance for that task.</li>
+      <li><a href="https://www.osha.gov/silica-crystalline/construction">OSHA — Crystalline silica in construction</a></li>
+    </ul>
+
+    <h4>FRP panels</h4>
+    <ul>
+      <li><a href="https://www.buildsite.com/pdf/cranecomposites/Crane-Composites-Installation-Guide-For-Standard-FRP-Innovative-FRP-Wall-Ceiling-and-Laminated-Panel-Installations-Installation-Instructions-1191234.pdf">Crane Composites — FRP wall and ceiling panel installation guide (PDF)</a> — substrate flatness, furring over masonry, 100% cross-hatch adhesive coverage, expansion gaps, molding sealant.</li>
+      <li><a href="https://images.thdstatic.com/catalog/pdfImages/12/125344c3-930c-4a19-a5e0-fe9a00eb84ef.pdf">Glasliner FRP panels — installation instructions (PDF)</a></li>
+      <li><a href="https://marlite.com/assets/TechDetails/Laminated%20FRP%20Installation%20Instructions%2001.16[3].pdf">Marlite — laminated FRP installation instructions (PDF)</a></li>
+    </ul>
+
+    <h4>Tectum panels</h4>
+    <ul>
+      <li><a href="https://www.armstrongceilings.com/content/dam/armstrongceilings/commercial/north-america/installation-and-maintenance/installation-guide-tectum-direct-attach-ceiling-wall-panels.pdf">Armstrong — Tectum direct-attach ceiling and wall panels installation guide (PDF)</a> — composition, screw-head pull-through without washers or adhesive, 24" o.c. minimum from panel edge, 12" o.c. on furring, do not countersink, standard sizes.</li>
+      <li><a href="https://www.buildsite.com/pdf/armstrong/TECTUM-Direct-Attach-Acoustical-Ceiling-Panels-Installation-Instructions-2931493.pdf">Armstrong — Tectum direct-attach acoustical ceiling panels, installation instructions (PDF)</a></li>
+      <li><a href="https://www.armstrongceilings.com/commercial/en/commercial-ceilings-walls/tectum-direct-attach-wall-panels.html">Armstrong — Tectum direct-attach wall panels</a></li>
+    </ul>
+
     <h4>Firestopping</h4>
     <ul>
       <li><a href="https://firestop.org/astm-and-ul-standards-for-firestopping/">International Firestop Council — Understanding ASTM and UL standards for firestopping</a> — F vs. T rating definitions, and which test standard applies to penetrations (UL 1479 / ASTM E814) vs. joints (UL 2079 / ASTM E1966).</li>
@@ -2354,7 +2949,9 @@
       <li><b>Real production rates from our own jobs</b> — per stage, per crew, per job type. The Job Check stage data is the raw material.</li>
       <li><b>The automatic-tool decision</b> — needs one measured job against our own hand-finishing baseline before any capital commitment.</li>
       <li><b>A GVC backing list template</b> so framing and hanging have a real list instead of memory.</li>
-      <li><b>The rest of our scope</b> — insulation, paint, and demo don't have procedures yet.</li>
+      <li><b>Three scope questions only Jordan can answer</b>, flagged in the FRP, Doors &amp; Hardware, and Tectum provenance blocks. All three are title-only stubs in the portal's estimate scope catalog, which means what GVC actually includes on those scopes has never been written down. Furnish or install-only, who preps the substrate, and who owns sealant / keying / field painting — those answers change the price materially.</li>
+      <li><b>Written safety programs</b> — the demolition and insulation pages both reference respiratory protection and a silica exposure control plan. If GVC takes on more demo, those programs need to exist before the work does.</li>
+      <li><b>A review by someone who does each trade daily.</b> The drywall and framing pages carry GVC's own experience. Cabinets, doors, FRP and Tectum lean on published practice, and would be better for a read from someone who installs them for a living.</li>
       <li><b>Photos and diagrams.</b> Several of these sections — deflection track types, grid profiles, tile edges, the butterfly patch — would land much harder with a picture than a paragraph.</li>
     </ul>
   </div>

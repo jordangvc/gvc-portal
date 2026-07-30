@@ -1845,3 +1845,63 @@ invent: `subsystems/estimate/drafts.py` for the localStorage-working-copy + shar
 with last-writer-wins on `updated_at`, and `adapters/monday/jobcheck.py fetch_active_jobs()` for the
 job picker. **Offline-first is mandatory, not a nice-to-have** — jobsite signal is bad and a
 checklist that loses a half-finished pass in a stairwell is worse than paper.
+
+### 2026-07-29 — Field Manual r4: the last six. **20 procedures, scope complete.**
+Jordan: "proceed with all these." Added Demolition, Insulation, Painting, FRP, Doors & Hardware,
+Tectum. Every trade GVC lists now has a procedure, plus the three estimate-catalog stubs.
+  • **Demolition** (`#demo`) — the only doc here whose FIRST step is a legal question, and it is
+    deliberately conservative. Hard-stop callout up top: **pre-1981** construction (OSHA presumes
+    thermal system insulation + surfacing material are asbestos-containing — PACM — and absent a
+    survey you must presume suspect material IS ACM); **pre-1978** housing/child-occupied (EPA lead
+    RRP, certified renovator); anything structural; any untraceable conduit. Expert block
+    `#demo-regs` separates **OSHA 1926.1101 (protects the worker)** from **EPA NESHAP (protects the
+    air)** — they are not alternatives — and notes state/local rules are frequently stricter with
+    their own pre-demo notification windows. Also carries **silica / 1926.1153 Table 1** (controls
+    for handheld grinders = continuous water OR vacuum collection; implementing Table 1 fully =
+    compliance), flagged as applying to our EVERYDAY drywall sanding and cutting, not just demo.
+    THE FRAMING OF THE WHOLE PAGE: the field's job is not to decide whether something is asbestos —
+    it's to recognise that a decision is required and STOP.
+    ⚠ Its provenance block states plainly this is orientation, NOT compliance advice, and calls out
+    that the written programs behind it (hazcom, respiratory protection w/ fit testing, silica
+    exposure control plan) **need to exist before GVC takes on more demo, not after.** Open item.
+  • **Insulation** (`#insulation`) — one physical principle (traps still air ⇒ gaps and compression
+    are the only two failure modes, both invisible an hour later). Split-the-batt-around-pipe rather
+    than compress; full height INCLUDING above the ceiling on to-deck walls. Expert `#ins-sound`:
+    STC belongs to the whole assembly not the batt — seal the perimeter and penetrations, offset
+    back-to-back boxes, and **if the drawings show STC but the wall stops at a suspended ceiling with
+    an open plenum, ask the question** because no amount of batt fixes flanking over the top. Also
+    separates **fire safing** (mineral wool, a rated component in a listed assembly) from insulation,
+    since they look identical in the wall.
+  • **Painting** (`#painting`) — "paint reveals, it doesn't hide." Protect → prep → prime → coats.
+    Primer on new board is non-optional (same porosity mechanism as touch-up flashing, at whole-wall
+    scale). Expert `#paint-sheen` is a forgiveness table (flat→gloss) whose payoff is the Level-4-
+    under-semi-gloss trap already flagged in Finishing, plus spray/backroll/roll trade-offs and the
+    warning that a sprayed wall beside a rolled wall reads as two different colours.
+  • **FRP** (`#frp`) — two permanent failures: substrate not flat (furring + substrate over CMU,
+    never FRP straight to masonry) and no expansion allowance. Expert `#frp-install`: 100% cross-hatch
+    adhesive coverage, laminate-roller the air out, **1/4" top+bottom and 1/8" between panels on a
+    4×8**, 1/8" between panel edge and molding stem, silicone in the molding channel and to
+    floor/ceiling in washdown areas.
+  • **Doors & Hardware** (`#doors`) — the frame decides everything; ties back to our framing pass
+    (jamb studs, RO, anchor locations). Expert `#doors-rated`: a labeled opening is ONE assembly
+    (door+frame+hardware+gasketing), labels stay legible, and **no field modification of a labeled
+    door or frame** — a wrong prep is a supplier problem, not a field fix. Accessibility items are
+    listed but **deliberately WITHOUT numbers**, because they depend on the standard the project is
+    built to and the approach geometry per door.
+  • **Tectum** (`#tectum`) — aspen fiber + cementitious binder. Expert `#tectum-attach`: screw-head
+    pull-through is adequate alone (no washers, no adhesive), min 24" o.c. from panel edge, 12" o.c.
+    on furring, fasteners must account for total system weight, standard 1" thick in 2×4/2×8/4×8.
+    **Do not countersink** — heads flush; countersinking crushes the fiber and no filler hides it,
+    because the texture IS the finish. Heavy field paint clogs the texture and kills the acoustic
+    performance the panel exists for.
+⚠ THE THREE STUB TRADES CARRY AN EXPLICIT SCOPE QUESTION FOR JORDAN, in their provenance blocks:
+FRP, Doors & Hardware and Tectum are all **title-only** in the estimate scope catalog
+(portal/estimate/scope-catalog.json), meaning GVC's actual inclusions were never written down. Each
+asks the same three: furnish-or-install-only, who preps the substrate, and who owns the
+sealant/keying/field-painting tail. Those answers change the price materially — **do not let these
+docs be used for pricing until they're answered.** Answering them also fills the catalog scope text
+that's been outstanding since 2026-07-14.
+TOTALS: 24 sections (20 procedures + home/index/glossary/sources), 329 checkboxes, 32 expert blocks,
+20 provenance blocks, 41 Component Index jumps. Verified: JS node --check clean, CSS braces balanced,
+every tile target resolves, every index jump resolves to a real anchor, no duplicate ids, all tag
+pairs balanced, py compileall clean.
