@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import sys
 from pathlib import Path
 from typing import Optional
@@ -604,4 +605,53 @@ def stamp_estimate_emailed(mc, item_id: int, date_str: str) -> None:
         "boardId": str(BID_BOARD_ID),
         "itemId": str(item_id),
         "values": json.dumps({COL_EMAILED_ON: {"date": date_str}}),
+    })
+
+
+# ---------------------------------------------------------------------------
+# Jake's plan folder link (2026-07-29)
+# ---------------------------------------------------------------------------
+# "Plan Folder #" (text) on the Bid Board — the leading number of Jake's Drive
+# plan folder, e.g. 341 for "341 - Obara Office Renovation - Sent". Created
+# 2026-07-29 via the Monday MCP. This is the ONLY reliable key between the
+# portal and Jake's folders: a July-2026 reconciliation of 247 folders had to
+# fall back on fuzzy name matching, and 43 board rows carry a project name in
+# the Estimate # field instead of a number.
+COL_PLAN_FOLDER = os.environ.get("GVC_MONDAY_BID_PLAN_FOLDER_COL", "text_mm5rjq00")
+
+# Root of Jake's plan folder in Drive (parent of the numbered job folders).
+JAKE_PLAN_FOLDER_ROOT = os.environ.get(
+    "GVC_JAKE_PLAN_FOLDER_ID", "1X1vuutnTuCN0hxTZSANmm3QC6SQ41Gc0")
+
+# An Estimate # the portal recognises as its own: YYYY-MMDD-NNN.
+_PORTAL_EST_RE = re.compile(r"^\d{4}-\d{4}-\d{3}$")
+
+
+def is_portal_estimate_number(value) -> bool:
+    """True when the Estimate # cell already holds a portal-format number.
+    Anything else — blank, or a project name like 'Hickey Residence' — is
+    treated as unset so finalize can write the real number over it."""
+    return bool(_PORTAL_EST_RE.match(str(value or "").strip()))
+
+
+def read_plan_folder_number(mc, item_id: int) -> Optional[str]:
+    """The Bid Board item's Plan Folder # (digits only), or None."""
+    texts = _get_column_texts(mc, int(item_id), [COL_PLAN_FOLDER])
+    raw = (texts.get(COL_PLAN_FOLDER) or "").strip()
+    m = re.match(r"\s*(\d{1,5})", raw)
+    return m.group(1) if m else None
+
+
+def set_plan_folder_number(mc, item_id: int, number: str) -> None:
+    """Persist the Plan Folder # on the Bid Board (fill-in / correction from
+    the estimate form) so it only ever has to be typed once."""
+    mutation = """
+    mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
+      change_multiple_column_values(board_id: $boardId, item_id: $itemId,
+                                    column_values: $values) { id }
+    }
+    """
+    mc._query(mutation, {
+        "boardId": str(BID_BOARD_ID), "itemId": str(int(item_id)),
+        "values": json.dumps({COL_PLAN_FOLDER: str(number)}),
     })
