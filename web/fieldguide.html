@@ -427,6 +427,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">Framing</p>
   <div class="tiles">
+    <button class="tile" data-go="ratedwalls">
+      <span class="icon">🧨</span><span class="stage">Rated assemblies</span>
+      <span class="name">Fire Walls &amp; Shaftwall</span>
+      <span class="desc">Four different things all called "fire wall," and what decides how high it goes. Plus shaftwall, built entirely from one side.</span>
+    </button>
     <button class="tile" data-go="firestop">
       <span class="icon">🔥</span><span class="stage">Rated assemblies</span>
       <span class="name">Firestopping</span>
@@ -578,6 +583,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <div class="idx-item"><button data-jump="framing|sys-bridging">Bridging</button><span>Horizontal members that stop studs from twisting. Not the same as shear bracing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-blocking">Blocking</button><span>Two different meanings — backing to hang things on, and structural blocking to brace studs.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-fasten">Cabinet screws</button><span>Washer-head, coarse-thread, ductile. Not drywall screws — those break under load.</span></div>
+      <div class="idx-item"><button data-jump="ratedwalls|rw-shaft-install">C-H stud</button><span>Shaftwall stud that grips the liner panel. Friction-fits the J-track; the system lands them at 24" o.c.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-crc">Cold-rolled channel (CRC)</button><span>Solid steel channel threaded through stud knockouts as bridging. The workhorse.</span></div>
       <div class="idx-item"><button data-jump="hang|hang-control">Control joint</button><span>A deliberate break in the board so the wall cracks where you chose, not where it wants.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-bead">Corner bead</button><span>The metal or vinyl edge that makes an outside corner straight and durable.</span></div>
@@ -597,8 +603,10 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <div class="idx-item"><button data-jump="finish|fin-levels">Levels of finish (0–5)</button><span>The industry scale for how smooth a wall has to be. Getting this right is the biggest money item in finishing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Limiting height</button><span>The published table that says how tall a given stud can go. The authority on tall walls.</span></div>
       <div class="idx-item"><button data-jump="act|act-maintee">Main tee / main runner</button><span>The long grid members that carry the ceiling. Usually 4 feet apart.</span></div>
+      <div class="idx-item"><button data-jump="ratedwalls|rw-taxonomy">Fire barrier vs. partition</button><span>Different continuity rules — it's what decides whether the wall stops at the ceiling or goes to deck.</span></div>
       <div class="idx-item"><button data-jump="insulation">Fire safing</button><span>Mineral wool at slab edges and shafts. Looks like insulation, is actually a rated component.</span></div>
       <div class="idx-item"><button data-jump="doors|doors-rated">Labeled opening</button><span>Door, frame, hardware and gasketing are one assembly. No field modifications, labels stay legible.</span></div>
+      <div class="idx-item"><button data-jump="ratedwalls|rw-shaft-install">J-runner</button><span>Shaftwall track with uneven flanges. The long flange faces the shaft and carries the liner.</span></div>
       <div class="idx-item"><button data-jump="drawings">Partition schedule</button><span>Turns a wall tag into stud, gauge, spacing, board, and rating. Our most important sheet.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-reveal">Reveal</button><span>The gap between cabinet doors. Consistent reveals are what customers read as quality.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Stacked walls</button><span>Getting height by building one wall on top of another instead of one tall stud.</span></div>
@@ -607,6 +615,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <div class="idx-item"><button data-jump="changeorder|co-five">Standing-by time</button><span>Crew on site unable to work. Recoverable only if somebody wrote it down that day.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strapping / flat strap</button><span>Flat steel banding screwed across stud flanges to brace them.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strap and block</button><span>Strap plus a short block between studs. Required once studs get deep.</span></div>
+      <div class="idx-item"><button data-jump="ratedwalls">Shaftliner</button><span>1" × 24" panel on the shaft side, slid in from your side. Cut it accurately — there's no second chance.</span></div>
       <div class="idx-item"><button data-jump="painting|paint-sheen">Sheen</button><span>Flat forgives, gloss shows everything. Decides how flat the wall underneath has to be.</span></div>
       <div class="idx-item"><button data-jump="demo|demo-regs">Silica</button><span>Off cutting and grinding concrete, and off sanding drywall. OSHA Table 1 gives the controls.</span></div>
       <div class="idx-item"><button data-jump="insulation|ins-sound">STC</button><span>Belongs to the whole wall, not the batt. Unsealed gaps undo it.</span></div>
@@ -934,6 +943,122 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>The UL numbering scheme (joint type pair, D/S movement letter, and the width bands for the numeric group) and the F/T rating definitions come from UL's own guide information and the International Firestop Council's material on ASTM and UL standards; through-penetration systems are tested to <b>UL 1479</b> / ASTM E814, joint systems to <b>UL 2079</b> / ASTM E1966. <b>The specific listed system named on the project drawings governs everything here</b> — annular spaces, depths, materials, and cycle counts are properties of that individual listing, not general rules. Scope ownership of penetration firestopping is contractual and varies by project, which is why this document tells you to get it in writing rather than assuming. See Sources.</p>
+  </div>
+</section>
+
+<!-- ==================== RATED WALLS & SHAFTWALL ==================== -->
+<section class="doc" id="ratedwalls">
+  <div class="doc-head">
+    <span class="stage-line">Rated assemblies · fire walls &amp; shaftwall</span>
+    <h2>Fire Walls &amp; Shaftwall</h2>
+    <p class="lede">Everyone calls anything rated a "fire wall." The code doesn't — there are several different things with different rules, and the difference decides how far up the wall has to go.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>A rated wall only works if it's built <b>exactly</b> as the tested assembly says — board type, layers, screws, spacing, joints, and the top of the wall. And the one that catches people: <b>how high it has to go depends on which kind of rated wall it is.</b> Some stop at a rated ceiling, most go all the way to the deck. Read the life safety plan; don't guess from the fact that it's "a fire wall."</p>
+    <p><b>Shaftwall is a different animal.</b> You can't get inside an elevator shaft to build a wall, so shaftwall is designed to be built entirely from the outside — a special J-track, special studs, and a 1" liner panel that slides in from your side.</p>
+  </div>
+
+  <div class="expert" id="rw-taxonomy">
+    <span class="tag">Full detail · which rated wall is it</span>
+    <h4>Four different things, all called "fire wall" on site</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Type</th><th scope="col">What it's doing</th><th scope="col">Where it typically shows up</th></tr></thead>
+      <tbody>
+        <tr><td><b>Fire wall</b></td><td>The heaviest. Divides one building into separate buildings for code purposes, and is designed with enough structural independence that construction can collapse on one side without bringing the wall down. Runs continuous through the whole structure.</td><td>Building separations. Rare in our interior work, and when it's there it's an engineered condition.</td></tr>
+        <tr><td><b>Fire barrier</b></td><td>Continuous floor-to-floor or floor-to-roof-deck, supported by rated construction. This is the workhorse of commercial interiors.</td><td>Shaft enclosures, exit stair and exit passageway enclosures, occupancy separations, incidental use rooms.</td></tr>
+        <tr><td><b>Fire partition</b></td><td>Lighter duty. Continuity requirements are less demanding, and in some conditions it may terminate at a rated ceiling membrane rather than the deck.</td><td>Corridor walls, tenant separations, dwelling-unit separations.</td></tr>
+        <tr><td><b>Smoke barrier / smoke partition</b></td><td>About <b>smoke</b>, not just flame. Sealing and continuity matter more than sheer thickness, and it can carry a rating too.</td><td>Smoke compartments, corridor and area separations in healthcare.</td></tr>
+      </tbody>
+    </table></div>
+    <p><b>Why this is the section worth reading:</b> the differences you feel in the field are <b>how far up it goes</b> and <b>how fussy the top is</b>. A wall you can stop at a rated ceiling and a wall that must be sealed to the deck look identical on a floor plan and are not the same scope. Getting that wrong is either a failed inspection or unpaid work.</p>
+    <p><b>Where the answer lives:</b> the <b>life safety plan</b> and the <b>wall type schedule</b>, cross-checked against the specific listed assembly. Hour ratings, continuity rules, and where each type is required are set by the building code edition in force on the project — <b>never carry them from the last job, and never take them from this page.</b></p>
+  </div>
+
+  <div class="block">
+    <h3>What actually makes a rated wall rated</h3>
+    <p class="sub">All of it is part of the listing. Any one substitution voids the assembly.</p>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Board type and thickness</b> — and Type X and Type C are <b>not</b> interchangeable. The listing names one.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Number of layers</b>, and the <b>joint offset between layers</b> — layer two's joints must not land on layer one's.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Fastener type, length, and spacing</b>, which usually differ between the base layer and the face layer.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Framing</b> — stud type, gauge, and spacing are in the listing too, not just the board.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Joint treatment</b>, including whether base-layer joints get treated.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Insulation</b>, where the listed assembly includes it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>The head-of-wall joint</b> — a listed joint system in its own right, and it must be <b>dynamic</b> if the wall moves. See <b>Firestopping</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Every penetration</b> — firestopped to a listed system matched to the penetrant.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Both sides.</b> A rated wall finished correctly on one face and shortcut on the other is not rated.</span></label></li>
+    </ul>
+    <div class="note stop">
+      <span class="tag">Photograph layer one before layer two covers it</span>
+      <p>Once the face layer is on, <b>there is no way to prove the base layer was right</b> — not to an inspector, not to the GC, and not to us a year later. A photo of each rated wall with the base layer exposed, tagged by room, is the cheapest insurance in this whole manual. Same rule as <b>Hanging Drywall</b>.</p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Shaftwall — built entirely from one side</h3>
+    <p class="sub">Elevator shafts, stairwells, mechanical and trash shafts. You can't work inside the shaft, so the system is designed so you never have to.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Part</th><th scope="col">What it is</th></tr></thead>
+      <tbody>
+        <tr><td>J-runner / J-track</td><td>Track shaped like a J, with <b>uneven flanges</b>. The <b>longer flange faces the shaft</b> and supports the liner panel. Goes at top, bottom, and the ends of the run.</td></tr>
+        <tr><td>C-H stud<br><span style="font-weight:400;">(also CT or I-stud)</span></td><td>Friction-fits into the J-track, with slots and tabs that <b>grip the shaftliner</b>. The "H" shape is what captures a liner panel on each side of the stud.</td></tr>
+        <tr><td>Shaftliner</td><td>A <b>1" thick × 24" wide</b> gypsum panel that goes on the <b>shaft side</b> — slid into place from your side, never handled inside the shaft.</td></tr>
+        <tr><td>Face layer(s)</td><td>Standard rated board on the room side, in the layer count and offset the listing requires.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="expert" id="rw-shaft-install">
+    <span class="tag">Full detail · shaftwall sequence</span>
+    <h4>The order, and why it's counterintuitive</h4>
+    <p>You don't frame the wall and then board it. You build it <b>one bay at a time, alternating liner and stud</b>, because each stud has to capture the liner panel you just placed.</p>
+    <ol class="ranked">
+      <li>Set the <b>J-runner top and bottom</b>, long flange toward the shaft.</li>
+      <li>Set the <b>first C-H stud</b> at the end of the run, into the J-track.</li>
+      <li><b>Slide a 24" liner panel</b> into the J-runner and into that stud's slot, from your side.</li>
+      <li>Set the <b>next C-H stud</b> so it captures the free edge of that liner.</li>
+      <li><b>Repeat — liner, stud, liner, stud</b> — down the length of the wall.</li>
+      <li><b>Then</b> the face board on the room side, joints offset per the listing.</li>
+    </ol>
+    <p><b>The liner is 24" wide, so the studs land at 24" o.c. by the system</b> — that's not a spacing choice you get to make, and it's a common source of confusion when someone tries to apply normal partition layout to a shaft.</p>
+
+    <h4>What goes wrong on shaftwall</h4>
+    <ul class="plain">
+      <li><b>Short-cut liner panels.</b> A liner cut sloppy leaves a gap in the rated barrier on the side you can never get back to. Cut accurately, first time.</li>
+      <li><b>Liner not continuous full height.</b> End joints only where the listing permits, backed where it requires.</li>
+      <li><b>Screwing the liner to the studs</b> when the system is designed to hold it by friction and tab. Only fasten if the listing says to.</li>
+      <li><b>Wrong J-runner orientation</b> — long flange must face the shaft, or there's nothing supporting the liner.</li>
+      <li><b>Missing the deflection head condition.</b> A shaft wall runs to structure and the head still has to accommodate movement.</li>
+      <li><b>Penetrations.</b> Shaftwall penetrations are especially fussy and there's no second side to correct from.</li>
+      <li><b>Elevator coordination.</b> Rail bracket attachments, shaft venting, and hoistway requirements all interact with our wall. Talk to the elevator contractor <b>before</b> closing the shaft, not after.</li>
+    </ul>
+
+    <div class="note stop">
+      <span class="tag">Fall protection — the real hazard on this scope</span>
+      <p>Shaftwall gets installed early, at an <b>open shaft</b>, often many floors up. This is the most dangerous work in this manual by a wide margin. Guarding or fall protection at the shaft opening is not optional and is not something to improvise, and it's the GC's coordination as much as ours. <b>If the opening isn't protected, that's a stop-work condition, not an inconvenience.</b></p>
+    </div>
+  </div>
+
+  <div class="block">
+    <h3>Before you close it up</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Assembly built to the <b>listed number on the drawings</b> — board, layers, fasteners, framing, joints.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Wall carried to the height its <b>type</b> requires, confirmed against the life safety plan.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Head-of-wall built as a listed joint system, dynamic where the wall moves.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Joint offsets between layers correct; base layer treated where required.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Shaftwall: liner continuous and tight, J-runner oriented correctly, studs at the system's 24" module.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All penetrations firestopped to a matching listed system.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photographed:</b> base layer before face layer, head of wall along its length, shaft side before it's unreachable.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Inspection scheduled and passed before anything covers it.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from — read this one</span>
+    <p>Shaftwall component descriptions — the J-runner's uneven flanges with the long flange to the shaft, C-H / CT / I-studs friction-fit into the J-track with integral slots and tabs supporting the liner, and the 1" × 24" shaftliner panel on the shaft side — come from the manufacturers' own shaftwall literature (ClarkDietrich, National Gypsum / Gold Bond, USG, Georgia-Pacific). C-H systems are commonly listed for 1- and 2-hour ratings, with higher ratings available in specific assemblies. <b>The listed assembly for the actual specified system governs everything.</b></p>
+    <p><b>The fire wall / fire barrier / fire partition / smoke barrier distinctions are code concepts, and this page describes them without giving hour ratings or continuity rules on purpose.</b> Those are set by the building code edition in force on the project and by the life safety plan, and stating them here as numbers would be exactly the kind of carried-over assumption that fails an inspection. Use the project documents. Fall protection at open shafts is governed by OSHA and by the GC's site plan.</p>
   </div>
 </section>
 
@@ -2968,6 +3093,15 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <li><a href="https://www.armstrongceilings.com/content/dam/armstrongceilings/commercial/north-america/installation-and-maintenance/installation-guide-tectum-direct-attach-ceiling-wall-panels.pdf">Armstrong — Tectum direct-attach ceiling and wall panels installation guide (PDF)</a> — composition, screw-head pull-through without washers or adhesive, 24" o.c. minimum from panel edge, 12" o.c. on furring, do not countersink, standard sizes.</li>
       <li><a href="https://www.buildsite.com/pdf/armstrong/TECTUM-Direct-Attach-Acoustical-Ceiling-Panels-Installation-Instructions-2931493.pdf">Armstrong — Tectum direct-attach acoustical ceiling panels, installation instructions (PDF)</a></li>
       <li><a href="https://www.armstrongceilings.com/commercial/en/commercial-ceilings-walls/tectum-direct-attach-wall-panels.html">Armstrong — Tectum direct-attach wall panels</a></li>
+    </ul>
+
+    <h4>Shaftwall and rated assemblies</h4>
+    <ul>
+      <li><a href="https://www.clarkdietrich.com/sites/default/files/2022-11/CD_Shaftwall_11-18-2021.pdf">ClarkDietrich — Shaftwall / area separation wall product catalog (PDF)</a> — J-runner, C-H stud, and liner component definitions.</li>
+      <li><a href="https://www.nationalgypsum.com/ngconnects/blog/fire-resistance/things-know-shaftwall-enclosures-assemblies">National Gypsum — Things to know about shaftwall enclosures and assemblies</a></li>
+      <li><a href="https://www.buildgp.com/wp-content/uploads/2018/11/DensGlass-Shaftliner-shaftwell-stairwell-systems-technical-guide.pdf">Georgia-Pacific — Shaftliner for shaftwall / stairwell systems technical guide (PDF)</a></li>
+      <li><a href="https://www.usgme.com/default/shaftwall-ch-stud-framing-system.html">USG — Shaftwall C-H stud framing system</a> — C-H studs UL listed to 2 hours.</li>
+      <li><a href="https://www.goldbondbuilding.com/applications/commercial-applications/shaftwall-systems">Gold Bond — Shaftwall systems</a></li>
     </ul>
 
     <h4>Firestopping</h4>

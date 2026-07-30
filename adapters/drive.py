@@ -363,6 +363,86 @@ class DriveUploader:
         flow to locate the current PDF/sidecar before archiving them."""
         return self._find_child(parent_id, name, is_folder=False)
 
+    def find_numbered_child_folder(self, parent_id: str, number: str) -> dict:
+        """
+        Find the child folder of `parent_id` whose name starts with `number` —
+        Jake's plan folders are named "341 - Obara Office Renovation - Sent",
+        so the leading number is the key the portal matches on.
+
+        Returns one of:
+          {"ok": True,  "folder_id", "name"}
+          {"ok": False, "reason": "no_access" | "not_found" | "ambiguous",
+           "detail": <human sentence>, "candidates": [names…]}
+
+        ⚠ Why `no_access` is checked FIRST and separately: Drive answers a
+        child-listing query on a folder the caller can't see with an EMPTY LIST,
+        not an error — indistinguishable from "that number isn't in there".
+        Verified live 2026-07-29: the service account got 0 children for Jake's
+        folder and a 404 on the folder itself. Reporting "folder 341 not found"
+        when the truth is "we were never allowed to look" would send someone
+        hunting a filing mistake that doesn't exist.
+        """
+        num = (number or "").strip()
+        if not num:
+            return {"ok": False, "reason": "not_found",
+                    "detail": "No plan-folder number was supplied."}
+
+        # 1) Prove we can see the parent at all.
+        try:
+            self.service.files().get(
+                fileId=parent_id, fields="id, name", supportsAllDrives=True,
+            ).execute()
+        except Exception as e:  # noqa: BLE001 — 404/403 both mean "not visible"
+            return {"ok": False, "reason": "no_access",
+                    "detail": (f"The plan folder isn't visible to "
+                               f"{self._sa_email() or 'the portal service account'} "
+                               f"({type(e).__name__}). Share it as Editor/Content "
+                               f"manager, then re-run."),
+                    }
+
+        # 2) List children and match on the leading number. Compared as ints so
+        #    "097" and "97" are the same job, and "34" never matches "341".
+        try:
+            target = int(num)
+        except ValueError:
+            return {"ok": False, "reason": "not_found",
+                    "detail": f"{num!r} isn't a plan-folder number."}
+
+        matches, page_token = [], None
+        while True:
+            resp = self.service.files().list(
+                q=(f"'{parent_id}' in parents and trashed = false and "
+                   f"mimeType = 'application/vnd.google-apps.folder'"),
+                fields="nextPageToken, files(id, name)", pageSize=200,
+                supportsAllDrives=True, includeItemsFromAllDrives=True,
+                pageToken=page_token,
+            ).execute()
+            for f in resp.get("files") or []:
+                lead = re.match(r"\s*(\d{1,5})", f.get("name") or "")
+                if lead and int(lead.group(1)) == target:
+                    matches.append(f)
+            page_token = resp.get("nextPageToken")
+            if not page_token:
+                break
+
+        if not matches:
+            return {"ok": False, "reason": "not_found",
+                    "detail": f"No plan folder starting with {target} was found."}
+        if len(matches) > 1:
+            return {"ok": False, "reason": "ambiguous",
+                    "detail": (f"{len(matches)} plan folders start with {target} — "
+                               f"the portal won't guess which one."),
+                    "candidates": [m["name"] for m in matches]}
+        return {"ok": True, "folder_id": matches[0]["id"], "name": matches[0]["name"]}
+
+    def _sa_email(self) -> Optional[str]:
+        """The service-account address, read from the key file, so a sharing
+        error can name exactly who to grant access to. None if unreadable."""
+        try:
+            return json.loads(Path(self.creds_path).read_text()).get("client_email")
+        except Exception:  # noqa: BLE001 — an error message must not itself fail
+            return None
+
     def rename_file(self, file_id: str, new_name: str) -> dict:
         """
         Rename a Drive file in place (file ID — and therefore every existing
