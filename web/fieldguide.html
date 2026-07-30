@@ -350,6 +350,15 @@
     </button>
   </div>
 
+  <p class="sect-label">Casework</p>
+  <div class="tiles">
+    <button class="tile" data-go="cabinets">
+      <span class="icon">🪚</span><span class="stage">Casework</span>
+      <span class="name">Installing Cabinets</span>
+      <span class="desc">Find the high point, snap your lines, uppers before bases. Full detail covers fastening, shimming, scribing, and appliance openings.</span>
+    </button>
+  </div>
+
   <p class="sect-label">Repair &amp; punch</p>
   <div class="tiles">
     <button class="tile" data-go="patch">
@@ -397,6 +406,7 @@
     <div class="idx">
       <div class="idx-item"><button data-jump="framing|sys-bridging">Bridging</button><span>Horizontal members that stop studs from twisting. Not the same as shear bracing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-blocking">Blocking</button><span>Two different meanings — backing to hang things on, and structural blocking to brace studs.</span></div>
+      <div class="idx-item"><button data-jump="cabinets|cab-fasten">Cabinet screws</button><span>Washer-head, coarse-thread, ductile. Not drywall screws — those break under load.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-crc">Cold-rolled channel (CRC)</button><span>Solid steel channel threaded through stud knockouts as bridging. The workhorse.</span></div>
       <div class="idx-item"><button data-jump="hang|hang-control">Control joint</button><span>A deliberate break in the board so the wall cracks where you chose, not where it wants.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-bead">Corner bead</button><span>The metal or vinyl edge that makes an outside corner straight and durable.</span></div>
@@ -404,12 +414,15 @@
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection track</button><span>Top-of-wall track that lets the building move without loading the wall.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection clip</button><span>A slotted bracket that does the deflection job when the track can't.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Drift</button><span>Sideways building movement, usually seismic. Different problem from vertical deflection.</span></div>
+      <div class="idx-item"><button data-jump="cabinets|cab-shim">Filler &amp; scribing</button><span>The strip that closes a gap, cut to follow the wall's actual shape.</span></div>
       <div class="idx-item"><button data-jump="touchup|tu-why">Flashing</button><span>When a touch-up or patch shows as a different sheen. The most common paint complaint.</span></div>
       <div class="idx-item"><button data-jump="act|act-wire">Hanger wire</button><span>The wire that holds a ceiling grid up. 12 gauge, 4 feet apart, wrapped three turns.</span></div>
+      <div class="idx-item"><button data-jump="cabinets">High point of floor</button><span>Where every cabinet measurement starts. Measure from the low point and the run ends up wrong.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-hotmud">Hot mud</button><span>Setting compound. Hardens chemically instead of drying, so you can recoat the same day.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-levels">Levels of finish (0–5)</button><span>The industry scale for how smooth a wall has to be. Getting this right is the biggest money item in finishing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Limiting height</button><span>The published table that says how tall a given stud can go. The authority on tall walls.</span></div>
       <div class="idx-item"><button data-jump="act|act-maintee">Main tee / main runner</button><span>The long grid members that carry the ceiling. Usually 4 feet apart.</span></div>
+      <div class="idx-item"><button data-jump="cabinets|cab-reveal">Reveal</button><span>The gap between cabinet doors. Consistent reveals are what customers read as quality.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Stacked walls</button><span>Getting height by building one wall on top of another instead of one tall stud.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strapping / flat strap</button><span>Flat steel banding screwed across stud flanges to brace them.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strap and block</button><span>Strap plus a short block between studs. Required once studs get deep.</span></div>
@@ -1379,6 +1392,175 @@
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>Hanger wire gauge and spacing (12 gauge minimum, 4' on center maximum), the three-full-turns-within-3-inches wrap, main runners at 4' centers, and perimeter clearance requirements follow manufacturer installation instructions from Armstrong, USG, and Rockfon, and are consistent with code requirements for suspended ceilings. Seismic requirements are driven by the project's seismic design category and by the code edition in force — <b>this section orients you, the project documents govern.</b> Grid profile and tile edge compatibility come from the approved submittal.</p>
+  </div>
+</section>
+
+<!-- ==================== CABINETS ==================== -->
+<section class="doc" id="cabinets">
+  <div class="doc-head">
+    <span class="stage-line">Casework · cabinet installation</span>
+    <h2>Installing Cabinets</h2>
+    <p class="lede">Cabinets are judged up close, every day, by someone opening a door. Level and plumb aren't quality items here — they're the whole job.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Find the <b>highest</b> spot on the floor. Snap your level lines off that. Mark every stud. Hang the <b>uppers first</b> so you're not reaching over base cabinets. Then set the bases and shim them dead level. Scribe the fillers, then adjust the doors last. If the run is level and plumb, everything after it is easy — and if it isn't, nothing after it will save you.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why the high point, and why uppers first</span>
+    <p><b>Floors are never flat.</b> If you measure your line up from a low spot, the cabinets sitting at the high spot end up too tall — they won't fit under the uppers, or the countertop won't sit right. Measuring from the high point means every other cabinet gets <b>shimmed up</b> to the line, which is the direction shims work.</p>
+    <p><b>Uppers before bases</b> because once the bases are in you're reaching over them for every screw, every level check, and every clamp. Hanging uppers in open air with a temporary ledger is dramatically faster than hanging them leaning over a counter run.</p>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Before you start — the one that ruins a day</span>
+    <p><b>Confirm the backing is in the wall.</b> Cabinets need solid framing to fasten to, and if that blocking was missed at framing, you find out with a cabinet in your hands. This is the same backing list that's on the <b>Metal Stud Framing</b> checklist — casework and countertops are the first two items on it. Check before the truck shows up, not on install day.</p>
+  </div>
+
+  <div class="block">
+    <h3>Before install day</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Get the cabinet <b>layout and elevations</b>, and the shop drawings if it's custom casework.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Verify field dimensions against the layout</b> — wall to wall, floor to ceiling, and every opening. Cabinets are built to a drawing; if the room isn't, you need to know before the boxes arrive, not after.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm backing and blocking are in the walls where cabinets and any wall-hung casework land.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Get the <b>appliance specs</b>. Appliance dimensions drive the base layout, and a range or fridge opening that's a half inch short is a reorder.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check plumbing and electrical rough-in locations against the cabinet backs — sinks, disposals, dishwashers, outlets, and anything that has to pass through a cabinet.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Confirm the floor finish sequence.</b> Are cabinets landing on finished floor or on subfloor? It changes the height and the toe kick, and it's a common miss.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Let the cabinets <b>acclimate</b> in conditioned space. Wood moves, and boxes brought straight in from a cold trailer will move after they're installed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Count and inspect on delivery, before signing. Note damage on the ticket and photograph it — same rules as <b>Stocking Any Material</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Stage boxes <b>out of the room you're working in</b> but close by, and keep them off the floor and covered.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Layout — the phase that decides everything</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Find the highest point of the floor</b> along the whole cabinet run with a laser. Mark it. Every measurement comes off that point.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Confirm the finished counter height from the drawings, and work back to the base cabinet height using the <b>actual specified countertop thickness.</b> Don't assume — stone, solid surface, and laminate are all different, and ADA or specialty heights change it again.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Snap a <b>level line for the top of the base cabinets</b> from the high point, all the way around the run.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Snap a <b>level line for the bottom of the uppers</b>, taken from the drawings — the gap between counter and uppers is a design dimension, not a habit.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Find every stud and mark it with a vertical line</b> that runs well above and below the cabinet, so you can still see it with a box held in place.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Lay out each cabinet position along the wall and <b>check it against the drawing.</b> Confirm fillers land where they were planned — discovering a filler problem at the far end of a run means taking cabinets back off.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Check the walls for plumb and flat</b> with a straightedge or string. An out-of-plane wall means scribing and shimming, and you want to know the amount before you start, not while holding a cabinet.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check inside corners for square. They rarely are, and a corner cabinet is where it shows.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Hang the uppers</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Screw a straight temporary ledger on the level line</b> and rest the uppers on it. This turns a two-person hold into a one-person task and it's the single biggest time saver in cabinet work.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Start at a corner</b> and work outward. Corner cabinet first — everything else references it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Set the box on the ledger, check level and plumb, and shim behind it where the screws will go.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Fasten <b>through the hanging rail into the studs.</b> Never rely on the back panel — it isn't structural.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Clamp the next cabinet face-frame to face-frame</b>, align the faces flush and the tops level, then join the two together before fastening to the wall.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Check level and plumb on <b>every</b> box as you go. Errors compound down a run and can't be fixed at the end.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Remove the ledger and patch its screw holes — that's drywall work, and it's ours.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Set the bases</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Start at the corner, or at the high point of the floor — whichever the layout dictates.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Shim up to the level line. <b>Shim under the cabinet at the bearing points, not just at the back.</b></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Shim behind the cabinet at every fastening point.</b> Screwing a box tight to an out-of-plane wall bows the back, racks the case, and the doors will never line up. This is the most common cause of doors that won't adjust.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Level side to side, front to back, and <b>across the whole run</b> with a long level or the laser.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Clamp and join adjacent cabinets, then fasten to studs through the rail.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Check the appliance openings</b> — width, height, depth, and the diagonals. Do it now, while a cabinet can still move.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Notch and scribe for base trim, HVAC registers, and plumbing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Fillers, toe kick, and trim last.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Adjust doors and drawers only after everything is fastened.</b> Adjusting before you're done means doing it twice.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="cab-fasten">
+    <span class="tag">Full detail · fastening</span>
+    <h4>Screws — this one actually fails</h4>
+    <p><b>Use cabinet installation screws, not drywall screws.</b> Cabinet screws have a washer head that won't pull through the hanging rail, a coarse thread for good purchase in framing, and — critically — a <b>ductile shank that bends before it breaks.</b></p>
+    <p>Drywall screws are hardened and brittle. They're designed for shear in a thin panel, not for sustained tension. An upper cabinet loaded with dishes hanging on drywall screws is a <b>known failure mode</b>, and it fails suddenly, all at once, with the contents in it. It is not a corner worth cutting on a job where anyone will ever open that door.</p>
+    <p><b>Length matters too:</b> long enough to get real purchase into the framing through the rail, the drywall, and any shim stack behind the cabinet. Count the shim thickness — a cabinet shimmed out 3/8" needs a longer screw than the same cabinet tight to the wall.</p>
+
+    <h4>Into steel studs</h4>
+    <p>On our own jobs the wall behind is often <b>steel</b>, and cabinet screws for wood don't hold in 25ga steel. That's exactly why the <b>backing</b> matters: the framing detail should have put a solid backing member — heavier-gauge steel, flat strap and block, or a wood member — behind the cabinet line. Fasten to the backing.</p>
+    <p>If the backing isn't there and the cabinets are on site, <b>stop and solve it properly.</b> Toggle-type anchors into drywall alone are not an answer for loaded upper cabinets. This is the moment to make a phone call, not a judgment call.</p>
+  </div>
+
+  <div class="expert" id="cab-shim">
+    <h4>Shimming and scribing</h4>
+    <ul class="plain">
+      <li><b>Composite shims over wood</b> where you can — they don't compress over time and they don't split when you drive a screw through them.</li>
+      <li><b>Shim in pairs, opposed</b>, so you get a parallel bearing surface rather than a wedge that walks out.</li>
+      <li><b>Score and snap shims flush</b> after fastening. A shim left proud fouls the toe kick and the trim.</li>
+      <li><b>Scribing a filler:</b> set the piece in place, run a compass or scribe tool along the wall to transfer the wall's shape onto the filler, then cut and dress to the line with a block plane or belt sander. A scribed filler against a wavy wall is what separates a finished job from an obvious one.</li>
+      <li><b>Leave yourself scribe material.</b> A filler cut to exact size has nothing to remove. Cut it fat and take it down.</li>
+      <li><b>Tall and pantry cabinets amplify error</b> — a small out-of-plumb at the base becomes a visible lean and a door that swings on its own at the top. Check these twice.</li>
+    </ul>
+  </div>
+
+  <div class="expert" id="cab-reveal">
+    <h4>What the customer actually looks at</h4>
+    <p>Nobody checks your levels. They open a door, and they look down a run of doors and drawers. <b>Reveal consistency is what reads as quality</b> — the gaps between doors, and between doors and frames, being uniform down the whole run.</p>
+    <ul class="plain">
+      <li>Adjust hinges for <b>side-to-side, in-and-out, and height</b> — most European hinges adjust all three, and most people only ever use one.</li>
+      <li>Sight down the run at eye level after adjusting. Gaps that measure right can still look wrong if a case is racked.</li>
+      <li><b>Uneven reveals almost always trace back to a racked case</b>, not the hinge. If a door won't adjust, check whether the cabinet got bowed by over-tightened screws against an out-of-plane wall — the fix is shims, not more hinge adjustment.</li>
+      <li>Drawer fronts get the same treatment, and drawers get checked for smooth full travel and soft-close engagement.</li>
+      <li>Hardware last, off a template or jig so every pull lands identically. A drilled hole is not reversible.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what actually goes wrong</h3>
+    <ol class="ranked">
+      <li><b>Measuring from the low point of the floor</b> instead of the high point — the whole run ends up wrong and it's discovered at the countertop.</li>
+      <li><b>Backing not in the wall</b> — found with a cabinet in your hands.</li>
+      <li><b>Drywall screws instead of cabinet screws</b> — a failure that happens later, loaded, with someone standing there.</li>
+      <li><b>Not shimming behind the fastening points</b> — bowed backs, racked cases, doors that never line up.</li>
+      <li><b>Setting bases before uppers</b> — slow, awkward, and harder to get right.</li>
+      <li><b>Not checking the walls and corners</b> before starting.</li>
+      <li><b>Appliance openings not verified</b> until the appliance shows up.</li>
+      <li><b>Adjusting doors before everything's fastened</b> — doing the same work twice.</li>
+      <li><b>Filler problems discovered at the end of a run</b> — cabinets come back off.</li>
+    </ol>
+  </div>
+
+  <div class="block">
+    <h3>Tools</h3>
+    <ul class="plain">
+      <li><b>Rotating or self-leveling laser</b> — for finding the floor's high point and carrying level lines around a room. Non-negotiable.</li>
+      <li><b>Face-frame clamps</b> — the specific clamps that pull two face frames flush. Ordinary clamps mar the finish and don't align faces.</li>
+      <li><b>Cabinet jacks or a support ledger</b> — either one; the ledger is free.</li>
+      <li><b>Composite shim assortment.</b></li>
+      <li><b>Cabinet installation screws</b> in more than one length.</li>
+      <li><b>Levels:</b> a long one for the run, a 4' for cases, a torpedo for tight spots.</li>
+      <li><b>Scribe tool or compass</b>, plus a block plane and a belt sander for dressing to the line.</li>
+      <li><b>Drill/driver with a clutch</b> — over-driving is how backs get bowed.</li>
+      <li><b>Hardware jig</b> for pulls and knobs.</li>
+      <li><b>Blankets or cardboard</b> for the floor and for setting doors down on. Damage on finished casework is expensive and obvious.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Before you call it done</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Every cabinet level, plumb, and fastened into framing or backing.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Run checked level end to end for the countertop template.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">All appliance openings verified against the actual appliance specs.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Doors and drawers adjusted, reveals consistent down the run, everything opening and closing freely.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Shims trimmed flush, fillers scribed, toe kick and trim on.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Ledger holes patched, walls touched up where needed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Cabinets cleaned, protective film off, hardware on and tight.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Photos of the finished run, and any pre-existing damage or out-of-tolerance wall documented.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from — read this one</span>
+    <p><b>Casework installation is not in GVC's listed trade scope</b> (drywall, metal framing, ACT, insulation, paint, demo, patch), so this document carries less of our own hard-won experience than the others do. It's written from standard cabinet-installation practice, and it deliberately leans on the parts that connect to work we <i>do</i> own — the casework <b>backing</b> is already on our framing checklist, and the ledger-hole patching and wall touch-up at the end are our trades.</p>
+    <p><b>What to confirm before pricing or committing to cabinet work:</b> countertop thickness and finished height from the drawings, appliance specs from the actual appliance schedule, whether cabinets land on finished floor or subfloor, and who owns the countertop template and install. Heights, reveals, and fastening details for manufactured casework come from <b>the manufacturer's installation instructions</b>, which govern over anything here. Anchoring into steel framing without proper backing is the item most likely to bite us — see the fastening section.</p>
   </div>
 </section>
 

@@ -1707,9 +1707,10 @@ Extracting a single shared stylesheet is a wanted change, not a side quest.
 Jordan's ask: written procedures the crews can actually use, readable by a beginner but carrying
 the expert detail a lead needs. Built as a static portal page — no new deps, no new env, no
 Dockerfile change (`COPY web ./web` already takes the directory).
-CONTENT — 9 procedures + 3 reference sections, all one page: Metal Stud Framing (layout-first,
+CONTENT — 10 procedures + 3 reference sections, all one page: Metal Stud Framing (layout-first,
 batch-by-operation), Stocking Any Material, Stocking Drywall, Hanging, **Scraping**, Finishing,
-Acoustical Ceilings (CT/ACT), Drywall Patch, Touch-Up, plus a Component Index (A–Z, tap a term →
+Acoustical Ceilings (CT/ACT), **Installing Cabinets**, Drywall Patch, Touch-Up, plus a Component
+Index (A–Z, tap a term →
 jumps to the detail), a Glossary, and Sources & Method. The drywall docs are deliberately named
 and ordered to match the **Job Check** stage columns (Hanging Status → Scrapping Status → Taped →
 … ) so a crew member moves between the two tools without translating.
@@ -1721,6 +1722,15 @@ types; rated assemblies; control joints; GA-214 levels; compound chemistry; corn
 tools; ACT grid profiles, tile edges, hanger wire, seismic). A **Plain / Full detail** toggle in
 the control bar hides or shows every expert block; the choice and all 165 checkbox states persist
 in `localStorage` — nothing is written server-side.
+⚠ CABINETS IS THE ONE OUT-OF-SCOPE DOC. Casework install is NOT in GVC's trade list (drywall,
+metal framing, ACT, insulation, paint, demo, patch) — Jordan asked for it 2026-07-29. It is written
+from standard cabinet-install practice, not from our own hard experience, and its provenance block
+says so plainly. It deliberately leans on the parts we DO own: the casework **backing** is already
+on our framing checklist, and the ledger-hole patch + wall touch-up at the end are our trades. The
+real risk it flags: anchoring loaded upper cabinets into STEEL studs with no backing — drywall
+anchors are not an answer, and drywall screws (brittle, hardened) are a genuine sudden-failure mode
+vs. ductile washer-head cabinet screws. If GVC starts quoting casework, that doc needs a review by
+someone who installs cabinets for a living before it's anyone's only reference.
 SOURCING — every section ends with a "Where this came from" note, and Sources & Method separates
 **Standard** (GA-214/GA-216, AISI S100/S211, manufacturer instructions, the listed assembly) from
 **Benchmark** (vendor/forum production claims, flagged as ranges not guarantees) from **GVC
