@@ -68,6 +68,7 @@ from subsystems.estimate import drafts as estimate_drafts
 from subsystems.estimate import scope_catalog as scope_catalog
 from subsystems.invoice import drafts as invoice_drafts
 from subsystems.change_order import drafts as co_drafts
+from subsystems.fieldguide import runs as fieldguide_runs
 from adapters import vision as vision
 from adapters import slack_notify as slack_notify
 from subsystems.checks import deposit as check_deposit
@@ -249,6 +250,11 @@ class AdminRemoveRequest(BaseModel):
 class EstimateDraftUpsertRequest(BaseModel):
     payload: dict = Field(..., description="The in-progress estimate form state (canonical estimate JSON)")
     label: Optional[str] = Field(None, description="Short human label; derived from client/job if omitted")
+    updated_at: Optional[str] = Field(None, description="Client ISO-8601 timestamp; used for last-writer-wins")
+
+
+class FieldGuideRunUpsertRequest(BaseModel):
+    payload: dict = Field(..., description="The checklist run state: procedure, job, checked step keys, note, done")
     updated_at: Optional[str] = Field(None, description="Client ISO-8601 timestamp; used for last-writer-wins")
 
 
@@ -1420,6 +1426,113 @@ def ui_fieldguide(request: Request) -> HTMLResponse:
         )
     html = path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email))
     return HTMLResponse(html)
+
+
+# ---------------------------------------------------------------------------
+# Field Manual CHECKLIST RUNS — a crew member starts a procedure checklist
+# against a specific job, works it, and anyone on the crew can resume it.
+#
+# Gated by `fieldguide`, which is a BASELINE grant — so every signed-in employee
+# can start and resume runs with no provisioning. That deliberately also exposes
+# the active-job list (names/addresses) to everyone signed in; it is not
+# confidential information and crews need it to pick their job. Flagged for
+# Jordan rather than assumed: if that should be narrower, gate the /jobs route
+# on `jobcheck` instead and have crew pick from a text field.
+#
+# NO MONDAY WRITEBACK by design — Job Check remains the only writer of the
+# Projects-board stage columns. See subsystems/fieldguide/runs.py.
+# ---------------------------------------------------------------------------
+
+@app.get("/ui/api/fieldguide/runs")
+def ui_fieldguide_runs_list(request: Request, procedure: Optional[str] = None,
+                            include_done: bool = False) -> dict:
+    """List shared, resumable checklist runs. Optionally filtered to one
+    procedure. Completed runs are hidden unless include_done=true."""
+    require_feature(request, "fieldguide")
+    try:
+        runs = fieldguide_runs.list_runs(procedure=procedure, include_done=include_done)
+    except portal_store.PortalStoreNotConfigured as e:
+        raise _store_unconfigured(e)
+    return {"ok": True, "runs": runs}
+
+
+@app.get("/ui/api/fieldguide/runs/{run_id}")
+def ui_fieldguide_run_get(run_id: str, request: Request) -> dict:
+    """Fetch one run in full (including its checked step keys) so another device
+    can resume exactly where the last one left off."""
+    require_feature(request, "fieldguide")
+    try:
+        record = fieldguide_runs.get_run(run_id)
+    except fieldguide_runs.RunValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "BAD_RUN", "detail": str(e),
+                    "advice": "Invalid run id."},
+        )
+    except portal_store.PortalStoreNotConfigured as e:
+        raise _store_unconfigured(e)
+    if record is None:
+        raise HTTPException(
+            status_code=404,
+            detail={"ok": False, "code": "RUN_NOT_FOUND",
+                    "detail": f"No checklist run {run_id}.",
+                    "advice": "It may have been finished and cleared. Start a new one."},
+        )
+    return {"ok": True, "run": record}
+
+
+@app.put("/ui/api/fieldguide/runs/{run_id}")
+def ui_fieldguide_run_upsert(run_id: str, req: FieldGuideRunUpsertRequest,
+                             request: Request) -> dict:
+    """Create or update one run (server copy of the browser's autosave).
+
+    A write whose updated_at is older than what's stored comes back
+    `stale: true` and is DROPPED — a phone that was offline for an hour must not
+    roll back a run somebody else has since advanced."""
+    actor = require_feature(request, "fieldguide")
+    try:
+        record, stale = fieldguide_runs.upsert_run(
+            run_id, payload=req.payload, updated_at=req.updated_at, actor=actor,
+        )
+    except fieldguide_runs.RunValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "BAD_RUN", "detail": str(e),
+                    "advice": "This is a client bug — the page sent an invalid run."},
+        )
+    except portal_store.PortalStoreNotConfigured as e:
+        raise _store_unconfigured(e)
+    activity.log_event("fieldguide.run.save", actor=actor,
+                       target=f"{record.get('procedure')}/{run_id}",
+                       result="stale" if stale else "ok")
+    return {"ok": True, "run": record, "stale": stale}
+
+
+@app.delete("/ui/api/fieldguide/runs/{run_id}")
+def ui_fieldguide_run_delete(run_id: str, request: Request) -> dict:
+    """Delete one run. Used by an explicit delete from the resume list."""
+    actor = require_feature(request, "fieldguide")
+    try:
+        existed = fieldguide_runs.remove_run(run_id)
+    except fieldguide_runs.RunValidationError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "BAD_RUN", "detail": str(e),
+                    "advice": "Invalid run id."},
+        )
+    except portal_store.PortalStoreNotConfigured as e:
+        raise _store_unconfigured(e)
+    activity.log_event("fieldguide.run.delete", actor=actor, target=run_id,
+                       result="ok" if existed else "noop")
+    return {"ok": True, "existed": existed}
+
+
+@app.get("/ui/api/fieldguide/jobs")
+def ui_fieldguide_jobs(request: Request) -> dict:
+    """Active Monday jobs, for attaching a checklist run to a job. Reuses the
+    Job Check reader verbatim so the two tools always show the same job list."""
+    require_feature(request, "fieldguide")
+    return jobcheck_flow.list_active_jobs()
 
 
 # ---------------------------------------------------------------------------

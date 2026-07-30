@@ -96,7 +96,79 @@
   .seg button[aria-pressed="true"] { background:var(--green); color:#fff; font-weight:700; }
   .seg button:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
 
-  main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
+  /* ---------- checklist run bar (per-job, resumable) ---------- */
+  .runbar {
+    display:none; position:sticky; top:58px; z-index:29;
+    background:var(--green-soft); border-bottom:1px solid var(--line);
+    padding:9px 16px; gap:10px; align-items:center; flex-wrap:wrap;
+  }
+  body.in-proc .runbar { display:flex; }
+  .runbar .rb-btn {
+    font:inherit; font-size:13.5px; font-weight:600; min-height:44px; padding:0 14px;
+    border-radius:8px; cursor:pointer; border:1.5px solid var(--green);
+    background:var(--green); color:#fff;
+  }
+  .runbar .rb-btn.ghost { background:transparent; color:var(--green); }
+  .runbar .rb-btn.ghost:hover { background:var(--surface); }
+  .runbar .rb-btn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .runbar .rb-job { font-size:14px; font-weight:650; color:var(--green-deep); flex:1 1 auto; min-width:0; }
+  .runbar .rb-job small { display:block; font-weight:400; color:var(--ink-2); font-size:12.5px; }
+  .rb-chip {
+    font-family:var(--mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:700; padding:4px 9px; border-radius:999px; white-space:nowrap;
+    border:1px solid var(--line); background:var(--surface); color:var(--muted);
+  }
+  .rb-chip.ok   { color:var(--green); border-color:var(--green); }
+  .rb-chip.wait { color:var(--gold-dark); border-color:var(--gold-dark); }
+  .rb-chip.off  { color:var(--alert); border-color:var(--alert); }
+
+  /* run picker sheet */
+  .sheet-scrim {
+    display:none; position:fixed; inset:0; z-index:60;
+    background:rgba(0,0,0,.45); padding:16px; overflow-y:auto;
+  }
+  .sheet-scrim.open { display:block; }
+  .sheet-card {
+    max-width:34rem; margin:5vh auto; background:var(--surface);
+    border:1px solid var(--line); border-top:3px solid var(--gold-dark);
+    border-radius:12px; padding:20px; display:flex; flex-direction:column; gap:14px;
+  }
+  .sheet-card h3 { margin:0; border:0; padding:0; font-size:19px; }
+  .sheet-card p.hint { margin:0; font-size:13.5px; color:var(--muted); }
+  .sheet-card input[type="search"], .sheet-card textarea {
+    font:inherit; font-size:16px; width:100%; padding:11px 12px; min-height:48px;
+    border:1.5px solid var(--line); border-radius:8px; background:var(--surface); color:var(--ink);
+  }
+  .sheet-card input:focus-visible, .sheet-card textarea:focus-visible {
+    outline:2px solid var(--green); outline-offset:1px; border-color:var(--green);
+  }
+  .joblist { display:flex; flex-direction:column; max-height:44vh; overflow-y:auto; border:1px solid var(--line-soft); border-radius:8px; }
+  .joblist button {
+    font:inherit; text-align:left; background:none; border:0; border-bottom:1px solid var(--line-soft);
+    padding:12px 13px; min-height:52px; cursor:pointer; color:var(--ink); font-size:15px;
+  }
+  .joblist button:last-child { border-bottom:0; }
+  .joblist button:hover { background:var(--green-soft); }
+  .joblist button:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+  .joblist button small { display:block; color:var(--muted); font-size:12.5px; margin-top:2px; }
+  .joblist .none { padding:14px 13px; color:var(--muted); font-size:14px; }
+  .resumelist { display:flex; flex-direction:column; gap:8px; }
+  .resumerow {
+    display:flex; gap:10px; align-items:center; border:1px solid var(--line);
+    border-radius:8px; padding:10px 12px; background:var(--surface-2);
+  }
+  .resumerow .rr-main { flex:1 1 auto; min-width:0; font-size:14.5px; font-weight:600; }
+  .resumerow .rr-main small { display:block; font-weight:400; color:var(--muted); font-size:12.5px; }
+  .resumerow button {
+    font:inherit; font-size:13px; font-weight:600; min-height:40px; padding:0 12px;
+    border-radius:7px; cursor:pointer; border:1.5px solid var(--green);
+    background:transparent; color:var(--green); white-space:nowrap;
+  }
+  .resumerow button.del { border-color:var(--line); color:var(--alert); }
+  .sheet-row { display:flex; gap:9px; flex-wrap:wrap; }
+  .sheet-row .grow { flex:1 1 auto; }
+
+main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   /* ---------- home ---------- */
   .intro { margin:0 0 20px; display:flex; flex-direction:column; gap:8px; }
@@ -277,6 +349,37 @@
   <div class="seg" role="group" aria-label="Detail level">
     <button type="button" id="lvl-plain" aria-pressed="false">Plain</button>
     <button type="button" id="lvl-full" aria-pressed="true">Full detail</button>
+  </div>
+</div>
+
+<div class="runbar" id="runbar">
+  <button class="rb-btn" type="button" id="rb-start">Start a checklist for a job</button>
+  <span class="rb-job" id="rb-job" hidden></span>
+  <span class="rb-chip" id="rb-state" hidden></span>
+  <button class="rb-btn ghost" type="button" id="rb-finish" hidden>Finish</button>
+  <button class="rb-btn ghost" type="button" id="rb-close" hidden>Close</button>
+</div>
+
+<div class="sheet-scrim" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="sheet-card">
+    <h3 id="sheet-title">Start a checklist</h3>
+    <p class="hint" id="sheet-proc"></p>
+
+    <div id="resume-wrap" hidden>
+      <p class="hint" style="margin-bottom:8px;"><b>Already going</b> — pick one up where the crew left it.</p>
+      <div class="resumelist" id="resumelist"></div>
+    </div>
+
+    <div>
+      <p class="hint" style="margin-bottom:8px;"><b>Or start a new one</b> on a job.</p>
+      <input type="search" id="jobsearch" placeholder="Search active jobs — name, address, project #…" autocomplete="off" />
+      <div class="joblist" id="joblist" style="margin-top:9px;"><div class="none">Loading active jobs…</div></div>
+    </div>
+
+    <div class="sheet-row">
+      <button class="rb-btn ghost grow" type="button" id="sheet-nojob">Start without a job</button>
+      <button class="rb-btn ghost" type="button" id="sheet-cancel">Cancel</button>
+    </div>
   </div>
 </div>
 
@@ -2972,12 +3075,22 @@
     var docs = Array.prototype.slice.call(document.querySelectorAll(".doc"));
     var body = document.body;
 
+    /* Sections that aren't procedures — no checklist run applies to these. */
+    var NON_PROC = ["home", "index", "glossary", "sources"];
+    var currentDoc = "home";
+    /* Defined below; referenced by show() which is declared first. */
+    var onDocShown = function () {};
+
     /* ---------- view switching ---------- */
     function show(id, anchor, push) {
       var target = document.getElementById(id);
       if (!target || !target.classList.contains("doc")) { target = document.getElementById("home"); }
       docs.forEach(function (d) { d.classList.toggle("active", d === target); });
       body.classList.toggle("in-doc", target.id !== "home");
+      // The checklist bar only makes sense on an actual procedure.
+      body.classList.toggle("in-proc", NON_PROC.indexOf(target.id) === -1);
+      currentDoc = target.id;
+      onDocShown(target.id);
 
       var hash = "#" + target.id + (anchor ? "/" + anchor : "");
       if (push) {
@@ -3039,29 +3152,426 @@
     try { setLevel(window.localStorage.getItem(LVL_KEY) === "plain" ? "plain" : "full", false); }
     catch (e) { setLevel("full", false); }
 
-    /* ---------- checkbox persistence ---------- */
-    var boxes = Array.prototype.slice.call(document.querySelectorAll("label.step input"));
-    boxes.forEach(function (b, i) { b.dataset.idx = i; });
+    /* =====================================================================
+       CHECKLIST RUNS
 
-    function save() {
-      try {
-        var on = boxes.filter(function (b) { return b.checked; })
-                      .map(function (b) { return Number(b.dataset.idx); });
-        window.localStorage.setItem(CHECK_KEY, JSON.stringify(on));
-      } catch (e) { /* storage unavailable; checks still work for the session */ }
+       Two modes, and the distinction matters on a jobsite:
+
+       (a) NO ACTIVE RUN — check marks save to this device only, under
+           CHECK_KEY. Same behaviour the page has always had. Fine for reading.
+
+       (b) ACTIVE RUN — check marks belong to a run tied to a job, saved
+           locally FIRST and then synced to the portal so anyone on the crew can
+           resume it. localStorage is the working copy; the server is the shared
+           copy. If the signal dies mid-wall, nothing is lost and the chip says
+           so honestly rather than pretending it saved.
+
+       Step identity is a hash of (section id + step text), NOT a position index.
+       So adding or reordering a step doesn't shift everyone's saved check marks.
+       If a step's WORDING changes it loses its mark — which fails to unchecked,
+       never to wrongly-checked. That's the safe direction for a checklist.
+       ===================================================================== */
+
+    var LS_ACTIVE = "gvc-fm-active";      // { procedureId: runId }
+    var LS_RUN = "gvc-fm-run-";           // + runId -> full local run record
+
+    var boxes = Array.prototype.slice.call(document.querySelectorAll("label.step input"));
+
+    function hashKey(s) {
+      var h = 5381, i = 0;
+      for (; i < s.length; i++) { h = ((h << 5) + h + s.charCodeAt(i)) | 0; }
+      return (h >>> 0).toString(36);
     }
 
-    try {
-      var raw = window.localStorage.getItem(CHECK_KEY);
-      if (raw) { JSON.parse(raw).forEach(function (i) { if (boxes[i]) boxes[i].checked = true; }); }
-    } catch (e) { /* no-op */ }
+    /* Tag every checkbox with its section and a stable key. */
+    boxes.forEach(function (b) {
+      var sec = b.closest(".doc");
+      var txt = (b.parentNode.textContent || "").replace(/\s+/g, " ").trim();
+      b.dataset.doc = sec ? sec.id : "";
+      b.dataset.k = hashKey((sec ? sec.id : "") + "|" + txt);
+    });
 
-    boxes.forEach(function (b) { b.addEventListener("change", save); });
+    function boxesFor(docId) {
+      return boxes.filter(function (b) { return b.dataset.doc === docId; });
+    }
+
+    function lsGet(k, dflt) {
+      try { var v = window.localStorage.getItem(k); return v ? JSON.parse(v) : dflt; }
+      catch (e) { return dflt; }
+    }
+    function lsSet(k, v) {
+      try { window.localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* full or blocked */ }
+    }
+    function lsDel(k) { try { window.localStorage.removeItem(k); } catch (e) {} }
+
+    function activeMap() { return lsGet(LS_ACTIVE, {}) || {}; }
+    function activeRunId(docId) { return activeMap()[docId] || null; }
+    function localRun(runId) { return runId ? lsGet(LS_RUN + runId, null) : null; }
+
+    function procName(docId) {
+      var sec = document.getElementById(docId);
+      var h = sec && sec.querySelector(".doc-head h2");
+      return h ? h.textContent.trim() : docId;
+    }
+
+    function newRunId() {
+      var rnd = "";
+      try {
+        var a = new Uint8Array(8); window.crypto.getRandomValues(a);
+        rnd = Array.prototype.map.call(a, function (n) { return (n % 36).toString(36); }).join("");
+      } catch (e) { rnd = String(performance.now()).replace(".", ""); }
+      return ("r" + Date.now().toString(36) + rnd).slice(0, 40);
+    }
+
+    /* ---------- the bar ---------- */
+    var rb = {
+      bar: document.getElementById("runbar"),
+      start: document.getElementById("rb-start"),
+      job: document.getElementById("rb-job"),
+      state: document.getElementById("rb-state"),
+      finish: document.getElementById("rb-finish"),
+      close: document.getElementById("rb-close")
+    };
+
+    function setChip(text, cls) {
+      rb.state.hidden = !text;
+      rb.state.textContent = text || "";
+      rb.state.className = "rb-chip" + (cls ? " " + cls : "");
+    }
+
+    function renderBar() {
+      var runId = activeRunId(currentDoc);
+      var run = localRun(runId);
+      if (!run) {
+        rb.start.hidden = false;
+        rb.job.hidden = true; rb.finish.hidden = true; rb.close.hidden = true;
+        setChip("", "");
+        return;
+      }
+      rb.start.hidden = true;
+      rb.job.hidden = false;
+      var done = (run.checked || []).length;
+      var total = boxesFor(currentDoc).length;
+      rb.job.innerHTML = esc(run.job_name || "No job attached") +
+        "<small>" + done + " of " + total + " checked" +
+        (run.started_by ? " · started by " + esc(shortName(run.started_by)) : "") + "</small>";
+      rb.finish.hidden = false;
+      rb.close.hidden = false;
+      renderSyncChip(run);
+    }
+
+    function renderSyncChip(run) {
+      if (!navigator.onLine) { setChip("Saved on phone · offline", "off"); return; }
+      if (run._pending) { setChip("Saving…", "wait"); return; }
+      if (run._syncErr) { setChip("Saved on phone only", "off"); return; }
+      if (run._synced) { setChip("Saved for the crew", "ok"); return; }
+      setChip("Saved on phone", "wait");
+    }
+
+    function esc(s) {
+      return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
+        return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
+      });
+    }
+    function shortName(email) { return String(email || "").split("@")[0]; }
+
+    /* ---------- applying + collecting check state ---------- */
+    function applyChecks(docId) {
+      var mine = boxesFor(docId);
+      if (!mine.length) return;
+      var run = localRun(activeRunId(docId));
+      var on;
+      if (run) {
+        on = {};
+        (run.checked || []).forEach(function (k) { on[k] = true; });
+        mine.forEach(function (b) { b.checked = !!on[b.dataset.k]; });
+      } else {
+        on = lsGet(CHECK_KEY, {}) || {};
+        mine.forEach(function (b) { b.checked = !!on[b.dataset.k]; });
+      }
+    }
+
+    function collectChecked(docId) {
+      return boxesFor(docId).filter(function (b) { return b.checked; })
+                           .map(function (b) { return b.dataset.k; });
+    }
+
+    /* Device-local fallback store is keyed by step key too, so it survives
+       edits the same way a run does. */
+    function saveDeviceLocal() {
+      var on = lsGet(CHECK_KEY, {}) || {};
+      if (Array.isArray(on)) { on = {}; }   // migrate the old index-array format
+      boxes.forEach(function (b) {
+        if (b.checked) { on[b.dataset.k] = true; } else { delete on[b.dataset.k]; }
+      });
+      lsSet(CHECK_KEY, on);
+    }
+
+    /* ---------- sync ---------- */
+    var syncTimer = null;
+
+    function saveRunLocal(run) {
+      run.updated_at = new Date().toISOString();
+      lsSet(LS_RUN + run.run_id, run);
+      return run;
+    }
+
+    function queueSync(run, immediate) {
+      run._pending = true;
+      renderSyncChip(run);
+      if (syncTimer) { clearTimeout(syncTimer); }
+      syncTimer = setTimeout(function () { pushRun(run.run_id); }, immediate ? 0 : 900);
+    }
+
+    function pushRun(runId) {
+      var run = localRun(runId);
+      if (!run) return Promise.resolve();
+      var bodyJson = {
+        payload: {
+          job_id: run.job_id || "",
+          job_name: run.job_name || "",
+          procedure: run.procedure,
+          procedure_name: run.procedure_name || "",
+          checked: run.checked || [],
+          note: run.note || "",
+          done: !!run.done
+        },
+        updated_at: run.updated_at
+      };
+      return fetch("/ui/api/fieldguide/runs/" + encodeURIComponent(runId), {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(bodyJson)
+      }).then(function (r) {
+        if (!r.ok) { throw new Error("HTTP " + r.status); }
+        return r.json();
+      }).then(function (j) {
+        var cur = localRun(runId) || run;
+        cur._pending = false; cur._syncErr = false; cur._synced = true;
+        // A stale response means somebody else is further along — take theirs.
+        if (j && j.stale && j.run) {
+          cur.checked = j.run.checked || [];
+          cur.note = j.run.note || "";
+          cur.updated_at = j.run.updated_at;
+          lsSet(LS_RUN + runId, cur);
+          if (currentDoc === cur.procedure) { applyChecks(currentDoc); }
+        } else {
+          lsSet(LS_RUN + runId, cur);
+        }
+        if (currentDoc === cur.procedure) { renderBar(); }
+      }).catch(function () {
+        var cur = localRun(runId) || run;
+        cur._pending = false; cur._syncErr = true; cur._synced = false;
+        lsSet(LS_RUN + runId, cur);
+        if (currentDoc === cur.procedure) { renderSyncChip(cur); }
+      });
+    }
+
+    window.addEventListener("online", function () {
+      var map = activeMap();
+      Object.keys(map).forEach(function (p) { pushRun(map[p]); });
+    });
+    window.addEventListener("offline", function () { renderBar(); });
+
+    /* ---------- checkbox handling ---------- */
+    boxes.forEach(function (b) {
+      b.addEventListener("change", function () {
+        var docId = b.dataset.doc;
+        var runId = activeRunId(docId);
+        var run = localRun(runId);
+        if (run) {
+          run.checked = collectChecked(docId);
+          saveRunLocal(run);
+          queueSync(run);
+          renderBar();
+        } else {
+          saveDeviceLocal();
+        }
+      });
+    });
 
     document.getElementById("reset").addEventListener("click", function () {
+      var runId = activeRunId(currentDoc);
+      var run = localRun(runId);
+      if (run) {
+        if (!window.confirm("Clear every check mark on this job's checklist for the whole crew?")) { return; }
+        boxesFor(currentDoc).forEach(function (b) { b.checked = false; });
+        run.checked = [];
+        saveRunLocal(run); queueSync(run, true); renderBar();
+        return;
+      }
       boxes.forEach(function (b) { b.checked = false; });
-      save();
+      lsSet(CHECK_KEY, {});
     });
+
+    /* ---------- the start / resume sheet ---------- */
+    var sheet = document.getElementById("sheet");
+    var jobsCache = null;
+
+    function openSheet() {
+      document.getElementById("sheet-proc").textContent =
+        procName(currentDoc) + " — pick the job this checklist is for.";
+      sheet.classList.add("open");
+      document.getElementById("jobsearch").value = "";
+      loadResumable();
+      loadJobs();
+    }
+    function closeSheet() { sheet.classList.remove("open"); }
+
+    document.getElementById("sheet-cancel").addEventListener("click", closeSheet);
+    sheet.addEventListener("click", function (e) { if (e.target === sheet) { closeSheet(); } });
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape" && sheet.classList.contains("open")) { closeSheet(); }
+    });
+    rb.start.addEventListener("click", openSheet);
+
+    function loadResumable() {
+      var wrap = document.getElementById("resume-wrap");
+      var list = document.getElementById("resumelist");
+      wrap.hidden = true; list.innerHTML = "";
+      fetch("/ui/api/fieldguide/runs?procedure=" + encodeURIComponent(currentDoc))
+        .then(function (r) { return r.ok ? r.json() : { runs: [] }; })
+        .then(function (j) {
+          var runs = (j && j.runs) || [];
+          if (!runs.length) { return; }
+          wrap.hidden = false;
+          runs.forEach(function (r) {
+            var row = document.createElement("div");
+            row.className = "resumerow";
+            row.innerHTML =
+              '<span class="rr-main">' + esc(r.job_name || "No job attached") +
+              "<small>" + r.checked_count + " checked · last touched by " +
+              esc(shortName(r.updated_by)) + "</small></span>";
+            var go = document.createElement("button");
+            go.type = "button"; go.textContent = "Resume";
+            go.addEventListener("click", function () { resumeRun(r.run_id); });
+            var del = document.createElement("button");
+            del.type = "button"; del.className = "del"; del.textContent = "Delete";
+            del.addEventListener("click", function () {
+              if (!window.confirm("Delete this checklist for the whole crew?")) { return; }
+              fetch("/ui/api/fieldguide/runs/" + encodeURIComponent(r.run_id), { method: "DELETE" })
+                .then(function () { lsDel(LS_RUN + r.run_id); loadResumable(); });
+            });
+            row.appendChild(go); row.appendChild(del);
+            list.appendChild(row);
+          });
+        })
+        .catch(function () { /* offline — the new-run path still works */ });
+    }
+
+    function loadJobs() {
+      var list = document.getElementById("joblist");
+      if (jobsCache) { renderJobs(jobsCache, ""); return; }
+      list.innerHTML = '<div class="none">Loading active jobs…</div>';
+      fetch("/ui/api/fieldguide/jobs")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          jobsCache = (j && (j.jobs || j.items)) || [];
+          renderJobs(jobsCache, "");
+        })
+        .catch(function () {
+          list.innerHTML = '<div class="none">Can\'t reach the job list right now — ' +
+            'use <b>Start without a job</b> and it\'ll still save.</div>';
+        });
+    }
+
+    function renderJobs(jobs, q) {
+      var list = document.getElementById("joblist");
+      var needle = (q || "").toLowerCase();
+      var hits = jobs.filter(function (jb) {
+        if (!needle) return true;
+        return JSON.stringify(jb).toLowerCase().indexOf(needle) !== -1;
+      }).slice(0, 60);
+      if (!hits.length) { list.innerHTML = '<div class="none">No matching active jobs.</div>'; return; }
+      list.innerHTML = "";
+      hits.forEach(function (jb) {
+        var name = jb.name || jb.job_name || ("Job " + (jb.id || jb.item_id || ""));
+        var sub = [jb.group, jb.location, jb.project_number].filter(Boolean).join(" · ");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = esc(name) + (sub ? "<small>" + esc(sub) + "</small>" : "");
+        b.addEventListener("click", function () {
+          startRun(String(jb.id || jb.item_id || ""), name);
+        });
+        list.appendChild(b);
+      });
+    }
+
+    document.getElementById("jobsearch").addEventListener("input", function (e) {
+      if (jobsCache) { renderJobs(jobsCache, e.target.value); }
+    });
+    document.getElementById("sheet-nojob").addEventListener("click", function () {
+      startRun("", "");
+    });
+
+    function startRun(jobId, jobName) {
+      var run = {
+        run_id: newRunId(),
+        job_id: jobId,
+        job_name: jobName,
+        procedure: currentDoc,
+        procedure_name: procName(currentDoc),
+        checked: [],
+        note: "",
+        done: false,
+        started_by: (document.getElementById("email") || {}).textContent || ""
+      };
+      var map = activeMap(); map[currentDoc] = run.run_id; lsSet(LS_ACTIVE, map);
+      saveRunLocal(run);
+      boxesFor(currentDoc).forEach(function (b) { b.checked = false; });
+      queueSync(run, true);
+      closeSheet(); renderBar();
+    }
+
+    function resumeRun(runId) {
+      fetch("/ui/api/fieldguide/runs/" + encodeURIComponent(runId))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j || !j.run) { return; }
+          var run = j.run;
+          run._synced = true;
+          var map = activeMap(); map[run.procedure] = run.run_id; lsSet(LS_ACTIVE, map);
+          lsSet(LS_RUN + run.run_id, run);
+          if (currentDoc !== run.procedure) { show(run.procedure, null, true); }
+          applyChecks(run.procedure); closeSheet(); renderBar();
+        })
+        .catch(function () { window.alert("Can't reach the portal to load that checklist."); });
+    }
+
+    rb.close.addEventListener("click", function () {
+      var map = activeMap(); delete map[currentDoc]; lsSet(LS_ACTIVE, map);
+      applyChecks(currentDoc); renderBar();
+    });
+
+    rb.finish.addEventListener("click", function () {
+      var runId = activeRunId(currentDoc);
+      var run = localRun(runId);
+      if (!run) { return; }
+      var total = boxesFor(currentDoc).length;
+      var done = (run.checked || []).length;
+      var msg = done < total
+        ? "Only " + done + " of " + total + " items are checked. Mark this checklist finished anyway?"
+        : "Mark this checklist finished?";
+      if (!window.confirm(msg)) { return; }
+      run.done = true;
+      saveRunLocal(run);
+      pushRun(runId).then(function () {
+        var map = activeMap(); delete map[currentDoc]; lsSet(LS_ACTIVE, map);
+        applyChecks(currentDoc); renderBar();
+      });
+    });
+
+    /* Re-apply the right check state whenever the view changes. */
+    onDocShown = function (docId) {
+      applyChecks(docId);
+      if (NON_PROC.indexOf(docId) === -1) { renderBar(); }
+    };
+
+    /* Migrate the old index-array format once, then load initial state. */
+    (function migrate() {
+      var old = lsGet(CHECK_KEY, null);
+      if (Array.isArray(old)) { lsSet(CHECK_KEY, {}); }
+    })();
 
     /* initial view from hash */
     fromHash(location.hash, false);
