@@ -1794,3 +1794,54 @@ split is the point:
     that repair plus prime plus repainting the whole plane corner-to-corner.
 ⚠ ID RENAME: `#touchup` → `#touchup-paint`. Anything linking to the old anchor needs updating; the
 in-page Component Index was updated (26 jumps, all verified to resolve).
+
+### 2026-07-29 — Field Manual r3: +Reading Drawings, +Firestopping, +Spotting a Change Order
+Jordan picked the next batch and added one of his own (blueprints). Now **14 procedures**.
+  • **Reading Drawings** (`#drawings`) — Jordan's addition, and it's placed FIRST in a new "Start
+    here" group because it unlocks every other doc for a new hire. Discipline/sheet-type/sequence
+    numbering, title block, scale, grid bubbles, dimension strings, detail callouts, revision
+    clouds, and a walkthrough of chasing a wall tag through the partition schedule → life safety →
+    finish schedule → door schedule. Two expert blocks: `#dwg-precedence` (document hierarchy, and
+    the rule that **a conflict between contract documents is an RFI, not a field decision** — plus
+    how to write an RFI that gets answered in a day instead of a week) and `#dwg-res-comm` (the
+    residential↔commercial comparison Jordan asked for; the real trap is the DIMENSIONING
+    CONVENTION — face of stud vs. face of finish vs. centerline — and the note that our change-order
+    documentation matters MORE on residential because changes arrive verbally there).
+    ⚠ Deliberately did NOT answer the spec-vs-drawings precedence question: it's decided by each
+    project's own precedence clause, so the doc tells you to go read that clause.
+  • **Firestopping** (`#firestop`) — placed with Framing since the head-of-wall joint is a wall we
+    built. Splits joint systems (ours) from through-penetrations (usually whoever made the hole).
+    Expert block `#fs-numbers` decodes the UL number, which is the actual teachable skill:
+    `HW-D-1000` = head-of-wall / **D**ynamic / joint width band >2"–6" (bands: 0000-0999 ≤2",
+    1000-1999 >2–6", 2000-2999 >6–12"). Plus F rating (stops flame) vs T rating (unexposed side
+    under 325°F above ambient), and when specs demand T=F. THE point of the doc: our head-of-wall
+    moves, so it needs a **dynamic** system — a static system in a moving joint passes inspection
+    day and tears the first time the structure loads. `#fs-install` covers annular space min/max,
+    packing depth, fill depth, and intumescent vs elastomeric.
+    ⚠ Includes a STOP note: "who firestops the penetrations" is a classic scope gap that **lands on
+    the drywall contractor by default** when nobody claims it. Get it in writing at job start.
+  • **Spotting a Change Order** (`#changeorder`) — the highest-dollar page in the manual and the
+    only one that makes money rather than saving it. The three-question test, the five ways extra
+    work arrives (verbal add / un-issued revision / another trade's mistake / forced remobilization
+    / conditions not matching the drawings), the two nobody ever bills (**standing-by time** and
+    stacked-trade inefficiency), the four-step response (stop, photograph, write it down, call —
+    then WAIT for written authorization), who can actually authorize (never another sub), and T&M
+    ticket discipline. Deliberately includes a **"when it is NOT a change order"** section — our own
+    rework, our own damage, work we missed at bid — because claiming bad ones spends the credibility
+    needed for the real ones. Provenance flags that subcontracts often carry a **written-notice
+    deadline** in days, which is the real reason to report same-day.
+Component Index now 34 entries (added annular space, dynamic vs static, F/T rating, grid lines,
+partition schedule, RFI, standing-by time, T&M ticket). All 34 jumps verified to resolve; no
+duplicate ids; 249 checkboxes; 26 expert blocks; 14 provenance blocks.
+STILL QUEUED (Jordan picked these too, not yet written): Insulation, Painting, Demolition, and the
+three estimate-catalog stubs FRP / Doors & Hardware / Tectum — writing those three doubles as the
+scope text those catalog entries are still waiting for.
+ALSO AGREED, NOT BUILT — **live resumable checklists** (Jordan, 2026-07-29): start a checklist for a
+Monday job, save, resume later. Decisions locked: **no Monday writeback for v1** (Job Check keeps
+sole ownership of the stage columns — two features writing the same column is how a stale run
+regresses a status the office set) and **runs are SHARED across the crew** (estimate-drafts model, so
+Mark can start a hang checklist and Robert can finish it). Build it on the existing patterns, do not
+invent: `subsystems/estimate/drafts.py` for the localStorage-working-copy + shared-GCS-object shape
+with last-writer-wins on `updated_at`, and `adapters/monday/jobcheck.py fetch_active_jobs()` for the
+job picker. **Offline-first is mandatory, not a nice-to-have** — jobsite signal is bad and a
+checklist that loses a half-finished pass in a stairwell is worse than paper.

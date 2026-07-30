@@ -299,8 +299,27 @@
     <p><b>The expensive work is the work you do twice.</b> Sanding costs more than scraping. Rework costs more than layout. Walking for material costs more than staging it. Every procedure here front-loads the cheap step that kills the expensive one.</p>
   </div>
 
+  <p class="sect-label">Start here</p>
+  <div class="tiles">
+    <button class="tile" data-go="drawings">
+      <span class="icon">📄</span><span class="stage">Day one</span>
+      <span class="name">Reading Drawings</span>
+      <span class="desc">How a set is organized, where our sheets live, and the rule that keeps you out of trouble: never scale with a ruler. Residential and commercial both.</span>
+    </button>
+    <button class="tile" data-go="changeorder">
+      <span class="icon">💰</span><span class="stage">Every job</span>
+      <span class="name">Spotting a Change Order</span>
+      <span class="desc">If it isn't on our drawings, stop. The five ways extra work sneaks in, and what to do in the next ten minutes.</span>
+    </button>
+  </div>
+
   <p class="sect-label">Framing</p>
   <div class="tiles">
+    <button class="tile" data-go="firestop">
+      <span class="icon">🔥</span><span class="stage">Rated assemblies</span>
+      <span class="name">Firestopping</span>
+      <span class="desc">Head-of-wall joints and penetrations. How to read a UL system number, and why dynamic vs. static is the one that matters to us.</span>
+    </button>
     <button class="tile" data-go="framing">
       <span class="icon">📐</span><span class="stage">Framing Status</span>
       <span class="name">Metal Stud Framing</span>
@@ -409,6 +428,7 @@
   <div class="block">
     <h3>A–Z</h3>
     <div class="idx">
+      <div class="idx-item"><button data-jump="firestop|fs-install">Annular space</button><span>The gap around a pipe through a rated wall. Has a listed minimum and maximum — inspectors measure it.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-bridging">Bridging</button><span>Horizontal members that stop studs from twisting. Not the same as shear bracing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-blocking">Blocking</button><span>Two different meanings — backing to hang things on, and structural blocking to brace studs.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-fasten">Cabinet screws</button><span>Washer-head, coarse-thread, ductile. Not drywall screws — those break under load.</span></div>
@@ -419,19 +439,26 @@
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection track</button><span>Top-of-wall track that lets the building move without loading the wall.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-deflection">Deflection clip</button><span>A slotted bracket that does the deflection job when the track can't.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Drift</button><span>Sideways building movement, usually seismic. Different problem from vertical deflection.</span></div>
+      <div class="idx-item"><button data-jump="firestop|fs-numbers">Dynamic vs. static (firestop)</button><span>D or S in the system number. Our head-of-wall moves, so it needs a dynamic system.</span></div>
+      <div class="idx-item"><button data-jump="firestop|fs-numbers">F rating / T rating</button><span>F = how long it stops flame. T = how long the far side stays cool. Some specs need both.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-shim">Filler &amp; scribing</button><span>The strip that closes a gap, cut to follow the wall's actual shape.</span></div>
       <div class="idx-item"><button data-jump="touchup-paint|tu-why">Flashing</button><span>When a touch-up or patch shows as a different sheen. The most common paint complaint.</span></div>
+      <div class="idx-item"><button data-jump="drawings">Grid lines &amp; bubbles</button><span>The building's coordinate system. Every dimension and all our layout comes off it.</span></div>
       <div class="idx-item"><button data-jump="act|act-wire">Hanger wire</button><span>The wire that holds a ceiling grid up. 12 gauge, 4 feet apart, wrapped three turns.</span></div>
       <div class="idx-item"><button data-jump="cabinets">High point of floor</button><span>Where every cabinet measurement starts. Measure from the low point and the run ends up wrong.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-hotmud">Hot mud</button><span>Setting compound. Hardens chemically instead of drying, so you can recoat the same day.</span></div>
       <div class="idx-item"><button data-jump="finish|fin-levels">Levels of finish (0–5)</button><span>The industry scale for how smooth a wall has to be. Getting this right is the biggest money item in finishing.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Limiting height</button><span>The published table that says how tall a given stud can go. The authority on tall walls.</span></div>
       <div class="idx-item"><button data-jump="act|act-maintee">Main tee / main runner</button><span>The long grid members that carry the ceiling. Usually 4 feet apart.</span></div>
+      <div class="idx-item"><button data-jump="drawings">Partition schedule</button><span>Turns a wall tag into stud, gauge, spacing, board, and rating. Our most important sheet.</span></div>
       <div class="idx-item"><button data-jump="cabinets|cab-reveal">Reveal</button><span>The gap between cabinet doors. Consistent reveals are what customers read as quality.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-tall">Stacked walls</button><span>Getting height by building one wall on top of another instead of one tall stud.</span></div>
       <div class="idx-item"><button data-jump="touchup-drywall|tud-defects">Screw pop</button><span>A fastener backed out and pushed the board off the framing. Reset it, don't just fill it.</span></div>
+      <div class="idx-item"><button data-jump="drawings|dwg-precedence">RFI</button><span>The written question you send when two documents disagree. Never pick one and build.</span></div>
+      <div class="idx-item"><button data-jump="changeorder|co-five">Standing-by time</button><span>Crew on site unable to work. Recoverable only if somebody wrote it down that day.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strapping / flat strap</button><span>Flat steel banding screwed across stud flanges to brace them.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Strap and block</button><span>Strap plus a short block between studs. Required once studs get deep.</span></div>
+      <div class="idx-item"><button data-jump="changeorder">T&amp;M ticket</button><span>Signed by the GC before you leave site, or it's a negotiation instead of a bill.</span></div>
       <div class="idx-item"><button data-jump="act|act-tile">Tegular tile</button><span>Ceiling tile with a stepped edge that drops below the grid. Needs matching grid.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-zfur">Z-furring</button><span>Z-shaped channel that furs out masonry, holds insulation, and gives you a drywall surface.</span></div>
       <div class="idx-item"><button data-jump="framing|sys-strap">Z / X bracing</button><span>Diagonal strap bracing that resists racking. A different job from horizontal bridging.</span></div>
@@ -517,6 +544,244 @@
         <tr><td>Change order (CO)</td><td>Extra work outside the original contract, priced and approved separately. If it's not on a CO, we're doing it for free.</td></tr>
       </tbody>
     </table></div>
+  </div>
+</section>
+
+<!-- ==================== READING DRAWINGS ==================== -->
+<section class="doc" id="drawings">
+  <div class="doc-head">
+    <span class="stage-line">Start here · day one</span>
+    <h2>Reading Drawings</h2>
+    <p class="lede">A drawing set isn't a pile of paper — it's an organized system. Learn the organization once and you can find anything in any set, on any job, for the rest of your career.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Every sheet has a <b>letter and a number</b>. The letter says whose drawing it is — <b>A</b> is the architect's, <b>S</b> is the structural engineer's, <b>M</b> <b>P</b> <b>E</b> are mechanical, plumbing and electrical. Find the <b>title block</b> in the corner for the sheet name, the scale, and the revision. Find the <b>grid lines</b>, because that's what everything gets measured from. And the one rule that will save you more than any other: <b>use the written dimension. Never hold a ruler up to a drawing.</b></p>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">The two rules that matter most</span>
+    <p><b>1. Never scale off a drawing.</b> Sets get printed, reduced, emailed, and photographed. A sheet that says 1/4" scale may not be at 1/4" anymore, and the error doesn't announce itself. If there's no written dimension for what you need, that's a question, not a measurement.</p>
+    <p><b>2. Check the revision before you build.</b> The title block has a revision number and date. Building accurately off a superseded sheet is still building it wrong, and it's the most expensive mistake on this page.</p>
+  </div>
+
+  <div class="block">
+    <h3>How the set is organized</h3>
+    <p class="sub">Sheet numbers are three parts: the discipline letter, the sheet type, and a sequence number. <span class="spec">A2.03</span> is architectural, second series, third sheet.</p>
+    <div class="table-wrap"><table class="tight">
+      <thead><tr><th scope="col">Letter</th><th scope="col">Whose drawings</th><th scope="col">Why we care</th></tr></thead>
+      <tbody>
+        <tr><td>G</td><td>General</td><td>Cover sheet, code summary, symbol legend, abbreviations. <b>The legend is worth reading once</b> — it decodes the whole set.</td></tr>
+        <tr><td>A</td><td>Architectural</td><td><b>Our home.</b> Floor plans, partition types, reflected ceiling plans, elevations, details, schedules.</td></tr>
+        <tr><td>S</td><td>Structural</td><td>Deflection details, tall-wall and bracing requirements, what we can and can't attach to.</td></tr>
+        <tr><td>M / P / E</td><td>Mechanical, plumbing, electrical</td><td>What's going in our walls and above our ceilings, and what has to be roughed in before we close.</td></tr>
+        <tr><td>FP or F</td><td>Fire protection</td><td>Sprinkler drops through our ceilings and walls.</td></tr>
+        <tr><td>I</td><td>Interiors</td><td>Finishes, casework, sometimes the finish schedule that drives our finish level.</td></tr>
+        <tr><td>C / L</td><td>Civil, landscape</td><td>Rarely ours.</td></tr>
+      </tbody>
+    </table></div>
+  </div>
+
+  <div class="block">
+    <h3>The sheets we actually live on</h3>
+    <ul class="plain">
+      <li><b>The partition / wall type schedule.</b> The single most important sheet in the set for us. Every wall on the plan carries a tag; this sheet turns that tag into stud size, gauge, spacing, board type and layers, height, and fire rating.</li>
+      <li><b>Floor plans.</b> Where the walls go, and the dimension strings that locate them.</li>
+      <li><b>Reflected ceiling plan (RCP).</b> Read as if you're looking <i>down</i> from above with a mirror on the floor — so it's oriented the same as the floor plan, not flipped. Ceiling heights, ACT layout, and fixture locations.</li>
+      <li><b>Life safety plan.</b> Shows which walls are rated and at what rating. If you want to know where the fire walls are, this is faster than hunting tags.</li>
+      <li><b>Finish schedule.</b> What's going on the wall — and therefore <b>what finish level we owe</b>. Sheen and wall coverings live here. See <b>Finishing Drywall</b>.</li>
+      <li><b>Door and frame schedule.</b> Rough openings, frame types, and hardware. See <b>Metal Stud Framing → openings</b>.</li>
+      <li><b>Details.</b> Head of wall, base, control joints, transitions. Small sheets, huge consequences.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Finding your way around a sheet</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Title block</b> — bottom right or down the right edge. Sheet name, number, scale, date, revision, and the seal. Read the revision first.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Scale</b> — <span class="spec">1/4" = 1'-0"</span> is the usual floor plan; <span class="spec">1/8"</span> on big buildings; <span class="spec">1-1/2"</span> or <span class="spec">3"</span> on details. A detail is drawn large because the small stuff matters there.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>North arrow</b> — orients you, and it's how "the east corridor" stops being a guess.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Grid lines and bubbles</b> — lettered one way, numbered the other, circles at the ends. This is the building's coordinate system and it's where all our layout comes from. See <b>Metal Stud Framing → layout</b>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Dimension strings</b> — the chains of dimensions locating walls. Note whether they run to <b>face of stud, face of finish, or centerline</b>. It's stated on the plan, and getting it wrong shifts every wall.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Section and detail callouts</b> — a circle or flag with two numbers: the top is the detail number, the bottom is the sheet it's drawn on. That's how you chase a detail across the set.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Keynotes and tags</b> — small numbers or letters pointing at things, decoded in a legend on the same sheet or in the general sheets.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Clouds and delta symbols</b> — a cloud around an area with a numbered triangle means <b>that part changed</b>. Go read what changed before you build it.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="expert" id="dwg-precedence">
+    <span class="tag">Full detail · what beats what</span>
+    <h4>The document hierarchy — and the one thing you must not do</h4>
+    <p>When two documents disagree, there's an order, and knowing it keeps you out of an argument you can't win later.</p>
+    <ul class="plain">
+      <li><b>Change orders and addenda beat the original drawings.</b> They're issued after and they're contractual.</li>
+      <li><b>A later revision beats an earlier one.</b> Check the revision block.</li>
+      <li><b>Approved submittals govern the product</b> that actually gets installed.</li>
+      <li><b>The manufacturer's installation instructions govern installation</b> — and they override general practice, including this manual.</li>
+      <li><b>Specifications vs. drawings</b> is genuinely project-specific. Most spec books contain their own precedence clause saying which wins. <b>Read that clause rather than assuming</b>; the common pattern is that the spec governs quality and materials while the drawings govern location and quantity, but do not bet a job on that.</li>
+    </ul>
+    <p><b>The thing you must not do:</b> pick one and build. <b>A conflict between two contract documents is an RFI, not a field decision.</b> Write the question, send it, and keep working somewhere else while you wait. If you guess and you're wrong, the fix is on us — and the fact that the documents contradicted each other stops being a defense the moment we chose without asking.</p>
+
+    <h4>Writing an RFI that actually gets answered</h4>
+    <p>A good RFI names the sheets and details in conflict, states what you understand each one to require, says what it's holding up, and <b>proposes an answer</b>. "Detail 5/A8.02 shows a slotted deflection track at the corridor head of wall; the partition schedule for type A3 calls for a double slip track. Please confirm which governs. We propose the slotted track per the detail. This holds top track on level 2." That gets answered in a day. "Which head of wall do you want?" sits for a week.</p>
+  </div>
+
+  <div class="expert" id="dwg-res-comm">
+    <h4>Residential vs. commercial — what actually changes</h4>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col"></th><th scope="col">Residential</th><th scope="col">Commercial</th></tr></thead>
+      <tbody>
+        <tr><td>Set size</td><td>Often a handful of sheets, sometimes one discipline.</td><td>Dozens to hundreds, every discipline, plus a specification book.</td></tr>
+        <tr><td>Wall types</td><td>Frequently noted right on the plan, or assumed by convention. There may be no partition schedule at all.</td><td>A formal partition schedule with a tag on every wall. <b>Always go read it.</b></td></tr>
+        <tr><td>Dimensions</td><td>Commonly to face of framing.</td><td>Often to face of finish or to grid. <b>Read the note — this is the trap.</b></td></tr>
+        <tr><td>Rated walls</td><td>Limited — garage separations, some ceilings.</td><td>Extensive, with a life safety plan and listed assembly numbers called out.</td></tr>
+        <tr><td>Detail level</td><td>Much is left to standard practice and the builder's habit.</td><td>Detailed, and deviation is a rejection.</td></tr>
+        <tr><td>Questions</td><td>Usually a phone call to the builder.</td><td>A formal RFI, in writing, logged.</td></tr>
+        <tr><td>Changes</td><td>Often verbal. <b>This is exactly why our change order documentation matters more on residential, not less.</b></td><td>Formal change order process, priced and signed.</td></tr>
+      </tbody>
+    </table></div>
+    <p>The dangerous direction is a good commercial hand moving to residential and assuming the missing information means "do whatever's normal," or a good residential hand moving to commercial and not realizing that a schedule they never opened governs the wall they just built.</p>
+  </div>
+
+  <div class="block">
+    <h3>Reading a wall tag, start to finish</h3>
+    <ul class="plain">
+      <li>Find the tag on the plan at the wall — say <span class="spec">A3</span>.</li>
+      <li>Go to the <b>partition schedule</b> and find A3. It gives you stud depth, gauge, spacing, board type and number of layers each side, the fire rating, and how high the wall goes.</li>
+      <li>Note whether it says <b>to ceiling</b> or <b>to deck</b>. That changes the whole top of the wall.</li>
+      <li>If it's rated, find the <b>listed assembly number</b> and the head-of-wall detail that goes with it.</li>
+      <li>Cross-check the <b>finish schedule</b> for that room to know what finish level and what sheen you're building toward.</li>
+      <li>Cross-check the <b>door schedule</b> for any opening in that wall.</li>
+      <li>Now you know the wall. That whole chase should take two minutes once you've done it a few times.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: how drawings cost us money</h3>
+    <ol class="ranked">
+      <li><b>Building off a superseded revision</b> — accurate work, demolished.</li>
+      <li><b>Scaling with a ruler instead of using written dimensions.</b></li>
+      <li><b>Never opening the partition schedule</b> and building every wall the same way.</li>
+      <li><b>Missing the dimensioning convention</b> — face of stud vs. face of finish shifts every wall in the run.</li>
+      <li><b>Choosing between conflicting documents instead of writing an RFI.</b></li>
+      <li><b>Not reading the clouded areas</b> on a revised sheet.</li>
+      <li><b>Missing the finish schedule</b>, so nobody knows we owe a Level 5 until the painter arrives.</li>
+      <li><b>Not checking the life safety plan</b>, so a rated wall gets built unrated.</li>
+    </ol>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Sheet numbering follows the widely used National CAD Standard convention (discipline designator + sheet type + sequence) — most commercial sets in our market use it, though not all, so read the set's own index. Scales, title block contents, grid systems, and callout conventions are standard drafting practice. <b>The document precedence order is the part to be careful with:</b> the spec-versus-drawings question is decided by the individual project's own precedence clause, which is why this document tells you to go read it rather than giving you an answer. The residential/commercial comparison reflects GVC's own mix of work.</p>
+  </div>
+</section>
+
+<!-- ==================== FIRESTOPPING ==================== -->
+<section class="doc" id="firestop">
+  <div class="doc-head">
+    <span class="stage-line">Rated assemblies · firestopping</span>
+    <h2>Firestopping</h2>
+    <p class="lede">A rated wall is only rated if every hole through it and every joint around it is sealed with a tested system. Not caulk — a system, with a number.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>When you put a hole in a fire wall, or when there's a gap at the top of one, you can't just fill it with whatever's on the truck. There's a <b>tested assembly with a number</b> — it specifies the exact material, how deep, how big the gap is allowed to be, and what backing goes behind it. Build the number that's on the drawings. And <b>photograph it before it gets covered</b>, because afterward there's no way to prove it was right.</p>
+  </div>
+
+  <div class="note why">
+    <span class="tag">Why this one is different</span>
+    <p>Most of our work is judged on how it looks. This is judged on <b>whether a listed system was reproduced exactly</b>, by an inspector, against a document. Close enough is a failure. It's also the item most likely to hold up a certificate of occupancy — which makes it the item most likely to have a GC standing over you.</p>
+  </div>
+
+  <div class="block">
+    <h3>Two families, and we own one of them</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Family</th><th scope="col">What it seals</th><th scope="col">Ours?</th></tr></thead>
+      <tbody>
+        <tr><td><b>Joint systems</b></td><td>The gaps <i>around</i> a rated wall — head of wall, wall-to-wall, wall-to-floor. The deflection gap at the top of our partitions is exactly this.</td><td><b>Yes.</b> This is our head-of-wall detail, and it's part of the wall we built.</td></tr>
+        <tr><td><b>Through-penetration firestops</b></td><td>Anything passing <i>through</i> the wall — pipe, conduit, cable tray, duct, sleeves.</td><td><b>Usually the trade that made the hole.</b> Confirm on every job — see the note below.</td></tr>
+      </tbody>
+    </table></div>
+    <div class="note stop">
+      <span class="tag">Confirm this at the job start meeting, every time</span>
+      <p>"Who firestops the penetrations" is one of the most common scope gaps in commercial interiors, and when nobody claims it, <b>it lands on the drywall contractor by default</b> — because we're the ones who built the wall and we're still on site at the end. Get it answered in writing at the start. If it's ours, it's scope and it gets priced. If it shows up later and it isn't in our contract, see <b>Spotting a Change Order</b>.</p>
+    </div>
+  </div>
+
+  <div class="expert" id="fs-numbers">
+    <span class="tag">Full detail · reading the number</span>
+    <h4>UL system numbers decode — this is the whole skill</h4>
+    <p>A system number looks like gibberish and is actually a description. Once you can read it, you can tell at a glance whether the system on the drawing matches the condition in front of you.</p>
+    <p><b>Joint systems</b> — format <span class="spec">XX-Y-NNNN</span>, for example <span class="spec">HW-D-1000</span>:</p>
+    <ul class="plain">
+      <li><b>First pair = joint type.</b> <span class="spec">HW</span> = head-of-wall. <span class="spec">WW</span> = wall-to-wall. <span class="spec">FW</span> = floor-to-wall. <span class="spec">FF</span> = floor-to-floor.</li>
+      <li><b>Middle letter = movement.</b> <span class="spec">D</span> = <b>Dynamic</b> — the joint is expected to move and the system is tested to move with it. <span class="spec">S</span> = <b>Static</b> — no movement permitted.</li>
+      <li><b>Number = nominal joint width.</b> <span class="spec">0000–0999</span> = up to 2". <span class="spec">1000–1999</span> = over 2" up to 6". <span class="spec">2000–2999</span> = over 6" up to 12".</li>
+    </ul>
+    <p>So <span class="spec">HW-D-1000</span> reads as: head-of-wall joint, dynamic, joint width somewhere over 2" and up to 6".</p>
+    <p><b>Through-penetrations</b> use a similar scheme — <span class="spec">W-L-1087</span> and the like, where <span class="spec">W</span> indicates a wall assembly and the following letter identifies the class of wall and penetrant. You mostly need to recognize that <b>the number is specific to the penetrant</b>: a system for a metallic pipe is not a system for a bundle of cables, and swapping them voids it.</p>
+
+    <h4>The one that catches people: dynamic vs. static</h4>
+    <p><b>Our head-of-wall almost always moves.</b> That's the entire point of the deflection track described in <b>Metal Stud Framing</b>. So the firestop at that joint has to be a <b>dynamic</b> system, tested to open and close through a cycle count.</p>
+    <p>Put a static system in a moving joint and it does exactly what you'd expect — it works on the day it's inspected and tears the first time the structure loads. Put a dynamic system in and don't build it to the specified joint width, and it isn't the tested system either.</p>
+
+    <h4>F rating and T rating</h4>
+    <ul class="plain">
+      <li><b>F rating</b> — how long the system stops <b>flame</b> passing through. Expressed in hours.</li>
+      <li><b>T rating</b> — how long the <b>unexposed side stays cool</b>, specifically under 325°F above ambient. Also in hours, and it can be lower than the F rating on the same system.</li>
+      <li><b>When T matters:</b> many jurisdictions and specs require <b>T equal to F</b> on walls separating dwelling units or patient rooms, and anywhere combustible material sits against the unexposed side. A system with a 1-hour F and a 0-hour T is perfectly legitimate and completely wrong for those locations.</li>
+      <li>If the spec calls out a T rating and the system you grabbed doesn't have one, <b>that's the wrong system</b> even though the F rating matches.</li>
+    </ul>
+  </div>
+
+  <div class="expert" id="fs-install">
+    <h4>Installing to the listing</h4>
+    <ul class="plain">
+      <li><b>Annular space</b> — the gap between the penetrant and the edge of the hole. The listing gives a <b>minimum and a maximum</b>. Too tight and the system doesn't apply; too generous and it doesn't either. This is the number inspectors measure.</li>
+      <li><b>Packing / backing material</b> — usually mineral wool, at a specified depth and compression. It's not filler, it's a tested component.</li>
+      <li><b>Fill depth</b> — the sealant depth is specified. Skinning the surface and leaving a void behind it is the classic field shortcut and it's visible when probed.</li>
+      <li><b>Sealant type</b> — <b>intumescent</b> (expands with heat, for combustible or melting penetrants like plastic pipe and cable) versus <b>elastomeric</b> (stays flexible, for metallic penetrants and moving joints). <b>Not interchangeable.</b></li>
+      <li><b>Substrate clean and dry.</b> Dust and mud on the board face is a bond failure.</li>
+      <li><b>Both sides</b> where the listing says both sides.</li>
+      <li><b>Don't overcut the hole.</b> The cheapest way to be unable to install the specified system is a sloppy cutout — which is exactly why hole accuracy is on the <b>Hanging Drywall</b> checklist.</li>
+    </ul>
+    <p><b>Labeling:</b> many specs require a permanent label at each firestop giving the system number, installer, and date. If the spec asks for it, it's not optional and it's much easier to do as you go.</p>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what fails inspection</h3>
+    <ol class="ranked">
+      <li><b>A static system in a dynamic joint</b> — the head-of-wall classic.</li>
+      <li><b>Annular space out of the listed range</b>, usually because the hole was cut too big.</li>
+      <li><b>Underfilled depth</b> — surface skinned, void behind.</li>
+      <li><b>Wrong sealant class</b> — elastomeric where intumescent was required, or vice versa.</li>
+      <li><b>Missing packing material</b>, or packed to the wrong depth.</li>
+      <li><b>No T rating</b> where the spec required one.</li>
+      <li><b>Sealed one side</b> where the listing requires both.</li>
+      <li><b>Missing labels</b> where the spec requires them.</li>
+      <li><b>No photo record</b> — not a code failure, but it's why we end up re-opening finished work to prove something.</li>
+    </ol>
+  </div>
+
+  <div class="block">
+    <h3>Before you cover it</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">The system number on the drawings matches the condition actually in front of you — joint type, movement class, and width band.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Annular space measured and within the listed range.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Packing at the specified depth, sealant at the specified depth, correct class.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Both sides done where required.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Labels installed if the spec asks for them.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph every firestop, with the location identified and the system number noted</b>, before anything covers it.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Head-of-wall photographed along its length, not just one spot.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Anything you found that isn't ours — an unsealed penetration by another trade — reported in writing, not quietly fixed.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>The UL numbering scheme (joint type pair, D/S movement letter, and the width bands for the numeric group) and the F/T rating definitions come from UL's own guide information and the International Firestop Council's material on ASTM and UL standards; through-penetration systems are tested to <b>UL 1479</b> / ASTM E814, joint systems to <b>UL 2079</b> / ASTM E1966. <b>The specific listed system named on the project drawings governs everything here</b> — annular spaces, depths, materials, and cycle counts are properties of that individual listing, not general rules. Scope ownership of penetration firestopping is contractual and varies by project, which is why this document tells you to get it in writing rather than assuming. See Sources.</p>
   </div>
 </section>
 
@@ -1840,6 +2105,121 @@
   </div>
 </section>
 
+<!-- ==================== CHANGE ORDER ==================== -->
+<section class="doc" id="changeorder">
+  <div class="doc-head">
+    <span class="stage-line">Every job · scope &amp; money</span>
+    <h2>Spotting a Change Order</h2>
+    <p class="lede">The work we don't get paid for is almost never work we did badly. It's work nobody wrote down.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>If somebody asks you to do something that <b>isn't on our drawings</b>, stop. Take a photo, write down who asked and what they asked for, and call the office. Don't do it as a favor — a favor costs GVC real money and gets you no credit for it. <b>You are not being difficult. You are doing your job.</b></p>
+  </div>
+
+  <div class="note money">
+    <span class="tag">Why this page exists</span>
+    <p>Everything else in this manual saves money by making the work faster. <b>This one saves money by getting us paid for work we already did.</b> There's no efficiency gain anywhere in this manual as large as the cost of a crew spending two days on something nobody ever billed — and that happens because a good hand wanted to be helpful and didn't know he was supposed to stop.</p>
+    <p>Nobody gets in trouble here for asking. People get in trouble for finding out three weeks later.</p>
+  </div>
+
+  <div class="block">
+    <h3>The test</h3>
+    <p class="sub">Three questions. If any answer is no, stop and call.</p>
+    <ul class="plain">
+      <li><b>Is it on our drawings?</b> Not "is it reasonable" or "is it small" — is it drawn, scheduled, or specified in the set we bid?</li>
+      <li><b>Is it our trade?</b> We do drywall, metal framing, ACT, insulation, paint, demo and patch. Somebody handing us a different trade's work is a change, even if we're capable of it.</li>
+      <li><b>Is it at the revision we bid?</b> A wall that moved on a revised sheet is a change even though the wall was always on the drawings.</li>
+    </ul>
+  </div>
+
+  <div class="expert" id="co-five">
+    <span class="tag">Full detail · how it actually shows up</span>
+    <h4>The five ways extra work arrives</h4>
+    <p>It almost never arrives as someone saying "here is a change order." It arrives as one of these.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">How it sounds</th><th scope="col">What it is</th></tr></thead>
+      <tbody>
+        <tr><td>"While you're in there, can you just…"</td><td>The verbal add. The most common by far, and the most expensive because it feels too small to argue about. Small adds across a whole job are enormous.</td></tr>
+        <tr><td>"Didn't you get the updated set?"</td><td>A revision we were never issued. If the wall moved, that's a change even if nobody calls it one. Check your revision against theirs.</td></tr>
+        <tr><td>"Can you work around that / fix that for us?"</td><td>Another trade's mistake or their material in our way. Fixing it is their cost, not ours — but only if it's documented before we touch it.</td></tr>
+        <tr><td>"We'll need you to come back for that area."</td><td>Somebody else's sequence forcing us to mobilize twice. Two trips instead of one is a real cost even though the work itself didn't change.</td></tr>
+        <tr><td>"It's supposed to be like that."</td><td>Existing conditions or a substrate that doesn't match the drawings — an out-of-plane masonry wall, a slab out of tolerance, framing not where it's dimensioned. Extra work to accommodate it is a change.</td></tr>
+      </tbody>
+    </table></div>
+
+    <h4>The two nobody ever bills</h4>
+    <ul class="plain">
+      <li><b>Standing by.</b> A crew on site unable to work because another trade isn't finished, the area isn't released, or there's no power, heat, or access. That's paid time producing nothing, and it's recoverable <b>only</b> if somebody wrote down the date, the hours, the crew, and the reason, on the day.</li>
+      <li><b>Working out of sequence or stacked with other trades.</b> Three trades in one room is slower than one trade in one room, and that inefficiency is real. It's also almost impossible to claim after the fact, which is exactly why the daily record matters.</li>
+    </ul>
+    <p>If the crew is standing around, that's not a break — <b>that's a documentation event.</b></p>
+  </div>
+
+  <div class="block">
+    <h3>What to do, in the next ten minutes</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Stop.</b> Don't start the work. Stopping costs an hour; proceeding can cost days.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photograph it.</b> The condition, the location, wide enough to know where you are, close enough to see the issue.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Write it down</b> — who asked, their exact words, the date and time, the room or grid location, and what it's holding up.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Call the office.</b> Not a text into a group chat that scrolls away — a call, so someone with authority actually knows today.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Wait for written authorization</b> before starting. "Go ahead, we'll take care of it" is not authorization.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">If you're directed to proceed anyway to keep the job moving — <b>that call is the office's, not yours</b> — then track it as time and material from the first minute.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Who can actually authorize extra work</span>
+    <p>The GC's superintendent or project manager, or the owner's representative, depending on our contract. <b>Another subcontractor can never authorize our extra work</b>, no matter how confidently they ask — and the electrician who asks you to move a wall six inches is not going to be the one paying for it.</p>
+    <p>If you're not certain the person asking has authority, that's the clearest possible signal to call the office before doing anything.</p>
+  </div>
+
+  <div class="block">
+    <h3>Time and material tickets</h3>
+    <ul class="plain">
+      <li><b>Filled out the same day</b>, while you remember the hours.</li>
+      <li><b>Names, hours, and what they did</b> — not "crew, 8 hours."</li>
+      <li><b>Material actually used</b>, with quantities.</li>
+      <li><b>Signed by the GC's rep before you leave site.</b> An unsigned ticket found in a truck two weeks later is a negotiation. A signed one is a bill.</li>
+      <li><b>Photos attached</b> to the ticket, same day.</li>
+      <li>Then it goes to the office and into the <b>Change Order</b> tool — that's how it becomes money instead of a story.</li>
+    </ul>
+  </div>
+
+  <div class="block">
+    <h3>When it is <em>not</em> a change order</h3>
+    <p class="sub">This matters as much as the rest of the page. Claiming things that aren't changes costs us credibility, and credibility is what gets the real ones approved.</p>
+    <ul class="plain">
+      <li><b>Our own rework.</b> A wall we built in the wrong place is on us.</li>
+      <li><b>Our own damage.</b> If we scratched it, we fix it.</li>
+      <li><b>Work that's in the set and we missed it at bid.</b> Painful, but it's ours. That's an estimating lesson, not a change order.</li>
+      <li><b>Normal coordination.</b> Some back-and-forth with other trades is just the job.</li>
+      <li><b>Cleanup of our own scrap.</b> Always ours.</li>
+    </ul>
+    <p>The honest version: <b>a change order is for work that genuinely wasn't in what we agreed to do.</b> Nothing more, nothing less.</p>
+  </div>
+
+  <div class="block">
+    <h3>Ranked: what this costs us when it goes wrong</h3>
+    <ol class="ranked">
+      <li><b>Verbal adds performed and never billed</b> — the single largest silent margin loss on most jobs.</li>
+      <li><b>Standing-by time never recorded</b> — paid hours, zero recovery.</li>
+      <li><b>Another trade's damage repaired before photographing it</b> — becomes our cost the moment we touch it.</li>
+      <li><b>Building to a revision we were never issued</b>, then eating the rework.</li>
+      <li><b>Unsigned T&amp;M tickets</b> — turns a bill into a negotiation.</li>
+      <li><b>Proceeding on a verbal from someone without authority.</b></li>
+      <li><b>Finding out weeks later</b>, when nobody remembers and there are no photos.</li>
+      <li><b>Claiming things that aren't changes</b> — spends the credibility we need for the real ones.</li>
+    </ol>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>This is GVC practice and standard subcontract administration, not a technical standard. <b>What counts as extra work is decided by our contract on each individual job</b> — the scope, the drawings and revisions listed in it, and its notice provisions. Many subcontracts contain a <b>written-notice deadline</b> for claiming extra work, measured in days from when the condition was discovered; missing that window can forfeit the claim no matter how legitimate it is. That's the strongest possible reason to report the same day rather than at the end of the month. Andrea and the office own the contractual side; the field's job is to notice, stop, document, and call.</p>
+  </div>
+</section>
+
 <!-- ==================== SOURCES ==================== -->
 <section class="doc" id="sources">
   <div class="doc-head">
@@ -1890,6 +2270,22 @@
       <li><a href="https://theformetal.com/metal-stud-limiting-heights-spans-tables/">Formetal — Metal stud limiting heights and span tables</a></li>
       <li><a href="https://usframefactory.com/sizing-metal-studs-for-tall-interior-partitions/">US Frame Factory — Sizing metal studs for tall interior partitions</a> — the four levers, and L/240 vs L/360 deflection criteria.</li>
       <li><a href="https://www.clarkdietrich.com/products/z-furring-channel">ClarkDietrich — Z-furring channel</a> and <a href="https://studcosystems.com/news-and-tech-tips/studco-furring-channels/">Studco — Furring and Z-furring channels</a> — depths, 16" o.c. spacing, vertical orientation, anchoring interval.</li>
+    </ul>
+
+    <h4>Firestopping</h4>
+    <ul>
+      <li><a href="https://firestop.org/astm-and-ul-standards-for-firestopping/">International Firestop Council — Understanding ASTM and UL standards for firestopping</a> — F vs. T rating definitions, and which test standard applies to penetrations (UL 1479 / ASTM E814) vs. joints (UL 2079 / ASTM E1966).</li>
+      <li><a href="https://www.firestop.com/dat/files/22.pdf">Explanation of the UL code numbering system (PDF)</a> — source for the joint-system format: joint-type pair, D/S movement letter, and the numeric width bands (≤2", &gt;2–6", &gt;6–12").</li>
+      <li><a href="https://www.fcia.org/Portals/0/Documents/Resources/Technical-Resources/UL2015ThroughPenetrationFirestopGuideInfo.pdf">UL through-penetration firestop guide information, XHEZ (PDF)</a></li>
+      <li><a href="https://www.usg.com/content/dam/USG_Marketing_Communications/united_states/product_promotional_materials/finished_assets/firestopping-construction-joints-and-penetration-systems-catalog-en-usa-SA727.pdf">USG — Firestopping construction joints and penetration systems catalog (PDF)</a></li>
+      <li><a href="https://www.uniquefirestop.com/what-do-the-ul-systems-acronyms-stand-for/">Unique Fire Stop — What the UL system acronyms stand for</a></li>
+    </ul>
+
+    <h4>Reading drawings</h4>
+    <ul>
+      <li><a href="https://www.archtoolbox.com/construction-document-sheet-numbers/">Archtoolbox — Construction document sheet numbers and order</a> — the discipline / sheet-type / sequence structure used here.</li>
+      <li><a href="https://projul.com/blog/how-to-read-construction-blueprints/">Projul — How to read construction blueprints</a> — title blocks, scales, grid bubbles.</li>
+      <li><a href="https://structuraldetails.com/blogs/design-tips/construction-drawings-sheet-numbering-and-organization">Construction drawings sheet numbering and organization</a></li>
     </ul>
 
     <h4>Finish levels and drywall application</h4>
