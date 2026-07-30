@@ -1,7 +1,36 @@
 /* ============================================================
    gvc.css — Green Valley Contractors portal design system
-   Everything from here to END COMPONENTS lifts verbatim.
    Plain CSS. Tokens only. No imports, no remote assets.
+
+   Design-agent delivery, with three GVC changes applied on intake.
+   Everything else lifts verbatim.
+
+   1. MOBILE TAP TARGETS RAISED 44px -> 48px (Jordan, Jul 29 2026).
+      The portal is a desk tool that still has to work on a phone, so the
+      settled 48px rule applies on touch while the desktop default stays at
+      40px for density.
+
+   2. COMPACT DENSITY NO LONGER UNDERCUTS THAT ON A PHONE — a real bug in the
+      delivered file, not a preference. `:root[data-density="compact"]` has
+      specificity 0,2,0; the mobile `@media` block's `:root` has 0,1,0, and a
+      media query contributes NO specificity. So compact mode won on a phone
+      and rendered 34px controls regardless of the mobile override. Source
+      order does not rescue it — specificity is compared first. The mobile
+      block now matches the compact selector explicitly and floors it at 44px.
+
+   3. The three brand greens (#7EB438 / #548427 / #AECB89) are KEPT as
+      delivered, per the 2026 social brand guidelines, with their never-text
+      constraints intact. They are portal signals and fills only.
+
+   TWO DIVERGENCES FROM THE TAKEOFF APP, deliberately left alone:
+   - Danger is clay #8C2F1F here; the app uses #B91C1C. The clay rationale is
+     sound and worth keeping — it stops red competing with gold so gold stays
+     the commitment colour. The app is not being changed to match.
+   - The display face leads with Baskerville. On Windows that chain resolves to
+     Baskerville Old Face or Palatino Linotype before it ever reaches Georgia,
+     so portal headings will NOT render in Georgia on most GVC machines. That
+     is the designer's intent ("tracks Baskerville Display PT"), so it stands —
+     but it is a visible difference from the app's Georgia headings.
    ============================================================ */
 
 :root{
@@ -75,7 +104,14 @@
 :root[data-radius="square"]{ --gvc-r-sm:0px; --gvc-r:0px; --gvc-r-lg:2px; }
 :root[data-radius="round"]{ --gvc-r-sm:6px; --gvc-r:10px; --gvc-r-lg:14px; }
 
-@media (max-width:640px){ :root{ --gvc-ctl-h:44px; --gvc-fs-body:16px; } }
+@media (max-width:640px){
+  /* 48px touch targets on a phone. Both selectors are listed so the compact
+     variant cannot out-specify this block — see note 2 in the header. */
+  :root,
+  :root[data-density="compact"]{ --gvc-fs-body:16px; }
+  :root{ --gvc-ctl-h:48px; --gvc-ctl-h-lg:56px; }
+  :root[data-density="compact"]{ --gvc-ctl-h:44px; --gvc-row-py:8px; }
+}
 
 *,*::before,*::after{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; }
