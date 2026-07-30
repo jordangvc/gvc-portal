@@ -402,6 +402,21 @@ function wireField(f) {
   }
 }
 
+function renderNameNote() {
+  const nm = detail?.naming || {};
+  const el = $("#namenote");
+  if (!el) return;
+  // Jake's rule: a missing piece gets ASKED for, never guessed.
+  if (nm.note) {
+    el.innerHTML = `<span style="color:#7A1F1F;font-weight:600;">${esc(nm.note)}</span>`;
+  } else if (nm.original && nm.suggestion && nm.original !== nm.suggestion) {
+    el.innerHTML = `Renamed to the GVC standard. Bid was
+      <span style="opacity:.75;">${esc(nm.original)}</span>`;
+  } else {
+    el.textContent = "";
+  }
+}
+
 function renderSourceNote() {
   const sr = detail?.scope_review || {};
   const el = $("#srcnote");
@@ -731,7 +746,12 @@ $("#send").addEventListener("click", sendToOps);
 $("#accept").addEventListener("click", acceptJob);
 $("#sendback").addEventListener("click", sendBackToSales);
 $("#gcemail").addEventListener("click", draftGcEmail);
-$("#jobname").addEventListener("input", () => { jobName = $("#jobname").value; onEdit(); });
+$("#jobname").addEventListener("input", () => {
+  jobName = $("#jobname").value;
+  $("#namenote").textContent = jobName.includes("|") ? ""
+    : "Missing the | separator — GVC standard is Street | Builder.";
+  onEdit();
+});
 checkHealth();
 loadBids();
 </script>
