@@ -556,6 +556,10 @@ function renderState() {
     html = `<div class="state sent_back"><span class="lead">Sent back by Operations.</span>
       ${d.sent_back_note ? esc(d.sent_back_note) : "No note given."}
       <div class="readonly-note">Fix it and send again.</div></div>`;
+  } else if (status === "accepted" && d.can_accept) {
+    // Partial retry: Projects landed, Ops didn't — still needs Accept.
+    html = `<div class="state with_ops"><span class="lead">Handoff incomplete — Ops task missing.</span>
+      Project exists; accept again to create the Operations task.</div>`;
   } else if (status === "accepted") {
     const pdf = d.packet_url
       ? ` <a href="${esc(d.packet_url)}" target="_blank" rel="noopener">Open the packet in Drive</a>`
@@ -568,13 +572,14 @@ function renderState() {
   }
   $("#statebox").innerHTML = html;
 
-  // Buttons. Ops sees Accept / Send back only while the packet is with them.
-  const showOps = status === "with_ops";
+  // Buttons. Ops sees Accept / Send back while the packet is with them, or
+  // when a prior partial accept left Projects without an Ops task.
+  const showOps = status === "with_ops" || !!d.can_accept;
   $("#send").style.display = d.editable ? "" : "none";
-  $("#accept").style.display = showOps && d.can_accept ? "" : "none";
-  $("#sendback").style.display = showOps ? "" : "none";
+  $("#accept").style.display = d.can_accept ? "" : "none";
+  $("#sendback").style.display = status === "with_ops" ? "" : "none";
 
-  if (showOps && !d.can_accept && d.self_sent) {
+  if (status === "with_ops" && !d.can_accept && d.self_sent) {
     $("#savestate").textContent =
       "You sent this packet — someone in Operations needs to accept it.";
   }
@@ -770,11 +775,29 @@ function acceptJob() {
       body.ops_url ? `<a href="${esc(body.ops_url)}" target="_blank" rel="noopener">Ops task</a>` : "",
     ].filter(Boolean).join(" · ");
     const made = [
-      body.project_source === "created" ? "Project created" : "Project updated",
-      body.ops_source === "created" ? "ops task created" : (body.ops_id ? "ops task updated" : null),
+      body.project_source === "created" ? "Project created"
+        : body.project_source === "already" ? "Project already linked"
+        : body.project_id ? "Project updated" : null,
+      body.ops_source === "created" ? "ops task created"
+        : body.ops_source === "already" ? "ops task already linked"
+        : (body.ops_id ? "ops task updated" : null),
     ].filter(Boolean).join(", ");
     const warnings = body.warnings || [];
-    if (body.ok && !warnings.length) {
+    if (body.already_processed) {
+      showStatus("ok",
+        `✔ <strong>Already handed off</strong> — not creating duplicates.` +
+        (links ? `<br>${links}` : ""));
+      return;
+    }
+    if (body.complete === false) {
+      showStatus("warn",
+        `<strong>Handoff incomplete</strong> — still with Operations so you can retry.` +
+        (made ? ` ${esc(made)}.` : "") +
+        `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` +
+        (links ? links : ""));
+      return;
+    }
+    if (!warnings.length) {
       showStatus("ok", `✔ <strong>Accepted.</strong> ${esc(made)}.<br>${links}`);
     } else {
       showStatus("warn",

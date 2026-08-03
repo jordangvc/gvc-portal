@@ -531,7 +531,14 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
     # hard-blocked — the activity log still records who did what.
     from shared import access
     is_admin = access.has_feature(actor, "admin") if actor else False
-    can_accept = (status == drafts.STATUS_WITH_OPS
+    already_project = bool(bid.get("existing_project_ids"))
+    already_ops = bool(bid.get("existing_ops_ids"))
+    # Partial retry: Projects landed, Ops didn't, packet was wrongly marked
+    # accepted — still show Accept so Ops can finish without a send-back.
+    waiting = (status == drafts.STATUS_WITH_OPS
+               or (status == drafts.STATUS_ACCEPTED and already_project
+                   and not already_ops))
+    can_accept = (waiting
                   and (is_admin or not actor or actor != sent_by))
 
     return {
@@ -568,9 +575,11 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
         "packet_url": (saved or {}).get("packet_url"),
         "preview_url": (saved or {}).get("preview_url"),
         "already": {
-            "project": bool(bid.get("existing_project_ids")),
-            "ops": bool(bid.get("existing_ops_ids")),
+            "project": already_project,
+            "ops": already_ops,
         },
+        "already_processed": (status == drafts.STATUS_ACCEPTED
+                              and already_project and already_ops),
         "customer_linked": bool((bid.get("copy") or {}).get("customer_ids")),
         "draft_updated_at": (saved or {}).get("updated_at"),
         "draft_updated_by": (saved or {}).get("updated_by"),
@@ -774,6 +783,23 @@ def send_back(bid_id: int, note: str, actor: str) -> dict:
     return {"ok": True, "status": record["status"], "slack": slack_status}
 
 
+def _conflict_warning(row: dict) -> str:
+    """One human line for a Monday cell the packet was not allowed to overwrite."""
+    board = {"projects": "Projects", "operations": "Operations"}.get(
+        row.get("board"), row.get("board") or "Monday")
+    col = row.get("column_id") or "?"
+    # Prefer the packet field label when this column is one we know.
+    label = col
+    for field in packet_fields():
+        for _b, target in field["targets"]:
+            if target == col:
+                label = field["label"]
+                break
+    return (f"{board} already has {label} = '{row.get('existing')}' "
+            f"(packet had '{row.get('proposed')}'). Left Monday as-is — "
+            f"resolve by hand if the packet is right.")
+
+
 def accept(bid_id: int, actor: str) -> dict:
     """
     THE handoff. Operations accepts, and only now does the job become real:
@@ -781,9 +807,13 @@ def accept(bid_id: int, actor: str) -> dict:
     stamped, the accepted packet PDF is filed into the job's Drive folder, and
     the link goes to Slack.
 
-    Refuses if the packet isn't currently with ops, or if the accepter is the
-    same person who sent it (unless they're an admin) — a handoff with one
-    signature isn't a handoff.
+    Refuses if the packet isn't currently with ops (unless a prior partial
+    accept left Projects without Ops — that retry is allowed), or if the
+    accepter is the same person who sent it (unless they're an admin) — a
+    handoff with one signature isn't a handoff.
+
+    Already-processed bids (packet accepted AND both Project + Ops linked) are
+    short-circuited: no second create, no silent rewrite.
     """
     from adapters.monday.client import MondayClient
     from adapters.monday import jobstart as mj
@@ -794,9 +824,45 @@ def accept(bid_id: int, actor: str) -> dict:
     record = drafts.get_draft(bid_id)
     if record is None:
         return {"ok": False, "detail": "No handoff packet exists for this bid."}
-    if record.get("status") != drafts.STATUS_WITH_OPS:
+
+    status = record.get("status")
+    mc = MondayClient()
+    bid = mj.get_bid_detail(mc, bid_id)
+    if bid is None:
+        return {"ok": False, "detail": f"Bid {bid_id} not found on the Bid Board."}
+
+    has_project = bool(bid.get("existing_project_ids"))
+    has_ops = bool(bid.get("existing_ops_ids"))
+
+    # Duplicate safeguard: a finished handoff must not run again and thrash
+    # Monday. Return the existing links so Ops still has somewhere to click.
+    if (status == drafts.STATUS_ACCEPTED and has_project and has_ops):
+        name = record.get("job_name") or bid["name"]
+        project_id = int(bid["existing_project_ids"][0])
+        ops_id = int(bid["existing_ops_ids"][0])
+        return {
+            "ok": True, "complete": True, "already_processed": True,
+            "status": status, "job_name": name,
+            "detail": "This bid was already handed off — not creating duplicates.",
+            "project_id": project_id,
+            "project_url": mj._item_url(boards.PROJECTS_BOARD_ID, project_id),
+            "ops_id": ops_id,
+            "ops_url": mj._item_url(boards.OPERATIONS_BOARD_ID, ops_id),
+            "project_source": "already",
+            "ops_source": "already",
+            "packet_url": record.get("packet_url"),
+            "warnings": [],
+            "conflicts": [],
+        }
+
+    # Partial retry: a previous accept created Projects but Ops failed, and the
+    # old code marked the packet accepted anyway. Stay eligible so Ops can
+    # finish the job without a send-back dance.
+    partial_retry = (status == drafts.STATUS_ACCEPTED and has_project
+                     and not has_ops)
+    if status != drafts.STATUS_WITH_OPS and not partial_retry:
         return {"ok": False,
-                "detail": f"This packet is '{record.get('status')}', not waiting "
+                "detail": f"This packet is '{status}', not waiting "
                           f"on Operations."}
     if (actor and actor == record.get("sent_by")
             and not access.has_feature(actor, "admin")):
@@ -809,11 +875,6 @@ def accept(bid_id: int, actor: str) -> dict:
     if missing:
         return {"ok": False, "blocked": True, "missing": missing,
                 "detail": "Packet is no longer complete — send it back to Sales."}
-
-    mc = MondayClient()
-    bid = mj.get_bid_detail(mc, bid_id)
-    if bid is None:
-        return {"ok": False, "detail": f"Bid {bid_id} not found on the Bid Board."}
 
     try:
         status_labels = {k: [l["label"] for l in v]
@@ -850,11 +911,6 @@ def accept(bid_id: int, actor: str) -> dict:
                          projects_values=projects_values,
                          ops_values=ops_values, accepted_date=_today())
 
-    # Mark accepted BEFORE filing, so the PDF renders with the acceptance on it
-    # and a Drive failure can never leave the job un-accepted in the record.
-    record = drafts.set_status(bid_id, status=drafts.STATUS_ACCEPTED,
-                               actor=actor)
-
     warnings: list[str] = []
     if unwritable:
         for row in field_error_list(unwritable):
@@ -866,7 +922,8 @@ def accept(bid_id: int, actor: str) -> dict:
                         "created without one.")
     if report.get("ops_error"):
         warnings.append(f"The Operations task did NOT get created "
-                        f"({report['ops_error']}). Accept again to retry it.")
+                        f"({report['ops_error']}). Accept again to retry it — "
+                        f"the packet stays with Operations until that works.")
     if report.get("bid_stamp_error"):
         warnings.append(f"The Bid Board stamp failed "
                         f"({report['bid_stamp_error']}).")
@@ -878,64 +935,88 @@ def accept(bid_id: int, actor: str) -> dict:
             f"Monday rejected these columns, so the job was created without "
             f"them: {names}. Set them by hand on the project — Monday's API "
             f"blocks writes to them (known limitation, not a portal bug).")
+    for row in report.get("conflicts") or []:
+        warnings.append(_conflict_warning(row))
+
+    complete = bool(report.get("project_id")) and not report.get("ops_error")
+
+    # Only mark accepted when BOTH boards landed. A partial (Projects yes, Ops
+    # no) used to flip status to accepted and then refuse retry — the warning
+    # said "Accept again" but the gate made that impossible. Stay with_ops so
+    # the button keeps working.
+    if complete:
+        record = drafts.set_status(bid_id, status=drafts.STATUS_ACCEPTED,
+                                   actor=actor)
+    else:
+        # Keep / restore with_ops so Ops can retry without a send-back.
+        record = drafts.set_status(bid_id, status=drafts.STATUS_WITH_OPS,
+                                   actor=actor)
 
     # ---- File the accepted packet into the job's Drive folder --------------
+    # Only on full success — a partial handoff shouldn't mint an "accepted"
+    # PDF that claims Ops signed off when the Ops item never landed.
     packet_url = None
-    try:
-        pdf_path, _ = _render_packet(bid, record, values, name, accepted=True)
-        from adapters.drive import DriveUploader
+    if complete:
+        try:
+            pdf_path, _ = _render_packet(bid, record, values, name, accepted=True)
+            from adapters.drive import DriveUploader
 
-        uploader = DriveUploader()
-        folder = uploader.ensure_handoff_folder(
-            customer=(bid.get("context") or {}).get("customer") or "Unknown",
-            project_label=name,
-            project_type=values.get("project_type") or "residential",
-            year=datetime.now(timezone.utc).year,
-        )
-        uploaded = uploader.upload_or_replace_file(
-            folder["folder_id"], pdf_path,
-            packet_mod.packet_filename(name, accepted=True))
-        packet_url = uploaded.get("web_view_link")
-        record = drafts.set_status(
-            bid_id, status=drafts.STATUS_ACCEPTED, actor=actor,
-            extra={"packet_url": packet_url,
-                   "drive_folder_path": folder.get("folder_path")})
-    except Exception as e:  # noqa: BLE001 — Drive is graceful by contract
-        warnings.append(f"The packet PDF wasn't filed to Drive "
-                        f"({type(e).__name__}). The job is still accepted.")
-        print(f"[jobstart] Drive filing failed: {type(e).__name__}: {e}",
-              file=sys.stderr)
+            uploader = DriveUploader()
+            folder = uploader.ensure_handoff_folder(
+                customer=(bid.get("context") or {}).get("customer") or "Unknown",
+                project_label=name,
+                project_type=values.get("project_type") or "residential",
+                year=datetime.now(timezone.utc).year,
+            )
+            uploaded = uploader.upload_or_replace_file(
+                folder["folder_id"], pdf_path,
+                packet_mod.packet_filename(name, accepted=True))
+            packet_url = uploaded.get("web_view_link")
+            record = drafts.set_status(
+                bid_id, status=drafts.STATUS_ACCEPTED, actor=actor,
+                extra={"packet_url": packet_url,
+                       "drive_folder_path": folder.get("folder_path")})
+        except Exception as e:  # noqa: BLE001 — Drive is graceful by contract
+            warnings.append(f"The packet PDF wasn't filed to Drive "
+                            f"({type(e).__name__}). The job is still accepted.")
+            print(f"[jobstart] Drive filing failed: {type(e).__name__}: {e}",
+                  file=sys.stderr)
 
-    ok = bool(report.get("project_id")) and not report.get("ops_error")
     activity.log_event(
         "jobstart.accepted", actor=actor, target=str(bid_id),
-        result="ok" if ok else "partial",
-        severity="INFO" if ok else "WARNING", job=name,
+        result="ok" if complete else "partial",
+        severity="INFO" if complete else "WARNING", job=name,
         sent_by=record.get("sent_by"),
         project_id=str(report.get("project_id") or ""),
         ops_id=str(report.get("ops_id") or ""),
         packet=describe_packet(values, accepted_fields),
         failed=report.get("ops_error") or None,
         unwritable=",".join(sorted(unwritable)) or None,
+        conflicts=str(len(report.get("conflicts") or [])),
     )
 
-    slack_status = _notify(lambda sn: sn.notify_job_start_handoff({
-        "job": name, "actor": actor, "bid_url": bid.get("url"),
-        "project_url": report.get("project_url"),
-        "ops_url": report.get("ops_url"),
-        "packet_url": packet_url,
-        "sent_by": record.get("sent_by"),
-        "estimate_number": (bid.get("context") or {}).get("estimate_number"),
-        "estimate_total": (bid.get("context") or {}).get("estimate_total"),
-        "start_date": values.get("start_date"),
-        "supervisor": values.get("supervisor"),
-        "warnings": warnings,
-    }))
+    # Slack only on full success — a partial shouldn't claim the handoff landed.
+    slack_status = None
+    if complete:
+        slack_status = _notify(lambda sn: sn.notify_job_start_handoff({
+            "job": name, "actor": actor, "bid_url": bid.get("url"),
+            "project_url": report.get("project_url"),
+            "ops_url": report.get("ops_url"),
+            "packet_url": packet_url,
+            "sent_by": record.get("sent_by"),
+            "estimate_number": (bid.get("context") or {}).get("estimate_number"),
+            "estimate_total": (bid.get("context") or {}).get("estimate_total"),
+            "start_date": values.get("start_date"),
+            "supervisor": values.get("supervisor"),
+            "warnings": warnings,
+        }))
 
+    # `ok` stays True whenever the accept action ran (so the route returns 200
+    # instead of 409). `complete` is the real gate: both boards landed.
     # NOTE: deliberately NOT keyed "field_errors" — that key makes the route
     # raise 422 PACKET_INVALID, which is exactly the dead end this replaces.
-    return {"ok": ok, "status": record["status"], "job_name": name,
-            "packet_url": packet_url, "warnings": warnings,
+    return {"ok": True, "complete": complete, "status": record["status"],
+            "job_name": name, "packet_url": packet_url, "warnings": warnings,
             "unwritable_fields": field_error_list(unwritable),
             "slack": slack_status, **report}
 

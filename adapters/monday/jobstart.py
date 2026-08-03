@@ -444,6 +444,125 @@ def _update_item(mc, board_id: int, item_id: int, values: dict) -> None:
 # caller surfaces "set these by hand" instead of losing the write.
 FRAGILE_COLUMNS = frozenset({"location5", "connect_boards9", "connect_boards5"})
 
+# Relation / link columns always write on adopt — connecting the boards IS the
+# handoff's job. Everything else must not silently overwrite a filled Monday
+# cell that disagrees with the packet (master-plan: flag conflicts).
+ALWAYS_WRITE_COLUMNS = frozenset({
+    boards.JOBSTART_P_COL_OPPORTUNITY,
+    boards.JOBSTART_P_COL_CUSTOMER,
+    boards.JOBSTART_OPS_COL_LINK_PROJECTS,
+    boards.JOBSTART_OPS_COL_LINK_OPPORTUNITY,
+    boards.JOBSTART_BID_PROJECT_LINK_COL,
+    boards.JOBSTART_BID_OPS_LINK_COL,
+    boards.JOBSTART_BID_ACCEPTED_DATE_COL,
+})
+
+
+def _proposed_display(value: Any) -> str:
+    """Human-readable form of a Monday write payload, for conflict compare."""
+    if value is None:
+        return ""
+    if isinstance(value, dict):
+        if "item_ids" in value:
+            return ""  # relations compared by always-write, not text
+        if "label" in value:
+            return str(value.get("label") or "").strip()
+        if "date" in value:
+            return str(value.get("date") or "").strip()
+        if "url" in value:
+            return str(value.get("url") or value.get("text") or "").strip()
+        if "text" in value:
+            return str(value.get("text") or "").strip()
+        # number columns often ship as {"number": "340"} or bare stringified
+        if "number" in value:
+            return str(value.get("number") or "").strip()
+        return ""
+    return str(value).strip()
+
+
+def _norm_compare(a: str, b: str) -> bool:
+    """True when two column displays mean the same thing for conflict checks."""
+    left = (a or "").strip()
+    right = (b or "").strip()
+    if not left and not right:
+        return True
+    if left.casefold() == right.casefold():
+        return True
+    # Numbers: "340" vs "340.0"
+    try:
+        if float(left) == float(right):
+            return True
+    except (TypeError, ValueError):
+        pass
+    # Dates: Monday text is often YYYY-MM-DD already; also tolerate ISO prefixes
+    if len(left) >= 10 and len(right) >= 10 and left[:10] == right[:10]:
+        return True
+    return False
+
+
+def filter_conflicting_writes(
+    proposed: dict,
+    existing_text: dict,
+    *,
+    always_write: Optional[frozenset] = None,
+) -> tuple[dict, list[dict]]:
+    """
+    PURE. On adopt, never silently overwrite a filled Monday column that
+    disagrees with the packet.
+
+      empty existing  → write (fill the gap)
+      matching value  → skip (no-op)
+      differing value → conflict: leave Monday alone, report it
+
+    Relation/link columns in `always_write` always pass through.
+    Returns (safe_writes, conflicts) where each conflict is
+    {column_id, existing, proposed}.
+    """
+    always = always_write if always_write is not None else ALWAYS_WRITE_COLUMNS
+    safe: dict = {}
+    conflicts: list[dict] = []
+    for col_id, payload in (proposed or {}).items():
+        if col_id in always:
+            safe[col_id] = payload
+            continue
+        existing = str((existing_text or {}).get(col_id) or "").strip()
+        want = _proposed_display(payload)
+        if not existing:
+            safe[col_id] = payload
+            continue
+        if not want or _norm_compare(existing, want):
+            continue
+        conflicts.append({
+            "column_id": col_id,
+            "existing": existing,
+            "proposed": want,
+        })
+    return safe, conflicts
+
+
+def fetch_item_column_texts(mc, item_id: int, column_ids: list[str]) -> dict[str, str]:
+    """Readable text for the given columns on one item. Missing/empty → omitted."""
+    cols = [c for c in dict.fromkeys(column_ids or []) if c]
+    if not cols or not item_id:
+        return {}
+    query = """
+    query ($itemId: [ID!], $cols: [String!]) {
+      items(ids: $itemId) {
+        column_values(ids: $cols) { %s }
+      }
+    }
+    """ % _VALUE_FRAGMENT
+    data = mc._query(query, {"itemId": [str(int(item_id))], "cols": cols})
+    items = data.get("items") or []
+    if not items:
+        return {}
+    out: dict[str, str] = {}
+    for cv in items[0].get("column_values") or []:
+        text = _column_text(cv)
+        if text:
+            out[cv["id"]] = text
+    return out
+
 
 def _write_with_fallback(mc, board_id: int, group_id, name: str, values: dict,
                          *, item_id: Optional[int] = None) -> tuple[int, list[str]]:
@@ -591,6 +710,28 @@ def find_item_by_name(mc, board_id: int, name: str) -> Optional[int]:
     return None
 
 
+def _apply_conflicts(mc, *, item_id: Optional[int], values: dict,
+                     board_label: str) -> tuple[dict, list[dict]]:
+    """
+    On adopt (item_id set): drop columns that would silently overwrite a
+    disagreeing Monday value. On create (no item): pass values through.
+    """
+    if not item_id or not values:
+        return dict(values or {}), []
+    try:
+        existing = fetch_item_column_texts(mc, int(item_id), list(values.keys()))
+    except Exception as e:  # noqa: BLE001 — prefer a careful write over a hard fail
+        print(f"[jobstart] conflict read failed on {board_label} "
+              f"{item_id}: {type(e).__name__}: {e}", file=sys.stderr)
+        return dict(values), []
+    safe, conflicts = filter_conflicting_writes(values, existing)
+    for row in conflicts:
+        print(f"[jobstart] kept Monday {board_label} {item_id} "
+              f"{row['column_id']}={row['existing']!r}; "
+              f"packet wanted {row['proposed']!r}", file=sys.stderr)
+    return safe, conflicts
+
+
 def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
              ops_values: dict, accepted_date: str) -> dict:
     """
@@ -604,8 +745,12 @@ def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
     Operations and the bid stamp are reported as failures without unwinding the
     Projects write — an ops task the flow couldn't create is visible and
     retryable, whereas a half-rolled-back Monday state is not.
+
+    Adopt path never silently overwrites a filled Monday column that disagrees
+    with the packet — those land in report["conflicts"] and stay as-is on the
+    board. Empty Monday cells still get filled from the packet.
     """
-    report: dict[str, Any] = {}
+    report: dict[str, Any] = {"conflicts": []}
     bid_id = int(bid["item_id"])
     # Handoff mutates bid/project/ops links the picker shows — drop the list
     # cache so the next open doesn't serve a pre-handoff badge state.
@@ -637,6 +782,12 @@ def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
         except (json.JSONDecodeError, TypeError):
             pass
 
+    p_values, p_conflicts = _apply_conflicts(
+        mc, item_id=project_id, values=p_values, board_label="Projects")
+    for row in p_conflicts:
+        row = dict(row, board="projects")
+        report["conflicts"].append(row)
+
     project_id, dropped = _write_with_fallback(
         mc, PROJECTS_BOARD_ID, boards.JOBSTART_PROJECTS_GROUP, job_name,
         p_values, item_id=project_id)
@@ -662,6 +813,10 @@ def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
             if found:
                 ops_id = found
                 report["ops_source"] = "adopted-name"
+        o_values, o_conflicts = _apply_conflicts(
+            mc, item_id=ops_id, values=o_values, board_label="Operations")
+        for row in o_conflicts:
+            report["conflicts"].append(dict(row, board="operations"))
         if ops_id is None:
             ops_id = _create_item(mc, OPERATIONS_BOARD_ID,
                                   boards.JOBSTART_OPS_GROUP, job_name, o_values)
