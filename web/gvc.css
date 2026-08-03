@@ -88,8 +88,9 @@
   --gvc-space-1:4px;  --gvc-space-2:8px;  --gvc-space-3:12px; --gvc-space-4:16px;
   --gvc-space-5:24px; --gvc-space-6:32px; --gvc-space-7:48px; --gvc-space-8:64px;
 
-  /* --- shape --- */
-  --gvc-r-sm:3px; --gvc-r:5px; --gvc-r-lg:8px; --gvc-r-pill:999px; --gvc-rule:2.5px;
+  /* --- shape: rounder than the old portal, to match the Takeoff app's soft,
+     modern corners (Jordan, 2026-08-03) --- */
+  --gvc-r-sm:6px; --gvc-r:9px; --gvc-r-lg:14px; --gvc-r-pill:999px; --gvc-rule:2.5px;
 
   /* --- elevation --- */
   --gvc-shadow-1:0 1px 2px rgba(28,25,23,.06);
@@ -162,6 +163,49 @@ a:hover{ color:var(--gvc-green-dark); }
   padding:6px 10px; min-height:32px; display:inline-flex; align-items:center;
 }
 .gvc-signout:hover{ background:rgba(255,255,255,.1); color:#fff; }
+
+/* ---------- hero / lobby (the Takeoff-style dark-green landing) ----------
+   A full-bleed dark forest-green band carrying the logo mark + gold serif
+   wordmark, used on the hub (and later the sign-in page) so the portal opens
+   with the same "lobby" feel as the Takeoff app before dropping into the lighter
+   working screens. */
+.gvc-hero{
+  background:linear-gradient(165deg,#1F4A32 0%,#173A25 58%,#123019 100%);
+  border-bottom:var(--gvc-rule) solid var(--gvc-gold);
+  color:#F4F1E6; position:relative;
+}
+.gvc-hero-in{ max-width:1240px; margin:0 auto;
+  padding:var(--gvc-space-7) var(--gvc-space-5) var(--gvc-space-6); text-align:center; }
+.gvc-hero-signout{
+  position:absolute; top:var(--gvc-space-4); right:var(--gvc-space-5);
+  color:#fff; font-size:var(--gvc-fs-small); text-decoration:none;
+  border:1px solid rgba(255,255,255,.34); border-radius:var(--gvc-r);
+  padding:6px 12px; min-height:34px; display:inline-flex; align-items:center; gap:6px;
+}
+.gvc-hero-signout:hover{ background:rgba(255,255,255,.12); color:#fff; }
+.gvc-hero-user{ position:absolute; top:calc(var(--gvc-space-4) + 5px); left:var(--gvc-space-5);
+  color:#CFE0CE; font-size:var(--gvc-fs-small); }
+.gvc-hero-mark{
+  display:block; width:60px; height:60px; flex:0 0 60px; margin:0 auto var(--gvc-space-3);
+  border-radius:16px; box-shadow:0 6px 18px rgba(0,0,0,.32), inset 0 0 0 1px rgba(201,162,75,.55);
+}
+.gvc-hero-wordmark{
+  font-family:var(--gvc-display); font-weight:400; font-size:32px; line-height:1;
+  letter-spacing:.14em; text-transform:uppercase; color:var(--gvc-gold);
+}
+.gvc-hero-tagline{
+  font-size:var(--gvc-fs-micro); letter-spacing:.3em; text-transform:uppercase;
+  color:var(--gvc-gold-matte); margin-top:7px;
+}
+.gvc-hero-title{ margin-top:var(--gvc-space-6); }
+.gvc-hero-title .gvc-eyebrow{ color:var(--gvc-brand-light); }
+.gvc-hero-title .gvc-h1{ color:#fff; }
+.gvc-hero-title .gvc-sub{ color:#CFE0CE; margin-left:auto; margin-right:auto; }
+@media (max-width:640px){
+  .gvc-hero-in{ padding:var(--gvc-space-6) var(--gvc-space-4) var(--gvc-space-5); }
+  .gvc-hero-wordmark{ font-size:24px; letter-spacing:.1em; }
+  .gvc-hero-user{ display:none; }
+}
 
 /* ---------- page frame ---------- */
 .gvc-shell{ max-width:1240px; margin:0 auto; padding:var(--gvc-space-6) var(--gvc-space-5) var(--gvc-space-8); }

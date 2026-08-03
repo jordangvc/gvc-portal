@@ -10,7 +10,10 @@
 <style>
   /* Hub-only: the tile grid keeps its own icon row, and the footer sits on one
      line. Everything else comes from gvc.css. */
-  .hub-ico { font-size: 26px; line-height: 1; }
+  .hub-ico { width: 46px; height: 46px; border-radius: 13px; display: flex;
+    align-items: center; justify-content: center; font-size: 24px; line-height: 1;
+    background: var(--gvc-tint-green); border: 1px solid var(--gvc-line);
+    margin-bottom: var(--gvc-space-1); }
   .hub-ft { display: flex; justify-content: space-between; gap: var(--gvc-space-3);
     flex-wrap: wrap; max-width: 1240px; margin: 0 auto;
     padding: var(--gvc-space-5) var(--gvc-space-5) var(--gvc-space-7);
@@ -21,29 +24,23 @@
 </head>
 <body>
 
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Portal</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user" id="email">{{EMAIL}}</span>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+<header class="gvc-hero">
+  <span class="gvc-hero-user" id="email">{{EMAIL}}</span>
+  <a class="gvc-hero-signout" href="/auth/logout">Sign out</a>
+  <div class="gvc-hero-in">
+    <span class="gvc-mono gvc-hero-mark">G</span>
+    <div class="gvc-hero-wordmark">Green Valley</div>
+    <div class="gvc-hero-tagline">· Contractors, Inc. ·</div>
+    <div class="gvc-hero-title">
+      <p class="gvc-eyebrow">Internal tools</p>
+      <h1 class="gvc-h1">Pick a tool to get started</h1>
+      <p class="gvc-sub">Everything the office and the field run on — estimating, billing,
+         job tracking, and the paperwork in between.</p>
     </div>
   </div>
 </header>
 
 <main class="gvc-shell">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Internal tools</p>
-    <h1 class="gvc-h1">Pick a tool to get started</h1>
-    <p class="gvc-sub">Everything the office and the field run on — estimating, billing,
-       job tracking, and the paperwork in between.</p>
-  </div>
-
   <div class="gvc-tiles" id="tiles">
     <a class="gvc-tile" data-feature="estimate" href="/ui/estimate">
       <div class="hub-ico">📐</div>
@@ -146,7 +143,7 @@
 <footer class="hub-ft">
   <span>Signed in via your @greenvalleycontractors.com account. Need access to a tool? Ask an admin.</span>
   <!-- Version count: bump rN on every user-visible portal change (rule in CLAUDE.md) -->
-  <span style="white-space:nowrap;">Portal <b style="color:var(--gvc-gold-dark);">r10</b> · Jul 29, 2026</span>
+  <span style="white-space:nowrap;">Portal <b style="color:var(--gvc-gold-dark);">r11</b> · Aug 3, 2026</span>
 </footer>
 
 <script>
