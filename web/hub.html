@@ -4,164 +4,149 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Portal</title>
+<!-- Shared design system. Every portal page links this instead of carrying its
+     own <style> block; see docs/CLAUDE-DESIGN-BRIEF.md. -->
+<link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  :root {
-    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
-  .who a { color: #fff; text-decoration: underline; opacity: .9; }
-  .who a:hover { opacity: 1; }
-  main { max-width: 1000px; margin: 0 auto; padding: 32px 24px; }
-  .intro { margin: 0 0 24px; }
-  .intro h2 { font-size: 22px; margin: 0 0 4px; }
-  .intro p { margin: 0; color: var(--muted); }
-  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-  .tile { display: flex; flex-direction: column; gap: 8px; background: #fff;
-    border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 12px; padding: 20px; text-decoration: none;
-    color: var(--ink); transition: border-color .12s, box-shadow .12s, transform .12s; }
-  a.tile:hover { border-color: var(--green); box-shadow: 0 4px 16px rgba(47,111,79,.12); transform: translateY(-2px); }
-  .tile .icon { font-size: 28px; line-height: 1; }
-  .tile .name { font-size: 16px; font-weight: 600; }
-  .tile .desc { font-size: 13px; color: var(--muted); }
-  .tile.soon { opacity: .6; cursor: default; }
-  .badge { align-self: flex-start; font-size: 11px; font-weight: 600; text-transform: uppercase;
-    letter-spacing: .04em; padding: 2px 8px; border-radius: 999px; }
-  .badge.live { background: #FBF3E1; color: var(--gold-dark); border: 1px solid #E3CFA0; }
-  .badge.soon { background: #F6F5F0; color: var(--muted); border: 1px solid var(--line); }
-  footer { max-width: 1000px; margin: 0 auto; padding: 0 24px 40px; color: var(--muted); font-size: 12px; }
-
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px;  }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700; }
-  .btn.gold:hover { background: linear-gradient(0deg, #B9954E, #C9A24B); filter: brightness(1.06); }
+  /* Hub-only: the tile grid keeps its own icon row, and the footer sits on one
+     line. Everything else comes from gvc.css. */
+  .hub-ico { font-size: 26px; line-height: 1; }
+  .hub-ft { display: flex; justify-content: space-between; gap: var(--gvc-space-3);
+    flex-wrap: wrap; max-width: 1240px; margin: 0 auto;
+    padding: var(--gvc-space-5) var(--gvc-space-5) var(--gvc-space-7);
+    color: var(--gvc-muted); font-size: var(--gvc-fs-caption);
+    border-top: 1px solid var(--gvc-line); }
+  .hub-empty { display: none; }
 </style>
 </head>
 <body>
-<header>
-  <h1>GVC Portal</h1>
-  <div class="who"><span id="email">{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Portal</span>
+    <div class="gvc-topbar-right">
+      <span class="gvc-topbar-user" id="email">{{EMAIL}}</span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
 </header>
 
-<main>
-  <div class="intro">
-    <h2>Internal tools</h2>
-    <p>Green Valley Contractors employee hub. Pick a tool to get started.</p>
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Internal tools</p>
+    <h1 class="gvc-h1">Pick a tool to get started</h1>
+    <p class="gvc-sub">Everything the office and the field run on — estimating, billing,
+       job tracking, and the paperwork in between.</p>
   </div>
 
-  <div class="tiles" id="tiles">
-    <a class="tile" data-feature="estimate" href="/ui/estimate">
-      <div class="icon">📐</div>
-      <span class="badge live">Live</span>
-      <div class="name">Estimate Generator</div>
-      <div class="desc">Build a priced estimate, preview the PDF, and draft it to the client from hello@.</div>
+  <div class="gvc-tiles" id="tiles">
+    <a class="gvc-tile" data-feature="estimate" href="/ui/estimate">
+      <div class="hub-ico">📐</div>
+      <div class="gvc-tile-name">Estimate Generator</div>
+      <div class="gvc-tile-desc">Build a priced estimate, preview the PDF, and draft it to the client from hello@.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
     </a>
 
-    <a class="tile" data-feature="change_order" href="/ui/change-order">
-      <div class="icon">🧾</div>
-      <span class="badge live">Live</span>
-      <div class="name">Change Order</div>
-      <div class="desc">Link a job, price the change, preview the PDF, and draft it to the client from hello@.</div>
+    <a class="gvc-tile" data-feature="change_order" href="/ui/change-order">
+      <div class="hub-ico">🧾</div>
+      <div class="gvc-tile-name">Change Order</div>
+      <div class="gvc-tile-desc">Link a job, price the change, preview the PDF, and draft it to the client from hello@.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
     </a>
 
-    <a class="tile" data-feature="invoice" href="/ui/invoice">
-      <div class="icon">🏗️</div>
-      <span class="badge live">Live</span>
-      <div class="name">Invoice Generator</div>
-      <div class="desc">Turn a job into a Stripe invoice + billing@ draft, logged to the Monday ledger.</div>
+    <a class="gvc-tile" data-feature="invoice" href="/ui/invoice">
+      <div class="hub-ico">🏗️</div>
+      <div class="gvc-tile-name">Invoice Generator</div>
+      <div class="gvc-tile-desc">Turn a job into a Stripe invoice + billing@ draft, logged to the Monday ledger.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
     </a>
 
-    <a class="tile" data-feature="admin" href="/ui/admin">
-      <div class="icon">🔐</div>
-      <span class="badge live">Live</span>
-      <div class="name">Admin</div>
-      <div class="desc">Manage company users and which tools each person can access.</div>
+    <a class="gvc-tile" data-feature="jobstart" href="/ui/jobstart">
+      <div class="hub-ico">🤝</div>
+      <div class="gvc-tile-name">Job Start</div>
+      <div class="gvc-tile-desc">Hand a won bid to Operations — fill the job start packet, and the project and ops task get created together.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
     </a>
 
-    <a class="tile" data-feature="activity" href="/ui/activity">
-      <div class="icon">📊</div>
-      <span class="badge live">Live</span>
-      <div class="name">Activity</div>
-      <div class="desc">Audit trail of portal activity — sign-ins, tool opens, finalizes, and access denials.</div>
+    <a class="gvc-tile" data-feature="jobcheck" href="/ui/jobcheck">
+      <div class="hub-ico">✅</div>
+      <div class="gvc-tile-name">Job Check</div>
+      <div class="gvc-tile-desc">Pick an active job, set where it stands, one save updates Monday — built for a phone on site.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
     </a>
 
-    <div class="tile soon" data-feature="takeoff">
-      <div class="icon">📏</div>
-      <span class="badge soon">Coming soon</span>
-      <div class="name">Takeoff</div>
-      <div class="desc">Quantity takeoff from blueprints for estimators and PMs.</div>
+    <a class="gvc-tile" data-feature="fieldguide" href="/ui/fieldguide">
+      <div class="hub-ico">📖</div>
+      <div class="gvc-tile-name">Field Manual</div>
+      <div class="gvc-tile-desc">How we frame, hang, scrape, finish, and set ceilings — in plain English, with the expert detail one tap behind it.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
+    </a>
+
+    <a class="gvc-tile" data-feature="check" href="/ui/check">
+      <div class="hub-ico">💵</div>
+      <div class="gvc-tile-name">Paid by Check</div>
+      <div class="gvc-tile-desc">Photograph a check, match it to the open invoices it pays, and record the payment.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
+    </a>
+
+    <a class="gvc-tile" data-feature="coi" href="/ui/coi">
+      <div class="hub-ico">📜</div>
+      <div class="gvc-tile-name">COI Generator</div>
+      <div class="gvc-tile-desc">Stamp a Certificate of Insurance for a builder or project and draft it from hello@.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
+    </a>
+
+    <a class="gvc-tile" data-feature="lien" href="/ui/lien">
+      <div class="hub-ico">⏳</div>
+      <div class="gvc-tile-name">Lien Watch</div>
+      <div class="gvc-tile-desc">Notice-of-furnishing and lien deadlines per job.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--warn">Data being caught up</span></div>
+    </a>
+
+    <a class="gvc-tile" data-feature="activity" href="/ui/activity">
+      <div class="hub-ico">📊</div>
+      <div class="gvc-tile-name">Activity</div>
+      <div class="gvc-tile-desc">Every document the portal produced — who, which customer, how much, and where it went.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
+    </a>
+
+    <a class="gvc-tile" data-feature="timeoff" href="/ui/timeoff">
+      <div class="hub-ico">🌴</div>
+      <div class="gvc-tile-name">Time Off</div>
+      <div class="gvc-tile-desc">Submit a time-off request.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
+    </a>
+
+    <a class="gvc-tile" data-feature="admin" href="/ui/admin">
+      <div class="hub-ico">🔐</div>
+      <div class="gvc-tile-name">Admin</div>
+      <div class="gvc-tile-desc">Manage company users and which tools each person can reach.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
+    </a>
+
+    <div class="gvc-tile gvc-tile--soon" data-feature="takeoff">
+      <div class="hub-ico">📏</div>
+      <div class="gvc-tile-name">Takeoff</div>
+      <div class="gvc-tile-desc">Quantity takeoff from blueprints for estimators and PMs.</div>
+      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--neutral gvc-pill--flat">Coming soon</span></div>
     </div>
-
-    <a class="tile" data-feature="timeoff" href="/ui/timeoff">
-      <div class="icon">🌴</div>
-      <span class="badge live">Live</span>
-      <div class="name">Time Off</div>
-      <div class="desc">Submit a time-off request.</div>
-    </a>
-
-    <a class="tile" data-feature="check" href="/ui/check">
-      <div class="icon">🧾</div>
-      <span class="badge live">Live</span>
-      <div class="name">Paid by Check</div>
-      <div class="desc">Upload a check image to match it to an open invoice (preview).</div>
-    </a>
-
-    <a class="tile" data-feature="coi" href="/ui/coi">
-      <div class="icon">📜</div>
-      <span class="badge live">Live</span>
-      <div class="name">COI Generator</div>
-      <div class="desc">Stamp a Certificate of Insurance for a new builder or project and draft it from hello@.</div>
-    </a>
-
-    <a class="tile" data-feature="lien" href="/ui/lien">
-      <div class="icon">⏳</div>
-      <span class="badge live">Live</span>
-      <div class="name">Lien Watch</div>
-      <div class="desc">Notice-of-furnishing and lien deadlines per job. Data still being caught up — not reliable yet.</div>
-    </a>
-
-    <a class="tile" data-feature="jobcheck" href="/ui/jobcheck">
-      <div class="icon">✅</div>
-      <span class="badge live">Live</span>
-      <div class="name">Job Check</div>
-      <div class="desc">Pick an active job, check the boxes, one save updates Monday — quality checks made quick.</div>
-    </a>
-
-    <a class="tile" data-feature="jobstart" href="/ui/jobstart">
-      <div class="icon">🤝</div>
-      <span class="badge live">Live</span>
-      <div class="name">Job Start</div>
-      <div class="desc">Hand a won bid to Operations — fill the job start packet, and the project and ops task get created together.</div>
-    </a>
-
-    <a class="tile" data-feature="fieldguide" href="/ui/fieldguide">
-      <div class="icon">🏗️</div>
-      <span class="badge live">Live</span>
-      <div class="name">Field Manual</div>
-      <div class="desc">How we frame, hang, scrape, finish, and set ceilings — in plain English, with the expert detail one tap behind it.</div>
-    </a>
   </div>
 
-  <p id="empty" style="display:none;color:var(--muted);">
-    You don't have any tools enabled yet. Ask an admin to grant access.
-  </p>
+  <div class="gvc-empty hub-empty" id="empty">
+    <h2 class="gvc-h3">No tools enabled yet</h2>
+    <p>Your account is signed in, but nothing has been granted to it. Ask an admin to turn on the tools you need.</p>
+  </div>
 </main>
 
-<footer style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+<footer class="hub-ft">
   <span>Signed in via your @greenvalleycontractors.com account. Need access to a tool? Ask an admin.</span>
   <!-- Version count: bump rN on every user-visible portal change (rule in CLAUDE.md) -->
-  <span style="white-space:nowrap;">Portal <b style="color:var(--gold-dark);">r9</b> · Jul 29, 2026</span>
+  <span style="white-space:nowrap;">Portal <b style="color:var(--gvc-gold-dark);">r10</b> · Jul 29, 2026</span>
 </footer>
 
 <script>
