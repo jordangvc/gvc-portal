@@ -196,6 +196,17 @@ def _ext_from_drive_metadata(meta: dict) -> str:
 # reorganised Drive is a config change, not a deploy.
 DEFAULT_PLANS_FOLDER_ID = "1X1vuutnTuCN0hxTZSANmm3QC6SQ41Gc0"
 
+# Names of subfolders inside a job folder that hold site photos. The nightly
+# Monday->Drive sync (and takeoff-app backups) file photos into the job folder;
+# these hints let the packet also reach a dedicated photo subfolder if one is
+# used. Env-overridable (comma-separated) so a new convention is config, not code.
+_PHOTO_SUBFOLDER_HINTS = tuple(
+    h.strip().lower() for h in
+    (os.environ.get("GVC_JOBSTART_PHOTO_SUBFOLDERS")
+     or "photo,picture,image,site photo,job photo").split(",")
+    if h.strip()
+)
+
 # Words that appear in almost every GVC job name and therefore identify
 # nothing. Matching on these is how you prefill one job from another job's
 # scope review, so they're stripped before scoring.
@@ -899,6 +910,74 @@ class DriveUploader:
             print(f"[drive] scope review unreadable ({file_id}): "
                   f"{type(e).__name__}: {e}", file=sys.stderr)
             return ""
+
+    def download_file_bytes(self, file_id: str) -> bytes:
+        """Raw bytes of a Drive file by ID (read-only, works across shared drives).
+        Used to pull site photos for the Job Start packet."""
+        import io as _io
+
+        from googleapiclient.http import MediaIoBaseDownload
+
+        request = self.service.files().get_media(fileId=file_id,
+                                                 supportsAllDrives=True)
+        buf = _io.BytesIO()
+        downloader = MediaIoBaseDownload(buf, request)
+        done = False
+        while not done:
+            _, done = downloader.next_chunk()
+        return buf.getvalue()
+
+    def find_job_photo_files(self, *, job_hint: str,
+                             extra_hints: Optional[list] = None,
+                             folder_id: Optional[str] = None) -> dict:
+        """
+        List the site-photo files for a job. Photos land in the job's Drive
+        folder via the nightly Monday->Drive sync (and, soon, takeoff-app
+        backups), so this reuses the same folder discovery as the scope review:
+        it locates the job folder, then collects image files sitting directly in
+        it PLUS any inside a photo-named subfolder (Photos / Pictures / Images /
+        Site Photos …). Pass `folder_id` to skip discovery and read one folder.
+
+        Returns {files, folder, detail}. `files` is the raw Drive metadata
+        (id, name, mimeType, webViewLink); selection/ordering/capping is the pure
+        subsystems.jobstart.photos layer's job. Read-only; never raises — a Drive
+        problem yields an empty list so the packet still renders.
+        """
+        from subsystems.jobstart import photos as _photos
+
+        out: dict = {"files": [], "folder": None, "detail": None}
+        try:
+            if folder_id:
+                folder = {"id": folder_id, "name": None}
+            else:
+                docs = self.find_job_documents(job_hint=job_hint,
+                                               extra_hints=extra_hints)
+                folder = docs.get("folder")
+                if not folder:
+                    out["detail"] = docs.get("detail") or "No job folder matched."
+                    return out
+            out["folder"] = folder
+
+            children = self._list_children(folder["id"])
+            images = [c for c in children if _photos.is_image(c)]
+
+            hints = _PHOTO_SUBFOLDER_HINTS
+            for sub in children:
+                if sub.get("mimeType") != "application/vnd.google-apps.folder":
+                    continue
+                if any(h in (sub.get("name") or "").lower() for h in hints):
+                    images.extend(c for c in self._list_children(sub["id"])
+                                  if _photos.is_image(c))
+            out["files"] = images
+            if not images:
+                out["detail"] = ("Found the job folder but no photos in it "
+                                 "(or a Photos subfolder).")
+            return out
+        except Exception as e:  # noqa: BLE001 — photos never block the packet
+            print(f"[drive] job photo lookup failed: {type(e).__name__}: {e}",
+                  file=sys.stderr)
+            out["detail"] = f"Couldn't read photos from Drive ({type(e).__name__})."
+            return out
 
     def download_json(self, file_id: str) -> dict:
         """Download a small Drive file by ID and parse it as JSON."""
