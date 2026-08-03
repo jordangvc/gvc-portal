@@ -347,6 +347,44 @@ def _scope_review_values(bid: dict) -> tuple[dict, dict]:
                     "detail": f"Couldn't reach Drive ({type(e).__name__})."}
 
 
+def _collect_photos(bid: dict) -> list:
+    """
+    Pull the job's site photos from its Drive folder, resized and embedded ready
+    for the packet PDF. Photos get there via the nightly Monday->Drive sync (and,
+    soon, takeoff-app backups); this is the read side of that pipeline.
+
+    In-house packet: every photo on the job (subject to the count cap). The
+    subcontractor variant will pass an id filter to photos.select_photos — not
+    wired yet. Best-effort by contract: any Drive problem yields no photos and
+    the packet still renders, exactly like the scope-review ingest.
+    """
+    from subsystems.jobstart import photos as photo_mod
+
+    hint = bid.get("name") or ""
+    extra = [(bid.get("context") or {}).get("customer"),
+             (bid.get("context") or {}).get("location")]
+    try:
+        from adapters.drive import DriveUploader
+
+        uploader = DriveUploader()
+        found = uploader.find_job_photo_files(job_hint=hint, extra_hints=extra)
+        selected = photo_mod.select_photos(found.get("files") or [])
+        items = []
+        for f in selected:
+            try:
+                raw = uploader.download_file_bytes(f["id"])
+            except Exception as e:  # noqa: BLE001 — skip one bad file, keep going
+                print(f"[jobstart] photo download failed ({f.get('name')}): "
+                      f"{type(e).__name__}: {e}", file=sys.stderr)
+                continue
+            items.append({"name": f.get("name"), "bytes": raw})
+        return photo_mod.build_entries(items)
+    except Exception as e:  # noqa: BLE001 — never block the packet on Drive
+        print(f"[jobstart] photo ingest failed: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        return []
+
+
 def _update_values(bid: dict) -> dict:
     """
     Pull Project- and Ops-board item updates so the packet reflects what's been
@@ -641,6 +679,7 @@ def _render_packet(bid: dict, record: dict, values: dict, job_name: str,
         bid_context=bid.get("context") or {}, record=record,
         bid_url=bid.get("url"),
         drive_folder_path=record.get("drive_folder_path"),
+        photos=_collect_photos(bid),
     )
     out = (Path(tempfile.gettempdir())
            / packet.packet_filename(job_name, accepted=accepted))

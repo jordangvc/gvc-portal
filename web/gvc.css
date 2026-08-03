@@ -135,6 +135,15 @@ a{ color:var(--gvc-green); text-decoration:underline; text-decoration-thickness:
 a:hover{ color:var(--gvc-green-dark); }
 :focus-visible{ outline:2px solid var(--gvc-gold-dark); outline-offset:2px; border-radius:var(--gvc-r-sm); }
 
+/* Instant press feedback on controls — mirrors the Takeoff app's tap response so
+   a phone in the field confirms the tap registered. Suppressed when the user
+   prefers reduced motion. */
+@media (prefers-reduced-motion:no-preference){
+  .gvc-btn:active:not(:disabled),.gvc-tile:active,.gvc-linkrow:active,.gvc-check--card:active{
+    transform:scale(.98); filter:brightness(.97);
+  }
+}
+
 /* ---------- header ---------- */
 .gvc-topbar{ background:var(--gvc-green); border-bottom:var(--gvc-rule) solid var(--gvc-gold); }
 .gvc-topbar-in{ max-width:1240px; margin:0 auto; padding:var(--gvc-space-3) var(--gvc-space-5); display:flex; align-items:center; gap:var(--gvc-space-4); }

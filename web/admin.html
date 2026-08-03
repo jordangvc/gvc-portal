@@ -4,139 +4,100 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Portal — Admin</title>
+<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  :root {
-    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
-    --err-bg: #FEE7E7; --err-line: #DC2626;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px;
-    display: flex; align-items: center; justify-content: space-between; gap: 16px; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
-  .who a { color: #fff; text-decoration: underline; }
-  main { max-width: 1000px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
-  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 20px; }
-  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #44403C; }
-  input[type=text], input[type=email] { width: 100%; padding: 9px 10px; border: 1px solid var(--line);
-    border-radius: 7px; font: inherit; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-  .feats { display: flex; flex-wrap: wrap; gap: 10px 18px; margin: 10px 0; }
-  .feats label { display: inline-flex; align-items: center; gap: 6px; font-weight: 500; margin: 0; }
-  .feats input { width: auto; }
-  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
-    background: var(--green); color: #fff; }
-  .btn:hover { background: var(--green-dark); }
-  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
-  .btn.danger { background: #fff; color: #b91c1c; border: 1px solid var(--err-line); }
-  .btn.small { padding: 6px 10px; font-size: 13px; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  table { width: 100%; border-collapse: collapse; font-size: 14px; }
-  th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-  th { font-size: 12px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); }
-  .chip { display: inline-block; font-size: 12px; padding: 1px 8px; border-radius: 999px;
-    background: #FBF3E1; color: var(--green-dark); border: 1px solid #E3CFA0; margin: 1px 2px; }
-  .chip.env { background: #eef2ff; color: #7A4F8C; border-color: #c7d2fe; }
-  .muted { color: var(--muted); font-size: 12px; }
-  #banner { padding: 12px 14px; border-radius: 8px; background: var(--warn-bg); border: 1px solid var(--warn-line);
-    font-size: 14px; display: none; }
-  #banner.show { display: block; }
-  #status { padding: 10px 14px; border-radius: 8px; font-size: 14px; display: none; }
-  #status.show { display: block; }
-  #status.ok { background: #FBF3E1; border: 1px solid #E3CFA0; }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
-  .actions { display: flex; gap: 8px; }
-  /* Standard GVC Portal header (shared across all tool pages) */
-  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-  header h1 { text-align: center; }
-  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
-    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
-    border-radius: 8px; opacity: .95; }
-  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
-  header .home-link .chev { font-size: 17px; line-height: 1; }
-  header #health, header .who { justify-self: end; }
-  @media (max-width: 720px) {
-    header { grid-template-columns: auto 1fr; }
-    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-    header #health, header .who { grid-row: 1; }
-  }
-  /* ── Section color (added 2026-06-24) — tinted cards + accent bars to reduce
-     visual fatigue on long forms. Calm green/slate alternation; overrides the
-     plain white .card above via source order. ── */
-  :root {
-    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
-  }
-  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
-    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
-  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
-    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
-  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
-    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
-  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
-
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px; justify-content: center; }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700; }
-  .btn.gold:hover { background: linear-gradient(0deg, #B9954E, #C9A24B); filter: brightness(1.06); }
+  /* Page-local: widgets this page owns (access checkbox grid, the env/store
+     chips, and the two JS-toggled message strips). Everything structural comes
+     from gvc.css; these rules only reference gvc tokens. */
+  .feats { display:flex; flex-wrap:wrap; gap:var(--gvc-space-3) var(--gvc-space-5); margin:var(--gvc-space-3) 0; }
+  .feats .gvc-check { min-height:auto; }
+  .chip-env { background:#EEF2FF; color:#7A4F8C; border-color:#C7D2FE; }
+  #banner, #status { display:none; }
+  #banner.show, #status.show { display:flex; }
+  .admin-actions { display:flex; gap:var(--gvc-space-2); flex-wrap:wrap; }
 </style>
 </head>
 <body>
-<header>
-  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
-  <h1>Admin</h1>
-  <div class="who"><span>{{EMAIL}}</span><a href="/auth/logout">Sign out</a></div>
+
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Admin</span>
+    <div class="gvc-topbar-right">
+      <span class="gvc-topbar-user">{{EMAIL}}</span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
 </header>
 
-<main>
-  <div id="banner"></div>
-  <div id="status"></div>
-
-  <div class="card">
-    <h2 id="form-title">Add / update user</h2>
-    <div class="row">
-      <div><label>Work email</label><input id="f-email" type="email" placeholder="name@greenvalleycontractors.com" /></div>
-      <div><label>Name <span class="muted">(optional)</span></label><input id="f-name" type="text" placeholder="John Smith" /></div>
-      <div><label>Position <span class="muted">(optional)</span></label><input id="f-position" type="text" placeholder="Estimator" /></div>
-      <div><label>Phone <span class="muted">(optional — shown as Bid Contact on estimates)</span></label><input id="f-phone" type="text" placeholder="(812) 290-1093" /></div>
-    </div>
-    <label style="margin-top:12px;">Access</label>
-    <div class="feats" id="f-feats"></div>
-    <p class="muted">Everyone with portal access automatically gets <strong>timeoff</strong> as a baseline. Check <strong>All access (*)</strong> to grant every current and future tool.</p>
-    <div class="actions" style="margin-top:8px;">
-      <button class="btn" id="f-save">Save user</button>
-      <button class="btn secondary" id="f-clear">Clear</button>
-    </div>
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Access control</p>
+    <h1 class="gvc-h1">Admin</h1>
+    <p class="gvc-sub">Manage who can reach the portal and which tools each person can use.</p>
   </div>
 
-  <div class="card">
-    <h2>Users with portal access</h2>
-    <table>
-      <thead><tr><th>Email</th><th>Access</th><th>Managed</th><th>Updated</th><th></th></tr></thead>
-      <tbody id="rows"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody>
-    </table>
-  </div>
+  <div class="gvc-stack">
+    <div class="gvc-banner gvc-banner--warn" id="banner"></div>
+    <div class="gvc-banner" id="status"></div>
 
-  <div class="card">
-    <h2>COI blank template</h2>
-    <p class="muted" style="margin-top:0;">The agent-issued blank ACORD 25 that the COI Generator
-      stamps. Replace it here at annual renewal — the generator page only reads it, so nobody can
-      change the file by accident from there. Prior versions stay recoverable (bucket versioning).</p>
-    <div id="coi-tmpl-state" class="muted">Loading template info…</div>
-    <div class="row" style="margin-top:12px; grid-template-columns: 1fr 220px auto; align-items: end;">
-      <div><label>New blank (PDF)</label><input type="file" id="coi-tmpl-file" accept="application/pdf" /></div>
-      <div><label>Expiry label <span class="muted">(used in filenames)</span></label>
-        <input id="coi-tmpl-expiry" type="text" placeholder="expMay_2027" /></div>
-      <div><button class="btn secondary" id="coi-tmpl-upload">Replace template</button></div>
+    <div class="gvc-card">
+      <div class="gvc-card-hd"><span class="gvc-card-title" id="form-title">Add / update user</span></div>
+      <div class="gvc-card-bd">
+        <div class="gvc-grid-2">
+          <div class="gvc-field"><label class="gvc-label" for="f-email">Work email</label>
+            <input class="gvc-input" id="f-email" type="email" placeholder="name@greenvalleycontractors.com" /></div>
+          <div class="gvc-field"><label class="gvc-label" for="f-name">Name <span class="gvc-help">(optional)</span></label>
+            <input class="gvc-input" id="f-name" type="text" placeholder="John Smith" /></div>
+          <div class="gvc-field"><label class="gvc-label" for="f-position">Position <span class="gvc-help">(optional)</span></label>
+            <input class="gvc-input" id="f-position" type="text" placeholder="Estimator" /></div>
+          <div class="gvc-field"><label class="gvc-label" for="f-phone">Phone <span class="gvc-help">(optional — shown as Bid Contact on estimates)</span></label>
+            <input class="gvc-input" id="f-phone" type="text" placeholder="(812) 290-1093" /></div>
+        </div>
+        <label class="gvc-label" style="margin-top:var(--gvc-space-4);display:block;">Access</label>
+        <div class="feats" id="f-feats"></div>
+        <p class="gvc-help">Everyone with portal access automatically gets <strong>timeoff</strong> and
+          <strong>fieldguide</strong> as a baseline. Check <strong>All access (*)</strong> to grant every
+          current and future tool.</p>
+        <div class="gvc-btnrow" style="margin-top:var(--gvc-space-3);">
+          <button class="gvc-btn gvc-btn--primary" id="f-save">Save user</button>
+          <button class="gvc-btn gvc-btn--ghost" id="f-clear">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd"><span class="gvc-card-title">Users with portal access</span></div>
+      <div class="gvc-card-bd">
+        <div class="gvc-tablewrap">
+          <table class="gvc-table" style="min-width:640px;">
+            <thead><tr><th>Email</th><th>Access</th><th>Managed</th><th>Updated</th><th></th></tr></thead>
+            <tbody id="rows"><tr><td colspan="5" class="gvc-help">Loading…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd"><span class="gvc-card-title">COI blank template</span></div>
+      <div class="gvc-card-bd">
+        <p class="gvc-help" style="margin-top:0;">The agent-issued blank ACORD 25 that the COI Generator
+          stamps. Replace it here at annual renewal — the generator page only reads it, so nobody can
+          change the file by accident from there. Prior versions stay recoverable (bucket versioning).</p>
+        <div id="coi-tmpl-state" class="gvc-help">Loading template info…</div>
+        <div class="gvc-grid-3" style="margin-top:var(--gvc-space-3); align-items:end;">
+          <div class="gvc-field"><label class="gvc-label" for="coi-tmpl-file">New blank (PDF)</label>
+            <input class="gvc-input" type="file" id="coi-tmpl-file" accept="application/pdf" /></div>
+          <div class="gvc-field"><label class="gvc-label" for="coi-tmpl-expiry">Expiry label <span class="gvc-help">(used in filenames)</span></label>
+            <input class="gvc-input" id="coi-tmpl-expiry" type="text" placeholder="expMay_2027" /></div>
+          <div><button class="gvc-btn gvc-btn--ghost" id="coi-tmpl-upload">Replace template</button></div>
+        </div>
+      </div>
     </div>
   </div>
 </main>
@@ -148,20 +109,19 @@
 
   function setStatus(kind, msg) {
     const el = $("#status");
-    el.className = "show " + kind;
-    el.textContent = msg;
-    if (kind === "ok") setTimeout(() => { el.className = ""; }, 4000);
+    el.className = "gvc-banner show " + (kind === "ok" ? "gvc-banner--ok" : "gvc-banner--bad");
+    el.innerHTML = "<p>" + msg + "</p>";
+    if (kind === "ok") setTimeout(() => { el.className = "gvc-banner"; }, 4000);
   }
 
   function renderFeatureChecks() {
     const box = $("#f-feats");
     box.innerHTML = "";
-    // master "All access (*)"
     box.insertAdjacentHTML("beforeend",
-      `<label><input type="checkbox" id="feat-all" /> All access (*)</label>`);
+      `<label class="gvc-check"><input type="checkbox" id="feat-all" /> All access (*)</label>`);
     FEATURES.forEach(f => {
       box.insertAdjacentHTML("beforeend",
-        `<label><input type="checkbox" class="feat" value="${f}" /> ${f}</label>`);
+        `<label class="gvc-check"><input type="checkbox" class="feat" value="${f}" /> ${f}</label>`);
     });
     $("#feat-all").addEventListener("change", e => {
       document.querySelectorAll(".feat").forEach(c => { c.disabled = e.target.checked; });
@@ -202,10 +162,10 @@
 
     const banner = $("#banner");
     if (BACKEND !== "gcs") {
-      banner.className = "show";
-      banner.innerHTML = "<strong>Read-only:</strong> grant editing needs the GCS backend. " +
+      banner.className = "gvc-banner gvc-banner--warn show";
+      banner.innerHTML = "<p><strong>Read-only:</strong> grant editing needs the GCS backend. " +
         "Set <code>GVC_GRANTS_BACKEND=gcs</code> on the service and redeploy. " +
-        "Superadmins below come from the env allowlist.";
+        "Superadmins below come from the env allowlist.</p>";
       $("#f-save").disabled = true;
     }
     renderRows(data.users || []);
@@ -213,28 +173,28 @@
 
   function renderRows(users) {
     const tb = $("#rows");
-    if (!users.length) { tb.innerHTML = `<tr><td colspan="5" class="muted">No users yet.</td></tr>`; return; }
+    if (!users.length) { tb.innerHTML = `<tr><td colspan="5" class="gvc-help">No users yet.</td></tr>`; return; }
     tb.innerHTML = "";
     users.forEach(u => {
       const isEnv = u.managed_by === "env";
       const chips = (u.effective || []).map(f =>
-        `<span class="chip${isEnv ? ' env' : ''}">${f}</span>`).join("");
+        `<span class="gvc-chip${isEnv ? ' chip-env' : ''}">${f}</span>`).join(" ");
       const tr = document.createElement("tr");
       tr.innerHTML =
-        `<td>${u.email}</td>
-         <td>${chips || '<span class="muted">none</span>'}</td>
-         <td>${isEnv ? '<span class="chip env">superadmin (env)</span>' : 'store'}</td>
-         <td class="muted">${u.updated_at ? new Date(u.updated_at).toLocaleString() : '—'}${u.updated_by ? '<br>by ' + u.updated_by : ''}</td>
-         <td><div class="actions"></div></td>`;
-      const acts = tr.querySelector(".actions");
+        `<td class="strong">${u.email}</td>
+         <td><div class="gvc-chiprow">${chips || '<span class="gvc-help">none</span>'}</div></td>
+         <td>${isEnv ? '<span class="gvc-chip chip-env">superadmin (env)</span>' : 'store'}</td>
+         <td class="gvc-help">${u.updated_at ? new Date(u.updated_at).toLocaleString() : '—'}${u.updated_by ? '<br>by ' + u.updated_by : ''}</td>
+         <td><div class="admin-actions"></div></td>`;
+      const acts = tr.querySelector(".admin-actions");
       if (isEnv) {
-        acts.innerHTML = '<span class="muted">env-managed</span>';
+        acts.innerHTML = '<span class="gvc-help">env-managed</span>';
       } else {
         const edit = document.createElement("button");
-        edit.className = "btn secondary small"; edit.textContent = "Edit";
+        edit.className = "gvc-btn gvc-btn--ghost"; edit.textContent = "Edit";
         edit.onclick = () => { setForm(u.email, u.features); $("#f-name").value = (u.person||{}).name||""; $("#f-position").value = (u.person||{}).position||""; $("#f-phone").value = (u.person||{}).phone||""; window.scrollTo(0,0); };
         const rm = document.createElement("button");
-        rm.className = "btn danger small"; rm.textContent = "Remove";
+        rm.className = "gvc-btn gvc-btn--danger"; rm.textContent = "Remove";
         rm.onclick = () => removeUser(u.email);
         rm.disabled = BACKEND !== "gcs";
         acts.append(edit, rm);

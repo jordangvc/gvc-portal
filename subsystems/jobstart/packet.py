@@ -70,11 +70,16 @@ def _person(email: Optional[str]) -> Optional[str]:
 
 def build_context(*, job_name: str, values: dict, bid_context: dict,
                   record: dict, bid_url: Optional[str] = None,
-                  drive_folder_path: Optional[str] = None) -> dict:
+                  drive_folder_path: Optional[str] = None,
+                  photos: Optional[list] = None) -> dict:
     """
     PURE. Everything the template needs, from the packet values + bid context +
     the stored handoff record. Missing values stay missing — the template renders
     them as an explicit dash rather than a blank the reader has to interpret.
+
+    `photos` is [{caption, data_uri}] already downloaded, resized, and embedded
+    by subsystems.jobstart.photos — the in-house packet carries every job photo;
+    the subcontractor variant (later) will pass a filtered subset.
     """
     v = values or {}
     ctx = bid_context or {}
@@ -93,6 +98,7 @@ def build_context(*, job_name: str, values: dict, bid_context: dict,
         "location": ctx.get("location"),
         "bid_url": bid_url,
         "drive_folder_path": drive_folder_path,
+        "photos": photos or [],
 
         # Packet fields (keys match shared/boards.JOBSTART_FIELDS)
         "scope": val("scope"),
