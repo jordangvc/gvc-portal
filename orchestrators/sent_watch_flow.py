@@ -184,10 +184,52 @@ def check_sent(*, limit_days: int = 45, notify_backfill_hours: int = 48,
                lambda ident: f"Estimate {ident}",
                _stamp_estimate, _notify_estimate)
 
+    # -------- GC scope confirmations (Job Start packets, not Monday) --------
+    # Same truthful-signal problem as invoices/estimates: email_scope_to_gc
+    # DRAFTS into hello@, a human clicks Send, and gc_confirmed_on used to be
+    # stamped at draft time — so the packet claimed "scope emailed to the GC"
+    # while the draft sat unsent. Every GC correction is a change order not
+    # eaten, which only works if the reply-window clock starts when the email
+    # actually LEFT. State lives on the packet record (GCS), not a Monday row.
+    out["gc_confirmations"] = []
+    out["skipped"]["gc_confirmations"] = 0
+    if not aborted:
+        from orchestrators import jobstart_flow
+
+        gc_pending: list = []
+        try:
+            gc_pending = [
+                {"identifier": g.get("gc_subject")
+                              or f"Scope confirmation — {g['job_name']}",
+                 "monday_item_id": g["bid_id"],   # _sweep's row id slot
+                 "bid_id": g["bid_id"], "job_name": g.get("job_name")}
+                for g in jobstart_flow.gc_pending_confirmations()
+                if _within_days(g.get("gc_drafted_at"), limit_days)
+            ]
+        except Exception as e:  # noqa: BLE001
+            out["errors"].append(f"gc rows: {type(e).__name__}: {e}")
+
+        def _stamp_gc(r: dict, date_str: str) -> None:
+            jobstart_flow.stamp_gc_confirmed(r["bid_id"], date_str)
+
+        def _notify_gc(r: dict, sent_dt: datetime) -> None:
+            slack_notify.notify_gc_scope_emailed({
+                "job": r.get("job_name"),
+                "sent_at_pretty": _pretty_sent(sent_dt),
+            })
+
+        # The identifier IS the subject here (subjects carry the job name, and
+        # the exact drafted subject is persisted on the packet), so subject_for
+        # is the identity function.
+        _sweep("gc_confirmations", gc_pending,
+               lambda ident: ident, _stamp_gc, _notify_gc)
+
     print(f"[sent-watch] invoices: {len(out['invoices'])} detected / "
           f"{out['skipped']['invoices']} still waiting · estimates: "
           f"{len(out['estimates'])} detected / {out['skipped']['estimates']} "
-          f"still waiting · errors: {len(out['errors'])}"
+          f"still waiting · gc confirmations: {len(out['gc_confirmations'])} "
+          f"detected / {out['skipped']['gc_confirmations']} still waiting · "
+          f"errors: {len(out['errors'])}"
           + (" · DRY-RUN" if dry_run else ""),
           file=sys.stderr)
     return out

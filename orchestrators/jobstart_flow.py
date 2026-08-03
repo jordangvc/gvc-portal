@@ -34,6 +34,7 @@ Guardrails (enforced HERE, not trusted to the UI):
 """
 from __future__ import annotations
 
+import re
 import sys
 from datetime import date as _date, datetime, timezone
 from typing import Any, Optional
@@ -131,10 +132,19 @@ def shape_value(render_type: str, raw: Any) -> Any:
             raise ValueError("Date must be a YYYY-MM-DD string.")
         text = raw.strip()
         try:
-            _date.fromisoformat(text)
+            return {"date": _date.fromisoformat(text).isoformat()}
         except ValueError:
-            raise ValueError(f"Not a valid date (need YYYY-MM-DD): {text!r}")
-        return {"date": text}
+            pass
+        # Dates reach the packet from Monday board updates, where a human typed
+        # them — "8/15/2026", not an ISO string. Failing those meant a value we
+        # could plainly read blocked the whole handoff. US month-first order is
+        # assumed deliberately: GVC works Ohio/Indiana/Kentucky.
+        for fmt in ("%m/%d/%Y", "%m/%d/%y", "%m-%d-%Y", "%m.%d.%Y"):
+            try:
+                return {"date": datetime.strptime(text, fmt).date().isoformat()}
+            except ValueError:
+                continue
+        raise ValueError(f"Not a valid date (use YYYY-MM-DD): {text!r}")
 
     if render_type == "number":
         try:
@@ -144,12 +154,21 @@ def shape_value(render_type: str, raw: Any) -> Any:
         return str(int(num)) if num == int(num) else str(num)
 
     if render_type == "link":
-        url = str(raw).strip()
-        if not url.lower().startswith(("http://", "https://")):
-            raise ValueError("Link must start with http:// or https://")
+        text = str(raw).strip()
+        # People label their links — Jordan's real packet carried
+        # "Stocking - https://docs.google.com/…". Requiring the value to START
+        # with http rejected that outright and 422'd the whole accept, losing a
+        # perfectly good URL over a prefix. Find the URL inside the text and
+        # keep the label as the link's display text.
+        m = re.search(r"https?://\S+", text)
+        if not m:
+            raise ValueError("No web link found — paste a URL starting with "
+                             "http:// or https://")
+        url = m.group(0).rstrip(").,;")
         if len(url) > MAX_TEXT_LEN:
             raise ValueError("Link is too long.")
-        return {"url": url, "text": "Take-off"}
+        label = text[:m.start()].strip(" -–—:|") or "Take-off"
+        return {"url": url, "text": label[:80]}
 
     if render_type in ("text", "long_text"):
         text = str(raw).strip()
@@ -204,6 +223,55 @@ def build_writes(values: dict, *,
         accepted[key] = field
 
     return writes, errors, accepted
+
+
+def writability_errors(values: dict, *,
+                       status_labels: Optional[dict[str, list[str]]] = None,
+                       ) -> dict[str, str]:
+    """
+    PURE. Which saved packet values CANNOT be written to Monday, and why.
+    {key: human-readable reason}.
+
+    Called at two different moments with two different strictnesses, on purpose:
+
+      • autosave / fill time — `status_labels=None`, so no Monday round-trip.
+        Catches the shape faults (a board count of "340 sheets", a malformed
+        date, a take-off "link" that isn't a URL).
+      • send time — with the LIVE label sets, which also catches a status value
+        that no longer exists on the target board.
+
+    Why it matters: before this existed the only check ran inside accept(), so
+    an unwritable value was discovered by OPERATIONS, on a packet that is
+    read-only by design, with an error telling them to fix fields they cannot
+    edit. Validation has to happen while the person who typed the value still
+    has the form open.
+    """
+    _writes, errors, _accepted = build_writes(values,
+                                              status_labels=status_labels)
+    return errors
+
+
+def label_for(key: str) -> str:
+    """PURE. A field's human label, falling back to the raw key."""
+    for field in packet_fields():
+        if field["key"] == key:
+            return field.get("label") or key
+    return key
+
+
+def _unwritable_detail(errors: dict[str, str]) -> str:
+    """PURE. One sentence naming the offending fields by their form labels."""
+    rows = field_error_list(errors)
+    named = "; ".join(f"{r['label']} — {r['reason']}" for r in rows)
+    noun = "field" if len(rows) == 1 else "fields"
+    return (f"{len(rows)} {noun} can't be saved to Monday yet: {named} "
+            f"Fix them and send again.")
+
+
+def field_error_list(errors: dict[str, str]) -> list[dict]:
+    """PURE. {key: reason} → [{key, label, reason}] for the UI and the log."""
+    return [{"key": k, "label": label_for(k), "reason": v}
+            for k, v in sorted((errors or {}).items())]
 
 
 def describe_packet(values: dict, accepted: dict[str, dict]) -> str:
@@ -306,17 +374,43 @@ def _update_values(bid: dict) -> dict:
 # Flows (Monday I/O via adapters/monday/jobstart.py)
 # ---------------------------------------------------------------------------
 
+def picker_rank(bid: dict, *, statuses) -> int:
+    """
+    PURE. Where a bid sits in the work list. Lower sorts first.
+
+      0  with ops      — somebody is waiting on an acceptance; this blocks jobs
+      1  sent back     — Sales has to fix something
+      2  in progress   — a half-filled packet, nobody blocked
+      3  won, no packet— accepted bid whose handoff hasn't started
+      4  open bid      — not accepted yet; Sales can accept it in here
+      5  handed off    — done; sinks to the bottom
+
+    Open bids sort BELOW work in flight but are never hidden behind a filter
+    toggle — a filter Jake has to find is a filter Jake won't find.
+    """
+    status = bid.get("packet_status")
+    if status == statuses.STATUS_ACCEPTED:
+        return 5
+    if status == statuses.STATUS_WITH_OPS:
+        return 0
+    if status == statuses.STATUS_SENT_BACK:
+        return 1
+    if status == statuses.STATUS_DRAFT or bid.get("draft_filled"):
+        return 2
+    return 3 if bid.get("stage_state") == "accepted" else 4
+
+
 def list_open_handoffs() -> dict:
     """
-    Picker payload: every Accepted bid, newest-looking first, each flagged with
-    whether a Projects/Operations item already exists and whether a packet draft
-    is in progress. Read-only.
+    Picker payload: every live bid — open AND accepted — each flagged with its
+    stage, whether a Projects/Operations item already exists, and whether a
+    packet draft is in progress. Read-only.
     """
     from adapters.monday.client import MondayClient
     from adapters.monday import jobstart as mj
     from subsystems.jobstart import drafts
 
-    bids = mj.fetch_accepted_bids(MondayClient())
+    bids = mj.fetch_bids(MondayClient())
 
     drafted: dict[int, dict] = {}
     try:
@@ -336,11 +430,22 @@ def list_open_handoffs() -> dict:
         bid["handed_off"] = (bid["packet_status"] == drafts.STATUS_ACCEPTED)
 
     # Packets waiting on Operations float to the top — that's the queue that
-    # actually blocks jobs. Accepted ones sink.
-    rank = {drafts.STATUS_WITH_OPS: 0, drafts.STATUS_SENT_BACK: 1,
-            drafts.STATUS_DRAFT: 2, None: 3, drafts.STATUS_ACCEPTED: 4}
-    bids.sort(key=lambda b: (rank.get(b["packet_status"], 3), b["name"].lower()))
-    return {"ok": True, "count": len(bids), "bids": bids,
+    # actually blocks jobs. Open bids sit below the work in flight; handed-off
+    # ones sink.
+    for bid in bids:
+        bid["rank"] = picker_rank(bid, statuses=drafts)
+    bids.sort(key=lambda b: (b["rank"], b["name"].lower()))
+
+    counts = {
+        "with_ops": sum(1 for b in bids if b["rank"] == 0),
+        "sent_back": sum(1 for b in bids if b["rank"] == 1),
+        "in_progress": sum(1 for b in bids if b["rank"] == 2),
+        "accepted_no_packet": sum(1 for b in bids if b["rank"] == 3),
+        "open": sum(1 for b in bids if b["rank"] == 4),
+        "handed_off": sum(1 for b in bids if b["rank"] == 5),
+    }
+    return {"ok": True, "count": len(bids), "bids": bids, "counts": counts,
+            "accepted_stage": boards.JOBSTART_ACCEPTED_STAGE,
             "required_keys": required_keys()}
 
 
@@ -433,8 +538,16 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
         "ok": True,
         "bid": {
             "item_id": bid["item_id"], "name": bid["name"], "url": bid["url"],
-            "group": bid.get("group_title"), **(bid.get("context") or {}),
+            "group": bid.get("group_title"),
+            "stage": bid.get("stage"),
+            "stage_state": bid.get("stage_state"),
+            **(bid.get("context") or {}),
         },
+        # The form says so on the button: sending an OPEN bid also marks it
+        # Accepted. Stated up front rather than discovered afterwards on a board
+        # other people watch.
+        "will_mark_accepted": bid.get("stage_state") != "accepted",
+        "accepted_stage": boards.JOBSTART_ACCEPTED_STAGE,
         "job_name": suggested_name,
         "naming": naming_info,
         "fields": fields,
@@ -479,8 +592,13 @@ def save_packet_draft(bid_id: int, values: dict, actor: str, *,
         bid_id, values=values, label=label, job_name=job_name,
         updated_at=updated_at, actor=actor)
     missing = missing_required(values)
+    # Shape-only (no Monday call — autosave must stay cheap and must NEVER
+    # refuse to save). Returned as warnings so the form can flag the field
+    # while it's still on screen; the send gate is where they become blocking.
+    warnings = field_error_list(writability_errors(values))
     return {"ok": True, "stale": stale, "saved_at": record.get("updated_at"),
-            "missing": missing, "can_hand_off": not missing}
+            "missing": missing, "can_hand_off": not missing,
+            "field_warnings": warnings}
 
 
 def require_complete(values: dict) -> list[dict]:
@@ -544,10 +662,36 @@ def send_to_ops(bid_id: int, values: dict, actor: str, *,
         return {"ok": False, "blocked": True, "missing": missing,
                 "detail": "Packet is incomplete — not sent."}
 
-    bid = mj.get_bid_detail(MondayClient(), bid_id)
+    mc = MondayClient()
+    bid = mj.get_bid_detail(mc, bid_id)
     if bid is None:
         return {"ok": False, "missing": [],
                 "detail": f"Bid {bid_id} not found on the Bid Board."}
+
+    # SECOND GATE — writability. Completeness only proves a field isn't empty;
+    # this proves the value can actually land in its Monday column. Checked HERE
+    # rather than in accept() because this is the last moment the packet is
+    # editable and the person who typed the value is the one being told.
+    try:
+        live_labels = {k: [l["label"] for l in v]
+                       for k, v in mj.get_field_labels(mc).items()}
+    except Exception as e:  # noqa: BLE001 — degrade to shape-only rather than
+        # blocking the send on a Monday hiccup; accept() re-checks anyway.
+        print(f"[jobstart] label fetch failed on send: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        live_labels = None
+
+    bad = writability_errors(values, status_labels=live_labels)
+    if bad:
+        activity.log_event("jobstart.send_blocked", actor=actor,
+                           target=str(bid_id), result="blocked",
+                           severity="WARNING",
+                           unwritable=",".join(sorted(bad)))
+        # No "blocked" key on purpose: the route maps `blocked` to
+        # PACKET_INCOMPLETE (a missing-fields count) and `field_errors` to
+        # PACKET_INVALID, which is the accurate code here.
+        return {"ok": False, "missing": [], "field_errors": bad,
+                "detail": _unwritable_detail(bad)}
 
     name = (job_name or bid["name"] or "").strip() or bid["name"]
     # Persist the packet first so the render and the record can't disagree.
@@ -570,18 +714,39 @@ def send_to_ops(bid_id: int, values: dict, actor: str, *,
         print(f"[jobstart] packet preview unavailable: {type(e).__name__}: {e}",
               file=sys.stderr)
 
+    # ---- Mark the bid won ---------------------------------------------------
+    # Sending a job-start packet IS the statement that the bid is won, so the
+    # Bid Board stage is written here rather than left as a separate errand in
+    # Monday — one less tap, one less thing to forget (Jordan's ask, 2026-07-29).
+    # It is NOT silent: it's reported in the result, named on the button, and in
+    # the Slack notice. Verified 2026-07-30 that no ACTIVE automation triggers on
+    # Stage → Accepted, which is what made an implicit write safe — the estimate
+    # flow deliberately does NOT auto-advance stage because things DO key off
+    # "Sent to Client".
+    stage_report = mj.mark_bid_accepted(
+        mc, bid_id, current_stage=bid.get("stage"),
+        current_group=bid.get("group_id"))
+    for err in stage_report.get("errors") or []:
+        print(f"[jobstart] bid stage/group write failed: {err}", file=sys.stderr)
+
     activity.log_event("jobstart.sent_to_ops", actor=actor, target=str(bid_id),
-                       result="ok", severity="INFO", job=name)
+                       result="ok", severity="INFO", job=name,
+                       bid_stage_written=stage_report.get("stage_written"),
+                       bid_group_moved=stage_report.get("group_moved"),
+                       bid_stage_error=("; ".join(stage_report.get("errors") or [])
+                                        or None))
 
     slack_status = _notify(lambda sn: sn.notify_job_start_sent({
         "job": name, "actor": actor, "bid_url": bid.get("url"),
         "preview_url": preview_url,
         "start_date": values.get("start_date"),
         "supervisor": values.get("supervisor"),
+        "bid_marked_accepted": bool(stage_report.get("stage_written")),
     }))
 
     return {"ok": True, "blocked": False, "missing": [], "status": record["status"],
-            "job_name": name, "preview_url": preview_url, "slack": slack_status}
+            "job_name": name, "preview_url": preview_url, "slack": slack_status,
+            "bid_stage": stage_report}
 
 
 def send_back(bid_id: int, note: str, actor: str) -> dict:
@@ -658,11 +823,15 @@ def accept(bid_id: int, actor: str) -> dict:
               file=sys.stderr)
         status_labels = None
 
-    writes, errors, accepted_fields = build_writes(values,
-                                                   status_labels=status_labels)
-    if errors:
-        return {"ok": False, "field_errors": errors,
-                "detail": "Some packet fields couldn't be saved."}
+    # A value that can't be written NO LONGER BLOCKS THE HANDOFF. It is dropped,
+    # the job is still created, and the field is named so somebody can set it by
+    # hand — the same contract as `manual_columns` below. The old behaviour
+    # returned field_errors and refused: a dead end, because an in-review packet
+    # is read-only and Operations cannot edit Sales' fields. send_to_ops() now
+    # catches these while the form is still open, so reaching here means the
+    # value was saved before that gate existed, or a board label changed since.
+    writes, unwritable, accepted_fields = build_writes(
+        values, status_labels=status_labels)
 
     projects_values = dict(writes.get("projects") or {})
     projects_values[boards.JOBSTART_P_COL_PROJECT_STATUS] = {
@@ -687,6 +856,11 @@ def accept(bid_id: int, actor: str) -> dict:
                                actor=actor)
 
     warnings: list[str] = []
+    if unwritable:
+        for row in field_error_list(unwritable):
+            warnings.append(
+                f"'{row['label']}' was left blank on the job — {row['reason']} "
+                f"Set it by hand, or fix the packet and accept again.")
     if not (bid.get("copy") or {}).get("customer_ids"):
         warnings.append("This bid has no Customer linked, so the project was "
                         "created without one.")
@@ -742,6 +916,7 @@ def accept(bid_id: int, actor: str) -> dict:
         ops_id=str(report.get("ops_id") or ""),
         packet=describe_packet(values, accepted_fields),
         failed=report.get("ops_error") or None,
+        unwritable=",".join(sorted(unwritable)) or None,
     )
 
     slack_status = _notify(lambda sn: sn.notify_job_start_handoff({
@@ -757,8 +932,11 @@ def accept(bid_id: int, actor: str) -> dict:
         "warnings": warnings,
     }))
 
+    # NOTE: deliberately NOT keyed "field_errors" — that key makes the route
+    # raise 422 PACKET_INVALID, which is exactly the dead end this replaces.
     return {"ok": ok, "status": record["status"], "job_name": name,
             "packet_url": packet_url, "warnings": warnings,
+            "unwritable_fields": field_error_list(unwritable),
             "slack": slack_status, **report}
 
 
@@ -771,8 +949,10 @@ def email_scope_to_gc(bid_id: int, actor: str) -> dict:
     to a customer: this lands in hello@ Drafts and a human clicks send. Re-running
     updates the same draft in place rather than stacking duplicates.
 
-    Stamps `gc_confirmed_on` on the packet so the date shows on the PDF, and
-    returns the Gmail draft URL so the sender can go straight to it.
+    Does NOT stamp `gc_confirmed_on` — that used to happen at draft time and
+    lied on the PDF while the draft sat unsent. The sent-watcher stamps the
+    real send date when the message appears in Gmail `in:sent`. Returns the
+    Gmail draft URL so the sender can go straight to it.
     """
     from adapters.monday.client import MondayClient
     from adapters.monday import jobstart as mj
@@ -806,20 +986,22 @@ def email_scope_to_gc(bid_id: int, actor: str) -> dict:
         invoice_identifier=gc_confirm.draft_identifier(bid_id),
     )
 
-    # Record the date so it lands on the packet PDF. This is the honest version:
-    # it stamps when the DRAFT was made, and the UI says so — we can't know when
-    # a human actually hit send.
+    # gc_confirmed_on is DELIBERATELY NOT stamped here. It used to be — which
+    # made the packet claim the scope was emailed to the GC when in fact a
+    # draft was sitting unsent in hello@. The sent-watcher (check_sent's GC
+    # sweep) stamps it when the message actually appears in in:sent — the same
+    # truthful-signal pattern as invoice/estimate "Emailed on". Only
+    # gc_drafted_at is recorded, which is the fact that is actually true now.
+    # A human typing the date by hand still wins: the watcher fills only an
+    # empty value (ingest precedence — typed beats automatic).
     record = drafts.set_status(
         bid_id, status=record.get("status") or drafts.STATUS_DRAFT, actor=actor,
         extra={"gc_draft_url": result.get("gmail_url"),
-               "gc_drafted_at": _today()})
-    try:
-        vals = dict(values)
-        vals["gc_confirmed_on"] = _today()
-        drafts.save_draft(bid_id, values=vals, job_name=name, actor=actor)
-    except Exception as e:  # noqa: BLE001 — the draft exists; the stamp can retry
-        print(f"[jobstart] gc_confirmed_on stamp failed: {type(e).__name__}: {e}",
-              file=sys.stderr)
+               "gc_drafted_at": _today(),
+               # Persisted so the watcher can search Gmail for the exact
+               # subject it drafted, even if the job is renamed afterwards.
+               "gc_subject": gc_confirm.subject(
+                   name, estimate_number=ctx.get("estimate_number"))})
 
     activity.log_event("jobstart.gc_confirmation_drafted", actor=actor,
                        target=str(bid_id), result="ok", severity="INFO",
@@ -830,6 +1012,56 @@ def email_scope_to_gc(bid_id: int, actor: str) -> dict:
             "gmail_url": result.get("gmail_url"),
             "replaced_existing": bool(result.get("replaced_existing")),
             "drafted_on": _today()}
+
+
+def gc_pending_confirmations() -> list[dict]:
+    """
+    Work list for the sent-watcher: packets whose GC scope confirmation was
+    DRAFTED but not yet confirmed sent. Each row carries the exact Gmail
+    subject the draft was composed with, so the watcher searches for what was
+    actually written, not a reconstruction.
+    """
+    from subsystems.jobstart import drafts
+
+    out = []
+    for row in drafts.list_drafts():
+        if row.get("gc_drafted_at") and not row.get("gc_confirmed_on"):
+            out.append({
+                "bid_id": row["bid_id"],
+                "job_name": row.get("job_name") or row.get("label"),
+                "gc_subject": row.get("gc_subject"),
+                "gc_drafted_at": row.get("gc_drafted_at"),
+            })
+    return out
+
+
+def stamp_gc_confirmed(bid_id: int, date_str: str) -> bool:
+    """
+    The sent-watcher found the GC email in in:sent — record the REAL send date.
+
+    Fill-if-empty, always (ingest precedence: a date a human typed is never
+    overwritten by an automatic source). Returns False when there was nothing
+    to do. Written into the packet values because gc_confirmed_on is a packet
+    field — it's what renders on the PDF — plus a `gc_sent_at` record extra so
+    the state survives even if a stale autosave clobbers the value; the watcher
+    re-stamps on its next sweep in that case (membership in the work list is
+    recomputed from the value each time).
+    """
+    from subsystems.jobstart import drafts
+
+    record = drafts.get_draft(int(bid_id))
+    if record is None:
+        return False
+    values = dict(record.get("values") or {})
+    if str(values.get("gc_confirmed_on") or "").strip():
+        return False
+    values["gc_confirmed_on"] = date_str
+    drafts.save_draft(int(bid_id), values=values,
+                      job_name=record.get("job_name"), actor="sent-watcher")
+    drafts.set_status(int(bid_id),
+                      status=record.get("status") or drafts.STATUS_DRAFT,
+                      actor="sent-watcher", extra={"gc_sent_at": date_str})
+    return True
 
 
 def _person_name(email: Optional[str]) -> str:

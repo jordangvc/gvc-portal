@@ -29,9 +29,12 @@ import json
 import os
 import re
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional
 
+from adapters.monday import cache as monday_cache
+from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID
 NEW_DEALS_GROUP_ID = "new_group__1"  # "New Deals (For Estimate)" — leads awaiting an estimate
 OPEN_DEALS_GROUP_ID = "topics"       # "Open Deals" — estimate sent / deal open
@@ -284,10 +287,22 @@ def search_bids(mc, q: str, *, limit: int = 15) -> list[dict]:
     Returns [{item_id, name, estimate_number, stage, url}] deduped, capped at
     `limit`. Lets office staff find a previously sent estimate without
     hunting down the Monday URL.
+
+    Legs run in parallel; identical queries are short-TTL cached so a retry
+    or a second form doesn't pay Monday again.
     """
     q = (q or "").strip()
     if len(q) < 2:
         return []
+    cache_key = f"search:bids:{q.lower()}:{int(limit)}"
+    return monday_cache.get_or_set(
+        cache_key,
+        lambda: _search_bids_uncached(mc, q, limit=limit),
+        ttl=monday_cache.search_ttl(),
+    )
+
+
+def _search_bids_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
     query = """
     query ($boardId: [ID!], $columnId: ID!, $value: CompareValue!) {
       boards(ids: $boardId) {
@@ -303,32 +318,48 @@ def search_bids(mc, q: str, *, limit: int = 15) -> list[dict]:
       }
     }
     """
-    results: dict[int, dict] = {}
-    for column_id in ("name", COL_ESTIMATE_NUMBER):
+
+    def _leg(column_id: str):
+        # Fresh session per leg — requests.Session is not thread-safe.
+        token = None
         try:
-            data = mc._query(query, {
-                "boardId": [str(BID_BOARD_ID)],
-                "columnId": column_id,
-                "value": q,
-            })
-        except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
-            print(f"[monday-estimate] search leg {column_id!r} failed: {e}", file=sys.stderr)
-            continue
-        for board in data.get("boards") or []:
-            for item in (board.get("items_page") or {}).get("items") or []:
-                item_id = int(item["id"])
-                if item_id in results:
-                    continue
-                texts = {cv["id"]: (cv.get("text") or "").strip()
-                         for cv in item.get("column_values") or []}
-                results[item_id] = {
-                    "item_id": item_id,
-                    "name": (item.get("name") or "").strip(),
-                    "estimate_number": texts.get(COL_ESTIMATE_NUMBER, ""),
-                    "stage": texts.get(COL_STAGE, ""),
-                    "url": (f"https://greenvalleycontractors.monday.com/boards/"
-                            f"{BID_BOARD_ID}/pulses/{item_id}"),
-                }
+            token = mc.session.headers.get("Authorization")
+        except Exception:  # noqa: BLE001 — fall back to env-configured client
+            token = None
+        local = MondayClient(token=token) if token else MondayClient()
+        return local._query(query, {
+            "boardId": [str(BID_BOARD_ID)],
+            "columnId": column_id,
+            "value": q,
+        })
+
+    results: dict[int, dict] = {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futs = {pool.submit(_leg, col): col
+                for col in ("name", COL_ESTIMATE_NUMBER)}
+        for fut in as_completed(futs):
+            column_id = futs[fut]
+            try:
+                data = fut.result()
+            except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
+                print(f"[monday-estimate] search leg {column_id!r} failed: {e}",
+                      file=sys.stderr)
+                continue
+            for board in data.get("boards") or []:
+                for item in (board.get("items_page") or {}).get("items") or []:
+                    item_id = int(item["id"])
+                    if item_id in results:
+                        continue
+                    texts = {cv["id"]: (cv.get("text") or "").strip()
+                             for cv in item.get("column_values") or []}
+                    results[item_id] = {
+                        "item_id": item_id,
+                        "name": (item.get("name") or "").strip(),
+                        "estimate_number": texts.get(COL_ESTIMATE_NUMBER, ""),
+                        "stage": texts.get(COL_STAGE, ""),
+                        "url": (f"https://greenvalleycontractors.monday.com/boards/"
+                                f"{BID_BOARD_ID}/pulses/{item_id}"),
+                    }
     return list(results.values())[:limit]
 
 

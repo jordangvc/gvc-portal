@@ -22,6 +22,7 @@ Guardrails (enforced HERE, not trusted to the UI):
 from __future__ import annotations
 
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date as _date
 from typing import Any, Optional
 
@@ -198,11 +199,17 @@ def get_job_detail(item_id: int) -> Optional[dict]:
     from adapters.monday import jobcheck as mj
 
     cols = allowlisted_columns()
-    mc = MondayClient()
-    item = mj.get_item_values(mc, int(item_id), [c["id"] for c in cols])
+    col_ids = [c["id"] for c in cols]
+    # Item values + column metadata are independent Monday reads — overlap them
+    # on separate sessions (requests.Session is not thread-safe).
+    mc_item, mc_meta = MondayClient(), MondayClient()
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        item_fut = pool.submit(mj.get_item_values, mc_item, int(item_id), col_ids)
+        meta_fut = pool.submit(mj.get_board_columns, mc_meta, col_ids)
+        item = item_fut.result()
+        meta = meta_fut.result()
     if item is None:
         return None
-    meta = mj.get_board_columns(mc, [c["id"] for c in cols])
 
     values = item["values"]
     form_columns = []

@@ -557,6 +557,10 @@ def _job_start_sent_message(info: dict) -> str:
         parts.append(f"• Start date: {info['start_date']}")
     if info.get("supervisor"):
         parts.append(f"• Site contact: {info['supervisor']}")
+    # Claimed ONLY when the write actually happened — the whole reason these
+    # notices exist is that the legacy automation announced work it never did.
+    if info.get("bid_marked_accepted"):
+        parts.append("• Bid marked Accepted and moved to Won Deals")
     links = []
     if info.get("preview_url"):
         links.append(f"<{info['preview_url']}|Read the packet>")
@@ -575,6 +579,27 @@ def notify_job_start_sent(info: dict, *,
         raise SlackNotConfigured(
             "Neither GVC_JOBSTART_SLACK_CHANNEL nor GVC_JOBCHECK_SLACK_CHANNEL is set.")
     return post_message(_job_start_sent_message(info), channel=target)
+
+
+def _gc_scope_emailed_message(info: dict) -> str:
+    """PURE. The GC scope confirmation actually LEFT hello@ — posted by the
+    sent-watcher, never at draft time. The 3-business-day reply window starts
+    now, so the room should know the clock is running."""
+    parts = [f"📤 *GC scope confirmation emailed* — {info.get('job', 'Unknown job')}"]
+    if info.get("sent_at_pretty"):
+        parts.append(f"• Sent {info['sent_at_pretty']} — their 3-business-day "
+                     f"reply window is running")
+    return "\n".join(parts)
+
+
+def notify_gc_scope_emailed(info: dict, *,
+                            channel: Optional[str] = None) -> Optional[dict]:
+    """Tell the room the GC scope email was genuinely sent."""
+    target = _jobstart_channel(channel)
+    if not target:
+        raise SlackNotConfigured(
+            "Neither GVC_JOBSTART_SLACK_CHANNEL nor GVC_JOBCHECK_SLACK_CHANNEL is set.")
+    return post_message(_gc_scope_emailed_message(info), channel=target)
 
 
 def _job_start_sent_back_message(info: dict) -> str:

@@ -73,6 +73,15 @@
     letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; margin-left: 6px; }
   .pill.done { background: var(--ok-bg); color: var(--green-dark); border: 1px solid var(--ok-line); }
   .pill.draft { background: #FBF3E1; color: var(--gold-dark); border: 1px solid #E3CFA0; }
+  /* Bid Board stage, shown on every row — a bid no longer has to BE accepted to
+     appear here, so the row has to say which it is. */
+  .pill.stage { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
+  .pill.drift { background: #FFF7ED; color: #9A3412; border: 1px solid #FDBA74; }
+  /* Section headers keep open bids visibly BELOW work in flight without hiding
+     them behind a filter toggle nobody finds. */
+  .listhead { margin: 16px 0 6px; font-size: 11.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .listhead:first-child { margin-top: 2px; }
 
   .ctx { display: grid; gap: 4px; }
   .ctx .jobname { font-size: 17px; font-weight: 700; }
@@ -91,6 +100,13 @@
      phone should see WHICH box is holding up the handoff. */
   .field.missing { background: #FFF8F8; border-radius: 8px; padding-left: 10px; padding-right: 10px;
     box-shadow: inset 3px 0 0 var(--err-line); }
+  /* A value that's PRESENT but can't be written to Monday (a board count of
+     "340 sheets", a status label that no longer exists). Different failure from
+     `missing`, so it looks different — and it's caught here at fill time rather
+     than by Operations at accept time, when the packet is already locked. */
+  .field.bad { background: #FFFBF2; border-radius: 8px; padding-left: 10px; padding-right: 10px;
+    box-shadow: inset 3px 0 0 var(--gold-dark); }
+  .field .fbad { font-size: 12.5px; font-weight: 600; color: #8A5A00; }
   .field .fhelp { font-size: 12.5px; color: var(--muted); }
   .srctag { margin-left: 8px; font-size: 10.5px; font-weight: 600; text-transform: none;
     letter-spacing: 0; color: var(--gold-dark); background: #FBF3E1;
@@ -161,12 +177,13 @@
   <div id="status"></div>
 
   <div class="card" id="pickcard">
-    <h2>Pick a won bid</h2>
-    <input id="search" type="search" placeholder="Search accepted bids — name, address, estimate #…"
+    <h2>Pick a bid</h2>
+    <input id="search" type="search" placeholder="Search bids — name, address, estimate #, stage…"
            autocomplete="off" />
-    <div id="bidlist"><div class="hint">Loading accepted bids from Monday…</div></div>
-    <div class="hint">Bid Board rows at stage <b>Accepted</b>. Jobs already handed off show a
-      Handed off tag — opening one lets you correct the packet and re-send it.</div>
+    <div id="bidlist"><div class="hint">Loading open and accepted bids from Monday…</div></div>
+    <div class="hint">Open bids and Accepted bids from the Bid Board. Sending a packet from an
+      open bid marks it <b>Accepted</b> and moves it to Won Deals. Jobs already handed off
+      sink to the bottom — opening one lets you correct the packet and re-send it.</div>
   </div>
 
   <div class="card" id="ctxcard" style="display:none;">
@@ -260,20 +277,54 @@ function bidButton(b) {
     draft:     ['draft', 'Packet started'],
   };
   const s = S[b.packet_status] || (b.draft_filled ? S.draft : null);
-  const tags = s ? `<span class="pill ${s[0]}">${s[1]}</span>` : "";
+  let tags = s ? `<span class="pill ${s[0]}">${s[1]}</span>` : "";
+  // The stage badge, on every row: the picker now lists open bids too, so a row
+  // has to say whether the bid is won yet.
+  if (b.stage) {
+    const cls = b.stage_state === "accepted" ? "pill done" : "pill stage";
+    tags += `<span class="${cls}">${esc(b.stage)}</span>`;
+  }
+  // Stage says won but the board group doesn't agree — two hand-kept fields for
+  // one job. Surfaced, not silently resolved.
+  if (b.group_drift && b.group_title) {
+    tags += `<span class="pill drift">in ${esc(b.group_title)}</span>`;
+  }
   return `<button class="bidbtn${b.handed_off ? " done" : ""}" type="button" data-id="${b.item_id}">
     <div class="jname">${esc(b.name)}${tags}</div>
     ${meta ? `<div class="jmeta">${esc(meta)}</div>` : ""}
   </button>`;
 }
 
+/* Rank → section header. Matches picker_rank() in orchestrators/jobstart_flow.py;
+   the server does the sorting, this only labels the boundaries. */
+const RANK_HEADS = {
+  0: "Waiting on Operations",
+  1: "Sent back to Sales",
+  2: "Packet in progress",
+  3: "Won — handoff not started",
+  4: "Open bids — accept one from in here",
+  5: "Handed off",
+};
+
 function renderBidList() {
   const q = ($("#search").value || "").trim().toLowerCase();
   const hits = !q ? bids : bids.filter((b) =>
-    [b.name, b.estimate_number, b.location].some((f) => (f || "").toLowerCase().includes(q)));
-  $("#bidlist").innerHTML = hits.length
-    ? hits.map(bidButton).join("")
-    : `<div class="hint">No accepted bid matches "${esc(q)}".</div>`;
+    [b.name, b.estimate_number, b.location, b.stage].some((f) => (f || "").toLowerCase().includes(q)));
+  if (!hits.length) {
+    $("#bidlist").innerHTML = `<div class="hint">No bid matches "${esc(q)}".</div>`;
+    return;
+  }
+  let html = "";
+  let head = null;
+  hits.forEach((b) => {
+    const rank = b.rank === undefined ? 4 : b.rank;
+    if (rank !== head) {
+      head = rank;
+      html += `<div class="listhead">${esc(RANK_HEADS[rank] || "Bids")}</div>`;
+    }
+    html += bidButton(b);
+  });
+  $("#bidlist").innerHTML = html;
   document.querySelectorAll("#bidlist .bidbtn").forEach((b) =>
     b.addEventListener("click", () => loadBid(+b.dataset.id)));
 }
@@ -308,6 +359,7 @@ function textColorFor(hex) {
 
 function renderContext(bid, d) {
   const rows = [
+    bid.stage ? `<span>Stage <b>${esc(bid.stage)}</b></span>` : "",
     bid.estimate_number ? `<span>Estimate <b>${esc(bid.estimate_number)}</b></span>` : "",
     bid.estimate_total ? `<span>Total <b>$${esc(bid.estimate_total)}</b></span>` : "",
     bid.customer ? `<span>Customer <b>${esc(bid.customer)}</b></span>` : "",
@@ -315,6 +367,10 @@ function renderContext(bid, d) {
     bid.services ? `<span>${esc(bid.services)}</span>` : "",
   ].filter(Boolean).join("");
   const notes = [];
+  if (d.will_mark_accepted) {
+    notes.push(`This bid is still open on Monday. Sending the packet will mark it `
+      + `<b>${esc(d.accepted_stage || "Accepted")}</b> and move it to Won Deals.`);
+  }
   if (d.already && (d.already.project || d.already.ops)) {
     const which = [d.already.project ? "a project" : null, d.already.ops ? "an ops task" : null]
       .filter(Boolean).join(" and ");
@@ -474,6 +530,12 @@ function refreshGate() {
     el.textContent = "Packet complete";
   }
   $("#send").disabled = missing.length > 0 || savingNow || !editable;
+  // Say what the button is about to do. Sending an OPEN bid also writes Stage =
+  // Accepted and moves it to Won Deals — a change on a board other people watch,
+  // so it's named on the control rather than discovered afterwards.
+  $("#send").textContent = detail?.will_mark_accepted
+    ? `Mark ${detail.accepted_stage || "Accepted"} & send to Operations`
+    : "Send to Operations";
 }
 
 /* ---------- state banner + which buttons are live ---------- */
@@ -549,9 +611,16 @@ async function saveDraft() {
     });
     if (!r.ok) { $("#savestate").textContent = "Not saved — check your connection"; return; }
     const body = await r.json();
+    // The server checks whether each value can actually LAND in its Monday
+    // column, not just whether it's filled in. Flag it now — Operations can't
+    // fix it later, because an in-review packet is read-only.
+    markBadFields(body.field_warnings);
+    const bad = (body.field_warnings || []).length;
     $("#savestate").textContent = body.stale
       ? "Someone else edited this packet more recently — reload to see theirs"
-      : "Saved — you can finish this later on any device";
+      : bad
+        ? `Saved — but ${bad} field${bad === 1 ? "" : "s"} won't save to Monday yet (see below)`
+        : "Saved — you can finish this later on any device";
   } catch (e) {
     $("#savestate").textContent = "Not saved — check your connection";
   }
@@ -600,7 +669,30 @@ function backToList() {
 
 /* ---------- the three actions: send · accept · send back ---------- */
 
+/* Mark the fields a server response named as unwritable, and drop the reason
+   under each one. Cleared first so a fixed field stops looking broken. */
+function markBadFields(rows) {
+  document.querySelectorAll(".field.bad").forEach((el) => el.classList.remove("bad"));
+  document.querySelectorAll(".fbad").forEach((el) => el.remove());
+  (rows || []).forEach((row) => {
+    const el = document.querySelector(`.field[data-field="${CSS.escape(row.key)}"]`);
+    if (!el) return;
+    el.classList.add("bad");
+    const note = document.createElement("div");
+    note.className = "fbad";
+    note.textContent = row.reason;
+    el.appendChild(note);
+  });
+}
+
 function showActionError(d) {
+  if (d.field_errors && Object.keys(d.field_errors).length) {
+    markBadFields(Object.keys(d.field_errors).map((k) => ({ key: k, reason: d.field_errors[k] })));
+    showStatus("err",
+      `<strong>Some fields can't be saved to Monday.</strong> ${esc(d.detail || "")}` +
+      `<br>${esc(d.advice || "")}`);
+    return;
+  }
   if (d.missing && d.missing.length) {
     // The server gate is the real one; if it disagrees with us, believe it.
     d.missing.forEach((m) => {
@@ -653,9 +745,20 @@ function sendToOps() {
     const pdf = body.preview_url
       ? ` <a href="${esc(body.preview_url)}" target="_blank" rel="noopener">Read the packet</a>`
       : "";
+    // Report the bid write only when it actually happened — same rule as the
+    // Slack notice. A failure here doesn't cost the packet, so it's a note.
+    const st = body.bid_stage || {};
+    const did = [st.stage_written ? "marked Accepted" : null,
+                 st.group_moved ? "moved to Won Deals" : null].filter(Boolean);
+    const bidLine = did.length
+      ? `<br>Bid ${did.join(" and ")} on the Bid Board.`
+      : "";
+    const bidErr = (st.errors || []).length
+      ? `<br>⚠ Couldn't update the bid's stage (${esc(st.errors.join("; "))}) — set it in Monday.`
+      : "";
     showStatus("ok",
       `✔ <strong>Sent to Operations.</strong> They've been pinged in Slack and
-       need to accept before this job goes on the schedule.${pdf}`);
+       need to accept before this job goes on the schedule.${pdf}${bidLine}${bidErr}`);
   });
 }
 
@@ -708,7 +811,8 @@ async function draftGcEmail() {
     out.innerHTML =
       `✔ <b>${body.replaced_existing ? "Draft updated" : "Draft created"}</b> in hello@ —
        to ${esc(body.to)}${body.cc ? `, cc ${esc(body.cc)}` : ""}.${link}
-       <br>Read it, then hit send yourself.`;
+       <br>Read it, then hit send yourself. The "Scope emailed to the GC on" date fills
+       itself in within ~10 minutes of the real send — no need to type it.`;
   } catch (e) {
     out.innerHTML = `<span style="color:#7A1F1F;">Network error — ${esc(e.message)}</span>`;
   } finally {

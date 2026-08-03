@@ -31,6 +31,7 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
+from adapters.monday import cache as monday_cache
 from shared.boards import JOBCHECK_BOARD_ID, JOBCHECK_SKIP_GROUP_IDS
 
 # Read-only context columns shown at the top of the Job Check page (never
@@ -91,7 +92,18 @@ def fetch_active_jobs(mc) -> list[dict]:
        location, deal_stage}
     Paged at 200. Read-only. Completed Tasks / Ready to Invoice groups and
     lost-or-cancelled projects are skipped (see JOBCHECK_SKIP_GROUP_IDS).
+
+    Short-TTL cached (see adapters/monday/cache.py) — Job Check + Field Guide
+    both hit this on every page open, and the UI searches client-side.
     """
+    return monday_cache.get_or_set(
+        "list:jobcheck:active_jobs",
+        lambda: _fetch_active_jobs_uncached(mc),
+        ttl=monday_cache.list_ttl(),
+    )
+
+
+def _fetch_active_jobs_uncached(mc) -> list[dict]:
     col_ids = json.dumps([CONTEXT_COL_PROJECT_LINK, CONTEXT_COL_LOCATION,
                           CONTEXT_COL_PROJECT_STATUS])
     query = """
@@ -293,6 +305,7 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
     variables = {"boardId": str(JOBCHECK_BOARD_ID), "itemId": str(int(item_id))}
     try:
         mc._query(_MUTATION, {**variables, "values": json.dumps(values)})
+        monday_cache.invalidate("list:jobcheck:active_jobs")
         return {"written": sorted(values), "failed": {}}
     except Exception as batch_err:  # noqa: BLE001 — fall through to per-column
         batch_msg = f"{type(batch_err).__name__}: {batch_err}"
@@ -308,4 +321,6 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
             failed[col_id] = f"{type(e).__name__}: {e}"
     if not written and not failed:
         failed["_batch"] = batch_msg
+    if written:
+        monday_cache.invalidate("list:jobcheck:active_jobs")
     return {"written": sorted(written), "failed": failed}

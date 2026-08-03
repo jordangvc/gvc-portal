@@ -26,6 +26,8 @@ from typing import Any, Optional
 
 import requests
 
+from adapters.monday import cache as monday_cache
+
 MONDAY_API_URL = "https://api.monday.com/v2"
 MONDAY_API_VERSION = "2024-10"  # pin so query semantics don't drift on us
 
@@ -958,11 +960,25 @@ class MondayClient:
         Search the Customer & Vendor Directory by name. Returns
         [{item_id, name, email, contact_name, phone, billing_address, type}],
         best matches first. `customers_only` keeps Customer/Lead/Partner and
-        drops rows explicitly typed Vendor.
+        drops rows explicitly typed Vendor. Short-TTL cached — the invoice
+        form types through this on every keystroke (debounced in the UI).
         """
         needle = (query_text or "").strip()
         if not needle:
             return []
+        cache_key = (
+            f"search:customers:{needle.lower()}:{int(limit)}:"
+            f"{1 if customers_only else 0}"
+        )
+        return monday_cache.get_or_set(
+            cache_key,
+            lambda: self._search_customers_uncached(
+                needle, limit=limit, customers_only=customers_only),
+            ttl=monday_cache.search_ttl(),
+        )
+
+    def _search_customers_uncached(self, needle: str, *, limit: int = 10,
+                                   customers_only: bool = True) -> list[dict]:
         query = """
         query ($boardId: [ID!], $val: CompareValue!) {
           boards(ids: $boardId) {

@@ -145,8 +145,28 @@ JOBSTART_PROJECTS_GROUP = os.environ.get(
 JOBSTART_OPS_GROUP = os.environ.get(
     "GVC_MONDAY_JOBSTART_OPS_GROUP", "group_mm3khfvc")           # Upcoming Projects (Not Started)
 
-# Bid Board stage that makes a bid eligible for handoff.
+# Bid Board stage that means "won". Job Start WRITES this (and moves the item to
+# the Won Deals group) when Sales sends a packet — it no longer merely filters on
+# it, because a bid used to be invisible to Job Start until somebody flipped the
+# stage in Monday first (Jordan, 2026-07-29).
 JOBSTART_ACCEPTED_STAGE = os.environ.get("GVC_MONDAY_JOBSTART_STAGE", "Accepted")
+
+# Bid Board groups. Ids recorded 2026-06-29 (estimate flow's New→Open promotion):
+#   New Deals `new_group__1` · Open Deals `topics`
+#   Won `duplicate_of_active_deals__1` · Lost `closed`
+# Empty value ⇒ never move the item, only write the stage.
+JOBSTART_BID_WON_GROUP = os.environ.get(
+    "GVC_MONDAY_BID_WON_GROUP", "duplicate_of_active_deals__1")
+
+# Stage labels that take a bid OUT of the Job Start picker. Substring match,
+# case-insensitive — the Bid Board's labels are hand-edited in Monday, so an
+# exact list would silently hide any bid carrying a label we hadn't seen. Only
+# genuinely dead states belong here; "open" is the default for everything else.
+JOBSTART_DEAD_STAGE_WORDS: tuple[str, ...] = tuple(
+    w.strip().lower()
+    for w in os.environ.get("GVC_MONDAY_JOBSTART_DEAD_STAGES",
+                            "lost,cancel").split(",")
+    if w.strip())
 
 # Render types the Job Start form supports (and the only ones the spec may use).
 JOBSTART_RENDER_TYPES = ("status", "text", "long_text", "date", "number", "link")
@@ -297,8 +317,9 @@ JOBSTART_FIELDS: tuple[dict, ...] = (
     # to hold a date isn't worth it.
     {"key": "gc_confirmed_on", "label": "Scope emailed to the GC on",
      "type": "date", "targets": (), "required": False, "prefill": None,
-     "help": "Date you sent the scope to the GC's PM and super. Their reply is "
-             "what catches a mismatch before the crew is on site."},
+     "help": "Fills in by itself once the scope email actually leaves hello@ "
+             "(checked every 10 minutes). Only type it for a send that "
+             "happened outside the portal."},
 )
 
 

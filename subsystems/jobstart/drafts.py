@@ -224,6 +224,12 @@ def summarize(doc: dict) -> list[dict]:
             "packet_url": rec.get("packet_url"),
             "updated_at": rec.get("updated_at"),
             "updated_by": rec.get("updated_by"),
+            # GC scope-confirmation state, for the sent-watcher's work list:
+            # drafted-but-unconfirmed rows are the ones worth a Gmail search.
+            "gc_drafted_at": rec.get("gc_drafted_at"),
+            "gc_subject": rec.get("gc_subject"),
+            "gc_confirmed_on": ((rec.get("values") or {})
+                                .get("gc_confirmed_on") or "").strip() or None,
         })
     order = {STATUS_WITH_OPS: 0, STATUS_SENT_BACK: 1, STATUS_DRAFT: 2,
              STATUS_ACCEPTED: 3}

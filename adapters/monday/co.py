@@ -38,8 +38,11 @@ from __future__ import annotations
 import json
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
+from adapters.monday import cache as monday_cache
+from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID, OPERATIONS_BOARD_ID, PROJECTS_BOARD_ID, SUBITEMS_BOARD_ID
 
 # Projects board columns we read (see monday/client.py for the wider map).
@@ -263,11 +266,21 @@ def search_projects(mc, q: str, *, limit: int = 15) -> list[dict]:
     Project # column (which also holds CO identifiers, so searching a CO id
     finds its CO item). Two contains_text legs (Monday ANDs rules), deduped,
     capped. Returns [{item_id, name, group, project_number, url}].
-    Mirrors monday/estimate.search_bids.
+    Mirrors monday/estimate.search_bids. Legs run in parallel; results are
+    short-TTL cached.
     """
     q = (q or "").strip()
     if len(q) < 2:
         return []
+    cache_key = f"search:projects:{q.lower()}:{int(limit)}"
+    return monday_cache.get_or_set(
+        cache_key,
+        lambda: _search_projects_uncached(mc, q, limit=limit),
+        ttl=monday_cache.search_ttl(),
+    )
+
+
+def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
     query = """
     query ($boardId: [ID!], $columnId: ID!, $value: CompareValue!) {
       boards(ids: $boardId) {
@@ -284,31 +297,46 @@ def search_projects(mc, q: str, *, limit: int = 15) -> list[dict]:
       }
     }
     """ % P_COL_PROJECT_NUMBER
-    results: dict[int, dict] = {}
-    for column_id in ("name", P_COL_PROJECT_NUMBER):
+
+    def _leg(column_id: str):
+        # Fresh session per leg — requests.Session is not thread-safe.
+        token = None
         try:
-            data = mc._query(query, {
-                "boardId": [str(PROJECTS_BOARD_ID)],
-                "columnId": column_id,
-                "value": q,
-            })
-        except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
-            print(f"[monday-co] search leg {column_id!r} failed: {e}", file=sys.stderr)
-            continue
-        for board in data.get("boards") or []:
-            for item in (board.get("items_page") or {}).get("items") or []:
-                item_id = int(item["id"])
-                if item_id in results:
-                    continue
-                texts = {cv["id"]: (cv.get("text") or "").strip()
-                         for cv in item.get("column_values") or []}
-                results[item_id] = {
-                    "item_id": item_id,
-                    "name": (item.get("name") or "").strip(),
-                    "group": ((item.get("group") or {}).get("title") or "").strip(),
-                    "project_number": texts.get(P_COL_PROJECT_NUMBER, ""),
-                    "url": _item_url(PROJECTS_BOARD_ID, item_id),
-                }
+            token = mc.session.headers.get("Authorization")
+        except Exception:  # noqa: BLE001 — fall back to env-configured client
+            token = None
+        local = MondayClient(token=token) if token else MondayClient()
+        return local._query(query, {
+            "boardId": [str(PROJECTS_BOARD_ID)],
+            "columnId": column_id,
+            "value": q,
+        })
+
+    results: dict[int, dict] = {}
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        futs = {pool.submit(_leg, col): col
+                for col in ("name", P_COL_PROJECT_NUMBER)}
+        for fut in as_completed(futs):
+            column_id = futs[fut]
+            try:
+                data = fut.result()
+            except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
+                print(f"[monday-co] search leg {column_id!r} failed: {e}", file=sys.stderr)
+                continue
+            for board in data.get("boards") or []:
+                for item in (board.get("items_page") or {}).get("items") or []:
+                    item_id = int(item["id"])
+                    if item_id in results:
+                        continue
+                    texts = {cv["id"]: (cv.get("text") or "").strip()
+                             for cv in item.get("column_values") or []}
+                    results[item_id] = {
+                        "item_id": item_id,
+                        "name": (item.get("name") or "").strip(),
+                        "group": ((item.get("group") or {}).get("title") or "").strip(),
+                        "project_number": texts.get(P_COL_PROJECT_NUMBER, ""),
+                        "url": _item_url(PROJECTS_BOARD_ID, item_id),
+                    }
     return list(results.values())[:limit]
 
 

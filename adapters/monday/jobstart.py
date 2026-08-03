@@ -6,9 +6,14 @@ The portal's second write surface into Monday (docs/portal-job-start-design.md,
 one existing item, Job Start is the sanctioned path a won bid becomes an
 operations job:
 
-  fetch_accepted_bids()  — Bid Board rows at Stage = Accepted, paged, with the
-                           handoff-state flags the picker needs (does a Projects
-                           item already exist? an Operations one?).
+  fetch_bids()           — live Bid Board rows, OPEN and accepted, paged, each
+                           carrying its stage plus the handoff-state flags the
+                           picker needs (does a Projects item already exist? an
+                           Operations one?). Was fetch_accepted_bids(), which
+                           hard-filtered to Stage = Accepted and so hid a bid
+                           until somebody flipped the stage in Monday by hand.
+  mark_bid_accepted()    — write Stage = Accepted + move to Won Deals, so that
+                           flip happens from inside Job Start.
   get_bid_detail()       — ONE bid's full prefill payload: the read-only context
                            header plus every JOBSTART_FIELDS prefill source.
   get_field_labels()     — live status-label sets for the packet's status
@@ -41,6 +46,26 @@ from shared.boards import (
     OPERATIONS_BOARD_ID,
     PROJECTS_BOARD_ID,
 )
+
+# Optional: Monday list cache may land from a parallel change-set. Job Start
+# must still import and serve open bids if that module isn't present yet.
+try:
+    from adapters.monday import cache as monday_cache
+except ImportError:  # pragma: no cover — cold path when cache.py isn't shipped
+    class _NoMondayCache:
+        @staticmethod
+        def list_ttl() -> float:
+            return 0.0
+
+        @staticmethod
+        def get_or_set(key, factory, *, ttl=None):
+            return factory()
+
+        @staticmethod
+        def invalidate(*_keys) -> None:
+            return None
+
+    monday_cache = _NoMondayCache()  # type: ignore[assignment]
 
 # Mirrors/relations return text = NULL; their readable value is display_value
 # (same finding as adapters/monday/jobcheck.py, verified 2026-07-28). `value`
@@ -89,17 +114,24 @@ def _linked_ids(cv: Optional[dict]) -> list[int]:
 # Reads
 # ---------------------------------------------------------------------------
 
-def _bid_read_columns() -> list[str]:
-    """Every Bid Board column the picker + prefill need, deduped."""
-    ids = [
+def _picker_read_columns() -> list[str]:
+    """Slim Bid Board projection for the picker list only (not detail/prefill)."""
+    return [
         boards.JOBSTART_BID_STAGE_COL,
         boards.JOBSTART_BID_ACCEPTED_DATE_COL,
         boards.JOBSTART_BID_PROJECT_LINK_COL,
         boards.JOBSTART_BID_OPS_LINK_COL,
-        boards.JOBSTART_BID_CUSTOMER_COL,
         boards.JOBSTART_BID_LOCATION_COL,
         boards.JOBSTART_BID_ESTIMATE_NUM_COL,
         boards.JOBSTART_BID_ESTIMATE_TOTAL_COL,
+    ]
+
+
+def _bid_read_columns() -> list[str]:
+    """Every Bid Board column the detail/prefill path needs, deduped."""
+    ids = list(_picker_read_columns())
+    ids += [
+        boards.JOBSTART_BID_CUSTOMER_COL,
         boards.JOBSTART_BID_SERVICES_COL,
         boards.JOBSTART_BID_ESTIMATE_PDF_COL,
     ]
@@ -107,15 +139,40 @@ def _bid_read_columns() -> list[str]:
     return list(dict.fromkeys([i for i in ids if i]))
 
 
-def fetch_accepted_bids(mc) -> list[dict]:
+def fetch_bids(mc) -> list[dict]:
     """
-    Every Bid Board row at Stage = Accepted, normalized for the picker:
-      {item_id, name, url, group_title, estimate_number, estimate_total,
-       location, accepted_date, has_project, has_ops}
+    Every LIVE Bid Board row — open AND accepted — normalized for the picker:
+      {item_id, name, url, stage, stage_state, group_id, group_title,
+       estimate_number, estimate_total, location, accepted_date,
+       has_project, has_ops, group_drift}
     Paged at 200, read-only. `has_project`/`has_ops` drive the "already handed
     off" badge — they are the honest state, not an assumption.
+
+    ⚠ This used to filter hard to Stage = Accepted, which meant a bid was
+    INVISIBLE to Job Start until somebody went to Monday and flipped the stage
+    by hand — backwards for a tool that is meant to be where Sales works
+    (Jordan, 2026-07-29: "this should have access to the open bids, not just the
+    accepted bids"). Job Start now shows open bids and can accept one in place.
+
+    Dead bids are excluded by STAGE, never by group, because stage and group
+    have already drifted apart in the live data: the Bryant/Jent bid is stage
+    Accepted while sitting in "Open Deals", and two accepted bids sit in the
+    Lost Deals group. Both are maintained by hand in two places, and the stage
+    is the one this tool keys off — so the stage decides, and a disagreement is
+    surfaced as `group_drift` rather than quietly hiding a won job.
+
+    Picker uses a slim column projection + short-TTL cache so search/reload
+    isn't re-paying a full-board Monday walk every keystroke/page open.
     """
-    col_ids = json.dumps(_bid_read_columns())
+    return monday_cache.get_or_set(
+        "list:jobstart:bids",
+        lambda: _fetch_bids_uncached(mc),
+        ttl=monday_cache.list_ttl(),
+    )
+
+
+def _fetch_bids_uncached(mc) -> list[dict]:
+    col_ids = json.dumps(_picker_read_columns())
     query = """
     query ($boardId: [ID!], $cursor: String) {
       boards(ids: $boardId) {
@@ -150,17 +207,47 @@ def fetch_accepted_bids(mc) -> list[dict]:
     return rows
 
 
+def stage_state(stage: Optional[str]) -> str:
+    """
+    PURE. One Bid Board stage label → how Job Start treats it.
+      "accepted" — won; ready to hand off
+      "dead"     — lost or cancelled; keep it out of the picker entirely
+      "open"     — anything else, including a blank stage: still sellable, and
+                   Sales can now accept it from inside Job Start
+    Matched on substrings rather than an exact label list on purpose: the Bid
+    Board's stage labels are edited in Monday by hand, and a picker that hides
+    every bid whose label it doesn't recognise is worse than one that shows a
+    stale label.
+    """
+    text = (stage or "").strip().lower()
+    if text == boards.JOBSTART_ACCEPTED_STAGE.strip().lower():
+        return "accepted"
+    if any(word in text for word in boards.JOBSTART_DEAD_STAGE_WORDS):
+        return "dead"
+    return "open"
+
+
 def _normalize_bid(item: dict) -> Optional[dict]:
-    """One raw Bid Board item → picker row, or None when it isn't Accepted."""
+    """One raw Bid Board item → picker row, or None when the bid is dead."""
     cvs = {cv["id"]: cv for cv in item.get("column_values") or []}
     stage = _column_text(cvs.get(boards.JOBSTART_BID_STAGE_COL) or {})
-    if (stage or "").strip().lower() != boards.JOBSTART_ACCEPTED_STAGE.lower():
+    state = stage_state(stage)
+    if state == "dead":
         return None
     group = item.get("group") or {}
+    group_id = group.get("id")
     return {
         "item_id": int(item["id"]),
         "name": (item.get("name") or "").strip(),
         "url": _item_url(BID_BOARD_ID, item["id"]),
+        "stage": stage,
+        "stage_state": state,
+        "group_id": group_id,
+        # Stage says won, the board says lost/still-open — worth showing rather
+        # than resolving silently. Two hand-maintained fields, one job.
+        "group_drift": bool(
+            state == "accepted" and group_id
+            and group_id != boards.JOBSTART_BID_WON_GROUP),
         "group_title": group.get("title"),
         "estimate_number": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_NUM_COL) or {}),
         "estimate_total": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_TOTAL_COL) or {}),
@@ -204,11 +291,17 @@ def get_bid_detail(mc, item_id: int) -> Optional[dict]:
         if text:
             prefill[field["key"]] = text
 
+    stage = _column_text(cvs.get(boards.JOBSTART_BID_STAGE_COL) or {})
     return {
         "item_id": int(item["id"]),
         "name": (item.get("name") or "").strip(),
         "url": _item_url(BID_BOARD_ID, item["id"]),
+        "group_id": (item.get("group") or {}).get("id"),
         "group_title": (item.get("group") or {}).get("title"),
+        # Carried so send_to_ops can mark the bid accepted idempotently, and so
+        # the form can warn Sales that sending will also flip the stage.
+        "stage": stage,
+        "stage_state": stage_state(stage),
         "context": {
             "estimate_number": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_NUM_COL) or {}),
             "estimate_total": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_TOTAL_COL) or {}),
@@ -377,6 +470,62 @@ def _write_with_fallback(mc, board_id: int, group_id, name: str, values: dict,
         return _go(reduced), fragile
 
 
+_MOVE_GROUP = """
+mutation ($itemId: ID!, $groupId: String!) {
+  move_item_to_group(item_id: $itemId, group_id: $groupId) { id }
+}
+"""
+
+
+def mark_bid_accepted(mc, bid_id: int, *, current_stage: Optional[str] = None,
+                      current_group: Optional[str] = None) -> dict:
+    """
+    Set the bid's Stage to Accepted and move it into the Won Deals group, so
+    Sales never has to leave Job Start to flip a stage by hand.
+
+    Returns {stage_written, group_moved, errors} — a report, never an exception.
+    Both halves are INDEPENDENT and IDEMPOTENT: pass the values already read
+    from the board and each is skipped when it's already right, so re-sending a
+    packet doesn't rewrite a stage somebody else set.
+
+    SAFETY NOTE (checked against the live board 2026-07-30 before this was
+    written, per the standing "confirm, don't assume" rule): no ACTIVE Bid Board
+    automation triggers on Stage → Accepted. The two workflows that did —
+    1939926355 and 1939926362, the one that created a Projects item and posted
+    the misleading "and Operations Dashboard" Slack line — are both is_active
+    false. The only live deal_stage triggers are "Cleanup for Lost Bids" and the
+    notice pointing at the pre-portal Workforms Job Start form, neither of which
+    fires on Accepted. If someone re-enables 1939926362, this write will start
+    racing it — and adopt-or-create in hand_off() is what absorbs that.
+    """
+    report: dict = {"stage_written": False, "group_moved": False, "errors": []}
+    bid_id = int(bid_id)
+
+    already_accepted = ((current_stage or "").strip().lower()
+                        == boards.JOBSTART_ACCEPTED_STAGE.strip().lower())
+    if not already_accepted:
+        try:
+            _update_item(mc, BID_BOARD_ID, bid_id, {
+                boards.JOBSTART_BID_STAGE_COL: {
+                    "label": boards.JOBSTART_ACCEPTED_STAGE},
+            })
+            report["stage_written"] = True
+        except Exception as e:  # noqa: BLE001 — never lose the packet over this
+            report["errors"].append(f"stage: {type(e).__name__}: {e}")
+
+    won = boards.JOBSTART_BID_WON_GROUP
+    if won and (current_group or "") != won:
+        try:
+            mc._query(_MOVE_GROUP, {"itemId": str(bid_id), "groupId": won})
+            report["group_moved"] = True
+        except Exception as e:  # noqa: BLE001
+            report["errors"].append(f"group: {type(e).__name__}: {e}")
+
+    if report["stage_written"] or report["group_moved"]:
+        monday_cache.invalidate("list:jobstart:bids")
+    return report
+
+
 def find_item_by_name(mc, board_id: int, name: str) -> Optional[int]:
     """
     Find the existing item for this job — ACROSS naming conventions.
@@ -458,6 +607,9 @@ def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
     """
     report: dict[str, Any] = {}
     bid_id = int(bid["item_id"])
+    # Handoff mutates bid/project/ops links the picker shows — drop the list
+    # cache so the next open doesn't serve a pre-handoff badge state.
+    monday_cache.invalidate("list:jobstart:bids")
 
     # ---- Projects: adopt the linked item, else by name, else create --------
     project_id: Optional[int] = None
