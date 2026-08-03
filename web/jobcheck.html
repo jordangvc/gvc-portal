@@ -2,129 +2,117 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Job Check</title>
+<link rel="stylesheet" href="/ui/gvc.css" />
 <style>
+  /* Job Check page — behavior/layout only. Brand tokens + topbar come from gvc.css. */
   :root {
-    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
-    --err-bg: #FEE7E7; --err-line: #DC2626; --ok-bg: #F2F7EE; --ok-line: #bcd6c8;
+    --warn-bg: var(--gvc-warn-tint); --warn-line: #E3CFA0;
+    --err-bg: var(--gvc-danger-tint); --err-line: var(--gvc-danger);
+    --ok-bg: var(--gvc-ok-tint); --ok-line: #bcd6c8;
   }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
-  .who a { color: #fff; text-decoration: underline; }
-  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
+  #health { font-size: var(--gvc-fs-caption); color: #DCE8DD; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
   .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
-  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
+  .dot.ok { background: var(--gvc-brand-bright); } .dot.bad { background: #E88070; }
   main { max-width: 760px; margin: 0 auto; padding: 20px 16px 120px; display: grid; gap: 16px; }
-  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 18px; }
-  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
-  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
-  /* Standard GVC Portal header (shared across all tool pages) */
-  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-  header h1 { text-align: center; }
-  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
-    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
-    border-radius: 8px; opacity: .95; }
-  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
-  header .home-link .chev { font-size: 17px; line-height: 1; }
-  header #health, header .who { justify-self: end; }
-  @media (max-width: 720px) {
-    header { grid-template-columns: auto 1fr; }
-    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-    header #health, header .who { grid-row: 1; }
-  }
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px; justify-content: center; }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
+  .card { background: var(--gvc-surface); border: 1px solid var(--gvc-line); border-top: 2px solid var(--gvc-gold-matte);
+    border-radius: var(--gvc-r-lg); padding: 18px; box-shadow: var(--gvc-shadow-1); }
+  .card h2 { font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .04em;
+    color: var(--gvc-muted); margin: 0 0 12px; }
+  .hint { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-top: 6px; }
 
-  /* Job Check page */
-  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
+  #status { padding: 12px 14px; border-radius: var(--gvc-r); font-size: var(--gvc-fs-small); display: none; }
   #status.show { display: block; }
   #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
-  #status.ok  { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
+  #status.ok  { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--gvc-green-dark); }
+  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: var(--gvc-danger-dark); }
   #status ul { margin: 6px 0 0; padding-left: 20px; }
 
-  #search { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-  #search:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  #search { width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface); }
+  #search:focus { outline: 2px solid var(--gvc-gold); border-color: var(--gvc-gold); }
   #joblist { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; gap: 6px; }
-  .jobbtn { display: block; width: 100%; text-align: left; min-height: 48px; padding: 10px 14px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; cursor: pointer; }
-  .jobbtn:hover { border-color: var(--green); }
+  .jobbtn { display: block; width: 100%; text-align: left; min-height: var(--gvc-ctl-h); padding: 10px 14px;
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface);
+    font: inherit; cursor: pointer; }
+  .jobbtn:hover { border-color: var(--gvc-green); }
   .jobbtn .jname { font-weight: 600; }
-  .jobbtn .jmeta { font-size: 12.5px; color: var(--muted); }
-  .linkish { background: none; border: 0; padding: 8px 0; color: var(--green-dark);
-    text-decoration: underline; font: inherit; font-size: 14px; cursor: pointer; min-height: 44px; }
+  .jobbtn .jmeta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); }
+  .linkish { background: none; border: 0; padding: 8px 0; color: var(--gvc-green-dark);
+    text-decoration: underline; font: inherit; font-size: var(--gvc-fs-small); cursor: pointer; min-height: 44px; }
 
   .ctx { display: grid; gap: 4px; }
-  .ctx .jobname { font-size: 17px; font-weight: 700; }
-  .ctx .jobname a { color: var(--ink); text-decoration: none; }
-  .ctx .jobname a:hover { color: var(--green-dark); text-decoration: underline; }
-  .ctx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; color: var(--muted); }
-  .ctx-meta b { color: var(--ink); font-weight: 600; }
-  .ctx-meta .flag { color: #7A1F1F; background: var(--err-bg); border: 1px solid #F3C7C2;
-    border-radius: 999px; padding: 1px 10px; font-weight: 700; }
-  .grouptag { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; background: #FBF3E1;
-    color: var(--gold-dark); border: 1px solid #E3CFA0; }
+  .ctx .jobname { font-size: var(--gvc-fs-lead); font-weight: 700; }
+  .ctx .jobname a { color: var(--gvc-ink); text-decoration: none; }
+  .ctx .jobname a:hover { color: var(--gvc-green-dark); text-decoration: underline; }
+  .ctx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--gvc-fs-small); color: var(--gvc-muted); }
+  .ctx-meta b { color: var(--gvc-ink); font-weight: 600; }
+  .ctx-meta .flag { color: var(--gvc-danger-dark); background: var(--err-bg); border: 1px solid #F3C7C2;
+    border-radius: var(--gvc-r-pill); padding: 1px 10px; font-weight: 700; }
+  .grouptag { display: inline-block; font-size: var(--gvc-fs-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; padding: 2px 9px; border-radius: var(--gvc-r-pill); background: var(--warn-bg);
+    color: var(--gvc-gold-dark); border: 1px solid var(--warn-line); }
 
-  .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid #f1ece0; }
+  .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--gvc-line-soft); }
   .field:last-child { border-bottom: 0; }
-  .field > label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
-    color: var(--muted); }
-  .field.dirty > label::after { content: " •"; color: var(--gold-dark); }
-  /* Status picker — a native <select> so phones open the OS picker: every option
-     visible at once, one tap to choose. (Was tap-to-cycle, which meant stepping
-     through every label to reach the last one — wrong on a job site.) The closed
-     control still carries the chosen label's real board color. */
+  .field > label { font-size: var(--gvc-fs-small); font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
+    color: var(--gvc-muted); }
+  .field.dirty > label::after { content: " •"; color: var(--gvc-gold-dark); }
+  /* Status picker — native <select> so phones open the OS picker. Closed control
+     still carries the chosen label's real board color. */
   .select-wrap { position: relative; display: block; width: 100%; }
   .status-select { -webkit-appearance: none; appearance: none;
-    width: 100%; min-height: 48px; padding: 10px 42px 10px 16px; border-radius: 10px;
-    border: 1px solid var(--line); background-color: #F6F5F0; color: var(--ink);
+    width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 42px 10px 16px; border-radius: var(--gvc-r-lg);
+    border: 1px solid var(--gvc-line); background-color: var(--gvc-bg); color: var(--gvc-ink);
     font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
-  .status-select.unset { color: var(--muted); font-weight: 600; }
-  .status-select:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  .status-select.unset { color: var(--gvc-muted); font-weight: 600; }
+  .status-select:focus { outline: 2px solid var(--gvc-gold); border-color: var(--gvc-gold); }
   .select-chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
     pointer-events: none; font-size: 13px; opacity: .85; }
-  /* The dropdown list itself is OS-drawn; force readable list rows on desktop. */
-  .status-select option { background: #fff; color: var(--ink); font-weight: 600; }
+  .status-select option { background: var(--gvc-surface); color: var(--gvc-ink); font-weight: 600; }
   .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
-    width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
+    width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 14px; font-size: 16px;
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface); font-family: inherit; }
   .field textarea { min-height: 88px; resize: vertical; }
-  .field input:focus, .field textarea:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
-  .checkwrap { display: flex; align-items: center; gap: 14px; min-height: 48px; cursor: pointer; }
-  .checkwrap input[type="checkbox"] { width: 28px; height: 28px; accent-color: var(--green); cursor: pointer; }
+  .field input:focus, .field textarea:focus { outline: 2px solid var(--gvc-gold); border-color: var(--gvc-gold); }
+  .checkwrap { display: flex; align-items: center; gap: 14px; min-height: var(--gvc-ctl-h); cursor: pointer; }
+  .checkwrap input[type="checkbox"] { width: 28px; height: 28px; accent-color: var(--gvc-green); cursor: pointer; }
   .checkwrap span { font-size: 16px; }
 
-  .savebar { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(250,250,248,.96);
-    border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    display: none; }
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
+    background: rgba(250,250,248,.96); border-top: 1px solid var(--gvc-line);
+    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: none; }
   .savebar.show { display: block; }
   .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700;
-    border: 0; border-radius: 10px; min-height: 52px; padding: 12px 22px; font-size: 17px;
-    cursor: pointer; flex: 1; }
+  .btn.gold { background: linear-gradient(0deg, var(--gvc-gold-matte), var(--gvc-gold)); color: #231A08;
+    font-weight: 700; border: 0; border-radius: var(--gvc-r-lg); min-height: 52px; padding: 12px 22px;
+    font-size: 17px; cursor: pointer; flex: 1; }
   .btn.gold:hover { filter: brightness(1.06); }
   .btn.gold:disabled { opacity: .6; cursor: default; filter: none; }
-  #dirtycount { font-size: 13px; color: var(--muted); white-space: nowrap; }
+  #dirtycount { font-size: var(--gvc-fs-small); color: var(--gvc-muted); white-space: nowrap; }
+
+  @media (max-width: 640px) {
+    .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
+    .gvc-wordmark { font-size: 15px; }
+    main { padding: 16px 14px calc(120px + env(safe-area-inset-bottom, 0px)); }
+  }
 </style>
 </head>
 <body>
-<header>
-  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
-  <h1>Job Check</h1>
-  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/" title="Back to the GVC Portal home">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Job Check</span>
+    <div class="gvc-topbar-right">
+      <div id="health">Checking service…</div>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
 </header>
 
 <main>

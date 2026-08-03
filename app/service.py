@@ -794,6 +794,31 @@ def portal_home(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
+@app.get("/ui/gvc.css")
+def portal_stylesheet() -> Response:
+    """
+    The shared GVC design system (web/gvc.css), served to every portal page.
+
+    Deliberately NOT behind require_ui_access: a stylesheet carries no data, and
+    gating it would mean the sign-in page itself renders unstyled. Cached for an
+    hour — long enough to stop refetching on every page, short enough that a
+    redeploy shows up without anyone clearing a cache.
+    """
+    path = WEB_DIR / "gvc.css"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_text(encoding="utf-8"),
+        media_type="text/css",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @app.get("/ui/invoice", response_class=HTMLResponse)
 def ui_invoice_form(request: Request) -> HTMLResponse:
     """Serve the office-staff invoice form."""
