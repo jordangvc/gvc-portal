@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GVC Morning Brief</title>
+<link rel="stylesheet" href="/ui/gvc.css" />
+<style>
+  /* Morning Brief — mobile-first employee control center (slice 1). */
+  body {
+    background:
+      radial-gradient(1000px 420px at 8% -8%, rgba(35,83,57,.08), transparent 55%),
+      radial-gradient(800px 380px at 100% 0%, rgba(201,162,75,.09), transparent 48%),
+      var(--gvc-bg);
+    background-attachment: fixed;
+  }
+  main.mb-shell {
+    max-width: 640px; margin: 0 auto;
+    padding: var(--gvc-space-4) var(--gvc-space-4)
+      calc(var(--gvc-space-7) + env(safe-area-inset-bottom, 0px));
+    display: grid; gap: var(--gvc-space-3);
+  }
+  .mb-hd { margin-bottom: 4px; }
+  .mb-hd .gvc-h1 { font-size: clamp(24px, 6vw, 30px); }
+  .mb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  .mb-chip {
+    font-size: var(--gvc-fs-caption); font-weight: 600; color: var(--gvc-ink-soft);
+    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
+    border-radius: var(--gvc-r-pill); padding: 6px 12px;
+  }
+  .mb-chip--ok { background: var(--gvc-ok-tint); border-color: #bcd6c8; color: var(--gvc-green-dark); }
+  .mb-chip--warn { background: var(--gvc-warn-tint); border-color: #E3CFA0; color: var(--gvc-gold-dark); }
+
+  .mb-card {
+    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
+    border-top: 2.5px solid var(--gvc-gold-matte); border-radius: var(--gvc-r-lg);
+    box-shadow: var(--gvc-shadow-1); overflow: hidden;
+  }
+  .mb-card-hd {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    padding: 12px 14px 10px; border-bottom: 1px solid var(--gvc-line-soft);
+  }
+  .mb-card-hd h2 {
+    margin: 0; font-size: var(--gvc-fs-small); font-weight: 700;
+    text-transform: uppercase; letter-spacing: var(--gvc-track-caps); color: var(--gvc-green-dark);
+  }
+  .mb-card-hd .count { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); font-weight: 600; }
+  .mb-card-bd { padding: 8px 10px 12px; display: grid; gap: 8px; }
+  .mb-empty { padding: 14px; color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
+
+  .proj {
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg);
+    background: var(--gvc-bg); overflow: hidden;
+  }
+  .proj-sum {
+    width: 100%; text-align: left; border: 0; background: transparent;
+    padding: 12px 12px 12px 14px; font: inherit; cursor: pointer;
+    display: grid; gap: 4px; min-height: 56px;
+    box-shadow: inset 3px 0 0 transparent;
+  }
+  .proj-sum:hover { background: #fff; }
+  .proj.is-blocked .proj-sum { box-shadow: inset 3px 0 0 var(--gvc-danger); }
+  .proj.is-overdue .proj-sum { box-shadow: inset 3px 0 0 var(--gvc-gold-dark); }
+  .proj-name { font-weight: 700; color: var(--gvc-ink); font-size: var(--gvc-fs-body); line-height: 1.3; }
+  .proj-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .proj-meta b { color: var(--gvc-ink-soft); font-weight: 600; }
+  .proj-why { font-size: var(--gvc-fs-micro); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .04em; color: var(--gvc-gold-dark); }
+  .proj-actions {
+    display: none; gap: 8px; padding: 0 12px 12px; flex-wrap: wrap;
+  }
+  .proj.open .proj-actions { display: flex; }
+  .proj-btn {
+    flex: 1 1 auto; min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r);
+    border: 1px solid var(--gvc-line-strong); background: var(--gvc-surface);
+    color: var(--gvc-green-dark); font: inherit; font-weight: 700; font-size: var(--gvc-fs-small);
+    text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+  }
+  .proj-btn:hover { background: var(--gvc-tint-green); border-color: var(--gvc-green); color: var(--gvc-green-dark); }
+  .proj-btn.is-disabled { opacity: .45; pointer-events: none; }
+
+  .prep-list { list-style: none; margin: 0; padding: 4px 14px 14px; display: grid; gap: 8px; }
+  .prep-list li {
+    display: flex; align-items: center; gap: 10px; font-size: var(--gvc-fs-small);
+    color: var(--gvc-ink-soft); min-height: 36px;
+  }
+  .prep-dot {
+    width: 18px; height: 18px; border-radius: 50%; flex: 0 0 18px;
+    border: 2px solid var(--gvc-line-strong); background: var(--gvc-surface);
+  }
+  .prep-list li.done { color: var(--gvc-green-dark); font-weight: 600; }
+  .prep-list li.done .prep-dot {
+    background: var(--gvc-green); border-color: var(--gvc-green);
+    box-shadow: inset 0 0 0 3px var(--gvc-surface);
+  }
+
+  #status {
+    display: none; padding: 12px 14px; border-radius: var(--gvc-r);
+    font-size: var(--gvc-fs-small); background: var(--gvc-danger-tint);
+    border: 1px solid #E2C3BA; color: var(--gvc-danger-dark);
+  }
+  #status.show { display: block; }
+
+  @media (max-width: 640px) {
+    .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
+    .gvc-wordmark { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/" title="Back to the GVC Portal home">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Morning Brief</span>
+    <div class="gvc-topbar-right">
+      <span class="gvc-topbar-user" id="who">{{EMAIL}}</span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
+</header>
+
+<main class="mb-shell">
+  <div class="mb-hd">
+    <p class="gvc-eyebrow" id="eyebrow">Your Morning Brief</p>
+    <h1 class="gvc-h1" id="title">Loading…</h1>
+    <div class="mb-chips" id="chips"></div>
+  </div>
+
+  <div id="status"></div>
+
+  <section class="mb-card" id="prepcard">
+    <div class="mb-card-hd"><h2>Preparation</h2><span class="count" id="prepcount"></span></div>
+    <ul class="prep-list" id="preplist"></ul>
+  </section>
+
+  <section class="mb-card" id="minecard">
+    <div class="mb-card-hd"><h2>My projects</h2><span class="count" id="minecount"></span></div>
+    <div class="mb-card-bd" id="minelist"></div>
+  </section>
+
+  <section class="mb-card" id="attncard">
+    <div class="mb-card-hd"><h2>Needs attention today</h2><span class="count" id="attncount"></span></div>
+    <div class="mb-card-bd" id="attnlist"></div>
+  </section>
+
+  <section class="mb-card" id="holdcard">
+    <div class="mb-card-hd"><h2>Long-term holds</h2><span class="count" id="holdcount"></span></div>
+    <div class="mb-card-bd" id="holdlist"></div>
+  </section>
+
+  <p class="gvc-sub" style="font-size:var(--gvc-fs-caption);margin:8px 0 0;">
+    Slice 1 — live Ops board, personalized to you. Routes, Action Requests, Drive updates,
+    and the 6:45 huddle come next.
+  </p>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function projectCard(p) {
+  const blocked = !!(p.blocked && String(p.blocked).toLowerCase() !== "clear");
+  const overdue = !!(p.overdue && String(p.overdue).toLowerCase() !== "on time");
+  const cls = ["proj", blocked ? "is-blocked" : "", overdue ? "is-overdue" : ""].filter(Boolean).join(" ");
+  const bits = [
+    p.stage ? `<span>Stage <b>${esc(p.stage)}</b></span>` : "",
+    p.stage_detail ? `<span>${esc(p.stage_detail)}</span>` : "",
+    p.scheduled_day ? `<span>${esc(p.scheduled_day)}</span>` : "",
+    blocked ? `<span><b>${esc(p.blocked)}</b></span>` : "",
+    overdue ? `<span><b>${esc(p.overdue)}</b></span>` : "",
+    p.location ? `<span>${esc(p.location)}</span>` : "",
+  ].filter(Boolean).join("");
+  return `<article class="${cls}" data-id="${p.item_id}">
+    <button type="button" class="proj-sum" aria-expanded="false">
+      <div class="proj-name">${esc(p.name)}</div>
+      <div class="proj-meta">${bits}</div>
+      ${p.relevance_reason ? `<div class="proj-why">${esc(p.relevance_reason)}</div>` : ""}
+    </button>
+    <div class="proj-actions">
+      <a class="proj-btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open in Monday</a>
+      <span class="proj-btn is-disabled" title="Coming next">Drive</span>
+      <span class="proj-btn is-disabled" title="Coming next">Add Update</span>
+    </div>
+  </article>`;
+}
+
+function renderList(el, rows, empty) {
+  if (!rows || !rows.length) {
+    el.innerHTML = `<div class="mb-empty">${esc(empty)}</div>`;
+    return;
+  }
+  el.innerHTML = rows.map(projectCard).join("");
+  el.querySelectorAll(".proj-sum").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const art = btn.closest(".proj");
+      const open = art.classList.toggle("open");
+      btn.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  });
+}
+
+function render(brief) {
+  const name = (brief.employee && brief.employee.name)
+    ? brief.employee.name.split(" ")[0]
+    : "there";
+  $("#title").textContent = `Good morning, ${name}`;
+  const refreshed = (brief.hub && brief.hub.refreshed_at) || "";
+  $("#eyebrow").textContent = refreshed
+    ? `Your Morning Brief · refreshed ${refreshed}`
+    : "Your Morning Brief";
+
+  const chips = [];
+  const mineN = (brief.my_projects || []).length;
+  const attnN = (brief.needs_attention || []).length;
+  chips.push(`<span class="mb-chip mb-chip--ok">${mineN} of yours</span>`);
+  chips.push(`<span class="mb-chip${attnN ? " mb-chip--warn" : ""}">${attnN} need attention</span>`);
+  if (brief.preparation) {
+    const done = (brief.preparation.criteria || []).filter((c) => c.done).length;
+    chips.push(`<span class="mb-chip">${done}/${brief.preparation.total || 6} prep</span>`);
+  }
+  $("#chips").innerHTML = chips.join("");
+
+  const prep = brief.preparation || {};
+  $("#prepcount").textContent = prep.label || "";
+  $("#preplist").innerHTML = (prep.criteria || []).map((c) =>
+    `<li class="${c.done ? "done" : ""}"><span class="prep-dot" aria-hidden="true"></span>${esc(c.label)}</li>`
+  ).join("");
+
+  $("#minecount").textContent = String(mineN);
+  $("#attncount").textContent = String(attnN);
+  $("#holdcount").textContent = String((brief.long_term_holds || []).length);
+
+  renderList($("#minelist"), brief.my_projects,
+    "Nothing assigned to you as Ops. Owner right now — company attention is below.");
+  renderList($("#attnlist"), brief.needs_attention,
+    "Nothing blocked or overdue on the active Ops board. Nice.");
+  renderList($("#holdlist"), brief.long_term_holds,
+    "Long-term hold detection ships next (quiet 7+ days).");
+}
+
+async function load() {
+  try {
+    const r = await fetch("/ui/api/morning/brief");
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      $("#status").className = "show";
+      $("#status").textContent = (d.detail || d.message || "Couldn't load the brief.") +
+        (d.advice ? " — " + d.advice : "");
+      $("#title").textContent = "Morning Brief";
+      return;
+    }
+    render(body);
+  } catch (e) {
+    $("#status").className = "show";
+    $("#status").textContent = "Network error — " + e.message;
+    $("#title").textContent = "Morning Brief";
+  }
+}
+
+load();
+</script>
+</body>
+</html>

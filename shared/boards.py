@@ -114,6 +114,55 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
 
 
 # ---------------------------------------------------------------------------
+# Morning Brief — employee daily control center (docs/MORNING_BRIEF_BUILD_SPEC.md,
+# approved 2026-08-03). READ-ONLY column allowlist for the Operations board.
+# Financial / billing columns are never included here and are also listed in
+# MORNING_HARD_EXCLUDED_IDS so a future edit cannot accidentally expose them.
+# ---------------------------------------------------------------------------
+MORNING_BOARD_ID = int(os.environ.get("GVC_MONDAY_MORNING_BOARD_ID")
+                       or OPERATIONS_BOARD_ID)
+
+# Same finished-work groups Job Check hides — the brief is for active work.
+MORNING_SKIP_GROUP_IDS = JOBCHECK_SKIP_GROUP_IDS
+
+# Column ids the Morning Brief API may READ (never write in slice 1).
+MORNING_COL_OPS_OWNER = "multiple_person_mm1ht2vj"
+MORNING_COL_SCHEDULED = "status_19"
+MORNING_COL_STAGE = "status"
+MORNING_COL_STAGE_DETAIL = "color_mm1hmwdm"
+MORNING_COL_BLOCKED = "color_mm1hrm6z"
+MORNING_COL_OVERDUE = "color_mm1x2172"
+MORNING_COL_LOCATION = "lookup_mknf1rdw"
+MORNING_COL_PROJECT_LINK = "link_to_projects"
+MORNING_COL_PROJECT_STATUS = "mirror3"
+MORNING_COL_PROGRESS = "lookup_mkpeqd8w"  # mirrored Progress — may be empty
+
+MORNING_READ_COLUMN_IDS: tuple[str, ...] = (
+    MORNING_COL_OPS_OWNER,
+    MORNING_COL_SCHEDULED,
+    MORNING_COL_STAGE,
+    MORNING_COL_STAGE_DETAIL,
+    MORNING_COL_BLOCKED,
+    MORNING_COL_OVERDUE,
+    MORNING_COL_LOCATION,
+    MORNING_COL_PROJECT_LINK,
+    MORNING_COL_PROJECT_STATUS,
+    MORNING_COL_PROGRESS,
+)
+
+# Money / billing — never in employee Morning Brief payloads.
+# (Do NOT reuse JOBCHECK_HARD_EXCLUDED_IDS wholesale — that set also blocks
+# write-only automation columns like Overdue that the brief must READ.)
+MORNING_HARD_EXCLUDED_IDS = frozenset({
+    "board_counts",       # Board Count — billing basis
+    "numeric_mm3fcjmn",   # Pay App #
+    "numeric_mm5ahj91",   # CO Amount
+    "color_mm2xd40t",     # BIllable
+    "date_mm3zry96",      # Ready for Invoice Date
+})
+
+
+# ---------------------------------------------------------------------------
 # Job Start — the Sales → Operations handoff contract (designed 2026-07-29;
 # docs/portal-job-start-design.md). Jake's ask, Jordan's calls: portal-hosted,
 # HARD GATE, history left alone.

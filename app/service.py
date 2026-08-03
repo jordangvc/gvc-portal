@@ -77,6 +77,7 @@ from orchestrators import check_flow
 from orchestrators import coi_flow
 from orchestrators import lien_flow
 from orchestrators import jobcheck_flow
+from orchestrators import morning_flow
 from orchestrators import jobstart_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
@@ -2020,6 +2021,71 @@ def ui_lien_status(request: Request) -> dict:
         raise HTTPException(
             status_code=status,
             detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
+# ---------------------------------------------------------------------------
+# Morning Brief — employee daily control center (docs/MORNING_BRIEF_BUILD_SPEC.md,
+# slice 1 2026-08-03). Gated by `morning` (baseline for every provisioned user).
+# ---------------------------------------------------------------------------
+
+@app.get("/ui/morning", response_class=HTMLResponse)
+def ui_morning_page(request: Request) -> HTMLResponse:
+    """Serve the private employee Morning Brief."""
+    email = require_feature(request, "morning")
+    activity.log_event("tool.open", actor=email, target="morning")
+    path = WEB_DIR / "morning.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+
+
+@app.get("/ui/api/morning/brief")
+def ui_morning_brief(request: Request) -> dict:
+    """Personalized employee brief from live Operations-board data."""
+    email = require_feature(request, "morning")
+    try:
+        return morning_flow.build_employee_brief(email)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Set GVC_MONDAY_TOKEN (or MONDAY_API_TOKEN) on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:morning] brief error: {type(e).__name__}: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "MORNING_BRIEF_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Check Cloud Run logs for [morning] / Monday errors."},
+        )
+
+
+@app.get("/ui/api/morning/hub")
+def ui_morning_hub(request: Request) -> dict:
+    """Compact hub-tile summary (same personalization as the full brief)."""
+    email = require_feature(request, "morning")
+    try:
+        return morning_flow.hub_summary(email)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Set GVC_MONDAY_TOKEN (or MONDAY_API_TOKEN) on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:morning] hub error: {type(e).__name__}: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "MORNING_HUB_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Check Cloud Run logs for [morning] / Monday errors."},
         )
 
 

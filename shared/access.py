@@ -31,8 +31,10 @@ import os
 # `jobcheck` = Job Check (field-crew Monday column updates), added 2026-07-27.
 # `jobstart` = Job Start (Sales → Operations handoff gate), added 2026-07-29.
 # `fieldguide` = Field Manual (our own production procedures), added 2026-07-29.
+# `morning` = Morning Brief / Ops huddle daily control center, added 2026-08-03
+#   (docs/MORNING_BRIEF_BUILD_SPEC.md).
 FEATURES: tuple[str, ...] = (
-    "estimate", "change_order", "invoice", "check",
+    "morning", "estimate", "change_order", "invoice", "check",
     "coi", "lien", "jobcheck", "jobstart", "takeoff", "timeoff", "fieldguide",
     "activity", "admin",
 )
@@ -40,7 +42,9 @@ ALL_FEATURES = frozenset(FEATURES)
 # Baseline = every provisioned store user gets this without an explicit grant.
 # `fieldguide` is baseline on purpose: it holds no customer or financial data,
 # and the whole point is that a crew member can reach it in one tap.
-BASELINE = frozenset({"timeoff", "fieldguide"})
+# `morning` is baseline for the same reason: every employee gets their private
+# daily brief; role personalization is server-side, not a separate grant.
+BASELINE = frozenset({"timeoff", "fieldguide", "morning"})
 WILDCARD = "*"
 
 # Backward-compatible implications: when a tool graduates to its own feature,
