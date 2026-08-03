@@ -23,7 +23,7 @@ _VALUE_FRAGMENT = """
           ... on MirrorValue { display_value }
           ... on BoardRelationValue { display_value }
           ... on PeopleValue {
-            persons_and_teams { id name }
+            persons_and_teams { id kind }
           }
 """
 
@@ -48,16 +48,32 @@ def _column_text(cv: dict) -> Optional[str]:
 
 
 def _people(cv: dict) -> list[dict]:
-    """People column → [{id, name, email}, ...] (email may be missing)."""
+    """People column → [{id, name, email, kind}, ...] (email may be missing).
+
+    Monday's PeopleEntity only exposes ``id`` + ``kind`` — there is no ``name``
+    field (querying it 502s the whole brief). Display names come from the
+    column-level ``text`` (comma-separated), zipped onto entities in order.
+    """
+    entities = [p for p in (cv.get("persons_and_teams") or []) if p]
+    raw_text = (cv.get("text") or "").strip()
+    names = [n.strip() for n in raw_text.split(",") if n.strip()] if raw_text else []
+
     out: list[dict] = []
-    for p in cv.get("persons_and_teams") or []:
-        if not p:
-            continue
-        out.append({
-            "id": p.get("id"),
-            "name": (p.get("name") or "").strip() or None,
-            "email": None,  # Monday User.email needs a scoped fragment; name match is enough for GVC
-        })
+    if entities:
+        for i, p in enumerate(entities):
+            name = names[i] if i < len(names) else None
+            out.append({
+                "id": p.get("id"),
+                "name": name,
+                # Monday User.email needs a scoped users{} lookup; name match
+                # is enough for GVC's small roster.
+                "email": None,
+                "kind": p.get("kind"),
+            })
+    else:
+        # Text-only fallback when the typed people fragment is empty.
+        for name in names:
+            out.append({"id": None, "name": name, "email": None, "kind": None})
     return out
 
 
