@@ -109,3 +109,42 @@ When the source folder contains an AIA workbook (.xlsx) or pre-made G702/G703 PD
 3. **Author the input JSON by hand for now.** Place per-job source assets (xlsx, TM approval images) under `inputs/<identifier>/` and reference them from the JSON. The JSON itself lives at `inputs/<identifier>-<slug>.json` per the existing convention.
 4. **For T&M on the AIA:** if the billing instructions say "this will be billed as an additional line on the AIA," the customer expects the AIA itself to include the T&M row. Have an admin add the row to the G703 tab (`"{N} - G703 - Schedule of Values"`) before exporting — don't ship a CO that's only on our invoice but missing from the G702/G703.
 5. **Always dry-run before live.** The CO Template + invoice PDF both render in dry-run; eyeball them and surface to Jordan for sign-off before preflight/live.
+
+## Cursor Cloud specific instructions
+
+This section is for Cloud Agents. The VM boots from a snapshot with WeasyPrint's
+system libraries (Pango/Cairo/GDK-Pixbuf/fonts, per the `Dockerfile`) already
+installed, and the startup update script refreshes Python deps into a repo-local
+venv at `/workspace/.venv`. Python is **3.12** (matches the Dockerfile; ignore the
+macOS 3.14 quirks noted above — those are for the local Mac dev box, not this VM).
+
+- **Use the venv.** Dependencies live in `/workspace/.venv`, NOT the macOS `~/.venv`
+  the `./gvc` wrapper hardcodes. The `./gvc` wrapper is macOS/Homebrew-only — do not
+  use it here. Run tools with `. .venv/bin/activate` first, or call `.venv/bin/python`
+  / `.venv/bin/pytest` / `.venv/bin/uvicorn` directly. System `pip` is
+  externally-managed (PEP 668) and will refuse installs — always go through the venv.
+- **Run the app (the only long-running service):**
+  `GVC_UI_DEV_BYPASS=1 GVC_PORTAL_ALLOWED_EMAILS=dev-bypass@localhost uvicorn app.service:app --port 8080`
+  (start it from the repo root so `app.service` imports; `PYTHONPATH` = repo root).
+  There are no databases, brokers, or worker processes — the FastAPI app is
+  everything. Scheduled jobs are just external Cloud Scheduler POSTs to `/v1/tasks/*`.
+- **`GVC_UI_DEV_BYPASS=1` is mandatory for local `/ui/*` access** — without it every
+  browser page redirects to Google sign-in. The bypass user is `dev-bypass@localhost`.
+- **Non-obvious gotcha:** dev-bypass alone still 303-redirects the tool pages
+  (`/ui/estimate`, `/ui/invoice`, …) back to the hub, because they are feature-gated.
+  Add `GVC_PORTAL_ALLOWED_EMAILS=dev-bypass@localhost` to make that user a break-glass
+  superadmin (grants all features); only then do the tool pages return 200.
+- **Everything external degrades gracefully.** Stripe, Monday, Drive, Gmail, GCS,
+  Vision, and Slack are all unconfigured on this VM; the app boots, `/health` returns
+  `ok: true`, and startup only prints "missing config" warnings. No secrets are needed
+  to run, load the UI, or render PDFs.
+- **Exercise core functionality without any external service** via the dry-run PDF
+  path — it renders through WeasyPrint with no Stripe/Monday. Set
+  `GVC_SERVICE_API_KEY=<key>` and POST to `/v1/estimate/from-json` (or
+  `/v1/invoice/from-json`) with `{"data": {...}, "mode": "dry-run"}`; the PDF lands in
+  `/workspace/output/`. Leave `estimate.identifier` blank so it auto-assigns
+  (`YYYY-MMDD-NNN`); a legacy id like `EST-...` is rejected as INVALID_INPUT.
+- **Tests + compile:** `.venv/bin/pytest -q` (the `tests/` suite; also runnable as
+  standalone scripts, e.g. `python tests/test_lien_watch.py`) and
+  `python -m compileall app orchestrators subsystems adapters shared scripts`. The
+  Dockerfile's build-time smoke test is `python -c "import app.service"`.

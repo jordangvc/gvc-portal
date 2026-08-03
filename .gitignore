@@ -11,3 +11,6 @@ logs/
 __pycache__/
 *.pyc
 .DS_Store
+
+# Local Python virtualenv (Cursor Cloud VM uses /workspace/.venv)
+.venv/
