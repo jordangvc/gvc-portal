@@ -84,6 +84,16 @@
   .note { background: #FCFAF4; border-left: 2.5pt solid #B6985A; padding: 6pt 9pt;
           font-size: 9pt; margin-top: 7pt; }
 
+  /* Site photos — pulled from the job's Drive folder and embedded so they print
+     on the packet and ride along in the Drive copy. Two per row; each figure
+     stays whole across a page break. */
+  .photos { display: flex; flex-wrap: wrap; gap: 8pt; }
+  .photo { width: calc(50% - 4pt); border: 0.75pt solid #D6D2C4; border-radius: 4pt;
+           overflow: hidden; background: #fff; page-break-inside: avoid; margin: 0; }
+  .photo img { display: block; width: 100%; height: auto; }
+  .photo .cap { font-size: 7.5pt; color: #43503A; padding: 3pt 7pt;
+                border-top: 0.5pt solid #EFEDE4; }
+
   footer { position: fixed; bottom: -0.38in; left: 0; right: 0;
            border-top: 0.75pt solid #D6D2C4; padding-top: 4pt;
            font-size: 7.5pt; color: #6B7360;
@@ -198,6 +208,20 @@
 <div class="blk keep">
   <h2>Allowances &amp; walkthrough notes</h2>
   <div class="scope"><div class="body">{{ allowances }}</div></div>
+</div>
+{% endif %}
+
+{% if photos %}
+<div class="blk">
+  <h2>Site photos</h2>
+  <div class="photos">
+    {% for p in photos %}
+    <figure class="photo">
+      <img src="{{ p.data_uri }}" alt="{{ p.caption or 'Site photo' }}" />
+      {% if p.caption %}<figcaption class="cap">{{ p.caption }}</figcaption>{% endif %}
+    </figure>
+    {% endfor %}
+  </div>
 </div>
 {% endif %}
 
