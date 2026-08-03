@@ -60,6 +60,63 @@ def test_assert_no_financial_keys():
         assert "financial" in str(e).lower()
 
 
+def test_people_uses_column_text_not_entity_name():
+    """Monday PeopleEntity has id+kind only — names come from column text.
+
+    Regression for the live 502: querying ``persons_and_teams { name }``
+    fails with "Cannot query field 'name' on type 'PeopleEntity'".
+    """
+    frag = mm._VALUE_FRAGMENT
+    assert "persons_and_teams" in frag
+    assert "kind" in frag
+    # Must not ask PeopleEntity for name (column-level `text` is fine).
+    assert "persons_and_teams { id name }" not in frag.replace("\n", " ")
+    assert "persons_and_teams { id kind }" in " ".join(frag.split())
+
+    owners = mm._people({
+        "text": "Mark W, Robert R",
+        "persons_and_teams": [
+            {"id": "11", "kind": "person"},
+            {"id": "22", "kind": "person"},
+        ],
+    })
+    assert owners == [
+        {"id": "11", "name": "Mark W", "email": None, "kind": "person"},
+        {"id": "22", "name": "Robert R", "email": None, "kind": "person"},
+    ]
+    # Text-only fallback still personalizes via ops_owner_text.
+    owners2 = mm._people({"text": "Ethan", "persons_and_teams": []})
+    assert owners2 == [{"id": None, "name": "Ethan", "email": None, "kind": None}]
+
+
+def test_normalize_ops_owner_from_people_value():
+    item = {
+        "id": "99",
+        "name": "Hang drywall",
+        "group": {"id": "topics", "title": "Active"},
+        "column_values": [
+            {
+                "id": boards.MORNING_COL_OPS_OWNER,
+                "text": "Jordan Faulkner",
+                "type": "people",
+                "persons_and_teams": [{"id": "7", "kind": "person"}],
+            },
+            {
+                "id": boards.MORNING_COL_BLOCKED,
+                "text": "Clear",
+                "type": "status",
+            },
+        ],
+    }
+    row = mm._normalize(item)
+    assert row is not None
+    assert row["ops_owners"][0]["name"] == "Jordan Faulkner"
+    assert row["ops_owner_text"] == "Jordan Faulkner"
+    assert mm.is_personally_relevant(
+        row, email="jordan@greenvalleycontractors.com",
+        display_name="Jordan Faulkner")
+
+
 def main():
     tests = [
         test_morning_is_baseline_feature,
@@ -68,6 +125,8 @@ def main():
         test_relevance_by_display_name,
         test_attention_blocked_and_overdue,
         test_assert_no_financial_keys,
+        test_people_uses_column_text_not_entity_name,
+        test_normalize_ops_owner_from_people_value,
     ]
     failed = 0
     for t in tests:
