@@ -32,12 +32,19 @@ def test_shipped_config_survives_the_hard_exclusion_gate():
     # if this fails, the default config itself contains an excluded column.
     effective = jf.allowlisted_columns()
     assert [c["id"] for c in effective] == [c["id"] for c in boards.JOBCHECK_COLUMNS]
+    assert all(c["board"] == "ops" for c in effective)
     # Display order is config order.
     assert effective[0]["label"] == "Stage"
     assert effective[-1]["label"] == "Open questions for Ops"
     assert any(c["id"] == "date" for c in effective)
     assert any(c["id"] == "long_text_mkpzf3je" for c in effective)
     assert any(c["id"] == "color_mm02xmc0" for c in effective)
+    # Trade cols stay out of the Ops allowlist (Projects board only).
+    trade_ids = {c["id"] for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
+    assert not trade_ids & {c["id"] for c in boards.JOBCHECK_COLUMNS} - {"status_19"}
+    # status_19 is the intentional id collision — Ops Scheduled Day vs Projects Hanging.
+    assert any(c["id"] == "status_19" for c in boards.JOBCHECK_COLUMNS)
+    assert any(c["id"] == "status_19" for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS)
 
 
 def test_hard_exclusions_beat_config_edits():
@@ -363,6 +370,183 @@ def test_create_item_update_requires_body():
         assert "required" in str(e).lower()
     else:
         raise AssertionError("empty update body did not raise")
+
+
+
+# ------------------------------------ Projects trade status (phase-2 slice 1)
+
+def test_projects_trade_config_well_formed_and_gated():
+    assert boards.JOBCHECK_PROJECTS_TRADE_COLUMNS, "trade allowlist is empty"
+    expected = {
+        "color_mkza9z7c": "Framing Status",
+        "status_19": "Hanging Status",
+        "dup__of_hung_status1": "Scrapping Status",
+        "color_mkza855s": "Finishing Stage",
+    }
+    got = {c["id"]: c["label"] for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
+    assert got == expected
+    for entry in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS:
+        assert entry["type"] == "status", entry
+    effective = jf.allowlisted_projects_trade_columns()
+    assert [c["id"] for c in effective] == list(expected)
+    assert all(c["board"] == "projects" for c in effective)
+    # Hard exclusions still apply if someone tries to sneak a mirror in.
+    saved = boards.JOBCHECK_PROJECTS_TRADE_COLUMNS
+    boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved + (
+        {"id": "mirror3", "label": "Project Status", "type": "mirror"},
+        {"id": "link_to_projects", "label": "Link", "type": "board_relation"},
+    )
+    try:
+        ids = {c["id"] for c in jf.allowlisted_projects_trade_columns()}
+        assert "mirror3" not in ids
+        assert "link_to_projects" not in ids
+    finally:
+        boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved
+
+
+def test_status_19_collision_is_board_scoped():
+    # Ops status_19 = Scheduled Day; Projects status_19 = Hanging Status.
+    ops = next(c for c in jf.allowlisted_columns() if c["id"] == "status_19")
+    proj = next(c for c in jf.allowlisted_projects_trade_columns()
+                if c["id"] == "status_19")
+    assert ops["label"] == "Scheduled Day" and ops["board"] == "ops"
+    assert proj["label"] == "Hanging Status" and proj["board"] == "projects"
+    assert jf.field_key(ops) == "ops:status_19"
+    assert jf.field_key(proj) == "projects:status_19"
+    assert jf.parse_value_key("status_19") == ("ops", "status_19")
+    assert jf.parse_value_key("projects:status_19") == ("projects", "status_19")
+
+    labels = {
+        "status_19": ["Today", "Tomorrow"],                       # Ops Scheduled Day
+        "projects:status_19": ["Hanging Not Started", "100% Hanging Completed"],
+    }
+    shaped, errors, accepted = jf.validate_values({
+        "status_19": "Today",
+        "projects:status_19": "100% Hanging Completed",
+    }, status_labels=labels)
+    assert shaped["status_19"] == {"label": "Today"}
+    assert shaped["projects:status_19"] == {"label": "100% Hanging Completed"}
+    assert accepted["status_19"]["board"] == "ops"
+    assert accepted["projects:status_19"]["board"] == "projects"
+    assert not errors
+    # Cross-board label misuse is rejected.
+    shaped, errors, _ = jf.validate_values(
+        {"projects:status_19": "Today"}, status_labels=labels)
+    assert shaped == {} and "not a label" in errors["projects:status_19"]
+
+
+def test_set_item_columns_passes_projects_board_id():
+    seen = {}
+
+    class _OkMC:
+        def _query(self, query, variables):
+            seen["boardId"] = variables["boardId"]
+            seen["itemId"] = variables["itemId"]
+            assert "change_multiple_column_values" in query
+            return {"change_multiple_column_values": {"id": variables["itemId"]}}
+
+    out = mj.set_item_columns(
+        _OkMC(), 555, {"status_19": {"label": "100% Hanging Completed"}},
+        board_id=boards.PROJECTS_BOARD_ID)
+    assert out == {"written": ["status_19"], "failed": {}}
+    assert seen["boardId"] == str(boards.PROJECTS_BOARD_ID)
+    assert seen["itemId"] == "555"
+    # Default remains the Job Check / Ops board.
+    seen.clear()
+    mj.set_item_columns(_OkMC(), 101, {"status": {"label": "Hanging"}})
+    assert seen["boardId"] == str(boards.JOBCHECK_BOARD_ID)
+
+
+def test_save_missing_project_link_fails_trade_only():
+    """Projects trade fields fail clearly when link_to_projects is empty;
+    Ops fields still write."""
+    ops_before = {
+        "item_id": 101, "name": "Job A", "url": "https://monday/x",
+        "values": {"status": "Hanging", "status_19": "Today"},
+    }
+    calls = {"set": []}
+
+    class _MC:
+        pass
+
+    def fake_client():
+        return _MC()
+
+    def fake_get_item_values(mc, item_id, column_ids):
+        return dict(ops_before, values=dict(ops_before["values"]))
+
+    def fake_get_board_columns(mc, column_ids, board_id=None):
+        out = {}
+        for cid in column_ids:
+            if cid in ("status", "status_19", "color_mkza9z7c",
+                       "dup__of_hung_status1", "color_mkza855s"):
+                out[cid] = {"id": cid, "type": "status",
+                            "labels": [{"label": "Hanging"}, {"label": "Today"},
+                                       {"label": "Done"}, {"label": "Framed"}]}
+            else:
+                out[cid] = {"id": cid, "type": "text", "labels": []}
+        return out
+
+    def fake_get_linked_project_id(mc, ops_item_id):
+        return {"project_item_id": None,
+                "error": "No linked Projects item on this Operations task "
+                         "(link_to_projects is empty). Link the Projects item "
+                         "in Monday before editing trade status or uploading "
+                         "photos."}
+
+    def fake_set_item_columns(mc, item_id, values, board_id=None):
+        calls["set"].append({"item_id": item_id, "values": dict(values),
+                             "board_id": board_id})
+        return {"written": sorted(values), "failed": {}}
+
+    import adapters.monday.client as mcmod
+    import adapters.slack_notify as sn
+
+    real = {
+        "client": mcmod.MondayClient,
+        "get_item_values": mj.get_item_values,
+        "get_board_columns": mj.get_board_columns,
+        "get_linked_project_id": mj.get_linked_project_id,
+        "set_item_columns": mj.set_item_columns,
+        "notify": sn.notify_jobcheck_saved,
+    }
+    try:
+        mcmod.MondayClient = fake_client  # type: ignore
+        mj.get_item_values = fake_get_item_values  # type: ignore
+        mj.get_board_columns = fake_get_board_columns  # type: ignore
+        mj.get_linked_project_id = fake_get_linked_project_id  # type: ignore
+        mj.set_item_columns = fake_set_item_columns  # type: ignore
+
+        def _boom(_payload):
+            raise sn.SlackNotConfigured("no channel")
+        sn.notify_jobcheck_saved = _boom  # type: ignore
+
+        out = jf.save_job_check(101, {
+            "status": "Hanging",
+            "projects:status_19": "Done",
+            "projects:color_mkza9z7c": "Framed",
+        }, "mark@greenvalleycontractors.com")
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.get_board_columns = real["get_board_columns"]  # type: ignore
+        mj.get_linked_project_id = real["get_linked_project_id"]  # type: ignore
+        mj.set_item_columns = real["set_item_columns"]  # type: ignore
+        sn.notify_jobcheck_saved = real["notify"]  # type: ignore
+
+    assert out["ok"] is False
+    assert out["project_item_id"] is None
+    assert len(calls["set"]) == 1
+    assert calls["set"][0]["item_id"] == 101
+    assert "status" in calls["set"][0]["values"]
+    assert calls["set"][0]["board_id"] is None
+    assert "status" in out["written"]
+    assert "projects:status_19" in out["failures"]
+    assert "projects:color_mkza9z7c" in out["failures"]
+    assert "link_to_projects" in out["failures"]["projects:status_19"]
+    assert "link_to_projects" in out["failures"]["projects:color_mkza9z7c"]
+    assert "not a label" not in out["failures"]["projects:color_mkza9z7c"]
+
 
 
 if __name__ == "__main__":

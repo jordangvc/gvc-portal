@@ -39,18 +39,15 @@ MAX_UPDATE_LEN = 4000
 # Pure config + validation helpers (unit-tested without Monday)
 # ---------------------------------------------------------------------------
 
-def allowlisted_columns() -> list[dict]:
-    """
-    The effective allowlist: JOBCHECK_COLUMNS minus anything hard-excluded or
-    declaring a render type the form doesn't support. This is THE gate config
-    edits pass through — a money/link column added to the config never
-    reaches the form or the validator's allow set.
-    """
+BOARD_OPS = "ops"
+BOARD_PROJECTS = "projects"
+
+
+def _gate_column_entries(entries, *, board: str) -> list[dict]:
+    """Apply the hard-exclusion / render-type gate to a config tuple."""
     out: list[dict] = []
     seen: set[str] = set()
-    # Read via the module attribute (not a from-import) so the gate always
-    # sees the CURRENT config — including edits made after import.
-    for entry in boards.JOBCHECK_COLUMNS:
+    for entry in entries:
         col_id = str(entry.get("id") or "").strip()
         rtype = str(entry.get("type") or "").strip()
         if not col_id or col_id in seen:
@@ -63,8 +60,59 @@ def allowlisted_columns() -> list[dict]:
             continue
         seen.add(col_id)
         out.append({"id": col_id, "label": entry.get("label") or col_id,
-                    "type": rtype})
+                    "type": rtype, "board": board})
     return out
+
+
+def allowlisted_columns() -> list[dict]:
+    """
+    The effective Ops allowlist: JOBCHECK_COLUMNS minus anything hard-excluded
+    or declaring a render type the form doesn't support. This is THE gate
+    config edits pass through — a money/link column added to the config never
+    reaches the form or the validator's allow set. Each entry is tagged
+    board="ops".
+    """
+    # Read via the module attribute (not a from-import) so the gate always
+    # sees the CURRENT config — including edits made after import.
+    return _gate_column_entries(boards.JOBCHECK_COLUMNS, board=BOARD_OPS)
+
+
+def allowlisted_projects_trade_columns() -> list[dict]:
+    """
+    Projects-board trade statuses (phase-2 slice 1). Same hard-exclusion gate
+    as Ops; never mixed into JOBCHECK_COLUMNS. Each entry is tagged
+    board="projects". status_19 here is Hanging Status — not Ops Scheduled Day.
+    """
+    return _gate_column_entries(boards.JOBCHECK_PROJECTS_TRADE_COLUMNS,
+                                board=BOARD_PROJECTS)
+
+
+def form_columns() -> list[dict]:
+    """Ops allowlist + Projects trade columns, in display order."""
+    return allowlisted_columns() + allowlisted_projects_trade_columns()
+
+
+def field_key(entry_or_board, col_id: Optional[str] = None) -> str:
+    """Stable form/API key: 'ops:<id>' or 'projects:<id>'."""
+    if col_id is None and isinstance(entry_or_board, dict):
+        board = entry_or_board.get("board") or BOARD_OPS
+        col_id = entry_or_board["id"]
+    else:
+        board = entry_or_board or BOARD_OPS
+    return f"{board}:{col_id}"
+
+
+def parse_value_key(key: str) -> tuple[str, str]:
+    """
+    Split a submitted values key into (board, col_id).
+    Bare column ids default to the Ops board (backward compatible).
+    """
+    key = str(key or "").strip()
+    if key.startswith("projects:"):
+        return BOARD_PROJECTS, key.split(":", 1)[1]
+    if key.startswith("ops:"):
+        return BOARD_OPS, key.split(":", 1)[1]
+    return BOARD_OPS, key
 
 
 def shape_value(render_type: str, raw: Any) -> Any:
@@ -129,38 +177,57 @@ def validate_values(values: dict, *,
                     status_labels: Optional[dict[str, list[str]]] = None,
                     ) -> tuple[dict[str, Any], dict[str, str], dict[str, dict]]:
     """
-    PURE. The UI's {col_id: raw} dict → (shaped, errors, accepted).
-      shaped   — {col_id: Monday API value} for every accepted column
-      errors   — {col_id: message} for every rejected column
-      accepted — {col_id: allowlist entry} (label/type) for logging
+    PURE. The UI's {key: raw} dict → (shaped, errors, accepted).
+      shaped   — {key: Monday API value} for every accepted column
+      errors   — {key: message} for every rejected column
+      accepted — {key: allowlist entry} (label/type/board) for logging
+    Keys may be bare Ops column ids (backward compatible) or board-scoped
+    `ops:<id>` / `projects:<id>` field keys. status_labels is looked up by
+    the same key (and, for bare Ops ids, by the bare id).
     Rejections: column not on the effective allowlist (incl. anything
     hard-excluded), a status label the board doesn't have (when
     `status_labels` provides the board's real set), or an unshapeable value.
     """
-    allowed = {c["id"]: c for c in allowlisted_columns()}
+    ops_allowed = {c["id"]: c for c in allowlisted_columns()}
+    proj_allowed = {c["id"]: c for c in allowlisted_projects_trade_columns()}
     shaped: dict[str, Any] = {}
     errors: dict[str, str] = {}
     accepted: dict[str, dict] = {}
-    for col_id, raw in (values or {}).items():
-        col_id = str(col_id).strip()
-        entry = allowed.get(col_id)
+    for raw_key, raw in (values or {}).items():
+        key = str(raw_key).strip()
+        board, col_id = parse_value_key(key)
+        # Preserve the submitted key shape in outputs (bare vs prefixed).
+        out_key = key
+        if board == BOARD_PROJECTS:
+            entry = proj_allowed.get(col_id)
+        else:
+            entry = ops_allowed.get(col_id)
         if entry is None:
-            errors[col_id] = "Column is not on the Job Check allowlist."
+            errors[out_key] = "Column is not on the Job Check allowlist."
             continue
         try:
             api_value = shape_value(entry["type"], raw)
         except ValueError as e:
-            errors[col_id] = str(e)
+            errors[out_key] = str(e)
             continue
         if (entry["type"] == "status" and isinstance(api_value, dict)
                 and status_labels is not None):
-            known = status_labels.get(col_id) or []
-            if api_value["label"] not in known:
-                errors[col_id] = (f"'{api_value['label']}' is not a label on "
-                                  f"this board column.")
-                continue
-        shaped[col_id] = api_value
-        accepted[col_id] = entry
+            # Only enforce labels when this board/column was actually fetched.
+            # Missing Projects link means trade labels were never loaded — the
+            # save path reports the link failure instead of a fake empty set.
+            if (out_key in status_labels
+                    or field_key(board, col_id) in status_labels
+                    or (board == BOARD_OPS and col_id in status_labels)):
+                known = (status_labels.get(out_key)
+                         or status_labels.get(field_key(board, col_id))
+                         or status_labels.get(col_id)
+                         or [])
+                if api_value["label"] not in known:
+                    errors[out_key] = (f"'{api_value['label']}' is not a label on "
+                                       f"this board column.")
+                    continue
+        shaped[out_key] = api_value
+        accepted[out_key] = entry
     return shaped, errors, accepted
 
 
@@ -192,32 +259,70 @@ def list_active_jobs() -> dict:
 def get_job_detail(item_id: int) -> Optional[dict]:
     """
     Everything the form needs for one job: the read-only context header plus
-    the allowlisted columns with their current values (and, for status
-    columns, the board's label+color set in tap-to-cycle order). Returns
-    None when the item doesn't exist.
+    the allowlisted Ops columns and Projects trade-status columns with their
+    current values (and, for status columns, each board's label+color set in
+    tap-to-cycle order). Returns None when the Ops item doesn't exist.
+
+    Each column is tagged with board="ops"|"projects" and a stable
+    field_key. project_item_id is additive on the job payload (None when
+    link_to_projects is empty — trade fields stay visible but disabled).
     """
     from adapters.monday.client import MondayClient
     from adapters.monday import jobcheck as mj
 
-    cols = allowlisted_columns()
-    col_ids = [c["id"] for c in cols]
-    # Item values + column metadata are independent Monday reads — overlap them
-    # on separate sessions (requests.Session is not thread-safe).
-    mc_item, mc_meta = MondayClient(), MondayClient()
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        item_fut = pool.submit(mj.get_item_values, mc_item, int(item_id), col_ids)
-        meta_fut = pool.submit(mj.get_board_columns, mc_meta, col_ids)
+    ops_cols = allowlisted_columns()
+    trade_cols = allowlisted_projects_trade_columns()
+    ops_ids = [c["id"] for c in ops_cols]
+    trade_ids = [c["id"] for c in trade_cols]
+    item_id = int(item_id)
+
+    mc_item, mc_meta, mc_link = MondayClient(), MondayClient(), MondayClient()
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        item_fut = pool.submit(mj.get_item_values, mc_item, item_id, ops_ids)
+        meta_fut = pool.submit(mj.get_board_columns, mc_meta, ops_ids)
+        link_fut = pool.submit(mj.get_linked_project_id, mc_link, item_id)
         item = item_fut.result()
         meta = meta_fut.result()
+        link = link_fut.result()
     if item is None:
         return None
 
     values = item["values"]
+    project_item_id = link.get("project_item_id")
+    project_link_error = link.get("error")
+
+    trade_values: dict = {}
+    trade_meta: dict = {}
+    if project_item_id and trade_ids:
+        mc_pitem, mc_pmeta = MondayClient(), MondayClient()
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            pitem_fut = pool.submit(
+                mj.get_item_values, mc_pitem, int(project_item_id), trade_ids)
+            pmeta_fut = pool.submit(
+                mj.get_board_columns, mc_pmeta, trade_ids,
+                boards.PROJECTS_BOARD_ID)
+            pitem = pitem_fut.result()
+            trade_meta = pmeta_fut.result()
+        if pitem is not None:
+            trade_values = pitem.get("values") or {}
+
     form_columns = []
-    for c in cols:
+    for c in ops_cols:
         m = meta.get(c["id"]) or {}
         row = {"id": c["id"], "label": c["label"], "type": c["type"],
-               "value": values.get(c["id"])}
+               "board": BOARD_OPS, "field_key": field_key(c),
+               "value": values.get(c["id"]), "writable": True}
+        if c["type"] == "status":
+            row["labels"] = m.get("labels") or []
+        form_columns.append(row)
+
+    trade_writable = bool(project_item_id)
+    for c in trade_cols:
+        m = trade_meta.get(c["id"]) or {}
+        row = {"id": c["id"], "label": c["label"], "type": c["type"],
+               "board": BOARD_PROJECTS, "field_key": field_key(c),
+               "value": trade_values.get(c["id"]) if trade_writable else None,
+               "writable": trade_writable}
         if c["type"] == "status":
             row["labels"] = m.get("labels") or []
         form_columns.append(row)
@@ -237,6 +342,8 @@ def get_job_detail(item_id: int) -> Optional[dict]:
             "overdue": values.get(mj.CONTEXT_COL_OVERDUE),
             "project_status": values.get(mj.CONTEXT_COL_PROJECT_STATUS),
             "progress": values.get(mj.CONTEXT_COL_PROGRESS),
+            "project_item_id": project_item_id,
+            "project_link_error": project_link_error,
         },
         "columns": form_columns,
     }
@@ -244,50 +351,144 @@ def get_job_detail(item_id: int) -> Optional[dict]:
 
 def save_job_check(item_id: int, values: dict, actor: str) -> dict:
     """
-    THE save: validate against the allowlist (hard exclusions re-checked),
-    write the accepted columns to the ONE selected item, re-read it, log
+    THE save: validate against the board-scoped allowlists (hard exclusions
+    re-checked), write Ops columns to the selected Operations item and
+    Projects trade columns to the linked Projects item, re-read both, log
     who/item/columns old→new to the activity store, and return the confirmed
     values plus per-column failures. No silent partial writes — anything that
     didn't land is named in `failures`.
 
-    Returns {ok, item_id, written: [col_id...],
-             failures: {col_id: message}, confirmed: {col_id: text}}.
+    Missing link_to_projects → clear per-column failure for Projects fields;
+    Ops fields still save.
+
+    Returns {ok, item_id, project_item_id, written: [field_key...],
+             failures: {field_key: message}, confirmed: {field_key|col_id: text}}.
     `ok` is True only when every submitted column was written.
     """
     from adapters.monday.client import MondayClient
     from adapters.monday import jobcheck as mj
 
     item_id = int(item_id)
-    cols = allowlisted_columns()
-    col_ids = [c["id"] for c in cols]
+    ops_cols = allowlisted_columns()
+    trade_cols = allowlisted_projects_trade_columns()
+    ops_ids = [c["id"] for c in ops_cols]
+    trade_ids = [c["id"] for c in trade_cols]
+    all_cols = ops_cols + trade_cols
     mc = MondayClient()
 
-    # Snapshot BEFORE the write (also proves the item exists), and pull the
-    # board's real status labels so the validator can check them.
-    before = mj.get_item_values(mc, item_id, col_ids)
+    # Snapshot BEFORE the write (also proves the Ops item exists), resolve the
+    # linked Projects item, and pull each board's real status labels.
+    before = mj.get_item_values(mc, item_id, ops_ids)
     if before is None:
-        return {"ok": False, "item_id": item_id, "written": [],
+        return {"ok": False, "item_id": item_id, "project_item_id": None,
+                "written": [],
                 "failures": {"_item": f"Monday item {item_id} not found."},
                 "confirmed": {}}
-    meta = mj.get_board_columns(mc, col_ids)
-    status_labels = {cid: [l["label"] for l in (m.get("labels") or [])]
-                     for cid, m in meta.items() if m.get("type") == "status"}
+    link = mj.get_linked_project_id(mc, item_id)
+    project_item_id = link.get("project_item_id")
+
+    ops_meta = mj.get_board_columns(mc, ops_ids)
+    status_labels: dict[str, list[str]] = {}
+    for cid, m in ops_meta.items():
+        if m.get("type") == "status":
+            labels = [l["label"] for l in (m.get("labels") or [])]
+            status_labels[cid] = labels
+            status_labels[field_key(BOARD_OPS, cid)] = labels
+
+    before_trade: dict = {}
+    if project_item_id and trade_ids:
+        trade_meta = mj.get_board_columns(mc, trade_ids, boards.PROJECTS_BOARD_ID)
+        for cid, m in trade_meta.items():
+            if m.get("type") == "status":
+                status_labels[field_key(BOARD_PROJECTS, cid)] = [
+                    l["label"] for l in (m.get("labels") or [])
+                ]
+        pbefore = mj.get_item_values(mc, int(project_item_id), trade_ids)
+        if pbefore is not None:
+            before_trade = pbefore.get("values") or {}
 
     shaped, errors, accepted = validate_values(values,
                                                status_labels=status_labels)
     failures: dict[str, str] = dict(errors)
     written: list[str] = []
-    if shaped:
-        result = mj.set_item_columns(mc, item_id, shaped)
-        written = result["written"]
-        failures.update(result["failed"])
+
+    # Split shaped values by board; map back to bare Monday column ids for the
+    # mutation, but keep field keys in written/failures for the UI.
+    ops_shaped: dict[str, Any] = {}
+    proj_shaped: dict[str, Any] = {}
+    ops_key_by_col: dict[str, str] = {}
+    proj_key_by_col: dict[str, str] = {}
+    for key, api_value in shaped.items():
+        board, col_id = parse_value_key(key)
+        if board == BOARD_PROJECTS:
+            proj_shaped[col_id] = api_value
+            proj_key_by_col[col_id] = field_key(BOARD_PROJECTS, col_id)
+        else:
+            ops_shaped[col_id] = api_value
+            ops_key_by_col[col_id] = key  # preserve bare vs ops: prefix
+
+    if ops_shaped:
+        result = mj.set_item_columns(mc, item_id, ops_shaped)
+        for cid in result["written"]:
+            written.append(ops_key_by_col.get(cid, cid))
+        for cid, msg in result["failed"].items():
+            failures[ops_key_by_col.get(cid, cid)] = msg
+
+    if proj_shaped:
+        if not project_item_id:
+            msg = (link.get("error") or
+                   "No linked Projects item (link_to_projects is empty). "
+                   "Ops fields can still save; link the Projects item in "
+                   "Monday to edit trade status.")
+            for cid in proj_shaped:
+                failures[field_key(BOARD_PROJECTS, cid)] = msg
+        else:
+            result = mj.set_item_columns(
+                mc, int(project_item_id), proj_shaped,
+                board_id=boards.PROJECTS_BOARD_ID)
+            for cid in result["written"]:
+                written.append(proj_key_by_col.get(
+                    cid, field_key(BOARD_PROJECTS, cid)))
+            for cid, msg in result["failed"].items():
+                failures[proj_key_by_col.get(
+                    cid, field_key(BOARD_PROJECTS, cid))] = msg
 
     # Re-read → confirmed values (the form re-renders from these, so what
     # the crew sees after Save is what Monday actually holds).
-    after = mj.get_item_values(mc, item_id, col_ids) or before
-    confirmed = {cid: after["values"].get(cid) for cid in col_ids}
+    after = mj.get_item_values(mc, item_id, ops_ids) or before
+    confirmed: dict[str, Any] = {cid: after["values"].get(cid) for cid in ops_ids}
+    for cid in ops_ids:
+        confirmed[field_key(BOARD_OPS, cid)] = after["values"].get(cid)
 
-    changed = {cid: accepted[cid] for cid in written if cid in accepted}
+    after_trade = before_trade
+    if project_item_id and trade_ids:
+        pafter = mj.get_item_values(mc, int(project_item_id), trade_ids)
+        if pafter is not None:
+            after_trade = pafter.get("values") or {}
+    for cid in trade_ids:
+        confirmed[field_key(BOARD_PROJECTS, cid)] = after_trade.get(cid)
+
+    # Audit trail: describe Ops + Projects changes with board-scoped labels.
+    changed_ops = {}
+    changed_proj = {}
+    for key in written:
+        entry = accepted.get(key) or accepted.get(
+            field_key(*parse_value_key(key)))
+        if not entry:
+            continue
+        if entry.get("board") == BOARD_PROJECTS:
+            changed_proj[entry["id"]] = entry
+        else:
+            changed_ops[entry["id"]] = entry
+    change_bits = []
+    if changed_ops:
+        change_bits.append(describe_changes(
+            before["values"], after["values"], changed_ops))
+    if changed_proj:
+        change_bits.append(describe_changes(
+            before_trade, after_trade, changed_proj))
+    changes_text = "; ".join(b for b in change_bits if b) or "no changes"
+
     activity.log_event(
         "jobcheck.save",
         actor=actor,
@@ -296,9 +497,9 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
         severity="INFO" if not failures else "WARNING",
         job=before["name"],
         columns=",".join(written) or "none",
-        changes=describe_changes(before["values"], after["values"], changed)
-                or "no changes",
+        changes=changes_text,
         failed=",".join(sorted(failures)) or None,
+        project_item_id=str(project_item_id) if project_item_id else None,
     )
     if failures:
         print(f"[jobcheck] partial save on item {item_id}: "
@@ -313,16 +514,22 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
     if written:
         from adapters import slack_notify
         try:
+            slack_changes = []
+            for key in written:
+                board, cid = parse_value_key(key)
+                label = next((c["label"] for c in all_cols
+                              if c["id"] == cid and c["board"] == board), cid)
+                if board == BOARD_PROJECTS:
+                    old_v, new_v = before_trade.get(cid), after_trade.get(cid)
+                else:
+                    old_v = before["values"].get(cid)
+                    new_v = after["values"].get(cid)
+                slack_changes.append({"label": label, "old": old_v, "new": new_v})
             posted = slack_notify.notify_jobcheck_saved({
                 "job": before["name"],
                 "actor": actor,
                 "url": before.get("url"),
-                "changes": [
-                    {"label": next((c["label"] for c in cols if c["id"] == cid), cid),
-                     "old": before["values"].get(cid),
-                     "new": after["values"].get(cid)}
-                    for cid in written
-                ],
+                "changes": slack_changes,
             })
             slack_status = "posted" if posted else "skipped"
         except slack_notify.SlackNotConfigured:
@@ -332,8 +539,9 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
             print(f"[jobcheck] Slack notice failed (non-fatal): {e}",
                   file=sys.stderr)
 
-    return {"ok": not failures, "item_id": item_id, "written": written,
-            "failures": failures, "confirmed": confirmed,
+    return {"ok": not failures, "item_id": item_id,
+            "project_item_id": project_item_id,
+            "written": written, "failures": failures, "confirmed": confirmed,
             "slack": slack_status}
 
 

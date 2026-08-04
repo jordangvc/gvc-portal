@@ -32,7 +32,8 @@ import json
 from typing import Any, Optional
 
 from adapters.monday import cache as monday_cache
-from shared.boards import JOBCHECK_BOARD_ID, JOBCHECK_SKIP_GROUP_IDS
+from shared.boards import (JOBCHECK_BOARD_ID, JOBCHECK_SKIP_GROUP_IDS,
+                             PROJECTS_BOARD_ID)
 
 # Read-only context columns shown at the top of the Job Check page (never
 # editable there). OPERATIONS-board ids, verified live via get_board_info
@@ -166,12 +167,16 @@ def _normalize_job(item: dict) -> Optional[dict]:
     }
 
 
-def get_board_columns(mc, column_ids: list[str]) -> dict[str, dict]:
+def get_board_columns(mc, column_ids: list[str],
+                      board_id: Optional[int] = None) -> dict[str, dict]:
     """
-    Column metadata for the given Projects-board column ids:
+    Column metadata for the given column ids on `board_id` (defaults to the
+    Job Check / Operations board):
       {col_id: {id, title, type, labels: [{label, hex}, ...]}}
     `labels` is populated for status columns only, in the board's display
     order (the form's tap-to-cycle order); deactivated labels are dropped.
+    Pass PROJECTS_BOARD_ID when reading Projects trade-status columns —
+    status_19 (and friends) mean different things per board.
     """
     query = """
     query ($boardId: [ID!], $cols: [String!]) {
@@ -180,7 +185,8 @@ def get_board_columns(mc, column_ids: list[str]) -> dict[str, dict]:
       }
     }
     """
-    data = mc._query(query, {"boardId": [str(JOBCHECK_BOARD_ID)],
+    bid = int(board_id) if board_id is not None else JOBCHECK_BOARD_ID
+    data = mc._query(query, {"boardId": [str(bid)],
                              "cols": list(column_ids)})
     out: dict[str, dict] = {}
     for board in data.get("boards") or []:
@@ -287,10 +293,12 @@ mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
 """
 
 
-def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
+def set_item_columns(mc, item_id: int, values: dict[str, Any],
+                     board_id: Optional[int] = None) -> dict:
     """
-    Write an already-validated {col_id: api_value} dict to ONE Projects-board
-    item via change_multiple_column_values (the client's existing convention —
+    Write an already-validated {col_id: api_value} dict to ONE item on
+    `board_id` (defaults to the Job Check / Operations board) via
+    change_multiple_column_values (the client's existing convention —
     see MondayClient.writeback / _set_invoice_columns).
 
     One batch mutation first. If the batch fails, each column is retried on
@@ -298,16 +306,19 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
     getting one opaque error. Returns
       {written: [col_id, ...], failed: {col_id: error-message}}
     Never creates or deletes items; never touches any other item.
+    Pass PROJECTS_BOARD_ID when writing Projects trade-status columns.
     """
     if not item_id:
         raise ValueError("set_item_columns: item_id is required")
     if not values:
         return {"written": [], "failed": {}}
 
-    variables = {"boardId": str(JOBCHECK_BOARD_ID), "itemId": str(int(item_id))}
+    bid = int(board_id) if board_id is not None else JOBCHECK_BOARD_ID
+    variables = {"boardId": str(bid), "itemId": str(int(item_id))}
     try:
         mc._query(_MUTATION, {**variables, "values": json.dumps(values)})
-        monday_cache.invalidate("list:jobcheck:active_jobs")
+        if bid == JOBCHECK_BOARD_ID:
+            monday_cache.invalidate("list:jobcheck:active_jobs")
         return {"written": sorted(values), "failed": {}}
     except Exception as batch_err:  # noqa: BLE001 — fall through to per-column
         batch_msg = f"{type(batch_err).__name__}: {batch_err}"
@@ -323,7 +334,7 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
             failed[col_id] = f"{type(e).__name__}: {e}"
     if not written and not failed:
         failed["_batch"] = batch_msg
-    if written:
+    if written and bid == JOBCHECK_BOARD_ID:
         monday_cache.invalidate("list:jobcheck:active_jobs")
     return {"written": sorted(written), "failed": failed}
 
@@ -390,28 +401,16 @@ def create_item_update(mc, item_id: int, body: str) -> dict:
     return data.get("create_update") or {}
 
 
-def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
+def get_linked_project_id(mc, ops_item_id: int) -> dict:
     """
-    Resolve Ops item → linked Projects item → GFolder Link (link_mkwr6ef9).
+    Resolve Ops item → linked Projects item via `link_to_projects`.
 
-    Returns {
-      gfolder_url, folder_id, project_item_id, error?
-    }
-    `error` is a clear human message when the chain is incomplete (no linked
-    project, missing GFolder, or unparseable URL). Never raises for missing
-    data — callers decide whether to fail hard (photo upload) or warn.
+    Returns {project_item_id, error?}. `error` is a clear human message when
+    the relation is empty or unreadable. Never raises for missing data —
+    photo upload and trade-status writes both need this link.
     """
-    from adapters.drive import folder_id_from_url
-    from shared.boards import PROJECTS_GFOLDER_COL
-
-    out: dict = {
-        "gfolder_url": None,
-        "folder_id": None,
-        "project_item_id": None,
-        "error": None,
-    }
+    out: dict = {"project_item_id": None, "error": None}
     col = CONTEXT_COL_PROJECT_LINK
-    gcol = PROJECTS_GFOLDER_COL
     q1 = """
     query ($ids: [ID!], $cols: [String!]) {
       items(ids: $ids) {
@@ -450,11 +449,46 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
     if not linked_ids:
         out["error"] = ("No linked Projects item on this Operations task "
                         "(link_to_projects is empty). Link the Projects item "
-                        "in Monday, and make sure that Projects row has a "
-                        "GFolder Link.")
+                        "in Monday before editing trade status or uploading "
+                        "photos.")
         return out
     out["project_item_id"] = int(linked_ids[0])
+    return out
 
+
+def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
+    """
+    Resolve Ops item → linked Projects item → GFolder Link (link_mkwr6ef9).
+
+    Returns {
+      gfolder_url, folder_id, project_item_id, error?
+    }
+    `error` is a clear human message when the chain is incomplete (no linked
+    project, missing GFolder, or unparseable URL). Never raises for missing
+    data — callers decide whether to fail hard (photo upload) or warn.
+    """
+    from adapters.drive import folder_id_from_url
+    from shared.boards import PROJECTS_GFOLDER_COL
+
+    link = get_linked_project_id(mc, ops_item_id)
+    out: dict = {
+        "gfolder_url": None,
+        "folder_id": None,
+        "project_item_id": link.get("project_item_id"),
+        "error": link.get("error"),
+    }
+    if out["error"] or not out["project_item_id"]:
+        # Keep photo-upload wording that also mentions GFolder when the link
+        # itself is missing (callers surface `error` as-is).
+        if out["error"] and "link_to_projects is empty" in out["error"]:
+            out["error"] = ("No linked Projects item on this Operations task "
+                            "(link_to_projects is empty). Link the Projects item "
+                            "in Monday, and make sure that Projects row has a "
+                            "GFolder Link.")
+        return out
+
+    gcol = PROJECTS_GFOLDER_COL
+    linked_ids = [str(out["project_item_id"])]
     q2 = """
     query ($ids: [ID!], $cols: [String!]) {
       items(ids: $ids) {
