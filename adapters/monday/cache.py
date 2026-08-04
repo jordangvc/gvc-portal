@@ -1,18 +1,18 @@
 """
-Short-TTL in-process cache + singleflight for Monday read-heavy portal paths.
+Short-TTL in-process cache + durable GCS snapshots for Monday portal paths.
 =========================================================================
-Search/list endpoints hit Monday on every request today. Cloud Run keeps a
-warm instance around, so a small per-process cache (30–120s) makes repeated
-lookups and picker reloads feel instant without inventing a shared store.
+L1 = this process (fast; dies on Cloud Run scale-to-zero / new instances).
+L2 = GCS JSON snapshots (adapters/monday/snapshot.py) — survives idle.
 
-Stale-while-revalidate (SWR): list hot paths can keep serving the last-known
-payload for a longer stale window while a single background refresh runs, so
-Job Start / Morning / Job Check feel instant after the first fill.
+Hot list paths (Job Start / Morning / Job Check) use stale-while-revalidate:
+serve last-known data immediately, refresh Monday in the background, and
+persist successful refreshes to GCS so the *next* cold instance is also fast.
 
 Env:
   GVC_MONDAY_SEARCH_CACHE_TTL   seconds for search keys (default 60)
   GVC_MONDAY_LIST_CACHE_TTL     seconds for full-list keys (default 90)
-  GVC_MONDAY_STALE_TTL          seconds stale entries stay servable (default 900)
+  GVC_MONDAY_STALE_TTL          seconds L1 stale entries stay servable (default 900)
+  GVC_MONDAY_SNAPSHOT_MAX_AGE   seconds L2 snapshots stay servable (default 7200)
 
 Not a correctness layer — writes should invalidate the keys they stale, and
 callers must tolerate brief staleness.
@@ -55,6 +55,15 @@ def stale_ttl() -> float:
         return 900.0
 
 
+def _resolve_stale_s(stale_ttl_param: Optional[float]) -> float:
+    try:
+        if stale_ttl_param is None:
+            return float(os.environ.get("GVC_MONDAY_STALE_TTL") or "900")
+        return float(stale_ttl_param)
+    except ValueError:
+        return 900.0
+
+
 def get(key: str) -> Optional[Any]:
     """Return cached value only while still fresh; None when missing/stale/expired."""
     now = time.monotonic()
@@ -72,12 +81,16 @@ def get(key: str) -> Optional[Any]:
 
 
 def put(key: str, value: Any, *, ttl: Optional[float] = None,
-        stale_ttl: Optional[float] = None) -> Any:
+        stale_ttl: Optional[float] = None,
+        persist: bool = False) -> Any:
     """
-    Store `value`.
+    Store `value` in L1.
 
     `ttl` is the fresh window. `stale_ttl` is the total servable lifetime from
     now (defaults to `ttl` so non-SWR callers keep strict expire-on-fresh).
+
+    When `persist=True`, also write L2 (GCS snapshot). List SWR / refresh paths
+    set this so cold instances hydrate without hitting Monday.
     """
     ttl_s = search_ttl() if ttl is None else float(ttl)
     ttl_s = max(0.0, ttl_s)
@@ -88,27 +101,46 @@ def put(key: str, value: Any, *, ttl: Optional[float] = None,
     now = time.monotonic()
     with _LOCK:
         _STORE[key] = (now + ttl_s, now + stale_s, value)
+    if persist:
+        try:
+            from adapters.monday import snapshot as monday_snapshot
+            monday_snapshot.save(key, value)
+        except Exception as exc:  # noqa: BLE001 — L2 must never break L1
+            print(
+                f"[monday:cache] snapshot save failed for {key}: "
+                f"{type(exc).__name__}: {exc}",
+                flush=True,
+            )
     return value
 
 
 def invalidate(*keys: str) -> None:
-    """Drop exact keys."""
+    """Drop exact keys from L1 and best-effort delete L2 snapshots."""
     if not keys:
         return
     with _LOCK:
         for key in keys:
             _STORE.pop(key, None)
+    try:
+        from adapters.monday import snapshot as monday_snapshot
+        monday_snapshot.delete_many(*keys)
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"[monday:cache] snapshot invalidate failed: "
+            f"{type(exc).__name__}: {exc}",
+            flush=True,
+        )
 
 
 def invalidate_prefix(prefix: str) -> None:
-    """Drop every key that starts with `prefix`."""
+    """Drop every L1 key that starts with `prefix` (L2 left to TTL/overwrite)."""
     with _LOCK:
         for key in [k for k in _STORE if k.startswith(prefix)]:
             _STORE.pop(key, None)
 
 
 def clear() -> None:
-    """Test helper: wipe the whole cache."""
+    """Test helper: wipe the whole L1 cache."""
     with _LOCK:
         _STORE.clear()
         _INFLIGHT.clear()
@@ -131,6 +163,29 @@ def stats() -> dict:
             "stale": stale,
             "inflight": len(_INFLIGHT),
         }
+
+
+def _hydrate_from_snapshot(key: str, *, ttl_s: float, stale_s: float) -> Optional[Any]:
+    """
+    On L1 miss, try L2. If found, install into L1 as already-stale so the
+    caller returns immediately and SWR kicks a background Monday refresh.
+    """
+    try:
+        from adapters.monday import snapshot as monday_snapshot
+        hit = monday_snapshot.load(key)
+    except Exception as exc:  # noqa: BLE001
+        print(
+            f"[monday:cache] snapshot load failed for {key}: "
+            f"{type(exc).__name__}: {exc}",
+            flush=True,
+        )
+        return None
+    if hit is None:
+        return None
+    value, _written_at = hit
+    # Fresh window already elapsed → immediate SWR refresh path.
+    put(key, value, ttl=0.0, stale_ttl=stale_s, persist=False)
+    return value
 
 
 def get_or_set(key: str, factory: Callable[[], T], *,
@@ -175,26 +230,35 @@ def get_or_set(key: str, factory: Callable[[], T], *,
         event.set()
 
 
+def refresh(key: str, factory: Callable[[], T], *,
+            ttl: Optional[float] = None,
+            stale_ttl: Optional[float] = None) -> T:
+    """
+    Always call `factory`, store L1 + L2. Used by Cloud Scheduler warm so the
+    durable snapshot stays current even when L1 is already fresh.
+    """
+    ttl_s = list_ttl() if ttl is None else float(ttl)
+    stale_s = _resolve_stale_s(stale_ttl)
+    value = factory()
+    put(key, value, ttl=ttl_s, stale_ttl=stale_s, persist=True)
+    return value
+
+
 def get_or_set_swr(key: str, factory: Callable[[], T], *,
                    ttl: Optional[float] = None,
                    stale_ttl: Optional[float] = None) -> T:
     """
-    Stale-while-revalidate get-or-set.
+    Stale-while-revalidate get-or-set with GCS L2 hydrate.
 
     - Fresh (within ttl): return cached.
     - Stale (past ttl, within stale_ttl): return cached immediately and kick a
       daemon thread to refresh (singleflight — only one refresh at a time).
-    - Missing / past stale_ttl: blocking factory, same as get_or_set.
+    - L1 missing: try L2 snapshot; if present, serve immediately as stale + bg
+      refresh (this is the cold-instance fast path).
+    - L1 + L2 missing / past snapshot max age: blocking factory.
     """
     ttl_s = list_ttl() if ttl is None else float(ttl)
-    # Param name shadows the module-level stale_ttl(); resolve env default here.
-    try:
-        if stale_ttl is None:
-            stale_s = float(os.environ.get("GVC_MONDAY_STALE_TTL") or "900")
-        else:
-            stale_s = float(stale_ttl)
-    except ValueError:
-        stale_s = 900.0
+    stale_s = _resolve_stale_s(stale_ttl)
 
     now = time.monotonic()
     serve_stale = False
@@ -238,7 +302,7 @@ def get_or_set_swr(key: str, factory: Callable[[], T], *,
             def _bg_refresh() -> None:
                 try:
                     value = factory()
-                    put(key, value, ttl=ttl_s, stale_ttl=stale_s)
+                    put(key, value, ttl=ttl_s, stale_ttl=stale_s, persist=True)
                 except Exception as exc:  # noqa: BLE001 — keep serving stale
                     print(f"[monday:cache] SWR refresh failed for {key}: "
                           f"{type(exc).__name__}: {exc}", flush=True)
@@ -252,8 +316,37 @@ def get_or_set_swr(key: str, factory: Callable[[], T], *,
             ).start()
         return stale_value
 
-    # Blocking path (same semantics as get_or_set).
+    # Blocking path — but first try L2 so cold Cloud Run instances don't wait
+    # on Monday when a warm snapshot already exists.
     assert blocking_event is not None
+    if blocking_leader:
+        snap_value = _hydrate_from_snapshot(key, ttl_s=ttl_s, stale_s=stale_s)
+        if snap_value is not None:
+            # Release anyone waiting on the blocking populate immediately, then
+            # start a normal SWR background refresh under a fresh inflight slot.
+            with _LOCK:
+                _INFLIGHT.pop(key, None)
+                refresh_event = threading.Event()
+                _INFLIGHT[key] = refresh_event
+            blocking_event.set()
+
+            def _bg_after_snap() -> None:
+                try:
+                    value = factory()
+                    put(key, value, ttl=ttl_s, stale_ttl=stale_s, persist=True)
+                except Exception as exc:  # noqa: BLE001
+                    print(f"[monday:cache] SWR refresh failed for {key}: "
+                          f"{type(exc).__name__}: {exc}", flush=True)
+                finally:
+                    with _LOCK:
+                        _INFLIGHT.pop(key, None)
+                    refresh_event.set()
+
+            threading.Thread(
+                target=_bg_after_snap, name=f"monday-swr-snap:{key}", daemon=True
+            ).start()
+            return snap_value
+
     if not blocking_leader:
         blocking_event.wait(timeout=35)
         with _LOCK:
@@ -264,7 +357,7 @@ def get_or_set_swr(key: str, factory: Callable[[], T], *,
 
     try:
         value = factory()
-        put(key, value, ttl=ttl_s, stale_ttl=stale_s)
+        put(key, value, ttl=ttl_s, stale_ttl=stale_s, persist=True)
         return value
     finally:
         with _LOCK:

@@ -73,6 +73,10 @@ except ImportError:  # pragma: no cover — cold path when cache.py isn't shippe
         def invalidate(*_keys) -> None:
             return None
 
+        @staticmethod
+        def refresh(key, factory, *, ttl=None, stale_ttl=None):
+            return factory()
+
     monday_cache = _NoMondayCache()  # type: ignore[assignment]
 
 # Mirrors/relations return text = NULL; their readable value is display_value
