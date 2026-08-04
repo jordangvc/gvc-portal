@@ -4,7 +4,9 @@ Morning Brief — pure rules (relevance, attention, financial strip).
 Self-running:  python tests/test_morning_brief.py
 """
 import os
+import re
 import sys
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -94,6 +96,7 @@ def test_normalize_ops_owner_from_people_value():
         "id": "99",
         "name": "Hang drywall",
         "group": {"id": "topics", "title": "Active"},
+        "updated_at": "2026-07-01T12:00:00Z",
         "column_values": [
             {
                 "id": boards.MORNING_COL_OPS_OWNER,
@@ -112,9 +115,38 @@ def test_normalize_ops_owner_from_people_value():
     assert row is not None
     assert row["ops_owners"][0]["name"] == "Jordan Faulkner"
     assert row["ops_owner_text"] == "Jordan Faulkner"
+    assert row["updated_at"] == "2026-07-01T12:00:00Z"
     assert mm.is_personally_relevant(
         row, email="jordan@greenvalleycontractors.com",
         display_name="Jordan Faulkner")
+
+
+def test_normalize_keeps_updated_at_for_long_term_holds():
+    """Regression: holds stayed empty because _normalize dropped updated_at."""
+    from datetime import datetime, timezone
+    item = {
+        "id": "55",
+        "name": "Waiting permit",
+        "updated_at": "2026-07-20T10:00:00Z",
+        "group": {"id": "topics", "title": "Active"},
+        "column_values": [
+            {"id": boards.MORNING_COL_BLOCKED, "text": "Permit", "type": "status"},
+            {"id": boards.MORNING_COL_OVERDUE, "text": "", "type": "status"},
+        ],
+    }
+    row = mm._normalize(item)
+    assert row is not None
+    assert row["updated_at"] == "2026-07-20T10:00:00Z"
+    now = datetime(2026, 8, 3, tzinfo=timezone.utc)
+    assert mm.is_attention(row)
+    assert mm.is_long_term_hold(row, now=now)
+
+
+def test_fetch_query_requests_updated_at():
+    src = Path(__file__).resolve().parents[1] / "adapters" / "monday" / "morning.py"
+    text = src.read_text(encoding="utf-8")
+    assert re.search(r"items\s*\{[\s\S]*?updated_at[\s\S]*?column_values", text)
+
 
 
 def main():
@@ -127,6 +159,8 @@ def main():
         test_assert_no_financial_keys,
         test_people_uses_column_text_not_entity_name,
         test_normalize_ops_owner_from_people_value,
+        test_normalize_keeps_updated_at_for_long_term_holds,
+        test_fetch_query_requests_updated_at,
     ]
     failed = 0
     for t in tests:

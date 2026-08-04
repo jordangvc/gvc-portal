@@ -84,7 +84,7 @@ def fetch_ops_items(mc) -> list[dict]:
     Active Operations tasks for the Morning Brief, short-TTL cached.
 
     Each row:
-      item_id, name, url, group_id, group_title,
+      item_id, name, url, updated_at, group_id, group_title,
       project_name, location, project_status,
       stage, stage_detail, scheduled_day, blocked, overdue, progress,
       ops_owners: [{id, name, email}, ...]
@@ -110,6 +110,7 @@ def _fetch_ops_items_uncached(mc) -> list[dict]:
           items {
             id
             name
+            updated_at
             group { id title }
             column_values(ids: %s) { %s }
           }
@@ -165,6 +166,8 @@ def _normalize(item: dict) -> Optional[dict]:
         "item_id": int(item["id"]),
         "name": name,
         "url": _item_url(item["id"]),
+        # Monday item updated_at — required for long-term hold detection.
+        "updated_at": item.get("updated_at"),
         "group_id": group.get("id"),
         "group_title": group.get("title"),
         "project_name": texts.get(boards.MORNING_COL_PROJECT_LINK),

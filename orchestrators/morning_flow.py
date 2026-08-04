@@ -122,10 +122,34 @@ def _card(row: dict, *, reason: str) -> dict:
         "progress": row.get("progress"),
         "ops_owner_text": row.get("ops_owner_text"),
         "updated_at": row.get("updated_at"),
+        # Soft-attached in build_employee_brief; None when Ops→Projects→GFolder missing.
+        "gfolder_url": row.get("gfolder_url"),
         "clear": not mm.is_attention(row),
         "relevance_reason": reason,
         "group_title": row.get("group_title"),
     }
+
+
+def _attach_gfolder_urls(mc, cards: list[dict]) -> None:
+    """Attach Open Drive URLs onto brief cards. Soft-fails per item."""
+    cache: dict[int, Optional[str]] = {}
+    for card in cards:
+        try:
+            iid = int(card.get("item_id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if not iid:
+            continue
+        if iid in cache:
+            card["gfolder_url"] = cache[iid]
+            continue
+        url = None
+        try:
+            url = mm.get_gfolder_url_for_ops_item(mc, iid)
+        except Exception as e:  # noqa: BLE001
+            print(f"[morning] gfolder skipped for {iid}: {e}", file=sys.stderr)
+        cache[iid] = url
+        card["gfolder_url"] = url
 
 
 def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, Any]:
@@ -256,6 +280,12 @@ def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, A
         f"{preparation.get('ready', 0)} of {preparation.get('total', 6)} ready · "
         f"{len(stops)} stops · {len(attention)} need attention"
     )
+
+    # Open Drive on cards — unique item_ids only; soft-fail if Monday chain incomplete.
+    try:
+        _attach_gfolder_urls(mc, mine + attention + holds + unscheduled)
+    except Exception as e:  # noqa: BLE001
+        print(f"[morning] gfolder attach skipped: {e}", file=sys.stderr)
 
     payload = {
         "ok": True,
