@@ -23,6 +23,7 @@ import os
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Optional
 
@@ -666,3 +667,181 @@ def notify_finalize_degraded(kind: str, identifier: str, failed_steps: dict,
         context={f"{kind} #": identifier, **failed_steps},
         channel=channel,
     )
+
+
+# ---------------------------------------------------------------------------
+# Morning Brief — Slack DMs (never public performance warnings)
+# ---------------------------------------------------------------------------
+
+SLACK_LOOKUP_URL = "https://slack.com/api/users.lookupByEmail"
+SLACK_OPEN_DM_URL = "https://slack.com/api/conversations.open"
+
+
+def _slack_api(url: str, payload: dict, *, token: Optional[str] = None) -> dict:
+    token = token or os.environ.get("SLACK_BOT_TOKEN")
+    if not token:
+        raise SlackNotConfigured("SLACK_BOT_TOKEN not set.")
+    body = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(
+        url,
+        data=body,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json; charset=utf-8",
+        },
+        method="POST",
+    )
+    with urllib.request.urlopen(req, timeout=15) as resp:
+        return json.loads(resp.read().decode("utf-8"))
+
+
+def lookup_user_id_by_email(email: str) -> Optional[str]:
+    email = (email or "").strip().lower()
+    if not email:
+        return None
+    try:
+        # lookupByEmail wants form-encoded GET traditionally; Web API also
+        # accepts POST with application/x-www-form-urlencoded.
+        token = os.environ.get("SLACK_BOT_TOKEN")
+        if not token:
+            raise SlackNotConfigured("SLACK_BOT_TOKEN not set.")
+        qs = urllib.parse.urlencode({"email": email})
+        req = urllib.request.Request(
+            f"{SLACK_LOOKUP_URL}?{qs}",
+            headers={"Authorization": f"Bearer {token}"},
+        )
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+        if data.get("ok"):
+            return ((data.get("user") or {}).get("id"))
+        return None
+    except SlackNotConfigured:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[slack_notify] lookupByEmail failed: {e}", file=sys.stderr)
+        return None
+
+
+def open_dm(user_id: str) -> Optional[str]:
+    if not user_id:
+        return None
+    try:
+        data = _slack_api(SLACK_OPEN_DM_URL, {"users": user_id})
+        if data.get("ok"):
+            return ((data.get("channel") or {}).get("id"))
+        return None
+    except Exception as e:  # noqa: BLE001
+        print(f"[slack_notify] conversations.open failed: {e}", file=sys.stderr)
+        return None
+
+
+def post_dm(email: str, text: str) -> dict:
+    """
+    DM an employee by Google/Workspace email. Never raises — returns
+    {ok, skipped?, error?}. Performance warnings MUST use this, not channels.
+    """
+    try:
+        uid = lookup_user_id_by_email(email)
+        if not uid:
+            return {"ok": False, "skipped": True, "error": "user_not_found"}
+        channel = open_dm(uid)
+        if not channel:
+            return {"ok": False, "skipped": True, "error": "dm_open_failed"}
+        post_message(text, channel=channel)
+        return {"ok": True}
+    except SlackNotConfigured as e:
+        return {"ok": False, "skipped": True, "error": str(e)}
+    except Exception as e:  # noqa: BLE001
+        print(f"[slack_notify] post_dm failed: {e}", file=sys.stderr)
+        return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+
+def notify_action_request_assigned(req: dict) -> dict:
+    to = req.get("needed_from_email") or ""
+    need = (req.get("need") or "")[:280]
+    who = (req.get("requester_email") or "").split("@")[0]
+    return post_dm(
+        to,
+        f"📋 *Action Request* from {who}\n"
+        f"• {need}\n"
+        f"Acknowledge in the portal Morning Brief within 30 minutes.",
+    )
+
+
+def notify_action_request_escalation(req: dict) -> dict:
+    to = req.get("needed_from_email") or ""
+    kind = req.get("escalation") or "reminder"
+    need = (req.get("need") or "")[:200]
+    return post_dm(
+        to,
+        f"⏰ Action Request *{kind.replace('_', ' ')}*\n• {need}\n"
+        f"Open Morning Brief → Action Requests.",
+    )
+
+
+def notify_action_request_ack_due(req: dict) -> dict:
+    """
+    Spec: "Missing acknowledgment creates a Slack DM reminder" — the specific
+    30-minute-ack-window reminder (distinct from notify_action_request_
+    escalation's general overdue/ack_reminder wording, kept for the existing
+    orchestrator wiring). DM to the recipient only.
+    """
+    to = req.get("needed_from_email") or ""
+    need = (req.get("need") or "")[:200]
+    return post_dm(
+        to,
+        f"⏰ *Acknowledgment due* — you haven't acknowledged this Action Request yet\n"
+        f"• {need}\n"
+        f"Acknowledge it in the portal Morning Brief or reply here.",
+    )
+
+
+def notify_prep_miss_private(email: str, *, streak: int) -> dict:
+    return post_dm(
+        email,
+        f"Private prep notice: missed Morning Brief preparation "
+        f"(streak {streak} scheduled workday(s)). "
+        f"Open your brief before 6:45 AM next scheduled day.",
+    )
+
+
+def notify_owner_prep_alert(text: str) -> dict:
+    """
+    Owner/GM visibility for prep-miss escalations (spec: streak reaches the
+    3+ tier gets "employee notice + Jordan/GM high-level visibility"). Tries,
+    in order: a DM to GVC_OWNER_SLACK_USER (a Slack user id, if set) → a DM to
+    GVC_OWNER_SLACK_EMAIL (falls back to jordan@greenvalleycontractors.com) →
+    a post to GVC_OWNER_SLACK_CHANNEL if that's explicitly configured. Never
+    raises hard; a fully unconfigured owner is a clean skip, not a failure —
+    this must never become a public-channel performance callout by accident.
+    """
+    owner_user_id = (os.environ.get("GVC_OWNER_SLACK_USER") or "").strip()
+    if owner_user_id:
+        try:
+            channel = open_dm(owner_user_id)
+            if channel:
+                post_message(text, channel=channel)
+                return {"ok": True, "via": "dm_user_id"}
+        except Exception as e:  # noqa: BLE001
+            print(f"[slack_notify] owner DM by user id failed: {e}", file=sys.stderr)
+
+    owner_email = (
+        os.environ.get("GVC_OWNER_SLACK_EMAIL")
+        or "jordan@greenvalleycontractors.com"
+    )
+    result = post_dm(owner_email, text)
+    if result.get("ok"):
+        result["via"] = "dm_email"
+        return result
+
+    owner_channel = (os.environ.get("GVC_OWNER_SLACK_CHANNEL") or "").strip()
+    if owner_channel:
+        try:
+            post_message(text, channel=owner_channel)
+            return {"ok": True, "via": "channel"}
+        except Exception as e:  # noqa: BLE001
+            print(f"[slack_notify] owner channel post failed: {e}", file=sys.stderr)
+            return {"ok": False, "error": f"{type(e).__name__}: {e}"}
+
+    return {"ok": False, "skipped": True, "error": "owner_unreachable"}
+

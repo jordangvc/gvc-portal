@@ -335,6 +335,83 @@ class DriveUploader:
         )
         return created["id"]
 
+    def list_child_folders(self, parent_id: str) -> list[dict]:
+        """Children folders as {id, name, modifiedTime}."""
+        q = (f"'{parent_id}' in parents and trashed = false and "
+             f"mimeType = 'application/vnd.google-apps.folder'")
+        out: list[dict] = []
+        page_token = None
+        while True:
+            result = (
+                self.service.files()
+                .list(
+                    q=q,
+                    fields="nextPageToken, files(id, name, modifiedTime)",
+                    pageToken=page_token,
+                    pageSize=200,
+                    **self._list_kwargs(),
+                )
+                .execute()
+            )
+            out.extend(result.get("files") or [])
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                break
+        return out
+
+    def resolve_pictures_folder(self, project_folder_id: str) -> str:
+        """
+        Spec: GVC Job Site Media → project folder → Pictures.
+        Multiple Pictures → most recently modified. None → create Pictures.
+        Never create employee- or date-named media folders.
+        """
+        from subsystems.morning.media import pick_pictures_folder
+
+        kids = self.list_child_folders(project_folder_id)
+        picked = pick_pictures_folder(kids)
+        if picked:
+            return picked["id"]
+        return self.ensure_folder("Pictures", project_folder_id)
+
+    def upload_job_site_photos(
+        self,
+        project_folder_id: str,
+        files: list,
+        *,
+        note: Optional[str] = None,
+    ) -> dict:
+        """
+        Upload photo bytes into the resolved Pictures folder.
+        `files` = [(filename, bytes, mimetype), ...]
+        """
+        pictures_id = self.resolve_pictures_folder(project_folder_id)
+        uploaded = []
+        for filename, raw, mimetype in files:
+            name = (filename or "photo.jpg").strip() or "photo.jpg"
+            meta = {"name": name, "parents": [pictures_id]}
+            from googleapiclient.http import MediaInMemoryUpload
+            media = MediaInMemoryUpload(
+                raw, mimetype=mimetype or "image/jpeg", resumable=False)
+            created = (
+                self.service.files()
+                .create(
+                    body=meta,
+                    media_body=media,
+                    fields="id, name, webViewLink",
+                    **self._mutate_kwargs(),
+                )
+                .execute()
+            )
+            uploaded.append({
+                "id": created.get("id"),
+                "name": created.get("name"),
+                "webViewLink": created.get("webViewLink"),
+            })
+        return {
+            "pictures_folder_id": pictures_id,
+            "uploaded": uploaded,
+            "note": note,
+        }
     def list_child_names(self, parent_id: str, *, folders: bool = False) -> list[str]:
         """
         Return the names of children under parent_id (non-folders by default).

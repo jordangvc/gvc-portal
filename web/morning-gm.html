@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GVC GM Morning Huddle</title>
+<link rel="stylesheet" href="/ui/gvc.css" />
+<style>
+  body { background: var(--gvc-bg); }
+  main { max-width: 720px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 12px; }
+  .card { background: var(--gvc-surface); border: 1px solid var(--gvc-line); border-top: 2.5px solid var(--gvc-gold-matte);
+    border-radius: var(--gvc-r-lg); padding: 12px 14px; display: grid; gap: 8px; }
+  .card h2 { margin: 0; font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .06em; color: var(--gvc-green-dark); }
+  .chip { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--gvc-line); font-size: 13px; font-weight: 600; }
+  .chip.ok { background: var(--gvc-ok-tint); }
+  .chip.warn { background: var(--gvc-warn-tint); }
+  .row { border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); padding: 10px; background: var(--gvc-bg); }
+  .btn { min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r); border: 1px solid var(--gvc-line-strong);
+    background: var(--gvc-surface); font: inherit; font-weight: 700; color: var(--gvc-green-dark); cursor: pointer; }
+  input, textarea { width: 100%; min-height: 44px; border: 1px solid var(--gvc-line-strong); border-radius: var(--gvc-r); padding: 8px; font: inherit; box-sizing: border-box; }
+  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); }
+  #err.show { display:block; }
+</style>
+</head>
+<body>
+<header class="gvc-topbar"><div class="gvc-topbar-in">
+  <a class="gvc-brand" href="/"><span class="gvc-mono">G</span><span class="gvc-wordmark">Green Valley Contractors</span></a>
+  <span class="gvc-topbar-sep"></span><span class="gvc-topbar-title">GM Huddle</span>
+  <div class="gvc-topbar-right"><span class="gvc-topbar-user">{{EMAIL}}</span>
+    <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
+</div></header>
+<main>
+  <div><p class="gvc-eyebrow">6:45 operations huddle</p><h1 class="gvc-h1">Run sheet</h1>
+    <div id="chips" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px"></div></div>
+  <div id="err"></div>
+  <div class="card"><h2>Meeting</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" id="start">Start huddle</button>
+      <button class="btn" id="end">End + scorecard</button>
+      <a class="btn" href="/ui/morning" style="display:inline-flex;align-items:center;text-decoration:none">My brief</a>
+    </div>
+    <div id="meetmeta" class="gvc-sub"></div>
+  </div>
+  <div class="card"><h2>Sequence (routed first)</h2><div id="seq"></div></div>
+  <div class="card"><h2>Unscheduled / needs planning (last)</h2><div id="unsch"></div></div>
+  <div class="card"><h2>Action Requests</h2><div id="ars"></div></div>
+  <div class="card"><h2>Park a topic</h2>
+    <input id="pTopic" placeholder="Topic" /><input id="pOwner" placeholder="Owner" style="margin-top:8px" />
+    <button class="btn" id="pAdd" style="margin-top:8px">Park</button>
+    <div id="parking"></div>
+  </div>
+  <div class="card"><h2>Assign action</h2>
+    <textarea id="aText" placeholder="Action"></textarea>
+    <input id="aOwner" placeholder="Owner" style="margin-top:8px" />
+    <button class="btn" id="aAdd" style="margin-top:8px">Add action</button>
+    <div id="actions"></div>
+  </div>
+  <div class="card"><h2>Fireflies proposals</h2><div id="ff"></div></div>
+</main>
+<script>
+const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+async function api(u, o){ const r=await fetch(u,o); const b=await r.json(); if(!r.ok) throw new Error((b.detail&&b.detail.detail)||b.detail||r.status); return b; }
+function rows(list){ return (list||[]).map(p => `<div class="row"><b>${esc(p.name)}</b><div class="gvc-sub">${esc(p.stage||"")} ${esc(p.blocked||"")} ${esc(p.location||"")}</div>
+  <a href="${esc(p.url)}" target="_blank" rel="noopener">Monday</a></div>`).join("") || "<div class='gvc-sub'>None</div>"; }
+function render(d){
+  const tp=d.team_prep||{};
+  document.getElementById("chips").innerHTML =
+    `<span class="chip ${tp.pct>=80?"ok":"warn"}">${tp.pct??"—"}% team prep (${tp.prepared||0}/${tp.team_size||0})</span>` +
+    `<span class="chip">${(d.sequence||[]).length} in sequence</span>` +
+    `<span class="chip">${(d.action_requests||[]).length} open ARs</span>`;
+  document.getElementById("seq").innerHTML = rows(d.sequence);
+  document.getElementById("unsch").innerHTML = rows(d.unscheduled);
+  document.getElementById("ars").innerHTML = (d.action_requests||[]).map(r =>
+    `<div class="row"><b>${esc(r.need)}</b><div class="gvc-sub">${esc(r.needed_from_email)} · ${esc(r.escalation||r.status)}</div></div>`).join("") || "<div class='gvc-sub'>Clear</div>";
+  const m=d.meeting||{};
+  document.getElementById("meetmeta").textContent = m.started_at ? `Started ${m.started_at}${m.ended_at?" · ended "+m.ended_at:""}` : "Not started";
+  document.getElementById("parking").innerHTML = (m.parking||[]).map(p=>`<div class="row">${esc(p.topic)} — ${esc(p.owner)}</div>`).join("");
+  document.getElementById("actions").innerHTML = (m.actions||[]).map(p=>`<div class="row">${esc(p.text)} — ${esc(p.owner)}</div>`).join("");
+  document.getElementById("ff").innerHTML = (d.fireflies_proposals||[]).length
+    ? d.fireflies_proposals.map(p=>`<div class="row">${esc(p.summary||p.title||p.id)}</div>`).join("")
+    : "<div class='gvc-sub'>No pending proposals (Fireflies key optional).</div>";
+}
+async function load(){ try{ render(await api("/ui/api/morning/gm")); document.getElementById("err").className=""; }
+  catch(e){ document.getElementById("err").className="show"; document.getElementById("err").textContent=e.message; } }
+document.getElementById("start").onclick = async () => { await api("/ui/api/morning/meeting/start",{method:"POST"}); load(); };
+document.getElementById("end").onclick = async () => { await api("/ui/api/morning/meeting/end",{method:"POST"}); load(); };
+document.getElementById("pAdd").onclick = async () => {
+  await api("/ui/api/morning/meeting/parking",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({topic:pTopic.value, owner:pOwner.value})}); pTopic.value=""; load(); };
+document.getElementById("aAdd").onclick = async () => {
+  await api("/ui/api/morning/meeting/action",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({text:aText.value, owner:aOwner.value})}); aText.value=""; load(); };
+load();
+</script>
+</body>
+</html>

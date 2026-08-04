@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GVC Owner Pulse</title>
+<link rel="stylesheet" href="/ui/gvc.css" />
+<style>
+  body { background: var(--gvc-bg); }
+  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 12px; }
+  .card { background: var(--gvc-surface); border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg);
+    border-top: 2.5px solid var(--gvc-gold-matte); padding: 14px 16px; }
+  .card h2 { margin: 0 0 8px; font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .06em; color: var(--gvc-green-dark); }
+  .big { font-size: 40px; font-weight: 700; color: var(--gvc-green-dark); line-height: 1; }
+  .muted { color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
+  .item { padding: 8px 0; border-bottom: 1px solid var(--gvc-line-soft); }
+  .item:last-child { border-bottom: 0; }
+  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); }
+  #err.show { display:block; }
+</style>
+</head>
+<body>
+<header class="gvc-topbar"><div class="gvc-topbar-in">
+  <a class="gvc-brand" href="/"><span class="gvc-mono">G</span><span class="gvc-wordmark">Green Valley Contractors</span></a>
+  <span class="gvc-topbar-sep"></span><span class="gvc-topbar-title">Owner Pulse</span>
+  <div class="gvc-topbar-right"><span class="gvc-topbar-user">{{EMAIL}}</span>
+    <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
+</div></header>
+<main>
+  <div><p class="gvc-eyebrow">Exception only</p><h1 class="gvc-h1">Owner Pulse</h1>
+    <p class="muted">High-level signals — not a task list. Routine ops stay with the GM.</p></div>
+  <div id="err"></div>
+  <div class="card"><h2>Team preparation</h2><div class="big" id="pct">—</div>
+    <div class="muted" id="pctsub"></div></div>
+  <div class="card"><h2>Safety stops</h2><div id="safety" class="muted">None flagged</div></div>
+  <div class="card"><h2>Prep alerts (3+/5 day)</h2><div id="alerts" class="muted">None</div></div>
+  <div class="card"><h2>Huddle outcome</h2><div id="huddle" class="muted">—</div></div>
+  <div class="card"><h2>Planning signals</h2><div id="plan" class="muted">None</div></div>
+  <div class="card"><h2>Owner decisions</h2><div id="dec" class="muted">None waiting</div></div>
+</main>
+<script>
+const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+async function load(){
+  try {
+    const r = await fetch("/ui/api/morning/owner");
+    const d = await r.json();
+    if (!r.ok) throw new Error((d.detail&&d.detail.detail)||d.detail||r.status);
+    document.getElementById("err").className = "";
+    document.getElementById("pct").textContent = (d.team_preparation_pct ?? "—") + "%";
+    const tp = d.team_preparation || {};
+    document.getElementById("pctsub").textContent = `${tp.prepared||0} of ${tp.team_size||0} fully ready · ${d.workdate||""}`;
+    document.getElementById("safety").innerHTML = (d.safety_stops||[]).length
+      ? d.safety_stops.map(s=>`<div class="item"><b>${esc(s.name)}</b> — ${esc(s.blocked)}</div>`).join("")
+      : "None flagged";
+    document.getElementById("alerts").innerHTML = (d.prep_alerts||[]).length
+      ? d.prep_alerts.map(a=>`<div class="item">${esc(a.email)} · L${a.level}: ${esc(a.message)}</div>`).join("")
+      : "None";
+    const h = d.huddle || {};
+    document.getElementById("huddle").textContent =
+      `Covered ${h.projects_covered??0} · actions ${h.actions_assigned??0} · parked ${h.parked??0}` +
+      (h.ended_at ? ` · ended ${h.ended_at}` : (h.started_at ? " · in progress" : " · not run yet"));
+    document.getElementById("plan").innerHTML = (d.planning_signals||[]).length
+      ? d.planning_signals.map(p=>`<div class="item">${esc(p.email)} · ${p.count} route overrides / 10 days</div>`).join("")
+      : "None";
+    document.getElementById("dec").innerHTML = (d.owner_decisions||[]).length
+      ? d.owner_decisions.map(x=>`<div class="item">${esc(JSON.stringify(x))}</div>`).join("")
+      : "None waiting";
+  } catch (e) {
+    document.getElementById("err").className = "show";
+    document.getElementById("err").textContent = e.message;
+  }
+}
+load();
+</script>
+</body>
+</html>
