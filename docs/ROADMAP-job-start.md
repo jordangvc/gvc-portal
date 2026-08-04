@@ -42,17 +42,15 @@ deliberately does NOT auto-advance stage for exactly this reason. Decide with Jo
 whether marking-accepted is an explicit tap or implicit on send.
 
 ### 4. Make the GC confirmation date truthful
-**Highest business value in the list. ~half a session.**
+**✅ SHIPPED on master.** `email_scope_to_gc` no longer stamps `gc_confirmed_on` at
+draft time — only `gc_drafted_at`. The sent-watcher (`orchestrators/sent_watch_flow.py`)
+sweeps Job Start GC confirmations the same way it does invoices/estimates: searches
+Gmail `in:sent` for the drafted subject, then `stamp_gc_confirmed()` writes the real
+send date (fill-if-empty). Cloud Scheduler `gvc-sent-watch` already runs every 10 min.
 
-`gc_confirmed_on` currently records when the GC scope email was **drafted**, not sent —
-nobody can tell the portal when Jake hit send. Every correction a GC returns is a
-change order not eaten, so this is the number that measures the most valuable step in
-the whole process, and right now it's a guess.
-
-**Don't invent an approach.** `orchestrators/sent_watch_flow.py` already solves this
-exact problem for invoices and estimates: it searches Gmail `in:sent`, stamps a real
-"emailed on" column, and posts only on genuinely fresh sends. Extend that pattern to
-the handoff packet. The Cloud Scheduler job `gvc-sent-watch` already runs every 10 min.
+Related follow-up in the same spirit (truthful Bid Board dates): stamp Bid Board
+`date6` Accepted Date when Sales marks a bid Accepted from Job Start — the legacy
+automation never wrote it, and ops-accept day is the wrong moment.
 
 ### 5. Settle which Bid Board column links Operations
 **~2 min decision, then one env var.**

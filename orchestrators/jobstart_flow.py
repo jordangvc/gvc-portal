@@ -773,13 +773,15 @@ def send_to_ops(bid_id: int, values: dict, actor: str, *,
     # "Sent to Client".
     stage_report = mj.mark_bid_accepted(
         mc, bid_id, current_stage=bid.get("stage"),
-        current_group=bid.get("group_id"))
+        current_group=bid.get("group_id"),
+        current_accepted_date=bid.get("accepted_date"))
     for err in stage_report.get("errors") or []:
         print(f"[jobstart] bid stage/group write failed: {err}", file=sys.stderr)
 
     activity.log_event("jobstart.sent_to_ops", actor=actor, target=str(bid_id),
                        result="ok", severity="INFO", job=name,
                        bid_stage_written=stage_report.get("stage_written"),
+                       bid_date_written=stage_report.get("date_written"),
                        bid_group_moved=stage_report.get("group_moved"),
                        bid_stage_error=("; ".join(stage_report.get("errors") or [])
                                         or None))
