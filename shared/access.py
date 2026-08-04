@@ -67,6 +67,28 @@ IMPLIES: dict[str, frozenset] = {
     "morning_gm": frozenset({"morning_ops"}),
 }
 
+# One-tap role presets for /ui/admin. Stored grants only — BASELINE is applied
+# by _expand() and should not be repeated here (avoids noisy diffs).
+ROLE_PRESETS: tuple[dict, ...] = (
+    {"id": "full", "label": "Full admin (*)", "features": (WILDCARD,)},
+    {"id": "sales", "label": "Sales",
+     "features": ("estimate", "takeoff", "jobstart")},
+    {"id": "ops", "label": "Operations",
+     "features": ("morning_ops", "jobcheck", "jobstart")},
+    {"id": "crew", "label": "Crew",
+     "features": ("morning_ops", "jobcheck")},
+    {"id": "office", "label": "Office billing",
+     "features": ("estimate", "invoice", "coi")},
+)
+
+# Display groups on the admin page (unknown features fall into "Other").
+FEATURE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
+    ("Day", ("morning", "morning_ops", "morning_gm", "morning_owner")),
+    ("Field", ("jobcheck", "jobstart", "takeoff", "lien", "fieldguide")),
+    ("Money", ("estimate", "change_order", "invoice", "check", "coi")),
+    ("Admin", ("activity", "admin", "timeoff")),
+)
+
 
 def backend() -> str:
     return (os.environ.get("GVC_GRANTS_BACKEND") or "env").strip().lower()

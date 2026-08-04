@@ -3579,6 +3579,17 @@ def ui_admin_list_users(request: Request) -> dict:
         "ok": True,
         "backend": access.backend(),
         "features": list(access.FEATURES),
+        "baseline": sorted(access.BASELINE),
+        "implies": {k: sorted(v) for k, v in access.IMPLIES.items()},
+        "roles": [
+            {"id": r["id"], "label": r["label"],
+             "features": list(r["features"])}
+            for r in access.ROLE_PRESETS
+        ],
+        "groups": [
+            {"label": label, "features": list(feats)}
+            for label, feats in access.FEATURE_GROUPS
+        ],
         "users": [rows[k] for k in sorted(rows)],
     }
 

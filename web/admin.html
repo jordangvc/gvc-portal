@@ -4,18 +4,69 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Portal — Admin</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  /* Page-local: widgets this page owns (access checkbox grid, the env/store
-     chips, and the two JS-toggled message strips). Everything structural comes
-     from gvc.css; these rules only reference gvc tokens. */
-  .feats { display:flex; flex-wrap:wrap; gap:var(--gvc-space-3) var(--gvc-space-5); margin:var(--gvc-space-3) 0; }
-  .feats .gvc-check { min-height:auto; }
-  .chip-env { background:#EEF2FF; color:#7A4F8C; border-color:#C7D2FE; }
+  /* Page-local admin widgets — tokens from gvc.css only. */
   #banner, #status { display:none; }
   #banner.show, #status.show { display:flex; }
-  .admin-actions { display:flex; gap:var(--gvc-space-2); flex-wrap:wrap; }
+  .chip-env { background:#EEF2FF; color:#7A4F8C; border-color:#C7D2FE; }
+  .admin-toolbar {
+    display:flex; flex-wrap:wrap; gap:var(--gvc-space-3);
+    align-items:center; margin-bottom:var(--gvc-space-4);
+  }
+  .admin-toolbar .gvc-input { flex:1 1 220px; min-width:0; max-width:360px; }
+  .role-row { display:flex; flex-wrap:wrap; gap:8px; margin:var(--gvc-space-2) 0 var(--gvc-space-3); }
+  .user-card {
+    border:1px solid var(--gvc-line); border-radius:var(--gvc-radius);
+    background:var(--gvc-surface); padding:var(--gvc-space-4);
+    margin-bottom:var(--gvc-space-3);
+  }
+  .user-card.is-dirty { border-color:var(--gvc-gold); box-shadow:inset 3px 0 0 var(--gvc-gold); }
+  .user-card.is-saving { opacity:.72; pointer-events:none; }
+  .user-hd {
+    display:flex; flex-wrap:wrap; gap:var(--gvc-space-2) var(--gvc-space-4);
+    align-items:baseline; justify-content:space-between; margin-bottom:var(--gvc-space-3);
+  }
+  .user-hd .email { font-weight:600; color:var(--gvc-ink); word-break:break-all; }
+  .user-hd .meta { color:var(--gvc-ink-soft); font-size:var(--gvc-fs-sm); }
+  .feat-group { margin-bottom:var(--gvc-space-3); }
+  .feat-group-label {
+    font-size:11px; letter-spacing:.04em; text-transform:uppercase;
+    color:var(--gvc-ink-soft); margin-bottom:6px;
+  }
+  .feat-toggles { display:flex; flex-wrap:wrap; gap:6px; }
+  .feat-tog {
+    appearance:none; border:1px solid var(--gvc-line-strong); background:var(--gvc-surface);
+    color:var(--gvc-ink-soft); border-radius:999px; padding:8px 12px; min-height:40px;
+    font:inherit; font-size:13px; cursor:pointer; line-height:1.1;
+  }
+  .feat-tog.on {
+    background:var(--gvc-tint-green); border-color:var(--gvc-green);
+    color:var(--gvc-green-dark); font-weight:600;
+  }
+  .feat-tog.base {
+    background:var(--gvc-line-soft); border-color:var(--gvc-line);
+    color:var(--gvc-ink-soft); cursor:default;
+  }
+  .feat-tog:disabled { opacity:.55; cursor:not-allowed; }
+  .feat-tog:focus-visible { outline:2px solid var(--gvc-green); outline-offset:2px; }
+  .person-row {
+    display:grid; grid-template-columns:1fr 1fr; gap:var(--gvc-space-3);
+    margin-bottom:var(--gvc-space-3);
+  }
+  @media (max-width:640px) { .person-row { grid-template-columns:1fr; } }
+  .user-actions { display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:var(--gvc-space-3); }
+  .save-hint { font-size:var(--gvc-fs-sm); color:var(--gvc-ink-soft); }
+  .save-hint.dirty { color:#7A5F2E; font-weight:600; }
+  details.more { margin-top:var(--gvc-space-4); }
+  details.more > summary {
+    cursor:pointer; font-weight:600; color:var(--gvc-green-dark);
+    list-style:none; padding:var(--gvc-space-2) 0;
+  }
+  details.more > summary::-webkit-details-marker { display:none; }
+  @media (max-width:640px) {
+    .feat-tog { flex:1 1 calc(50% - 6px); text-align:center; }
+  }
 </style>
 </head>
 <body>
@@ -39,7 +90,7 @@
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Access control</p>
     <h1 class="gvc-h1">Admin</h1>
-    <p class="gvc-sub">Manage who can reach the portal and which tools each person can use.</p>
+    <p class="gvc-sub">Tap tools on a person to change access. Role presets apply a common set in one tap.</p>
   </div>
 
   <div class="gvc-stack">
@@ -47,7 +98,18 @@
     <div class="gvc-banner" id="status"></div>
 
     <div class="gvc-card">
-      <div class="gvc-card-hd"><span class="gvc-card-title" id="form-title">Add / update user</span></div>
+      <div class="gvc-card-hd"><span class="gvc-card-title">People</span></div>
+      <div class="gvc-card-bd">
+        <div class="admin-toolbar">
+          <input class="gvc-input" id="q" type="search" placeholder="Filter by email or name…" autocomplete="off" />
+          <button type="button" class="gvc-btn gvc-btn--ghost" id="btn-add">Add person</button>
+        </div>
+        <div id="people"><p class="gvc-help">Loading…</p></div>
+      </div>
+    </div>
+
+    <div class="gvc-card" id="add-card" hidden>
+      <div class="gvc-card-hd"><span class="gvc-card-title">Add person</span></div>
       <div class="gvc-card-bd">
         <div class="gvc-grid-2">
           <div class="gvc-field"><label class="gvc-label" for="f-email">Work email</label>
@@ -56,230 +118,497 @@
             <input class="gvc-input" id="f-name" type="text" placeholder="John Smith" /></div>
           <div class="gvc-field"><label class="gvc-label" for="f-position">Position <span class="gvc-help">(optional)</span></label>
             <input class="gvc-input" id="f-position" type="text" placeholder="Estimator" /></div>
-          <div class="gvc-field"><label class="gvc-label" for="f-phone">Phone <span class="gvc-help">(optional — shown as Bid Contact on estimates)</span></label>
+          <div class="gvc-field"><label class="gvc-label" for="f-phone">Phone <span class="gvc-help">(optional)</span></label>
             <input class="gvc-input" id="f-phone" type="text" placeholder="(812) 290-1093" /></div>
         </div>
-        <label class="gvc-label" style="margin-top:var(--gvc-space-4);display:block;">Access</label>
-        <div class="feats" id="f-feats"></div>
-        <p class="gvc-help">Everyone with portal access automatically gets <strong>timeoff</strong> and
-          <strong>fieldguide</strong> as a baseline. Check <strong>All access (*)</strong> to grant every
-          current and future tool.</p>
+        <label class="gvc-label" style="display:block;margin-top:var(--gvc-space-3);">Start from a role</label>
+        <div class="role-row" id="add-roles"></div>
+        <div id="add-feats"></div>
+        <p class="gvc-help">Baseline tools (timeoff, fieldguide, morning) are always included.</p>
         <div class="gvc-btnrow" style="margin-top:var(--gvc-space-3);">
-          <button class="gvc-btn gvc-btn--primary" id="f-save">Save user</button>
-          <button class="gvc-btn gvc-btn--ghost" id="f-clear">Clear</button>
+          <button type="button" class="gvc-btn gvc-btn--primary" id="f-save">Save person</button>
+          <button type="button" class="gvc-btn gvc-btn--ghost" id="f-cancel">Cancel</button>
         </div>
       </div>
     </div>
 
-    <div class="gvc-card">
-      <div class="gvc-card-hd"><span class="gvc-card-title">Users with portal access</span></div>
+    <details class="more gvc-card">
+      <summary class="gvc-card-hd"><span class="gvc-card-title">More — COI blank template</span></summary>
       <div class="gvc-card-bd">
-        <div class="gvc-tablewrap">
-          <table class="gvc-table" style="min-width:640px;">
-            <thead><tr><th>Email</th><th>Access</th><th>Managed</th><th>Updated</th><th></th></tr></thead>
-            <tbody id="rows"><tr><td colspan="5" class="gvc-help">Loading…</td></tr></tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <div class="gvc-card">
-      <div class="gvc-card-hd"><span class="gvc-card-title">COI blank template</span></div>
-      <div class="gvc-card-bd">
-        <p class="gvc-help" style="margin-top:0;">The agent-issued blank ACORD 25 that the COI Generator
-          stamps. Replace it here at annual renewal — the generator page only reads it, so nobody can
-          change the file by accident from there. Prior versions stay recoverable (bucket versioning).</p>
+        <p class="gvc-help" style="margin-top:0;">Annual ACORD 25 blank used by the COI Generator. Keep this collapsed unless you’re renewing it.</p>
         <div id="coi-tmpl-state" class="gvc-help">Loading template info…</div>
         <div class="gvc-grid-3" style="margin-top:var(--gvc-space-3); align-items:end;">
           <div class="gvc-field"><label class="gvc-label" for="coi-tmpl-file">New blank (PDF)</label>
             <input class="gvc-input" type="file" id="coi-tmpl-file" accept="application/pdf" /></div>
-          <div class="gvc-field"><label class="gvc-label" for="coi-tmpl-expiry">Expiry label <span class="gvc-help">(used in filenames)</span></label>
+          <div class="gvc-field"><label class="gvc-label" for="coi-tmpl-expiry">Expiry label</label>
             <input class="gvc-input" id="coi-tmpl-expiry" type="text" placeholder="expMay_2027" /></div>
-          <div><button class="gvc-btn gvc-btn--ghost" id="coi-tmpl-upload">Replace template</button></div>
+          <div><button type="button" class="gvc-btn gvc-btn--ghost" id="coi-tmpl-upload">Replace template</button></div>
         </div>
       </div>
-    </div>
+    </details>
   </div>
 </main>
 
 <script>
-  const $ = s => document.querySelector(s);
-  let FEATURES = [];
-  let BACKEND = "env";
+const $ = (s, el=document) => el.querySelector(s);
+const $$ = (s, el=document) => [...el.querySelectorAll(s)];
 
-  function setStatus(kind, msg) {
-    const el = $("#status");
-    el.className = "gvc-banner show " + (kind === "ok" ? "gvc-banner--ok" : "gvc-banner--bad");
-    el.innerHTML = "<p>" + msg + "</p>";
-    if (kind === "ok") setTimeout(() => { el.className = "gvc-banner"; }, 4000);
+let FEATURES = [];
+let BASELINE = new Set();
+let ROLES = [];
+let GROUPS = [];
+let BACKEND = "env";
+let USERS = [];
+let addSelected = new Set();
+const dirty = new Map(); // email -> Set(features) draft
+const saveTimers = new Map();
+
+function setStatus(kind, msg) {
+  const el = $("#status");
+  el.className = "gvc-banner show " + (kind === "ok" ? "gvc-banner--ok" : "gvc-banner--bad");
+  el.innerHTML = "<p>" + msg + "</p>";
+  if (kind === "ok") setTimeout(() => { el.className = "gvc-banner"; }, 3500);
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, c => (
+    {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]
+  ));
+}
+
+function storedFeatures(u) {
+  const f = u.features || [];
+  if (f.includes("*")) return ["*"];
+  return f.filter(x => FEATURES.includes(x));
+}
+
+function draftFor(u) {
+  if (dirty.has(u.email)) return new Set(dirty.get(u.email));
+  return new Set(storedFeatures(u));
+}
+
+function isAll(set) { return set.has("*"); }
+
+function featureLabel(f) {
+  return ({
+    morning: "Morning",
+    morning_ops: "Morning Ops",
+    morning_gm: "Morning GM",
+    morning_owner: "Owner Pulse",
+    estimate: "Estimate",
+    change_order: "Change Order",
+    invoice: "Invoice",
+    check: "Paid by Check",
+    coi: "COI",
+    lien: "Lien Watch",
+    jobcheck: "Job Check",
+    jobstart: "Job Start",
+    takeoff: "Takeoff",
+    timeoff: "Time Off",
+    fieldguide: "Field Manual",
+    activity: "Activity",
+    admin: "Admin",
+  })[f] || f;
+}
+
+function groupedFeatures() {
+  const seen = new Set();
+  const out = [];
+  for (const g of GROUPS) {
+    const feats = (g.features || []).filter(f => FEATURES.includes(f));
+    feats.forEach(f => seen.add(f));
+    if (feats.length) out.push({ label: g.label, features: feats });
   }
+  const rest = FEATURES.filter(f => !seen.has(f));
+  if (rest.length) out.push({ label: "Other", features: rest });
+  return out;
+}
 
-  function renderFeatureChecks() {
-    const box = $("#f-feats");
-    box.innerHTML = "";
-    box.insertAdjacentHTML("beforeend",
-      `<label class="gvc-check"><input type="checkbox" id="feat-all" /> All access (*)</label>`);
-    FEATURES.forEach(f => {
-      box.insertAdjacentHTML("beforeend",
-        `<label class="gvc-check"><input type="checkbox" class="feat" value="${f}" /> ${f}</label>`);
+function renderRoleButtons(host, onPick) {
+  host.innerHTML = "";
+  ROLES.forEach(role => {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "gvc-btn gvc-btn--ghost";
+    b.textContent = role.label;
+    b.onclick = () => onPick(role);
+    host.appendChild(b);
+  });
+}
+
+function renderToggleGrid(host, selected, { locked=false, onToggle } = {}) {
+  host.innerHTML = "";
+  const allOn = isAll(selected);
+
+  const star = document.createElement("div");
+  star.className = "feat-group";
+  star.innerHTML = `<div class="feat-group-label">Shortcut</div><div class="feat-toggles"></div>`;
+  const starRow = $(".feat-toggles", star);
+  const allBtn = document.createElement("button");
+  allBtn.type = "button";
+  allBtn.className = "feat-tog" + (allOn ? " on" : "");
+  allBtn.textContent = "All access (*)";
+  allBtn.disabled = locked;
+  allBtn.onclick = () => onToggle("*");
+  starRow.appendChild(allBtn);
+  host.appendChild(star);
+
+  groupedFeatures().forEach(g => {
+    const box = document.createElement("div");
+    box.className = "feat-group";
+    box.innerHTML = `<div class="feat-group-label">${esc(g.label)}</div><div class="feat-toggles"></div>`;
+    const row = $(".feat-toggles", box);
+    g.features.forEach(f => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      const isBase = BASELINE.has(f);
+      const on = allOn || selected.has(f) || isBase;
+      btn.className = "feat-tog" + (on ? " on" : "") + (isBase ? " base" : "");
+      btn.textContent = featureLabel(f) + (isBase ? " · always" : "");
+      // Baseline is always on; All access (*) can still be peeled back by
+      // tapping an individual tool (expands * → every other feature).
+      btn.disabled = locked || isBase;
+      if (!isBase && !locked) btn.onclick = () => onToggle(f);
+      row.appendChild(btn);
     });
-    $("#feat-all").addEventListener("change", e => {
-      document.querySelectorAll(".feat").forEach(c => { c.disabled = e.target.checked; });
-    });
+    host.appendChild(box);
+  });
+}
+
+function applyRoleToSet(role) {
+  const next = new Set();
+  (role.features || []).forEach(f => next.add(f));
+  return next;
+}
+
+function scheduleSave(email) {
+  clearTimeout(saveTimers.get(email));
+  saveTimers.set(email, setTimeout(() => saveUser(email), 450));
+}
+
+function setDirtyHint(email, isDirty) {
+  const card = document.querySelector(`[data-email="${CSS.escape(email)}"]`);
+  if (!card) return;
+  card.classList.toggle("is-dirty", isDirty);
+  const hint = $(".save-hint", card);
+  if (hint) {
+    hint.className = "save-hint" + (isDirty ? " dirty" : "");
+    hint.textContent = isDirty ? "Unsaved — saving…" : "";
   }
+  const saveNow = $("[data-save-now]", card);
+  if (saveNow) saveNow.disabled = !isDirty;
+}
 
-  function selectedFeatures() {
-    if ($("#feat-all").checked) return ["*"];
-    return [...document.querySelectorAll(".feat:checked")].map(c => c.value);
-  }
+function markDirty(email, set, { rerender = true } = {}) {
+  dirty.set(email, [...set]);
+  if (rerender) renderPeople($("#q").value);
+  else setDirtyHint(email, true);
+}
 
-  function setForm(email, features) {
-    $("#f-email").value = email || "";
-    const all = (features || []).includes("*");
-    $("#feat-all").checked = all;
-    document.querySelectorAll(".feat").forEach(c => {
-      c.checked = all || (features || []).includes(c.value);
-      c.disabled = all;
-    });
-  }
-
-  function clearForm() {
-    setForm("", []);
-    $("#f-name").value = ""; $("#f-position").value = ""; $("#f-phone").value = "";
-    $("#f-email").focus();
-  }
-
-  async function load() {
-    let r;
-    try { r = await fetch("/ui/api/admin/users"); }
-    catch (e) { setStatus("err", "Network error loading users."); return; }
-    if (r.status === 401) { location.reload(); return; }
-    if (!r.ok) { setStatus("err", "Could not load users (HTTP " + r.status + ")."); return; }
-    const data = await r.json();
-    FEATURES = data.features || [];
-    BACKEND = data.backend;
-    renderFeatureChecks();
-
-    const banner = $("#banner");
-    if (BACKEND !== "gcs") {
-      banner.className = "gvc-banner gvc-banner--warn show";
-      banner.innerHTML = "<p><strong>Read-only:</strong> grant editing needs the GCS backend. " +
-        "Set <code>GVC_GRANTS_BACKEND=gcs</code> on the service and redeploy. " +
-        "Superadmins below come from the env allowlist.</p>";
-      $("#f-save").disabled = true;
-    }
-    renderRows(data.users || []);
-  }
-
-  function renderRows(users) {
-    const tb = $("#rows");
-    if (!users.length) { tb.innerHTML = `<tr><td colspan="5" class="gvc-help">No users yet.</td></tr>`; return; }
-    tb.innerHTML = "";
-    users.forEach(u => {
-      const isEnv = u.managed_by === "env";
-      const chips = (u.effective || []).map(f =>
-        `<span class="gvc-chip${isEnv ? ' chip-env' : ''}">${f}</span>`).join(" ");
-      const tr = document.createElement("tr");
-      tr.innerHTML =
-        `<td class="strong">${u.email}</td>
-         <td><div class="gvc-chiprow">${chips || '<span class="gvc-help">none</span>'}</div></td>
-         <td>${isEnv ? '<span class="gvc-chip chip-env">superadmin (env)</span>' : 'store'}</td>
-         <td class="gvc-help">${u.updated_at ? new Date(u.updated_at).toLocaleString() : '—'}${u.updated_by ? '<br>by ' + u.updated_by : ''}</td>
-         <td><div class="admin-actions"></div></td>`;
-      const acts = tr.querySelector(".admin-actions");
-      if (isEnv) {
-        acts.innerHTML = '<span class="gvc-help">env-managed</span>';
-      } else {
-        const edit = document.createElement("button");
-        edit.className = "gvc-btn gvc-btn--ghost"; edit.textContent = "Edit";
-        edit.onclick = () => { setForm(u.email, u.features); $("#f-name").value = (u.person||{}).name||""; $("#f-position").value = (u.person||{}).position||""; $("#f-phone").value = (u.person||{}).phone||""; window.scrollTo(0,0); };
-        const rm = document.createElement("button");
-        rm.className = "gvc-btn gvc-btn--danger"; rm.textContent = "Remove";
-        rm.onclick = () => removeUser(u.email);
-        rm.disabled = BACKEND !== "gcs";
-        acts.append(edit, rm);
-      }
-      tb.appendChild(tr);
-    });
-  }
-
-  async function save() {
-    const email = $("#f-email").value.trim();
-    if (!email) { setStatus("err", "Enter a work email."); return; }
-    const body = {
-      email,
-      features: selectedFeatures(),
-      person: { name: $("#f-name").value.trim(), position: $("#f-position").value.trim(), phone: $("#f-phone").value.trim() },
-    };
+async function saveUser(email) {
+  const u = USERS.find(x => x.email === email);
+  if (!u || u.managed_by === "env") return;
+  if (!dirty.has(email)) return;
+  const features = dirty.get(email);
+  const card = document.querySelector(`[data-email="${CSS.escape(email)}"]`);
+  if (card) card.classList.add("is-saving");
+  const nameEl = card && $("[data-person-name]", card);
+  const phoneEl = card && $("[data-person-phone]", card);
+  const positionEl = card && $("[data-person-position]", card);
+  const person = {
+    name: nameEl ? nameEl.value.trim() : ((u.person || {}).name || ""),
+    position: positionEl ? positionEl.value.trim() : ((u.person || {}).position || ""),
+    phone: phoneEl ? phoneEl.value.trim() : ((u.person || {}).phone || ""),
+  };
+  u.person = person;
+  try {
+    const body = { email, features, person };
     const r = await fetch("/ui/api/admin/users", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body),
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
     });
     const data = await r.json().catch(() => ({}));
-    if (r.ok) { setStatus("ok", `Saved ${email}.`); clearForm(); load(); }
-    else { setStatus("err", (data.detail && data.detail.detail) || ("Save failed (HTTP " + r.status + ").")); }
+    if (!r.ok) {
+      setStatus("err", (data.detail && data.detail.detail) || ("Save failed for " + email));
+      return;
+    }
+    dirty.delete(email);
+    setStatus("ok", "Saved " + email);
+    await load({ keepFilter: true });
+  } catch (e) {
+    setStatus("err", "Network error saving " + email);
+  } finally {
+    if (card) card.classList.remove("is-saving");
+  }
+}
+
+function toggleInSet(set, feat) {
+  const next = new Set(set);
+  if (feat === "*") {
+    if (next.has("*")) next.delete("*");
+    else return new Set(["*"]);
+    return next;
+  }
+  if (next.has("*")) {
+    // Tap while All access is on → keep every other tool, drop this one.
+    FEATURES.forEach(f => { if (f !== feat && !BASELINE.has(f)) next.add(f); });
+    next.delete("*");
+    next.delete(feat);
+    return next;
+  }
+  if (next.has(feat)) next.delete(feat);
+  else next.add(feat);
+  return next;
+}
+
+function renderPeople(filter) {
+  const host = $("#people");
+  const q = (filter || "").trim().toLowerCase();
+  const list = USERS.filter(u => {
+    if (!q) return true;
+    const name = ((u.person || {}).name || "").toLowerCase();
+    return u.email.includes(q) || name.includes(q);
+  });
+  if (!list.length) {
+    host.innerHTML = `<p class="gvc-help">${USERS.length ? "No matches." : "No users yet — add someone above."}</p>`;
+    return;
+  }
+  host.innerHTML = "";
+  list.forEach(u => {
+    const isEnv = u.managed_by === "env";
+    const selected = draftFor(u);
+    const isDirty = dirty.has(u.email);
+    const card = document.createElement("div");
+    card.className = "user-card" + (isDirty ? " is-dirty" : "");
+    card.dataset.email = u.email;
+    const person = u.person || {};
+    const nameBit = person.name ? ` · ${esc(person.name)}` : "";
+    card.innerHTML =
+      `<div class="user-hd">
+         <div>
+           <div class="email">${esc(u.email)}${nameBit}</div>
+           <div class="meta">${isEnv ? "Superadmin (env — edit in Cloud Run env vars)" :
+             (u.updated_at ? ("Updated " + new Date(u.updated_at).toLocaleString() +
+               (u.updated_by ? " by " + esc(u.updated_by) : "")) : "Store user")}</div>
+         </div>
+         <div class="save-hint${isDirty ? " dirty" : ""}">${isDirty ? "Unsaved — saving…" : ""}</div>
+       </div>
+       <div class="person-row" data-person></div>
+       <div class="role-row" data-roles></div>
+       <div data-feats></div>
+       <div class="user-actions" data-actions></div>`;
+
+    const personHost = $("[data-person]", card);
+    const roleHost = $("[data-roles]", card);
+    const featHost = $("[data-feats]", card);
+    const actHost = $("[data-actions]", card);
+
+    if (!isEnv && BACKEND === "gcs") {
+      const mkPersonField = (key, label, placeholder) => {
+        const wrap = document.createElement("div");
+        wrap.className = "gvc-field";
+        wrap.innerHTML = `<label class="gvc-label">${esc(label)}</label>`;
+        const inp = document.createElement("input");
+        inp.className = "gvc-input";
+        inp.type = "text";
+        inp.placeholder = placeholder;
+        inp.value = person[key] || "";
+        inp.setAttribute("data-person-" + key, "1");
+        inp.addEventListener("input", () => {
+          if (!dirty.has(u.email)) dirty.set(u.email, storedFeatures(u));
+          setDirtyHint(u.email, true);
+          scheduleSave(u.email);
+        });
+        wrap.appendChild(inp);
+        return wrap;
+      };
+      personHost.append(
+        mkPersonField("name", "Name", "John Smith"),
+        mkPersonField("phone", "Phone", "(812) 290-1093"),
+      );
+      renderRoleButtons(roleHost, (role) => {
+        markDirty(u.email, applyRoleToSet(role));
+        scheduleSave(u.email);
+      });
+      renderToggleGrid(featHost, selected, {
+        onToggle: (feat) => {
+          markDirty(u.email, toggleInSet(selected, feat));
+          scheduleSave(u.email);
+        },
+      });
+      const saveNow = document.createElement("button");
+      saveNow.type = "button";
+      saveNow.className = "gvc-btn gvc-btn--primary";
+      saveNow.setAttribute("data-save-now", "1");
+      saveNow.textContent = "Save now";
+      saveNow.disabled = !isDirty;
+      saveNow.onclick = () => {
+        clearTimeout(saveTimers.get(u.email));
+        saveUser(u.email);
+      };
+      const rm = document.createElement("button");
+      rm.type = "button";
+      rm.className = "gvc-btn gvc-btn--danger";
+      rm.textContent = "Remove";
+      rm.onclick = () => removeUser(u.email);
+      actHost.append(saveNow, rm);
+    } else {
+      personHost.remove();
+      roleHost.remove();
+      // Read-only effective chips
+      const row = document.createElement("div");
+      row.className = "gvc-chiprow";
+      (u.effective || []).forEach(f => {
+        row.insertAdjacentHTML("beforeend",
+          `<span class="gvc-chip${isEnv ? " chip-env" : ""}">${esc(featureLabel(f))}</span>`);
+      });
+      featHost.appendChild(row);
+    }
+    host.appendChild(card);
+  });
+}
+
+function renderAddFeats() {
+  renderToggleGrid($("#add-feats"), addSelected, {
+    onToggle: (feat) => {
+      addSelected = toggleInSet(addSelected, feat);
+      renderAddFeats();
+    },
+  });
+}
+
+async function load(opts = {}) {
+  let r;
+  try { r = await fetch("/ui/api/admin/users"); }
+  catch (e) { setStatus("err", "Network error loading users."); return; }
+  if (r.status === 401) { location.reload(); return; }
+  if (!r.ok) { setStatus("err", "Could not load users (HTTP " + r.status + ")."); return; }
+  const data = await r.json();
+  FEATURES = data.features || [];
+  BASELINE = new Set(data.baseline || []);
+  ROLES = data.roles || [];
+  GROUPS = data.groups || [];
+  BACKEND = data.backend;
+  USERS = data.users || [];
+
+  const banner = $("#banner");
+  if (BACKEND !== "gcs") {
+    banner.className = "gvc-banner gvc-banner--warn show";
+    banner.innerHTML = "<p><strong>Read-only:</strong> grant editing needs the GCS backend. " +
+      "Set <code>GVC_GRANTS_BACKEND=gcs</code> on the service and redeploy.</p>";
+    $("#btn-add").disabled = true;
+  } else {
+    banner.className = "gvc-banner";
   }
 
-  async function removeUser(email) {
-    if (!confirm(`Remove ${email} from the portal? They lose all access.`)) return;
-    const r = await fetch("/ui/api/admin/users/remove", {
-      method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email }),
-    });
+  renderRoleButtons($("#add-roles"), (role) => {
+    addSelected = applyRoleToSet(role);
+    renderAddFeats();
+  });
+  renderAddFeats();
+  renderPeople(opts.keepFilter ? $("#q").value : ($("#q").value = "", ""));
+}
+
+async function saveNew() {
+  const email = $("#f-email").value.trim();
+  if (!email) { setStatus("err", "Enter a work email."); return; }
+  const features = isAll(addSelected) ? ["*"] : [...addSelected].filter(f => f !== "*");
+  const body = {
+    email,
+    features,
+    person: {
+      name: $("#f-name").value.trim(),
+      position: $("#f-position").value.trim(),
+      phone: $("#f-phone").value.trim(),
+    },
+  };
+  const r = await fetch("/ui/api/admin/users", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (r.ok) {
+    setStatus("ok", "Saved " + email);
+    $("#add-card").hidden = true;
+    $("#f-email").value = ""; $("#f-name").value = "";
+    $("#f-position").value = ""; $("#f-phone").value = "";
+    addSelected = new Set();
+    await load();
+  } else {
+    setStatus("err", (data.detail && data.detail.detail) || ("Save failed (HTTP " + r.status + ")."));
+  }
+}
+
+async function removeUser(email) {
+  if (!confirm(`Remove ${email} from the portal? They lose all access.`)) return;
+  const r = await fetch("/ui/api/admin/users/remove", {
+    method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+  const data = await r.json().catch(() => ({}));
+  if (r.ok) { dirty.delete(email); setStatus("ok", "Removed " + email); load({ keepFilter: true }); }
+  else setStatus("err", (data.detail && data.detail.detail) || ("Remove failed (HTTP " + r.status + ")."));
+}
+
+async function loadCoiTemplate() {
+  const el = $("#coi-tmpl-state");
+  try {
+    const r = await fetch("/ui/api/coi/template");
+    if (r.status === 401) { location.reload(); return; }
+    const data = await r.json();
+    if (!r.ok) {
+      const d = data.detail || data;
+      el.textContent = "⚠️ " + (d.advice || d.detail || "Template store unavailable.");
+      return;
+    }
+    const t = data.template;
+    if (t) {
+      el.innerHTML = `✅ Current: <strong>${esc(t.expiry_label || "(no expiry label)")}</strong>` +
+        ` — uploaded ${esc((t.uploaded_at || "").slice(0, 10))} by ${esc(t.uploaded_by || "?")}` +
+        ` (${Math.round((t.size_bytes || 0) / 1024)}KB).`;
+      if (t.expiry_label) $("#coi-tmpl-expiry").value = t.expiry_label;
+    } else {
+      el.textContent = "⚠️ No blank uploaded yet — COI Generator can't run until one is stored.";
+    }
+  } catch (e) { el.textContent = "Template info unavailable: " + e.message; }
+}
+
+async function uploadCoiTemplate() {
+  const fileEl = $("#coi-tmpl-file");
+  if (!fileEl.files.length) { setStatus("err", "Choose the blank COI PDF first."); return; }
+  const fd = new FormData();
+  fd.append("file", fileEl.files[0]);
+  fd.append("expiry_label", $("#coi-tmpl-expiry").value.trim());
+  $("#coi-tmpl-upload").disabled = true;
+  try {
+    const r = await fetch("/ui/api/coi/template", { method: "POST", body: fd });
+    if (r.status === 401) { location.reload(); return; }
     const data = await r.json().catch(() => ({}));
-    if (r.ok) { setStatus("ok", `Removed ${email}.`); load(); }
-    else { setStatus("err", (data.detail && data.detail.detail) || ("Remove failed (HTTP " + r.status + ").")); }
-  }
+    if (r.ok) { setStatus("ok", "COI template replaced."); fileEl.value = ""; loadCoiTemplate(); }
+    else {
+      const d = data.detail || data;
+      setStatus("err", d.detail || d.advice || ("Upload failed (HTTP " + r.status + ")."));
+    }
+  } catch (e) { setStatus("err", "Network error during upload: " + e.message); }
+  finally { $("#coi-tmpl-upload").disabled = false; }
+}
 
-  // ---- COI blank template management (moved here from /ui/coi, 2026-07-14 —
-  // the generator page is read-only so the file can't be changed by accident).
-  async function loadCoiTemplate() {
-    const el = $("#coi-tmpl-state");
-    try {
-      const r = await fetch("/ui/api/coi/template");
-      if (r.status === 401) { location.reload(); return; }
-      const data = await r.json();
-      if (!r.ok) {
-        const d = data.detail || data;
-        el.textContent = "⚠️ " + (d.advice || d.detail || "Template store unavailable.");
-        return;
-      }
-      const t = data.template;
-      if (t) {
-        el.innerHTML = `✅ Current: <strong>${t.expiry_label || "(no expiry label)"}</strong>` +
-          ` — uploaded ${(t.uploaded_at || "").slice(0, 10)} by ${t.uploaded_by || "?"}` +
-          ` (${Math.round((t.size_bytes || 0) / 1024)}KB, ${t.page_count} page${t.page_count === 1 ? "" : "s"}).`;
-        if (t.expiry_label) $("#coi-tmpl-expiry").value = t.expiry_label;
-      } else {
-        el.textContent = "⚠️ No blank uploaded yet — the COI Generator can't run until one is stored.";
-      }
-    } catch (e) { el.textContent = "Template info unavailable: " + e.message; }
-  }
+$("#q").addEventListener("input", e => renderPeople(e.target.value));
+$("#btn-add").addEventListener("click", () => {
+  $("#add-card").hidden = false;
+  $("#f-email").focus();
+  window.scrollTo({ top: $("#add-card").offsetTop - 12, behavior: "smooth" });
+});
+$("#f-cancel").addEventListener("click", () => { $("#add-card").hidden = true; });
+$("#f-save").addEventListener("click", saveNew);
+$("#f-email").addEventListener("keydown", (ev) => {
+  if (ev.key === "Enter") { ev.preventDefault(); saveNew(); }
+});
+$("#coi-tmpl-upload").addEventListener("click", uploadCoiTemplate);
 
-  async function uploadCoiTemplate() {
-    const fileEl = $("#coi-tmpl-file");
-    if (!fileEl.files.length) { setStatus("err", "Choose the blank COI PDF first."); return; }
-    const fd = new FormData();
-    fd.append("file", fileEl.files[0]);
-    fd.append("expiry_label", $("#coi-tmpl-expiry").value.trim());
-    $("#coi-tmpl-upload").disabled = true;
-    try {
-      const r = await fetch("/ui/api/coi/template", { method: "POST", body: fd });
-      if (r.status === 401) { location.reload(); return; }
-      const data = await r.json().catch(() => ({}));
-      if (r.ok) { setStatus("ok", "COI template replaced."); fileEl.value = ""; loadCoiTemplate(); }
-      else {
-        const d = data.detail || data;
-        setStatus("err", d.detail || d.advice || ("Upload failed (HTTP " + r.status + ")."));
-      }
-    } catch (e) { setStatus("err", "Network error during upload: " + e.message); }
-    finally { $("#coi-tmpl-upload").disabled = false; }
-  }
-
-  $("#coi-tmpl-upload").addEventListener("click", uploadCoiTemplate);
-
-  $("#f-save").addEventListener("click", save);
-  $("#f-clear").addEventListener("click", clearForm);
-  load();
-  loadCoiTemplate();
+load();
+loadCoiTemplate();
 </script>
 </body>
 </html>
