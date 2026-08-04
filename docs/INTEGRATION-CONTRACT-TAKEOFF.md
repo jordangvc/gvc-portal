@@ -96,3 +96,32 @@ The portal now owns normalization, validation, and shared-draft staging through
 the two `from-takeoff` POST routes above. The Estimate Generator gained the
 upload/paste card and `?takeoff=1` focus link. Firebase outbox pickup remains a
 separate Phase 2 change.
+
+## 2026-08-04 — Phase 2 outbox consumer implemented
+
+The Firebase outbox poller now exists on the portal side.
+`POST /v1/tasks/poll-takeoff-outbox` (X-API-Key; Cloud Scheduler every 10
+minutes) reads `gvc_portal_outbox` entries with `status == "queued"` from
+`https://gvc-takeoff-default-rtdb.firebaseio.com` (override with
+`GVC_TAKEOFF_RTDB_URL`; credentials are the Cloud Run service account by
+default, or a service-account file at `GVC_TAKEOFF_RTDB_CREDENTIALS`), then
+runs the SAME normalize → validate → draft-only staging as the `from-takeoff`
+routes and acks each entry in place.
+
+Ack protocol — the portal owns every status after `queued`; takeoff writes
+ONLY `queued`:
+
+| status | written by | extra fields set        | meaning                                    |
+|--------|------------|-------------------------|--------------------------------------------|
+| queued | takeoff    | queuedAt, queuedBy, bidTotal | waiting for the portal sweep          |
+| staged | portal     | stagedAt, portalDraftId | shared draft staged for office review      |
+| error  | portal     | error, processedAt      | payload failed validation; fix and re-queue |
+
+The portal draft id is deterministic — `takeoff-{draftId}`, sanitized to the
+draft store's `^[A-Za-z0-9._-]{8,64}$` with a hash suffix when needed — so
+re-runs are idempotent, and a finalized draft never resurrects because its
+outbox entry is no longer `queued`. The RTDB rules must include
+`".indexOn": "status"` under `/gvc_portal_outbox`. The Seam 1 safety boundary
+is unchanged: the poller only upserts `portal/estimate-drafts.json` — it never
+finalizes, never creates a Gmail draft, never sends. Optional Slack notice per
+staged draft via `GVC_TAKEOFF_OUTBOX_SLACK=1` (default off).
