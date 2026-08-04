@@ -107,6 +107,49 @@ def test_service_registers_takeoff_staging_routes_without_finalize_mode():
     assert ("/ui/api/estimate/takeoff-contract", "GET") in routes
 
 
+def test_api_key_route_stages_raw_payload_without_finalize_controls():
+    from fastapi.testclient import TestClient
+    from app import service
+
+    original_key = service.API_KEY
+    original_import = service.takeoff_import_flow.import_takeoff_as_draft
+    seen = {}
+
+    def fake_import(raw, actor):
+        seen["raw"] = raw
+        seen["actor"] = actor
+        return {
+            "ok": True,
+            "draft": {
+                "id": "takeoff-api-route-test",
+                "payload": ti.normalize_takeoff_payload(raw),
+            },
+            "warnings": [],
+        }
+
+    service.API_KEY = "takeoff-test-key"
+    service.takeoff_import_flow.import_takeoff_as_draft = fake_import
+    try:
+        client = TestClient(service.app)
+        unauthorized = client.post(
+            "/v1/estimate/from-takeoff", json=_example()
+        )
+        response = client.post(
+            "/v1/estimate/from-takeoff",
+            headers={"X-API-Key": "takeoff-test-key"},
+            json=_example(),
+        )
+    finally:
+        service.API_KEY = original_key
+        service.takeoff_import_flow.import_takeoff_as_draft = original_import
+
+    assert unauthorized.status_code == 401
+    assert response.status_code == 200
+    assert response.json()["draft"]["payload"]["estimate"]["identifier"] == ""
+    assert seen["actor"] == "api:takeoff"
+    assert "mode" not in seen["raw"] and "finalize" not in seen["raw"]
+
+
 def test_generated_draft_record_has_safe_takeoff_id_and_blank_identifier():
     record = ti.build_draft_record(_example(), "jake@greenvalleycontractors.com")
 
