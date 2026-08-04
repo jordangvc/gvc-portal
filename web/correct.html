@@ -4,71 +4,69 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Reissue / Correct — GVC Portal</title>
+<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  :root { --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --bg: #FAFAF8; --line: #E7E0CE; --warn: #96763B; --warn-bg: #fff7e6; }
-  * { box-sizing: border-box; }
-  body { margin: 0; font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #1B382B; background: var(--bg); }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 14px 22px;
-    display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-  header h1 { text-align: center; font-size: 18px; margin: 0; }
-  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
-    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
-    border-radius: 8px; opacity: .95; }
-  header .home-link:hover { background: rgba(255,255,255,.16); opacity: 1; }
-  header .home-link .chev { font-size: 17px; line-height: 1; }
-  header .who { justify-self: end; font-size: 13px; display: flex; gap: 12px; align-items: center; }
-  header .who a { color: #fff; }
-  @media (max-width: 720px) {
-    header { grid-template-columns: auto 1fr; }
-    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-    header .who { grid-row: 1; }
-  }
-  main { max-width: 860px; margin: 0 auto; padding: 24px 22px 64px; }
-  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 12px; padding: 20px; margin-bottom: 18px; }
-  .card h2 { margin: 0 0 4px; font-size: 16px; }
-  .card p.hint { margin: 0 0 14px; color: #586; font-size: 13px; }
-  label { display: block; font-weight: 600; font-size: 13px; margin: 12px 0 5px; }
-  input[type=text], input[type=email], textarea, select {
-    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 8px; font-size: 14px; font-family: inherit; }
-  textarea { min-height: 120px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
-  .kinds { display: grid; gap: 10px; margin-top: 6px; }
-  .kind { border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; cursor: pointer; }
-  .kind.sel { border-color: var(--green); background: #f3faf5; }
-  .kind b { display: block; font-size: 14px; }
-  .kind span { font-size: 12.5px; color: #586; }
-  .row { display: flex; gap: 10px; flex-wrap: wrap; }
-  button { background: var(--green); color: #fff; border: 0; border-radius: 9px; padding: 11px 18px;
-    font-size: 14px; font-weight: 700; cursor: pointer; }
-  button:hover { background: var(--green-dark); }
-  button.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
-  button:disabled { opacity: .5; cursor: default; }
-  .out { white-space: pre-wrap; font-family: ui-monospace, Menlo, monospace; font-size: 12.5px;
-    background: #142C23; color: #d7ffe2; padding: 14px; border-radius: 10px; margin-top: 12px; display: none; }
-  .plan { border-left: 4px solid var(--green); padding: 6px 0 6px 14px; margin: 12px 0; }
-  .plan ol { margin: 6px 0; padding-left: 20px; }
-  .caveat { background: var(--warn-bg); color: var(--warn); border: 1px solid #f0d8a0; border-radius: 8px; padding: 10px 12px; margin: 8px 0; font-size: 13px; }
-  .hidden { display: none; }
-  .pill { display: inline-block; background: #eef4ef; border-radius: 999px; padding: 2px 10px; font-size: 12px; color: var(--green-dark); }
 
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px; justify-content: center; }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700; }
-  .btn.gold:hover { background: linear-gradient(0deg, #B9954E, #C9A24B); filter: brightness(1.06); }
+  /* Reissue / Correct widgets */
+  .card { background:var(--gvc-surface); border:1px solid var(--gvc-line); border-radius:var(--gvc-r-lg);
+    padding:18px; margin-bottom:0; box-shadow:var(--gvc-shadow-sm, 0 1px 2px rgba(28,25,23,.06)); }
+  .card h2 { margin:0 0 4px; font-size:var(--gvc-fs-body); font-weight:700; color:var(--gvc-ink); text-transform:none; letter-spacing:0; background:transparent; padding:0; border:0; }
+  .card p.hint, .hint { margin:0 0 14px; color:var(--gvc-muted); font-size:var(--gvc-fs-caption); }
+  label { display:block; font-weight:600; font-size:var(--gvc-fs-small); margin:12px 0 5px; color:var(--gvc-ink-soft); }
+  input[type=text], input[type=email], textarea, select {
+    width:100%; padding:9px 11px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    font-size:var(--gvc-fs-body); font-family:inherit; background:var(--gvc-surface); color:var(--gvc-ink);
+    min-height:var(--gvc-ctl-h); }
+  textarea { min-height:120px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; height:auto; }
+  .kinds { display:grid; gap:10px; margin-top:6px; }
+  .kind { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:12px 14px; cursor:pointer; background:var(--gvc-bg); }
+  .kind.sel { border-color:var(--gvc-green); background:var(--gvc-tint-green); }
+  .kind b { display:block; font-size:var(--gvc-fs-small); }
+  .kind span { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
+  .row { display:flex; gap:10px; flex-wrap:wrap; }
+  .btn, button.btn, button:not(.kind) {
+    display:inline-flex; align-items:center; justify-content:center;
+    background:var(--gvc-green); color:#fff; border:0; border-radius:var(--gvc-r-md);
+    padding:0 18px; min-height:var(--gvc-ctl-h); font-size:var(--gvc-fs-small); font-weight:700; cursor:pointer; }
+  button.secondary, .btn.secondary { background:var(--gvc-surface); color:var(--gvc-green-dark); border:1px solid var(--gvc-line); }
+  button.danger, .btn.danger { background:var(--gvc-surface); color:var(--gvc-danger); border:1px solid #E2C3BA; }
+  button.gold, .btn.gold { background:var(--gvc-gold); color:#3A2D0E; }
+  button:disabled { opacity:.5; cursor:not-allowed; }
+  .pill { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill);
+    font-weight:600; border:1px solid var(--gvc-line); background:var(--gvc-bg); margin-left:6px; }
+  .plan { margin-top:12px; padding:12px; border:1px dashed var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-bg); font-size:var(--gvc-fs-small); }
+  .out { margin-top:12px; padding:12px; border-radius:var(--gvc-r-md); background:var(--gvc-tint-green); border:1px solid var(--gvc-line); font-size:var(--gvc-fs-small); white-space:pre-wrap; }
+  .caveat { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:10px; }
+  .hidden { display:none !important; }
+  .who { display:none; }
+
 </style>
 </head>
 <body>
-<header>
-  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
-  <h1>Reissue / Correct</h1>
-  <div class="who"><a href="/auth/logout">Sign out</a></div>
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Reissue / Correct</span>
+    <div class="gvc-topbar-right">
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
 </header>
 
-<main>
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Billing</p>
+    <h1 class="gvc-h1">Reissue / Correct</h1>
+    <p class="gvc-sub">Fix a billed invoice the right way — void/reissue or correct in place from the saved invoice JSON.</p>
+  </div>
+
+  <div class="gvc-stack">
+
   <div class="card">
     <h2>1 · The invoice you're correcting</h2>
     <p class="hint">Enter the invoice number to load the saved JSON straight from Drive (stored next to the PDF when it was billed).
@@ -107,6 +105,7 @@
     <div id="planbox" class="hidden"></div>
     <div id="out" class="out"></div>
   </div>
+  </div><!-- /gvc-stack -->
 </main>
 
 <script>
