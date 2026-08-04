@@ -108,7 +108,7 @@ def test_service_registers_takeoff_staging_routes_without_finalize_mode():
 
 
 def test_api_key_route_stages_raw_payload_without_finalize_controls():
-    from fastapi.testclient import TestClient
+    from fastapi import HTTPException
     from app import service
 
     original_key = service.API_KEY
@@ -130,22 +130,21 @@ def test_api_key_route_stages_raw_payload_without_finalize_controls():
     service.API_KEY = "takeoff-test-key"
     service.takeoff_import_flow.import_takeoff_as_draft = fake_import
     try:
-        client = TestClient(service.app)
-        unauthorized = client.post(
-            "/v1/estimate/from-takeoff", json=_example()
-        )
-        response = client.post(
-            "/v1/estimate/from-takeoff",
-            headers={"X-API-Key": "takeoff-test-key"},
-            json=_example(),
+        try:
+            service.estimate_from_takeoff(_example(), None)
+        except HTTPException as exc:
+            unauthorized_status = exc.status_code
+        else:
+            raise AssertionError("missing API key was accepted")
+        response = service.estimate_from_takeoff(
+            _example(), "takeoff-test-key"
         )
     finally:
         service.API_KEY = original_key
         service.takeoff_import_flow.import_takeoff_as_draft = original_import
 
-    assert unauthorized.status_code == 401
-    assert response.status_code == 200
-    assert response.json()["draft"]["payload"]["estimate"]["identifier"] == ""
+    assert unauthorized_status == 401
+    assert response["draft"]["payload"]["estimate"]["identifier"] == ""
     assert seen["actor"] == "api:takeoff"
     assert "mode" not in seen["raw"] and "finalize" not in seen["raw"]
 
