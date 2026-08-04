@@ -158,6 +158,25 @@
     <div id="prefill-note" class="hint" style="margin-top:8px;"></div>
   </div>
 
+  <div class="card" id="takeoff-import-card">
+    <h2>Import from Takeoff <span class="opt" style="text-transform:none;font-weight:400;">(upload or paste “Export for Portal” JSON — saves a shared draft only)</span></h2>
+    <div class="grid">
+      <div>
+        <label for="takeoff-file">Takeoff JSON file <span class="opt">(optional)</span></label>
+        <input id="takeoff-file" type="file" accept=".json,application/json" />
+      </div>
+      <div class="full">
+        <label for="takeoff-json">Or paste Takeoff JSON</label>
+        <textarea id="takeoff-json" rows="5" placeholder='{"prepared_by":{…},"client":{…},"job":{…},"estimate":{…}}'></textarea>
+      </div>
+    </div>
+    <div class="actions">
+      <button type="button" class="btn secondary" id="btn-takeoff-import">Import &amp; save draft</button>
+      <span class="spinner" id="takeoff-spinner">⏳ Importing…</span>
+    </div>
+    <div id="takeoff-import-result" class="hint" role="status" aria-live="polite"></div>
+  </div>
+
   <div class="card" id="drafts-card" style="display:none;">
     <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress estimates — yours and your teammates')</span></h2>
     <div id="drafts-list"></div>
@@ -226,6 +245,9 @@
       <div class="grid">
         <div><label>Estimate number <span class="opt">(leave blank — auto-assigned)</span></label><input name="identifier" placeholder="auto: YYYY-MMDD-NNN" />
           <div class="hint">Assigned by the service as <code>{year}-{monthday}-{NNN}</code> (e.g. <code>2026-0611-001</code>). Only fill this to re-issue a specific number.</div></div>
+        <div><label>Plan Folder # <span class="opt">(optional — Jake's numbered Drive folder)</span></label>
+          <input name="plan_folder_number" inputmode="numeric" placeholder="341" />
+          <div class="hint">Leading number of Jake's plan folder (e.g. <code>341</code>). Prefills from the Bid Board; saved back on Accept, and the PDF is also filed there.</div></div>
         <div><label>Date</label><input name="date" type="date" required /></div>
         <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input name="expiry_date" type="date" /></div>
         <div class="full" id="revise-row" style="display:none;">
@@ -389,6 +411,7 @@ function collectData() {
   // Carried from a Monday Bid Board prefill so finalize writes back to that
   // exact item instead of name-matching (Monday = source of truth).
   if (val("job_monday_item_id")) job.monday_item_id = Number(val("job_monday_item_id"));
+  if (val("plan_folder_number")) job.plan_folder_number = val("plan_folder_number");
 
   const line_items = [];
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
@@ -855,6 +878,7 @@ function applyData(p) {
   }
   setField("job_name", j.name); setField("job_location", j.location);
   setField("job_monday_item_id", j.monday_item_id);
+  setField("plan_folder_number", j.plan_folder_number);
   setField("project_type", j.project_type || "residential"); setField("scope_summary", j.scope_summary);
   setField("identifier", e.identifier); setField("date", e.date || new Date().toISOString().slice(0, 10));
   setField("expiry_date", e.expiry_date);
@@ -866,6 +890,91 @@ function applyData(p) {
   recalc();
   updateReviseUI();
   syncScopeSelectionFromLineItems();
+}
+
+function setTakeoffImportState(kind, message) {
+  const el = $("#takeoff-import-result");
+  el.className = kind ? "gvc-banner gvc-banner--" + kind : "hint";
+  el.textContent = message || "";
+}
+
+async function importFromTakeoff() {
+  const button = $("#btn-takeoff-import");
+  const spinner = $("#takeoff-spinner");
+  const file = $("#takeoff-file").files[0];
+  let rawText = ($("#takeoff-json").value || "").trim();
+  setTakeoffImportState("", "");
+
+  if (file) {
+    try { rawText = await file.text(); }
+    catch (e) {
+      setTakeoffImportState("bad", "Couldn't read that file. Choose the JSON export again.");
+      return;
+    }
+  }
+  if (!rawText) {
+    setTakeoffImportState("bad", "Choose a Takeoff JSON file or paste the export first.");
+    $("#takeoff-json").focus();
+    return;
+  }
+
+  let payload;
+  try { payload = JSON.parse(rawText); }
+  catch (e) {
+    setTakeoffImportState("bad", "That isn't valid JSON. Re-export it from Takeoff and try again.");
+    return;
+  }
+
+  button.disabled = true;
+  spinner.classList.add("show");
+  let response;
+  try {
+    response = await fetch("/ui/api/estimate/from-takeoff", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    button.disabled = false;
+    spinner.classList.remove("show");
+    setTakeoffImportState("bad", "Network error — the draft was not imported. Try again.");
+    return;
+  }
+  button.disabled = false;
+  spinner.classList.remove("show");
+  if (response.status === 401) { location.reload(); return; }
+
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    const detail = body.detail || body;
+    const message = detail.advice || detail.detail || `Import failed (HTTP ${response.status}).`;
+    setTakeoffImportState("bad", message);
+    return;
+  }
+
+  const draft = body.draft || {};
+  const imported = draft.payload || {};
+  imported.estimate = imported.estimate || {};
+  imported.estimate.identifier = "";
+  currentDraftId = draft.id;
+  applyData(imported);
+  setField("identifier", "");
+  $("#revise-flag").checked = false;
+  lastPreviewOk = false;
+  $("#btn-accept").disabled = true;
+  $("#preview-card").classList.remove("show");
+
+  const local = Object.assign({}, draft, { payload: imported, _syncedAt: draft.updated_at });
+  upsertLocal(local);
+  renderDrafts();
+  setSaveState("synced", "Takeoff draft · synced ✓");
+  const warningText = (body.warnings || []).join(" ");
+  setTakeoffImportState(
+    "ok",
+    "Takeoff estimate imported and saved as a shared draft. Review every field before previewing." +
+      (warningText ? " " + warningText : "")
+  );
+  $("#estimate-form").scrollIntoView({ behavior: "smooth" });
 }
 
 async function serverPut(rec) {
@@ -1149,6 +1258,7 @@ async function checkHealth() {
 
 addLineItem();
 $("#btn-prefill").addEventListener("click", lookupFromMonday);
+$("#btn-takeoff-import").addEventListener("click", importFromTakeoff);
 
 // -- Duplicate-bid guard: the estimator explicitly chooses revise vs. new --
 $("#dup-guard-revise").addEventListener("click", () => {
@@ -1237,7 +1347,6 @@ checkHealth();
 refreshDrafts();
 loadSalespeople();
 loadScopes();
-
 // Deep link from Billing hub / Activity / QA notices: /ui/estimate?q=…
 (function bootEstimateFromUrl() {
   const q = (new URLSearchParams(location.search).get("q") || "").trim();
@@ -1247,6 +1356,12 @@ loadScopes();
   input.value = q;
   lookupFromMonday();
 })();
+if (new URLSearchParams(window.location.search).get("takeoff") === "1") {
+  requestAnimationFrame(() => {
+    $("#takeoff-import-card").scrollIntoView({ behavior: "smooth", block: "start" });
+    $("#takeoff-json").focus({ preventScroll: true });
+  });
+}
 </script>
 </body>
 </html>

@@ -228,6 +228,12 @@ def build_prefill(item_id: int, item_name: str, cols: dict) -> dict:
     ptype = _project_type_from_label(c(COL_PROJECT_TYPE).get("text"))
     if ptype:
         job["project_type"] = ptype
+    # Plan Folder # (Jake's numbered Drive folder) — digits only when present.
+    plan_raw = _first(c(COL_PLAN_FOLDER).get("text"))
+    if plan_raw:
+        m = re.match(r"\s*(\d{1,5})", plan_raw)
+        if m:
+            job["plan_folder_number"] = m.group(1)
 
     prepared_by = {}
     sales = _first(c(COL_SALES_LEAD).get("text"))
@@ -260,7 +266,7 @@ def lookup_bid(mc, item_id: int) -> dict:
     """
     col_ids = [COL_CUSTOMER_REL, COL_EMAIL_MIRROR, COL_CONTACT_MIRROR, COL_PHONE_MIRROR,
                COL_LOCATION, COL_SCOPE, COL_PROJECT_TYPE, COL_SALES_LEAD,
-               COL_ESTIMATE_NUMBER]
+               COL_ESTIMATE_NUMBER, COL_PLAN_FOLDER]
     item_name, cols = _read_columns_full(mc, item_id, col_ids)
     if not item_name and not cols:
         raise ValueError(f"No Bid Board item found for id {item_id}.")
@@ -535,6 +541,18 @@ def write_back(enriched: dict, *, pdf_path: Path, estimate_number: str,
                 report["monday_commission_recipient"] = recipient
             except Exception as e:  # noqa: BLE001 — non-fatal attribution write
                 report["monday_commission_recipient_error"] = f"{type(e).__name__}: {e}"
+
+        # ---- Plan Folder # (fill / correct from the estimate form) ----
+        # Soft-fail: a Monday hiccup here must never block the Gmail draft or
+        # the Projects/.../Estimate/ Drive save.
+        plan_no = (job.get("plan_folder_number") or "").strip()
+        m_plan = re.match(r"\s*(\d{1,5})", plan_no)
+        if m_plan:
+            try:
+                set_plan_folder_number(mc, item_id, m_plan.group(1))
+                report["monday_plan_folder_number"] = m_plan.group(1)
+            except Exception as e:  # noqa: BLE001 — non-fatal
+                report["monday_plan_folder_error"] = f"{type(e).__name__}: {e}"
 
         # ---- Promote New Deals → Open Deals on finalize (retired-automation parity) ----
         try:

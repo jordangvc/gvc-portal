@@ -437,6 +437,11 @@ JOBSTART_P_COL_LOCATION = "location5"
 JOBSTART_P_COL_OPPORTUNITY = "board_relation_mm40rg52"
 JOBSTART_P_COL_PROJECT_STATUS = "deal_stage"
 JOBSTART_P_COL_INVOICE_STATUS = "status0"
+# Canonical Project # on the Projects board — same column Invoice "Look up &
+# fill" keys on (adapters/monday/client.py COL_PROJECT_NUMBER / text_mm4fvj91).
+# Job Start fills this from Bid Board Estimate # on Ops accept (fill-if-empty).
+JOBSTART_P_COL_PROJECT_NUMBER = os.environ.get(
+    "GVC_MONDAY_COL_PROJECT_NUMBER", "text_mm4fvj91")
 JOBSTART_P_NOT_STARTED_LABEL = "Not Started"
 
 JOBSTART_OPS_COL_STAGE = "status"

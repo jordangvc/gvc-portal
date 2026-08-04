@@ -32,6 +32,11 @@ class DriveNotConfigured(Exception):
     """Raised when service account or Shared Drive ID is missing."""
 
 
+def drive_folder_url(folder_id: str) -> str:
+    """Pure: canonical Google Drive folder URL for a folder id."""
+    return f"https://drive.google.com/drive/folders/{folder_id}"
+
+
 def folder_id_from_url(url: str) -> Optional[str]:
     """
     Pure: extract a Google Drive folder ID from a folder URL (or accept a bare
@@ -1208,7 +1213,9 @@ class DriveUploader:
         "residential" or "commercial". The root folder name defaults to
         "Projects" (override: GVC_PROJECTS_ROOT_FOLDER).
 
-        Returns {folder_id, folder_path}. Idempotent at every level.
+        Returns {folder_id, folder_path, project_folder_id}. Idempotent at every
+        level. `folder_id` is the Estimate/ leaf; `project_folder_id` is the
+        parent `<project_label>/` folder (what Monday GFolder Link should hold).
         """
         root_name = (os.environ.get("GVC_PROJECTS_ROOT_FOLDER") or "Projects").strip()
         type_name = "Commercial" if (project_type or "").lower().startswith("c") else "Residential"
@@ -1217,10 +1224,18 @@ class DriveUploader:
 
         folder_id = self.ensure_folder(root_name, self.shared_drive_id)
         path_parts = [root_name]
-        for name in (str(year), type_name, customer_slug, project_slug, "Estimate"):
+        project_folder_id = None
+        chain = (str(year), type_name, customer_slug, project_slug, "Estimate")
+        for i, name in enumerate(chain):
             folder_id = self.ensure_folder(name, folder_id)
             path_parts.append(name)
-        return {"folder_id": folder_id, "folder_path": "/".join(path_parts)}
+            if i == len(chain) - 2:
+                project_folder_id = folder_id
+        return {
+            "folder_id": folder_id,
+            "folder_path": "/".join(path_parts),
+            "project_folder_id": project_folder_id,
+        }
 
     def ensure_invoice_folder(
         self,
@@ -1296,7 +1311,10 @@ class DriveUploader:
         the same project folder as the estimate that won the job — one folder per
         job, no pasted link required.
 
-        Returns {folder_id, folder_path}. Idempotent at every level.
+        Returns {folder_id, folder_path, project_folder_id}. Idempotent at every
+        level. `folder_id` is the Handoff/ leaf; `project_folder_id` is the
+        parent `<project_label>/` folder (what Monday GFolder Link should hold —
+        NOT the Handoff/ subfolder).
         """
         root_name = (os.environ.get("GVC_PROJECTS_ROOT_FOLDER") or "Projects").strip()
         type_name = "Commercial" if (project_type or "").lower().startswith("c") else "Residential"
@@ -1305,10 +1323,18 @@ class DriveUploader:
 
         folder_id = self.ensure_folder(root_name, self.shared_drive_id)
         path_parts = [root_name]
-        for name in (str(year), type_name, customer_slug, project_slug, "Handoff"):
+        project_folder_id = None
+        chain = (str(year), type_name, customer_slug, project_slug, "Handoff")
+        for i, name in enumerate(chain):
             folder_id = self.ensure_folder(name, folder_id)
             path_parts.append(name)
-        return {"folder_id": folder_id, "folder_path": "/".join(path_parts)}
+            if i == len(chain) - 2:
+                project_folder_id = folder_id
+        return {
+            "folder_id": folder_id,
+            "folder_path": "/".join(path_parts),
+            "project_folder_id": project_folder_id,
+        }
 
     def ensure_change_order_folder(
         self,
@@ -1346,3 +1372,135 @@ class DriveUploader:
             folder_id = self.ensure_folder(name, folder_id)
             path_parts.append(name)
         return {"folder_id": folder_id, "folder_path": "/".join(path_parts)}
+
+    # Leaf folder names under a job's project_label folder — if a search hits
+    # one of these, walk up to the parent (the GFolder Link target).
+    _JOB_LEAF_FOLDER_NAMES = frozenset({
+        "estimate", "invoice", "handoff", "change orders", "pictures",
+        "photos", "images", "site photos",
+    })
+
+    def find_projects_job_folder(
+        self,
+        *,
+        job_hint: str,
+        extra_hints: Optional[list] = None,
+        threshold: float = 0.6,
+    ) -> Optional[dict]:
+        """
+        Best-effort: find the job's folder under the shared Projects tree.
+
+        LIMITATIONS (deliberate — a full walk of Projects/<year>/<type>/
+        <customer>/<job>/ is too heavy at board scale):
+          • Searches Drive folder names containing the street number (or the
+            longest distinctive token) via `name contains`, not a tree walk.
+          • Scores candidates with subsystems.jobstart.naming.best_match.
+          • Ambiguous or below-threshold matches return None (never guess).
+          • Oddly renamed / non-pipe folders may be missed.
+          • If the hit is an Estimate/Invoice/Handoff/Pictures leaf, walks
+            up one level to the project_label folder (what Monday GFolder
+            should hold).
+
+        Returns {id, name, webViewLink, score, how} or None. Never creates.
+        """
+        from subsystems.jobstart import naming
+
+        hint = " ".join(str(h) for h in
+                        [job_hint, *(extra_hints or [])] if h).strip()
+        if not hint:
+            return None
+
+        toks = naming.tokens(hint)
+        nums = sorted((t for t in toks if t.isdigit()), key=len, reverse=True)
+        probe = nums[0] if nums else (max(toks, key=len) if toks else hint)
+        # Drive `name contains` is case-insensitive; keep probe short.
+        safe = str(probe).replace("'", "\\'")[:80]
+        if not safe:
+            return None
+
+        q = (f"mimeType = 'application/vnd.google-apps.folder' and "
+             f"name contains '{safe}' and trashed = false")
+        raw: list[dict] = []
+        token = None
+        try:
+            while True:
+                result = (
+                    self.service.files()
+                    .list(
+                        q=q,
+                        fields=("nextPageToken, files(id, name, webViewLink, "
+                                "parents)"),
+                        corpora="allDrives",
+                        includeItemsFromAllDrives=True,
+                        supportsAllDrives=True,
+                        pageSize=50,
+                        pageToken=token,
+                    )
+                    .execute()
+                )
+                raw.extend(result.get("files") or [])
+                token = result.get("nextPageToken")
+                if not token or len(raw) >= 100:
+                    break
+        except Exception as e:  # noqa: BLE001 — backfill must keep sweeping
+            print(f"[drive] projects-folder search failed ({safe!r}): "
+                  f"{type(e).__name__}: {e}", file=sys.stderr)
+            return None
+
+        if not raw:
+            return None
+
+        # Promote leaf hits (Estimate/Invoice/…) to their parent folder so
+        # GFolder stamps the job root, not a subfolder.
+        candidates: list[dict] = []
+        seen: set[str] = set()
+        for f in raw:
+            name = (f.get("name") or "").strip()
+            fid = f.get("id")
+            link = f.get("webViewLink") or (
+                drive_folder_url(fid) if fid else None)
+            low = name.casefold()
+            is_leaf = (low in self._JOB_LEAF_FOLDER_NAMES
+                       or low.startswith("completed invoices"))
+            if is_leaf and f.get("parents"):
+                parent_id = f["parents"][0]
+                if parent_id in seen:
+                    continue
+                try:
+                    parent = (
+                        self.service.files()
+                        .get(fileId=parent_id,
+                             fields="id, name, webViewLink",
+                             supportsAllDrives=True)
+                        .execute()
+                    )
+                except Exception:  # noqa: BLE001
+                    parent = None
+                if parent and parent.get("id"):
+                    seen.add(parent["id"])
+                    candidates.append({
+                        "id": parent["id"],
+                        "name": parent.get("name") or "",
+                        "webViewLink": parent.get("webViewLink")
+                        or drive_folder_url(parent["id"]),
+                    })
+                    continue
+            if fid and fid not in seen:
+                seen.add(fid)
+                candidates.append({
+                    "id": fid,
+                    "name": name,
+                    "webViewLink": link or drive_folder_url(fid),
+                })
+
+        hit = naming.best_match(hint, candidates, threshold=threshold)
+        if not hit:
+            return None
+        return {
+            "id": hit["id"],
+            "name": hit.get("name") or "",
+            "webViewLink": hit.get("webViewLink")
+            or drive_folder_url(hit["id"]),
+            "score": hit.get("score"),
+            "how": hit.get("how"),
+        }

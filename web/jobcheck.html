@@ -21,6 +21,11 @@
   .card h2 { font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .04em;
     color: var(--gvc-muted); margin: 0 0 12px; }
   .hint { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-top: 6px; }
+  .hint.warnhint {
+    color: var(--gvc-gold-dark); background: var(--warn-bg);
+    border: 1px solid var(--warn-line); padding: 8px 10px; border-radius: var(--gvc-r);
+  }
+  .hint.okhint { color: var(--gvc-green-dark); }
 
   #status { padding: 12px 14px; border-radius: var(--gvc-r); font-size: var(--gvc-fs-small); display: none; }
   #status.show { display: block; }
@@ -175,12 +180,12 @@
   <div class="card" id="photocard" style="display:none;">
     <h2>Site photos</h2>
     <div class="actrow">
+      <div class="hint" id="photohint">Uploads into the project Drive folder → Pictures, then notes the links on a Monday update. Needs GFolder Link on the linked Projects item.</div>
       <input class="filepick" id="photos" type="file" accept="image/*" capture="environment" multiple />
       <textarea id="photonote" placeholder="Optional note for the Monday update…" rows="2"></textarea>
       <div class="btnrow">
         <button class="btn secondary" id="photoupload" type="button">Upload photos</button>
       </div>
-      <div class="hint">Uploads into the project Drive folder → Pictures, then notes the links on a Monday update. Needs GFolder Link on the linked Projects item.</div>
     </div>
   </div>
 </main>
@@ -441,12 +446,34 @@ async function loadJob(itemId) {
     $("#formcard").style.display = "";
     $("#updatescard").style.display = "";
     $("#photocard").style.display = "";
+    applyPhotoReady(detail.photo_ready || detail.job || {});
     $("#savebar").classList.add("show");
     loadUpdates();
     window.scrollTo({ top: 0 });
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}`);
     renderJobList();
+  }
+}
+
+function applyPhotoReady(pr) {
+  const ready = !!(pr && pr.photo_ready);
+  const hint = $("#photohint");
+  const input = $("#photos");
+  const btn = $("#photoupload");
+  const reason = (pr && (pr.reason || pr.photo_block_reason || pr.photo_ready_reason))
+    || "No GFolder Link for this job.";
+  if (ready) {
+    hint.className = "hint okhint";
+    hint.textContent = "Photos go to Pictures under GFolder.";
+    input.disabled = false;
+    btn.disabled = false;
+  } else {
+    hint.className = "hint warnhint";
+    hint.textContent = "Photos blocked — " + reason;
+    input.value = "";
+    input.disabled = true;
+    btn.disabled = true;
   }
 }
 
@@ -459,6 +486,13 @@ function backToList() {
   $("#updtext").value = "";
   $("#photonote").value = "";
   $("#photos").value = "";
+  $("#photos").disabled = false;
+  $("#photoupload").disabled = false;
+  const hint = $("#photohint");
+  if (hint) {
+    hint.className = "hint";
+    hint.textContent = "Uploads into the project Drive folder → Pictures, then notes the links on a Monday update. Needs GFolder Link on the linked Projects item.";
+  }
   $("#savebar").classList.remove("show");
   $("#pickcard").style.display = "";
   hideStatus();

@@ -369,6 +369,24 @@ def _compose_email_body(enriched: dict, *, revised: bool = False) -> str:
 # Orchestration
 # ---------------------------------------------------------------------------
 
+def _resolve_projects_item_id(job: dict) -> Optional[int]:
+    """
+    Best-effort Projects board item id from estimate job context.
+    Accepts explicit monday_project_item_id / projects_item_id when present.
+    Does NOT hit Monday — callers look up connect_boards4 separately.
+    """
+    job = job or {}
+    for key in ("monday_project_item_id", "projects_item_id"):
+        raw = job.get(key)
+        if raw in (None, ""):
+            continue
+        try:
+            return int(raw)
+        except (TypeError, ValueError):
+            continue
+    return None
+
+
 def process_estimate(
     data: dict,
     output_dir: Path,
@@ -514,8 +532,61 @@ def process_estimate(
                 )
                 writeback["drive_folder_path"] = folder["folder_path"]
                 writeback["drive_pdf_url"] = drive_file.get("web_view_link")
+                writeback["drive_project_folder_id"] = folder.get("project_folder_id")
                 print(f"[finalize {identifier}] Drive: {folder['folder_path']}/"
                       f"{drive_file['filename']}")
+
+                # Fill-if-empty Projects GFolder Link when a Projects item can
+                # be resolved from the bid. New estimates rarely have one yet
+                # (Projects items are created at Job Start accept) — skip cleanly.
+                try:
+                    from adapters.drive import drive_folder_url
+                    from adapters.monday.client import MondayClient, MondayNotConfigured
+                    from adapters.monday import jobcheck as mj_check
+
+                    project_folder_id = folder.get("project_folder_id")
+                    projects_item_id = _resolve_projects_item_id(job)
+                    if projects_item_id is None and job.get("monday_item_id"):
+                        try:
+                            mc_gf = MondayClient()
+                            linked = mj_check.linked_project_ids_from_bid(
+                                mc_gf, int(job["monday_item_id"]))
+                            if linked:
+                                projects_item_id = linked[0]
+                        except MondayNotConfigured:
+                            projects_item_id = None
+                        except Exception as e:  # noqa: BLE001
+                            writeback["gfolder_write"] = {
+                                "ok": False, "written": False, "skipped": True,
+                                "reason": f"bid Projects link lookup failed: "
+                                          f"{type(e).__name__}: {e}",
+                            }
+                            projects_item_id = None
+                    if project_folder_id and projects_item_id:
+                        try:
+                            mc_gf = MondayClient()
+                            writeback["gfolder_write"] = (
+                                mj_check.set_projects_gfolder_if_empty(
+                                    mc_gf, int(projects_item_id),
+                                    drive_folder_url(project_folder_id),
+                                ))
+                        except MondayNotConfigured as e:
+                            writeback["gfolder_write"] = {
+                                "ok": False, "written": False, "skipped": True,
+                                "reason": f"SKIPPED — {e}",
+                            }
+                    elif project_folder_id and not writeback.get("gfolder_write"):
+                        writeback["gfolder_write"] = {
+                            "ok": True, "written": False, "skipped": True,
+                            "reason": "No Projects item linked on this bid yet.",
+                        }
+                except Exception as e:  # noqa: BLE001 — never block finalize
+                    writeback["gfolder_write"] = {
+                        "ok": False, "written": False, "skipped": False,
+                        "reason": f"{type(e).__name__}: {e}",
+                    }
+                    print(f"[finalize {identifier}] GFolder write failed "
+                          f"(non-fatal): {e}", file=sys.stderr)
 
                 # -- As-sent JSON sidecar (enables full-field revision prefill) --
                 try:
@@ -538,6 +609,63 @@ def process_estimate(
         except Exception as e:  # noqa: BLE001
             writeback["drive_status"] = f"FAILED — {type(e).__name__}: {e}"
             print(f"[finalize {identifier}] Drive save FAILED: {e}", file=sys.stderr)
+
+        # 0b) ALSO drop the PDF at the root of Jake's numbered plan folder when
+        #     Plan Folder # is known. Soft-fail: missing/ambiguous/no_access
+        #     never blocks Gmail / Monday / the Projects/.../Estimate/ path.
+        plan_no = ((enriched.get("job") or {}).get("plan_folder_number") or "").strip()
+        if plan_no:
+            try:
+                from adapters.drive import DriveNotConfigured, DriveUploader
+                from adapters.monday.estimate import JAKE_PLAN_FOLDER_ROOT
+                from subsystems.estimate.plan_folder import (
+                    upload_pdf_to_jake_plan_folder,
+                )
+                from subsystems.estimate.revision import estimate_pdf_filename as _est_pdf_name
+                _job = enriched.get("job") or {}
+                _client = enriched.get("client") or {}
+                _loc = (_job.get("street_address") or _job.get("location")
+                        or _job.get("name") or "").strip()
+                _label = f"{_loc} | {_client.get('name', '')}".strip(" |")
+                _pf_name = _est_pdf_name(identifier, _label)
+                try:
+                    _pf_up = DriveUploader()
+                    pf_report = upload_pdf_to_jake_plan_folder(
+                        _pf_up,
+                        pdf_path=output_path,
+                        filename=_pf_name,
+                        plan_number=plan_no,
+                        root_id=JAKE_PLAN_FOLDER_ROOT,
+                    )
+                    writeback.update(pf_report)
+                    if pf_report.get("plan_folder_ok"):
+                        print(
+                            f"[finalize {identifier}] Plan folder: "
+                            f"{pf_report.get('plan_folder_name')}/"
+                            f"{pf_report.get('plan_folder_filename')}"
+                        )
+                    else:
+                        print(
+                            f"[finalize {identifier}] Plan folder "
+                            f"{pf_report.get('plan_folder_status')}",
+                            file=sys.stderr,
+                        )
+                except DriveNotConfigured as e:
+                    writeback["plan_folder_ok"] = False
+                    writeback["plan_folder_reason"] = "no_access"
+                    writeback["plan_folder_status"] = f"SKIPPED — {e}"
+                    print(
+                        f"[finalize {identifier}] {writeback['plan_folder_status']}",
+                        file=sys.stderr,
+                    )
+            except Exception as e:  # noqa: BLE001 — never block finalize
+                writeback["plan_folder_ok"] = False
+                writeback["plan_folder_reason"] = "error"
+                writeback["plan_folder_status"] = f"FAILED — {type(e).__name__}: {e}"
+                print(
+                    f"[finalize {identifier}] Plan folder upload FAILED: {e}",
+                    file=sys.stderr,
+                )
 
         # 1) Gmail draft in hello@ (NOT sent). Graceful if hello@ token absent.
         #    Compose the body once so create_draft and the post-finalize QA
@@ -634,6 +762,46 @@ def process_estimate(
             writeback["revised"] = True
             if revision_version:
                 writeback["revision_version"] = revision_version
+
+        # 3b) Retry GFolder fill-if-empty once the Bid Board item is known.
+        #     Drive step may have skipped because job.monday_item_id was unset
+        #     until write_back; connect_boards4 is still usually empty for new
+        #     estimates (Projects land at Job Start), so this stays best-effort.
+        gw = writeback.get("gfolder_write") or {}
+        project_folder_id = writeback.get("drive_project_folder_id")
+        if (project_folder_id and not gw.get("written")
+                and "already set" not in str(gw.get("reason") or "").lower()):
+            try:
+                from adapters.drive import drive_folder_url
+                from adapters.monday.client import MondayClient, MondayNotConfigured
+                from adapters.monday import jobcheck as mj_check
+
+                bid_id = writeback.get("monday_item_id") or (
+                    (enriched.get("job") or {}).get("monday_item_id"))
+                projects_item_id = _resolve_projects_item_id(
+                    enriched.get("job") or {})
+                if projects_item_id is None and bid_id:
+                    mc_gf = MondayClient()
+                    linked = mj_check.linked_project_ids_from_bid(
+                        mc_gf, int(bid_id))
+                    if linked:
+                        projects_item_id = linked[0]
+                if projects_item_id:
+                    mc_gf = MondayClient()
+                    writeback["gfolder_write"] = (
+                        mj_check.set_projects_gfolder_if_empty(
+                            mc_gf, int(projects_item_id),
+                            drive_folder_url(project_folder_id),
+                        ))
+            except Exception as e:  # noqa: BLE001 — never block finalize
+                # Keep prior skip reason if we already had one; else record.
+                if not writeback.get("gfolder_write"):
+                    writeback["gfolder_write"] = {
+                        "ok": False, "written": False, "skipped": True,
+                        "reason": f"{type(e).__name__}: {e}",
+                    }
+                print(f"[finalize {identifier}] GFolder retry skipped "
+                      f"(non-fatal): {e}", file=sys.stderr)
 
         # 4) Ops alert if a finalize step silently failed. Finalize returns 200
         #    even when a downstream step (Gmail draft / Drive save / the Slack

@@ -109,6 +109,11 @@
   .modal-bd { padding:var(--gvc-space-5); }
   .modal-ft { padding:var(--gvc-space-4) var(--gvc-space-5); border-top:1px solid var(--gvc-line); display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; justify-content:flex-end; }
 
+
+    #billable-cos .co-pick { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eee; }
+    #billable-cos .co-pick:last-child { border-bottom:0; }
+    #billable-cos .co-pick-meta { font-size:13px; color:#555; }
+    #billable-cos .co-pick-meta strong { color:#222; }
 </style>
 </head>
 <body>
@@ -293,7 +298,9 @@
 
         <div class="sub">
           <h3>Change orders</h3>
-          <div class="hint">Change Orders are created in the <a href="/ui/change-order" target="_blank" rel="noopener">Change Order app</a> — this invoice does not create them. To <strong>bill</strong> an existing change order, add a line item above, check “Change order line”, and enter its CO number; the charge is then tracked as a change order on the invoice. (A picker to pull approved COs automatically is coming.)</div>
+          <div class="hint">Change Orders are created in the <a href="/ui/change-order" target="_blank" rel="noopener">Change Order app</a> — this invoice does not create them. Look up a project above to list unbilled top-level COs, then add them as invoice lines (or manually check “Change order line” and enter a CO number).</div>
+          <div id="billable-cos-note" class="hint" style="margin-top:8px;">Look up a Project # to load unbilled change orders.</div>
+          <div id="billable-cos" style="margin-top:8px;"></div>
         </div>
 
       </div>
@@ -358,6 +365,7 @@ function driveRef(s) { const id = extractDriveId(s); return id ? "drive:" + id :
 function lineItemRow(v = {}) {
   const div = document.createElement("div");
   div.className = "line-item";
+  const mondayItemId = v.monday_item_id != null ? String(v.monday_item_id) : "";
   div.innerHTML = `
     <div class="row1">
       <div><label>Description</label><input class="li-desc" placeholder="Pay Application #1 — base contract work this period" value="${v.description || ""}" /></div>
@@ -367,11 +375,14 @@ function lineItemRow(v = {}) {
     <div class="detail"><label>Detail <span class="opt">(optional sub-line)</span></label><input class="li-detail" placeholder="Kitchen, dining nook, ceiling repair." value="${v.detail || ""}" /></div>
     <div class="li-co-row${(v.kind || "").toLowerCase() === "co" ? " show" : ""}">
       <label><input type="checkbox" class="li-is-co"${(v.kind || "").toLowerCase() === "co" ? " checked" : ""} /> Change order line</label>
-      <input class="co-num" placeholder="CO number, e.g. C-005-CO-01" value="${v.co_number || ""}" />
+      <input class="co-num" placeholder="CO number, e.g. CO.1-2026-0616-B2" value="${v.co_number || ""}" />
+      <input type="hidden" class="li-monday-item-id" value="${mondayItemId}" />
     </div>`;
+  if (mondayItemId) div.dataset.mondayItemId = mondayItemId;
   div.querySelector(".li-remove").addEventListener("click", () => {
     if (lineItemsEl.children.length > 1) div.remove();
     recalcTotals();
+    renderBillableCos(lastBillableCos);
   });
   const coChk = div.querySelector(".li-is-co");
   if (coChk.checked) div.classList.add("is-co");
@@ -410,8 +421,97 @@ function extraPdfRow() {
 
 /* ---- Change orders ----
  * Change Orders are authored in the standalone Change Order app, not here.
- * The invoice only BILLS an existing CO: a line item flagged "Change order
- * line" with its CO number (kind:"co"). No inline CO creation. */
+ * The invoice bills existing top-level COs via the picker (or a manual
+ * kind:"co" line with co_number). Live finalize marks those COs Billed. */
+let lastBillableCos = [];
+
+function selectedCoItemIds() {
+  const ids = new Set();
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    if (!row.querySelector(".li-is-co")?.checked) return;
+    const mid = parseInt((row.querySelector(".li-monday-item-id") || {}).value
+      || row.dataset.mondayItemId || "", 10);
+    if (!isNaN(mid)) ids.add(mid);
+  });
+  return ids;
+}
+
+function renderBillableCos(cos) {
+  lastBillableCos = Array.isArray(cos) ? cos : [];
+  const wrap = $("#billable-cos");
+  const note = $("#billable-cos-note");
+  if (!wrap || !note) return;
+  wrap.innerHTML = "";
+  if (!lastBillableCos.length) {
+    note.textContent = "No unbilled change orders for this project.";
+    return;
+  }
+  const selected = selectedCoItemIds();
+  note.textContent = lastBillableCos.length + " unbilled change order"
+    + (lastBillableCos.length === 1 ? "" : "s") + " — add any to this invoice:";
+  lastBillableCos.forEach((co) => {
+    const div = document.createElement("div");
+    div.className = "co-pick";
+    const amt = (co.amount != null && !isNaN(Number(co.amount)))
+      ? (" · $" + Number(co.amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }))
+      : "";
+    const st = co.status ? (" · " + co.status) : "";
+    const already = selected.has(Number(co.item_id));
+    div.innerHTML = `<div class="co-pick-meta"><strong>${escapeHtml(co.co_number || co.identifier || "")}</strong>`
+      + `<div>${escapeHtml(co.name || "")}${escapeHtml(amt + st)}</div></div>`;
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "btn secondary small";
+    btn.textContent = already ? "Added" : "Add to invoice";
+    btn.disabled = already;
+    btn.addEventListener("click", () => addBillableCo(co));
+    div.appendChild(btn);
+    wrap.appendChild(div);
+  });
+}
+
+function addBillableCo(co) {
+  const id = Number(co.item_id);
+  if (!id || selectedCoItemIds().has(id)) return;
+  const coNumber = co.co_number || co.identifier || "";
+  addLineItem({
+    description: "Change Order " + coNumber,
+    amount: co.amount != null ? Number(co.amount) : null,
+    kind: "co",
+    co_number: coNumber,
+    monday_item_id: id,
+  });
+  renderBillableCos(lastBillableCos);
+  scheduleAutosave();
+}
+
+async function loadBillableCos(projectNumber) {
+  const note = $("#billable-cos-note");
+  const wrap = $("#billable-cos");
+  const pn = (projectNumber || "").trim();
+  if (!note || !wrap) return;
+  if (!pn) {
+    lastBillableCos = [];
+    wrap.innerHTML = "";
+    note.textContent = "Look up a Project # to load unbilled change orders.";
+    return;
+  }
+  note.textContent = "Loading unbilled change orders…";
+  wrap.innerHTML = "";
+  try {
+    const r = await fetch("/ui/api/invoice/billable-cos?project_number=" + encodeURIComponent(pn));
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      note.textContent = (body.detail && body.detail.detail)
+        || ("Could not load change orders (" + r.status + ").");
+      return;
+    }
+    renderBillableCos(body.change_orders || []);
+  } catch (e) {
+    note.textContent = "Change order load error: " + e.message;
+  }
+}
+
 
 function commercialOn() { return $("#commercial-toggle").checked; }
 
@@ -459,6 +559,8 @@ function collectData() {
   if (val("job_project_number")) job.project_number = val("job_project_number");
 
   const line_items = [];
+  const billed_change_orders = [];
+  const seenCoIds = new Set();
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
     const description = row.querySelector(".li-desc").value.trim();
     const amount = parseFloat(row.querySelector(".li-amount").value);
@@ -470,12 +572,25 @@ function collectData() {
       li.kind = "co";
       const cn = row.querySelector(".co-num").value.trim();
       if (cn) li.co_number = cn;
+      const midRaw = (row.querySelector(".li-monday-item-id") || {}).value
+        || row.dataset.mondayItemId || "";
+      const mid = parseInt(midRaw, 10);
+      if (!isNaN(mid)) {
+        li.monday_item_id = mid;
+        if (!seenCoIds.has(mid)) {
+          seenCoIds.add(mid);
+          const ref = { monday_item_id: mid };
+          if (cn) ref.co_number = cn;
+          billed_change_orders.push(ref);
+        }
+      }
     }
     line_items.push(li);
   });
 
   const invoice = { identifier: val("identifier"), issue_date: val("issue_date"),
     payment_terms: val("payment_terms") || "Net 30", line_items };
+  if (billed_change_orders.length) invoice.billed_change_orders = billed_change_orders;
   if (val("due_date")) invoice.due_date = val("due_date");
   if (val("notes")) invoice.notes = val("notes");
   if (val("email_context")) invoice.email_context = val("email_context");
@@ -908,6 +1023,8 @@ async function applyLookupResponse(r, label) {
   note.innerHTML = "Filled from <strong>" + escapeHtml(m.item_name || label) + "</strong>" +
     (m.url ? " (<a href='" + escapeHtml(m.url) + "' target='_blank' rel='noopener'>open project</a>)" : "") +
     ". " + escapeHtml(notes);
+  const basePn = ((prefill.job && prefill.job.project_number) || label || "").trim();
+  if (basePn && typeof loadBillableCos === "function") loadBillableCos(basePn);
   $("#invoice-form").scrollIntoView({ behavior: "smooth" });
 }
 

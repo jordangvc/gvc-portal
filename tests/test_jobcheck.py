@@ -326,22 +326,18 @@ def test_hard_exclusions_still_block_money_and_gfolder_link():
 
 
 def test_pick_pictures_folder_prefers_most_recently_modified():
-    from adapters.drive import pick_pictures_folder
+    # Callers pass folder-only lists (DriveUploader.list_child_folders).
+    from subsystems.morning.media import pick_pictures_folder
     kids = [
-        {"id": "1", "name": "Photos", "mimeType": "application/vnd.google-apps.folder",
-         "modifiedTime": "2026-08-01T00:00:00.000Z"},
-        {"id": "2", "name": "Pictures", "mimeType": "application/vnd.google-apps.folder",
-         "modifiedTime": "2026-07-01T00:00:00.000Z"},
-        {"id": "3", "name": "pictures", "mimeType": "application/vnd.google-apps.folder",
-         "modifiedTime": "2026-08-03T12:00:00.000Z"},
-        {"id": "4", "name": "Pictures", "mimeType": "image/jpeg",
-         "modifiedTime": "2026-08-04T00:00:00.000Z"},
+        {"id": "1", "name": "Photos", "modifiedTime": "2026-08-01T00:00:00.000Z"},
+        {"id": "2", "name": "Pictures", "modifiedTime": "2026-07-01T00:00:00.000Z"},
+        {"id": "3", "name": "pictures", "modifiedTime": "2026-08-03T12:00:00.000Z"},
+        {"id": "4", "name": "Site Photos", "modifiedTime": "2026-08-04T00:00:00.000Z"},
     ]
     picked = pick_pictures_folder(kids)
     assert picked["id"] == "3"   # most recent folder named Pictures
     assert pick_pictures_folder([]) is None
-    assert pick_pictures_folder([{"id": "x", "name": "Other",
-                                  "mimeType": "application/vnd.google-apps.folder"}]) is None
+    assert pick_pictures_folder([{"id": "x", "name": "Other"}]) is None
 
 
 def test_post_update_validation_without_network():

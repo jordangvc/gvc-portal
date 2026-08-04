@@ -43,6 +43,7 @@ from subsystems.invoice.model import validate_environment
 from orchestrators.invoice_flow import process_one, _run, _run_correction
 from shared.errors import _friendly_error, humanize_validation_message
 from orchestrators.estimate_flow import process_estimate
+from orchestrators import takeoff_import_flow
 from adapters.monday.client import (
     MondayClient,
     MondayInsufficientData,
@@ -67,6 +68,7 @@ from shared import activity_read as activity_read
 from shared import portal_store as portal_store
 from subsystems.estimate import drafts as estimate_drafts
 from subsystems.estimate import scope_catalog as scope_catalog
+from subsystems.estimate import takeoff_import as takeoff_import
 from subsystems.invoice import drafts as invoice_drafts
 from subsystems.change_order import drafts as co_drafts
 from subsystems.fieldguide import runs as fieldguide_runs
@@ -516,6 +518,66 @@ def _log_estimate_slack(wb: dict, *, actor: str) -> None:
                            error=str(wb.get("slack_status") or "not configured"))
 
 
+def _stage_takeoff_import(body: dict, *, actor: str) -> dict:
+    raw = takeoff_import.extract_takeoff_payload(body)
+    try:
+        out = takeoff_import_flow.import_takeoff_as_draft(raw, actor)
+    except takeoff_import.TakeoffPayloadInvalid as exc:
+        activity.log_event(
+            "estimate.takeoff_import",
+            actor=actor,
+            result="error",
+            error="; ".join(exc.errors)[:500],
+        )
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "ok": False,
+                "code": "TAKEOFF_PAYLOAD_INVALID",
+                "detail": "Takeoff estimate could not be staged.",
+                "advice": "Fix: " + "; ".join(exc.errors),
+                "errors": exc.errors,
+            },
+        )
+
+    if not out.get("ok"):
+        activity.log_event(
+            "estimate.takeoff_import",
+            actor=actor,
+            result="error",
+            error=str(out.get("code") or "IMPORT_FAILED"),
+        )
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "ok": False,
+                "code": out.get("code") or "TAKEOFF_IMPORT_FAILED",
+                "detail": out.get("detail") or "Takeoff draft could not be stored.",
+                "advice": out.get("advice") or "Ask an admin to check portal storage.",
+            },
+        )
+
+    draft = out.get("draft") or {}
+    activity.log_event(
+        "estimate.takeoff_import",
+        actor=actor,
+        target=draft.get("id"),
+        result="ok",
+        warnings=len(out.get("warnings") or []),
+    )
+    return out
+
+
+@app.post("/v1/estimate/from-takeoff")
+def estimate_from_takeoff(
+    body: dict,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """Stage a Takeoff export as a shared estimate draft. Never finalizes."""
+    require_api_key(x_api_key)
+    return _stage_takeoff_import(body, actor="api:takeoff")
+
+
 @app.post("/v1/estimate/from-json")
 def estimate_from_json(
     req: EstimateRunRequest,
@@ -585,6 +647,38 @@ def tasks_check_sent(
     # _friendly_error translation needed here.
     return check_sent(limit_days=req.limit_days, dry_run=req.dry_run)
 
+
+
+class PollTakeoffOutboxRequest(BaseModel):
+    dry_run: bool = Field(False, description="Read and report only — no draft-store or RTDB writes")
+    limit: int = Field(20, ge=1, le=100, description="Max queued outbox entries per sweep")
+
+
+@app.post("/v1/tasks/poll-takeoff-outbox")
+def tasks_poll_takeoff_outbox(
+    req: PollTakeoffOutboxRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """
+    Takeoff outbox sweep: read queued estimate payloads from the takeoff
+    app's Firebase outbox (gvc_portal_outbox), normalize + validate each one,
+    and stage the valid ones as SHARED estimate drafts for office review —
+    the same draft-only staging as /v1/estimate/from-takeoff. Staged entries
+    are acked back to RTDB as "staged"; invalid ones are marked "error". This
+    endpoint NEVER finalizes, drafts Gmail, writes Monday, or sends anything.
+    Idempotent — only status == "queued" is consumed and the portal draft id
+    is deterministic per outbox entry, so Cloud Scheduler retries are safe.
+
+    X-API-Key protected, same as the other /v1/* endpoints — Cloud Scheduler
+    sends the key in the header (job: gvc-takeoff-outbox, every 10 min).
+    """
+    require_api_key(x_api_key)
+    from orchestrators.takeoff_outbox_flow import poll_outbox
+
+    # poll_outbox is graceful by contract (per-item try/except; returns
+    # ok=False + code on a sweep-level problem like unreachable RTDB or a
+    # missing draft store) — no _friendly_error translation needed here.
+    return poll_outbox(dry_run=req.dry_run, limit=req.limit)
 
 
 @app.post("/v1/tasks/warm-monday")
@@ -1258,6 +1352,41 @@ def ui_invoice_search(request: Request, q: str = "") -> dict:
     return {"ok": True, "results": results}
 
 
+@app.get("/ui/api/invoice/billable-cos")
+def ui_invoice_billable_cos(request: Request, project_number: str = "") -> dict:
+    """
+    List unbilled top-level Change Orders for a Project # (CO.{n}-{base}).
+    Used by the invoice CO picker. Read-only; excludes Billed and Void.
+    """
+    email = require_feature(request, "invoice")
+    pn = (project_number or "").strip()
+    if not pn:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
+                    "detail": "Enter a Project # to list billable change orders.",
+                    "advice": "Look up a project first, or type its Project #."},
+        )
+    try:
+        mc = MondayClient()
+        cos = monday_co.list_unbilled_co_items(mc, pn)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "MONDAY_LOOKUP_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Confirm the project exists and has CO items on the Projects board."},
+        )
+    activity.log_event("invoice.billable_cos", actor=email, target=pn, count=len(cos))
+    return {"ok": True, "project_number": pn, "change_orders": cos}
+
+
 @app.get("/ui/api/invoice/customer-search")
 def ui_invoice_customer_search(request: Request, q: str = "") -> dict:
     """
@@ -1382,6 +1511,20 @@ def ui_estimate_form(request: Request) -> HTMLResponse:
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8"))
+
+
+@app.post("/ui/api/estimate/from-takeoff")
+def ui_estimate_from_takeoff(body: dict, request: Request) -> dict:
+    """Stage a pasted/uploaded Takeoff export as a shared estimate draft."""
+    actor = require_feature(request, "estimate")
+    return _stage_takeoff_import(body, actor=actor)
+
+
+@app.get("/ui/api/estimate/takeoff-contract")
+def ui_estimate_takeoff_contract(request: Request) -> dict:
+    """Return machine-readable Takeoff export shape and staging guarantees."""
+    require_feature(request, "estimate")
+    return {"ok": True, "contract": takeoff_import.takeoff_contract()}
 
 
 @app.post("/ui/api/estimate/run")
@@ -2666,6 +2809,45 @@ async def ui_morning_update(request: Request) -> dict:
                     "detail": f"{type(e).__name__}: {e}"},
         )
 
+
+@app.get("/ui/api/morning/photo-ready")
+def ui_morning_photo_ready(request: Request, item_id: int) -> dict:
+    """Is this Ops item's Projects → GFolder chain ready for photo uploads?"""
+    require_feature(request, "morning")
+    if not item_id:
+        raise HTTPException(status_code=422, detail={"ok": False, "detail": "item_id required"})
+    try:
+        return morning_flow.photo_ready(item_id)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "PHOTO_READY_FAILED",
+                    "detail": f"{type(e).__name__}: {e}"},
+        )
+
+
+@app.get("/ui/api/morning/suggest-links")
+def ui_morning_suggest_links(request: Request, item_id: int,
+                             limit: int = 100) -> dict:
+    """
+    Heuristic Ops→Projects / Drive-folder suggestions (read-only — never writes).
+    """
+    require_feature(request, "morning")
+    if not item_id:
+        raise HTTPException(status_code=422, detail={"ok": False, "detail": "item_id required"})
+    try:
+        out = morning_flow.suggest_links(item_id, limit=limit)
+        if not out.get("ok") and out.get("error") == "ITEM_NOT_FOUND":
+            raise HTTPException(status_code=404, detail=out)
+        return out
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "SUGGEST_LINKS_FAILED",
+                    "detail": f"{type(e).__name__}: {e}"},
+        )
 
 
 @app.post("/ui/api/morning/meeting/start")

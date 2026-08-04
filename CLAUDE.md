@@ -19,13 +19,26 @@ BUILT: `shared/recipients.py` parses multi To/Cc (comma/semicolon/newline), vali
 Jordan's ask: stop Andrea manually re-reading every hello@ estimate draft; connect Estimating → Invoicing so staff don't memorize Project #s; keep a searchable report of what happened in each hub.
 BUILT:
  • **Estimate auto-QA** (`subsystems/estimate/qa.py`) runs after every finalize — checks customer name/email, amount in body, estimate #, job name, Gmail draft created, body markers. Slack DM to `GVC_OFFICE_REVIEW_EMAIL` (default andrea@) + a short hello@ **draft TO Andrea** (never auto-sent) with ✅ READY / ❌ NEEDS FIX + deep links (Gmail draft, Monday bid, `/ui/estimate?q=`, Drive PDF). Writeback gets `qa` + `qa_notify`; activity logs `estimate.qa`.
- • **Billing Hub** `/ui/billing` (gated by `invoice`): Ops "Ready to Invoice" queue + Accepted bids (Job Start handoff CTAs) + Projects billing-status list + rich search. Hub tile added; Invoice Generator remains for the form itself. Portal **r22**.
+ • **Billing Hub** `/ui/billing` (gated by `invoice`): Ops "Ready to Invoice" queue + Accepted bids (Job Start handoff CTAs) + Projects billing-status list + rich search. Hub tile added; Invoice Generator remains for the form itself. Portal **r24**.
  • **Multi-field Monday search** (`adapters/monday/search.py`): Projects by name / Project # / builder / supervisor / location (city/state live in location text); Bids by name / Estimate # / location / customer. Wired into Billing hub, invoice Find-the-Project (`/ui/api/invoice/search`), and estimate search.
  • **Activity**: free-text filter on `/ui/activity`; Billing hub recent strip via `/ui/api/billing/activity`; invoice lookup accepts `item_id` / Monday URL as well as Project #.
 ENV (optional): `GVC_OFFICE_REVIEW_EMAIL`, `GVC_PORTAL_PUBLIC_URL` (default portal.greenvalleycontractors.com). No new deps/Dockerfile change.
 TESTS: test_estimate_qa / test_monday_search / test_billing_hub / test_activity_detail — 49 green in sandbox; `import app.service` OK (billing + invoice/search routes present).
 DEPLOY (admin): full suite in WeasyPrint venv → `--source .` → smoke: finalize estimate → Andrea Slack DM + office QA draft; open `/ui/billing` → Ready queue / search by builder; `/ui/invoice?q=` finds a job; `/ui/activity` free-text "qa".
 OPEN: confirm Andrea's Slack email resolves via `users.lookupByEmail` (bot needs the users:read.email scope already used by Morning Brief DMs); Ops "Ready to Invoice" group must be populated by existing Monday process for the queue to fill.
+
+## ✨ ESTIMATE → JAKE PLAN FOLDER PDF — BUILT 2026-08-04
+
+On estimate finalize, when **Plan Folder #** is known, the PDF is ALSO uploaded to
+the root of Jake's numbered plan folder (not only `Projects/.../Estimate/`).
+
+- Form field `plan_folder_number` on `/ui/estimate` (Estimate details).
+- Prefill from Bid Board column `text_mm5rjq00` via `build_prefill` / `lookup_bid`.
+- Finalize: `set_plan_folder_number` on the bid (soft-fail) +
+  `DriveUploader.find_numbered_child_folder(JAKE_PLAN_FOLDER_ROOT, n)` +
+  `upload_pdf_to_folder` into that folder root (soft-fail).
+- Missing / ambiguous / no_access never blocks Gmail, Monday, or the Estimate/ path.
+- Helper: `subsystems/estimate/plan_folder.py`. Tests: `tests/test_estimate_plan_folder.py`.
 
 ## STANDING RULE — confirm before assuming (full rule in root CLAUDE.md)
 Never design/code against unconfirmed foundational facts: whether two accounts/logins
@@ -2119,3 +2132,16 @@ TOTALS: 24 sections (20 procedures + home/index/glossary/sources), 329 checkboxe
 20 provenance blocks, 41 Component Index jumps. Verified: JS node --check clean, CSS braces balanced,
 every tile target resolves, every index jump resolves to a real anchor, no duplicate ids, all tag
 pairs balanced, py compileall clean.
+
+### 2026-08-04 — Seam 1: Takeoff → portal estimate draft
+- Added a draft-only Takeoff import path: pure normalization/validation in
+  `subsystems/estimate/takeoff_import.py`, one-store-write orchestration in
+  `orchestrators/takeoff_import_flow.py`, and session/API-key routes at
+  `/ui/api/estimate/from-takeoff` and `/v1/estimate/from-takeoff`.
+- Import accepts raw canonical estimate JSON or `{data: ...}`. Every supplied
+  identifier (including legacy `EST-*`) is cleared so finalize assigns a fresh
+  `YYYY-MMDD-NNN`; imports never
+  finalize, create Gmail/Slack/Monday side effects, or send anything.
+- Estimate Generator now uploads/pastes Takeoff JSON, resumes the returned
+  shared draft, and supports `/ui/estimate?takeoff=1`. Hub footer r21 → r22.
+- Phase 2 Firebase `gvc_portal_outbox/{draftId}` pickup remains deferred.
