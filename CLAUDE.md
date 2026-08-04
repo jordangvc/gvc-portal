@@ -11,6 +11,22 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ MULTI-EMAIL + NO-EMAIL DELIVERY (estimate + invoice) — BUILT 2026-08-04 (same branch as Billing Hub)
+Office ask: draft to several people at once; support elderly / no-inbox customers.
+BUILT: `shared/recipients.py` parses multi To/Cc (comma/semicolon/newline), validates, and for `no_email` + `delivery_method` (print|mail|hand_deliver) routes the Gmail draft TO hello@ with a `[NO EMAIL — PRINT]` subject + body banner (never invents a customer inbox). Stripe upsert uses a synthetic `no-email.{slug}@noemail.gvc.invalid` address (reserved TLD — not mailed). Estimate + invoice forms: emails textarea, CC, “Customer has no email” checkbox. QA understands multi-To and no-email. Tests: `tests/test_recipients.py` + estimate QA cases.
+
+## ✨ ESTIMATE AUTO-QA + BILLING HUB + MULTI-WAY SEARCH — BUILT 2026-08-04 (ships next --source . deploy)
+Jordan's ask: stop Andrea manually re-reading every hello@ estimate draft; connect Estimating → Invoicing so staff don't memorize Project #s; keep a searchable report of what happened in each hub.
+BUILT:
+ • **Estimate auto-QA** (`subsystems/estimate/qa.py`) runs after every finalize — checks customer name/email, amount in body, estimate #, job name, Gmail draft created, body markers. Slack DM to `GVC_OFFICE_REVIEW_EMAIL` (default andrea@) + a short hello@ **draft TO Andrea** (never auto-sent) with ✅ READY / ❌ NEEDS FIX + deep links (Gmail draft, Monday bid, `/ui/estimate?q=`, Drive PDF). Writeback gets `qa` + `qa_notify`; activity logs `estimate.qa`.
+ • **Billing Hub** `/ui/billing` (gated by `invoice`): Ops "Ready to Invoice" queue + Accepted bids (Job Start handoff CTAs) + Projects billing-status list + rich search. Hub tile added; Invoice Generator remains for the form itself. Portal **r24**.
+ • **Multi-field Monday search** (`adapters/monday/search.py`): Projects by name / Project # / builder / supervisor / location (city/state live in location text); Bids by name / Estimate # / location / customer. Wired into Billing hub, invoice Find-the-Project (`/ui/api/invoice/search`), and estimate search.
+ • **Activity**: free-text filter on `/ui/activity`; Billing hub recent strip via `/ui/api/billing/activity`; invoice lookup accepts `item_id` / Monday URL as well as Project #.
+ENV (optional): `GVC_OFFICE_REVIEW_EMAIL`, `GVC_PORTAL_PUBLIC_URL` (default portal.greenvalleycontractors.com). No new deps/Dockerfile change.
+TESTS: test_estimate_qa / test_monday_search / test_billing_hub / test_activity_detail — 49 green in sandbox; `import app.service` OK (billing + invoice/search routes present).
+DEPLOY (admin): full suite in WeasyPrint venv → `--source .` → smoke: finalize estimate → Andrea Slack DM + office QA draft; open `/ui/billing` → Ready queue / search by builder; `/ui/invoice?q=` finds a job; `/ui/activity` free-text "qa".
+OPEN: confirm Andrea's Slack email resolves via `users.lookupByEmail` (bot needs the users:read.email scope already used by Morning Brief DMs); Ops "Ready to Invoice" group must be populated by existing Monday process for the queue to fill.
+
 ## ✨ ESTIMATE → JAKE PLAN FOLDER PDF — BUILT 2026-08-04
 
 On estimate finalize, when **Plan Folder #** is known, the PDF is ALSO uploaded to

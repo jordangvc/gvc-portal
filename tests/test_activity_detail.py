@@ -98,6 +98,54 @@ def test_estimate_nested_shape():
     check("revision noted", f["revision"], "2")
 
 
+def test_estimate_qa_passed_chip():
+    wb = dict(ESTIMATE_WB)
+    wb["qa"] = {"ok": True, "summary": "amount, client, email match"}
+    f = summarize("estimate", {}, wb, mode="finalize")
+    check("qa passed chip", f["qa"], "passed")
+    check("qa summary kept", f["qa_summary"], "amount, client, email match")
+    check("result still ok when qa passes", result_for(wb), "ok")
+
+
+def test_estimate_qa_failed_is_partial():
+    wb = dict(ESTIMATE_WB)
+    wb["qa"] = {"ok": False, "summary": "client email missing from draft body"}
+    f = summarize("estimate", {}, wb, mode="finalize")
+    check("qa failed chip", f["qa"], "failed")
+    check("qa summary on fail", f["qa_summary"], "client email missing from draft body")
+    check("result partial on qa fail", result_for(wb), "partial")
+
+
+def test_estimate_qa_flat_keys():
+    """Integrators may log qa_ok / qa_summary flat instead of nested qa{}."""
+    wb = {"identifier": "2026-0727-003", "qa_ok": False, "qa_summary": "amount mismatch"}
+    f = summarize("estimate", {}, wb, mode="finalize")
+    check("flat qa_ok -> failed", f["qa"], "failed")
+    check("flat qa_summary", f["qa_summary"], "amount mismatch")
+    check("flat qa fail -> partial", result_for(wb), "partial")
+
+
+def test_billing_kind_chips():
+    data = {
+        "customer": "Ken Roell Custom Homes",
+        "name": "6845 Hager Rd | Ken Roell",
+        "project_number": "2026-0615-002",
+        "builder": "Ken Roell",
+        "location": "Cincinnati OH",
+        "q": "Hager",
+        "source": "ready_to_invoice",
+    }
+    f = summarize("billing", data, None, mode="lookup")
+    check("billing target prefers project #", f["target"], "2026-0615-002")
+    check("billing customer", f["customer"], "Ken Roell Custom Homes")
+    check("billing job from name", f["job"], "6845 Hager Rd | Ken Roell")
+    check("billing builder", f["builder"], "Ken Roell")
+    check("billing location", f["location"], "Cincinnati OH")
+    check("billing query", f["query"], "Hager")
+    check("billing source", f["source"], "ready_to_invoice")
+    check("billing mode", f["mode"], "lookup")
+
+
 def test_missing_step_is_not_a_failed_step():
     """A step that never ran must NOT render as success or failure."""
     f = summarize("invoice", INVOICE_DATA, {"identifier": "X"}, mode="dry-run")

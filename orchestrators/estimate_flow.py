@@ -32,6 +32,11 @@ from weasyprint import HTML
 # PDFs stay visually consistent. We do NOT modify invoice.py.
 from shared.paths import REPO_ROOT as ROOT, TEMPLATES_DIR, OUTPUT_DIR
 from shared.money import fmt_money
+from shared.recipients import (
+    normalize_client_recipients,
+    prepend_office_notice,
+    validate_client_recipients,
+)
 from subsystems.invoice.pdf import make_logo_data_uri
 from subsystems.estimate.scope_catalog import (
     build_additional_services,
@@ -142,7 +147,10 @@ def validate(data: dict) -> None:
     est = data.get("estimate") or {}
 
     _require(bool(client.get("name")), "client.name is required.")
-    _require(bool(client.get("email")), "client.email is required (used for the Gmail draft).")
+    try:
+        validate_client_recipients(client)
+    except ValueError as e:
+        _require(False, str(e))
     _require(bool(job.get("name")), "job.name (project name) is required.")
     # estimate.identifier is OPTIONAL — when absent the service assigns the
     # next YYYY-MMDD-NNN (see estimate_number.py). A supplied value must be
@@ -660,28 +668,50 @@ def process_estimate(
                 )
 
         # 1) Gmail draft in hello@ (NOT sent). Graceful if hello@ token absent.
+        #    Compose the body once so create_draft and the post-finalize QA
+        #    see the exact same text Andrea will review.
+        #    Recipients: multi To, optional client Cc, salesperson Cc. No-email
+        #    customers → draft TO the office with a print/mail banner.
+        client = enriched["client"]
+        recipients = normalize_client_recipients(client, office_fallback=HELLO_FROM_ADDR)
+        email_body = prepend_office_notice(
+            _compose_email_body(enriched, revised=revise),
+            recipients.get("office_notice"),
+        )
+        email_subject = (
+            f"Green Valley Contractors — Estimate {identifier} — "
+            f"{enriched['job'].get('name','')}"
+        ).strip(" —")
+        if recipients.get("no_email"):
+            email_subject = f"[NO EMAIL — PRINT] {email_subject}"
+        to_email = recipients.get("to_header") or ""
+        writeback["recipients"] = {
+            "no_email": recipients.get("no_email"),
+            "delivery_method": recipients.get("delivery_method"),
+            "to": recipients.get("to_emails") or [],
+            "cc": recipients.get("cc_emails") or [],
+            "customer_emails": recipients.get("customer_emails") or [],
+        }
         try:
             from adapters.gmail import HELLO_TOKEN_PATH, GmailNotConfigured, create_draft
-            client = enriched["client"]
-            subject = f"Green Valley Contractors — Estimate {identifier} — {enriched['job'].get('name','')}".strip(" —")
             filename = f"{identifier} - {enriched['job'].get('name','Estimate')}.pdf"
-            # CC the salesperson (the estimate's prepared_by) on the hello@ draft so
-            # the sales→office handoff is visible: when the office reviews and Sends,
-            # the salesperson is looped in automatically. Skip if there's no
-            # salesperson email or it's the same as the client recipient.
             pb_email = ((enriched.get("prepared_by") or {}).get("email") or "").strip()
-            cc_salesperson = pb_email if (pb_email and pb_email.lower() != (client.get("email") or "").lower()) else None
-            if cc_salesperson:
-                writeback["cc_salesperson"] = cc_salesperson
+            already = {a.lower() for a in (recipients.get("to_emails") or [])}
+            already.update(a.lower() for a in (recipients.get("cc_emails") or []))
+            cc_parts = list(recipients.get("cc_emails") or [])
+            if pb_email and pb_email.lower() not in already:
+                cc_parts.append(pb_email)
+                writeback["cc_salesperson"] = pb_email
+            cc_header = ", ".join(cc_parts) if cc_parts else None
             try:
                 draft = create_draft(
-                    to=client["email"],
-                    subject=subject,
-                    body=_compose_email_body(enriched, revised=revise),
+                    to=to_email,
+                    subject=email_subject,
+                    body=email_body,
                     attachment_path=output_path,
                     attachment_filename=filename,
                     from_addr=HELLO_FROM_ADDR,
-                    cc=cc_salesperson,
+                    cc=cc_header,
                     invoice_identifier=identifier,  # generic dedup-by-subject key
                     token_path=HELLO_TOKEN_PATH,
                 )
@@ -789,6 +819,34 @@ def process_estimate(
             notify_finalize_degraded("Estimate", identifier, failed)
         except Exception:  # noqa: BLE001 — alerting must never break the flow
             pass
+
+        # 5) Auto-QA the hello@ draft (Andrea's manual checklist) + notify her
+        #    via Slack DM and a short office Gmail draft. Entirely non-fatal.
+        try:
+            from subsystems.estimate.qa import check_estimate_draft
+            from adapters.slack_notify import notify_estimate_qa_result
+            qa_result = check_estimate_draft(
+                enriched=enriched,
+                email_body=email_body,
+                email_subject=email_subject,
+                writeback=writeback,
+                to_email=to_email,
+            )
+            writeback["qa"] = {
+                "ok": qa_result["ok"],
+                "summary": qa_result["summary"],
+                "checks": qa_result["checks"],
+            }
+            writeback["qa_notify"] = notify_estimate_qa_result(enriched, qa_result)
+            print(
+                f"[finalize {identifier}] QA: "
+                f"{'PASS' if qa_result['ok'] else 'NEEDS FIX'} — "
+                f"{qa_result['summary']}"
+            )
+        except Exception as e:  # noqa: BLE001 — QA must never break finalize
+            writeback["qa_error"] = f"{type(e).__name__}: {e}"
+            print(f"[finalize {identifier}] QA failed (non-fatal): {e}",
+                  file=sys.stderr)
 
         return writeback
 

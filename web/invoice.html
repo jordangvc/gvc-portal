@@ -146,15 +146,23 @@
 
   <form id="invoice-form" autocomplete="off">
     <div class="card" id="prefill-card">
-      <h2>Start from a project</h2>
-      <div class="grid">
-        <div><label>Project # <span class="opt">(Projects board — pulls customer, job, type &amp; folder)</span></label>
-          <input name="project_number_lookup" placeholder="C-005 or MV-001" /></div>
-        <div style="display:flex;align-items:flex-end;gap:8px;">
-          <button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button>
-        </div>
+      <h2>Find the Project <span class="opt">(search by client, builder, address, city, or project # — or paste a Monday Project link)</span></h2>
+      <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div><label>Search — or Monday Project URL</label>
+          <input id="project-search" name="project_search" autocomplete="off"
+            placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, C-005…" /></div>
+        <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
       </div>
+      <div id="search-results" style="margin-top:10px;"></div>
       <div id="prefill-note" class="hint"></div>
+      <details id="advanced-pn" style="margin-top:12px;">
+        <summary style="cursor:pointer;font-size:var(--gvc-fs-caption);color:var(--gvc-muted);font-weight:600;">Advanced: Project # only</summary>
+        <div class="grid" style="grid-template-columns: 1fr auto; align-items: end; margin-top:8px;">
+          <div><label>Project # <span class="opt">(Projects board)</span></label>
+            <input name="project_number_lookup" placeholder="C-005 or MV-001" /></div>
+          <div><button type="button" class="btn secondary small" id="btn-prefill-pn">Look up Project #</button></div>
+        </div>
+      </details>
       <!-- carry-through from the matched project (Projects board = source of truth) -->
       <input type="hidden" name="job_monday_item_id" />
       <input type="hidden" name="job_monday_job_type" />
@@ -175,8 +183,27 @@
           <div id="customer-results" style="display:none;border:1px solid var(--border,#ccc);border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;"></div></div>
         <div><label>Client / company name</label><input name="client_name" required placeholder="Henderson Residence" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Mark Henderson" /></div>
-        <div><label>Email <span class="opt">(Stripe customer lookup)</span></label><input name="client_email" type="email" required placeholder="mark@example.com" /></div>
-        <div><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
+        <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
+          <textarea name="client_emails" id="client_emails" rows="2" placeholder="mark@example.com&#10;ap@builder.com"></textarea>
+          <div class="hint">Everyone who should get the invoice draft. Stripe still keys off the first address.</div></div>
+        <div class="full"><label>CC <span class="opt">(optional)</span></label>
+          <input name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
+        <div class="full">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <input type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
+            Customer has no email
+          </label>
+          <div class="hint">For customers without an inbox — the billing@ draft stays with the office for print / mail / hand-delivery. Stripe uses an internal placeholder (never emailed).</div>
+          <div id="no-email-opts" style="display:none;margin-top:8px;">
+            <label>How will we deliver it?</label>
+            <select name="delivery_method" id="delivery_method">
+              <option value="print">Print / hand-deliver PDF</option>
+              <option value="mail">Mail a printed copy</option>
+              <option value="hand_deliver">Hand-deliver on site</option>
+            </select>
+          </div>
+        </div>
+        <div class="full"><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
       </div>
     </div>
 
@@ -488,13 +515,38 @@ async function loadBillableCos(projectNumber) {
 
 function commercialOn() { return $("#commercial-toggle").checked; }
 
+/** Split comma / semicolon / whitespace / newline email lists; drop junk. */
+function parseEmails(raw) {
+  return String(raw || "").split(/[,;\s]+/).map(s => s.trim()).filter(s => s && s.includes("@"));
+}
+
+function syncNoEmailUi() {
+  const on = !!($("#client_no_email") && $("#client_no_email").checked);
+  const opts = $("#no-email-opts");
+  if (opts) opts.style.display = on ? "block" : "none";
+  ["client_emails", "client_cc_emails"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = on; el.style.opacity = on ? ".5" : ""; }
+  });
+}
+
 function collectData() {
   const f = $("#invoice-form");
   const val = (n) => (f.elements[n] ? (f.elements[n].value || "").trim() : "");
 
-  const client = { name: val("client_name"), email: val("client_email") };
+  const client = { name: val("client_name") };
   if (val("contact_name")) client.contact_name = val("contact_name");
   if (val("billing_address")) client.billing_address = val("billing_address");
+  if ($("#client_no_email") && $("#client_no_email").checked) {
+    client.no_email = true;
+    client.delivery_method = val("delivery_method") || "print";
+  } else {
+    const emails = parseEmails(val("client_emails"));
+    if (emails[0]) client.email = emails[0];
+    if (emails.length) client.emails = emails;
+    const cc = parseEmails(val("client_cc_emails"));
+    if (cc.length) client.cc_emails = cc;
+  }
 
   const job = { name: val("job_name") };
   if (val("site_address")) job.site_address = val("site_address");
@@ -582,7 +634,11 @@ function collectData() {
 function validateData(d) {
   const e = [];
   if (!d.client.name) e.push("Client name is required.");
-  if (!d.client.email) e.push("Client email is required.");
+  if (d.client.no_email) {
+    if (!d.client.delivery_method) e.push("Choose how to deliver when the customer has no email.");
+  } else if (!(d.client.email || (d.client.emails && d.client.emails.length))) {
+    e.push("Client email is required — or check “Customer has no email”.");
+  }
   if (!d.client.billing_address) e.push("Billing address is required (it prints on the invoice “Bill To”).");
   if (!d.job.name) e.push("Job name is required.");
   if (!d.invoice.identifier) e.push("Invoice number is required.");
@@ -809,8 +865,16 @@ function applyPrefill(p) {
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   if (c.name) setVal("client_name", c.name);
   if (c.contact_name) setVal("contact_name", c.contact_name);
-  if (c.email) setVal("client_email", c.email);
+  if (c.email || (c.emails && c.emails.length)) {
+    const emails = Array.isArray(c.emails) && c.emails.length ? c.emails : [c.email];
+    setVal("client_emails", emails.filter(Boolean).join("\n"));
+  }
   if (c.billing_address) setVal("billing_address", c.billing_address);
+  if ($("#client_no_email") && (c.no_email || c.delivery_method)) {
+    $("#client_no_email").checked = !!(c.no_email || (c.delivery_method && c.delivery_method !== "email"));
+    if (c.delivery_method) setVal("delivery_method", c.delivery_method);
+    syncNoEmailUi();
+  }
   if (j.name) setVal("job_name", j.name);
   if (j.site_address) setVal("site_address", j.site_address);
   if (inv.identifier) setVal("identifier", inv.identifier);
@@ -824,29 +888,170 @@ function applyPrefill(p) {
     $("#commercial-toggle").dispatchEvent(new Event("change"));
   }
 }
-async function lookupProject() {
-  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+/* ===================== Find the Project (search / URL / Project #) ===================== */
+
+function looksLikeMondayRef(s) {
+  return /\/pulses\/\d+/.test(s) || /^\d{8,}$/.test(s.trim()) || s.includes("monday.com");
+}
+function looksLikeProjectNumber(s) {
+  const t = (s || "").trim();
+  // Legacy series (C-005 / MV-001) or estimate-style spine (2026-0615-002).
+  return /^(C|MV)-\d+/i.test(t) || /^\d{4}-\d{4}-\d{2,}$/.test(t);
+}
+function mondayItemIdFromRef(s) {
+  const m = String(s || "").match(/\/pulses\/(\d+)/);
+  if (m) return m[1];
+  const t = String(s || "").trim();
+  return /^\d{8,}$/.test(t) ? t : "";
+}
+
+async function findProject() {
+  const q = ($("#project-search").value || "").trim();
+  const note = $("#prefill-note");
+  const results = $("#search-results");
+  if (results) results.innerHTML = "";
+  if (!q) {
+    note.textContent = "Type a client, builder, address, city, or project # — or paste a Monday Project URL.";
+    return;
+  }
+  if (looksLikeMondayRef(q)) return loadProjectFromLookup({ item_id: mondayItemIdFromRef(q) || q });
+  if (looksLikeProjectNumber(q)) return lookupProjectByNumber(q);
+  return searchProjects(q);
+}
+
+async function searchProjects(q) {
+  const note = $("#prefill-note");
+  const list = $("#search-results");
+  $("#btn-prefill").disabled = true;
+  note.textContent = "Searching Monday…";
+  let r;
+  try { r = await fetch("/ui/api/invoice/search?q=" + encodeURIComponent(q)); }
+  catch (e) { $("#btn-prefill").disabled = false; note.textContent = "Network error."; return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = data.detail || data;
+    note.textContent = (d.detail || d.advice) || ("Search failed (HTTP " + r.status + ").");
+    return;
+  }
+  const rows = data.results || [];
+  if (!rows.length) {
+    note.textContent = `No projects matched “${q}”. Try fewer words, a Project #, or paste the Monday URL.`;
+    return;
+  }
+  note.textContent = `${rows.length} match${rows.length === 1 ? "" : "es"} — pick one:`;
+  list.innerHTML = "";
+  rows.forEach((row) => {
+    const div = document.createElement("div");
+    div.className = "draft-row";
+    const pn = row.project_number
+      ? `<span class="badge synced">${escapeHtml(row.project_number)}</span>` : "";
+    const grp = row.group ? `<span class="badge local">${escapeHtml(row.group)}</span>` : "";
+    const metaBits = [row.builder, row.location].filter(Boolean).map(escapeHtml).join(" · ");
+    const meta = metaBits ? `<div class="d-meta">${metaBits}</div>` : "";
+    div.innerHTML =
+      `<div class="d-main"><div class="d-label">${escapeHtml(row.name || "Untitled")}${pn}${grp}</div>${meta}</div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small";
+    btn.textContent = "Load";
+    btn.addEventListener("click", () => {
+      list.innerHTML = "";
+      loadProjectFromLookup(row);
+    });
+    div.appendChild(btn);
+    // Whole row is tappable (button still works).
+    div.style.cursor = "pointer";
+    div.addEventListener("click", (ev) => {
+      if (ev.target === btn || btn.contains(ev.target)) return;
+      list.innerHTML = "";
+      loadProjectFromLookup(row);
+    });
+    list.appendChild(div);
+  });
+}
+
+async function loadProjectFromLookup(row) {
+  const pn = (row && (row.project_number || row.projectNumber) || "").trim();
+  const itemId = String((row && (row.item_id || row.itemId || row.monday_item_id)) || "").trim();
+  if (pn) return lookupProjectByNumber(pn);
+  if (itemId) return lookupProjectByItemId(itemId);
+  $("#prefill-note").textContent = "That result has no Project # or Monday item id to load.";
+}
+
+async function lookupProjectByNumber(pn) {
   const note = $("#prefill-note");
   if (!pn) { note.textContent = "Enter a Project # first."; return; }
   note.textContent = "Looking up…";
+  $("#btn-prefill").disabled = true;
   try {
     const r = await fetch("/ui/api/invoice/lookup?project_number=" + encodeURIComponent(pn));
-    const body = await r.json();
-    if (!r.ok || !body.ok) {
-      note.textContent = (body.detail && body.detail.detail) || ("Lookup failed (" + r.status + ").");
-      return;
-    }
-    applyPrefill(body.prefill);
-    currentDraftId = null;  // a project prefill starts a fresh draft
-    scheduleAutosave();
-    const m = body.prefill._matched || {};
-    const notes = (body.prefill._notes || []).join(" ");
-    note.innerHTML = "Filled from <strong>" + (m.item_name || pn) + "</strong>" +
-      (m.url ? " (<a href='" + m.url + "' target='_blank' rel='noopener'>open project</a>)" : "") +
-      ". " + notes;
-    const basePn = (body.prefill.job && body.prefill.job.project_number) || pn;
-    loadBillableCos(basePn);
+    await applyLookupResponse(r, pn);
   } catch (e) { note.textContent = "Lookup error: " + e.message; }
+  finally { $("#btn-prefill").disabled = false; }
+}
+
+async function lookupProjectByItemId(itemId) {
+  const note = $("#prefill-note");
+  note.textContent = "Looking up…";
+  $("#btn-prefill").disabled = true;
+  try {
+    // Integrator may honor item_id and/or monday_url on the existing lookup route.
+    const qs = "item_id=" + encodeURIComponent(itemId) +
+      "&monday_url=" + encodeURIComponent(itemId);
+    const r = await fetch("/ui/api/invoice/lookup?" + qs);
+    await applyLookupResponse(r, itemId);
+  } catch (e) { note.textContent = "Lookup error: " + e.message; }
+  finally { $("#btn-prefill").disabled = false; }
+}
+
+async function applyLookupResponse(r, label) {
+  const note = $("#prefill-note");
+  if (r.status === 401) { location.reload(); return; }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok || body.ok === false) {
+    const d = body.detail || body;
+    note.textContent = (d.detail || d.advice) || ("Lookup failed (" + r.status + ").");
+    return;
+  }
+  const prefill = body.prefill || body;
+  applyPrefill(prefill);
+  currentDraftId = null;  // a project prefill starts a fresh draft
+  scheduleAutosave();
+  const m = prefill._matched || {};
+  const notes = (prefill._notes || []).join(" ");
+  note.innerHTML = "Filled from <strong>" + escapeHtml(m.item_name || label) + "</strong>" +
+    (m.url ? " (<a href='" + escapeHtml(m.url) + "' target='_blank' rel='noopener'>open project</a>)" : "") +
+    ". " + escapeHtml(notes);
+  const basePn = ((prefill.job && prefill.job.project_number) || label || "").trim();
+  if (basePn && typeof loadBillableCos === "function") loadBillableCos(basePn);
+  $("#invoice-form").scrollIntoView({ behavior: "smooth" });
+}
+
+/** @deprecated name kept for any leftover callers — routes to Find the Project. */
+async function lookupProject() {
+  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+  if (pn) return lookupProjectByNumber(pn);
+  return findProject();
+}
+
+function bootInvoiceFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const pn = (params.get("project_number") || "").trim();
+  const q = (params.get("q") || "").trim();
+  if (pn) {
+    const adv = $("#advanced-pn");
+    if (adv) adv.open = true;
+    const pnInput = $("#invoice-form").elements["project_number_lookup"];
+    if (pnInput) pnInput.value = pn;
+    if ($("#project-search")) $("#project-search").value = pn;
+    lookupProjectByNumber(pn);
+    return;
+  }
+  if (q) {
+    if ($("#project-search")) $("#project-search").value = q;
+    findProject();
+  }
 }
 
 /* ---- Customer search (Customer & Vendor Directory) ---- */
@@ -876,8 +1081,9 @@ function customerSearch() {
         d.addEventListener("click", () => {
           setVal("client_name", c.name || "");
           if (c.contact_name) setVal("contact_name", c.contact_name);
-          if (c.email) setVal("client_email", c.email);
+          if (c.email) setVal("client_emails", c.email);
           if (c.billing_address) setVal("billing_address", c.billing_address);
+          if ($("#client_no_email")) { $("#client_no_email").checked = false; syncNoEmailUi(); }
           setVal("customer_search", c.name || "");
           box.style.display = "none"; box.innerHTML = "";
           scheduleAutosave();
@@ -941,7 +1147,19 @@ function applyData(p) {
   p = p || {};
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   setField("client_name", c.name); setField("contact_name", c.contact_name);
-  setField("client_email", c.email); setField("billing_address", c.billing_address);
+  setField("billing_address", c.billing_address);
+  {
+    const emails = Array.isArray(c.emails) && c.emails.length
+      ? c.emails : (c.email ? [c.email] : []);
+    setField("client_emails", emails.join("\n"));
+    const cc = Array.isArray(c.cc_emails) ? c.cc_emails : [];
+    setField("client_cc_emails", cc.join(", "));
+    if ($("#client_no_email")) {
+      $("#client_no_email").checked = !!(c.no_email || (c.delivery_method && c.delivery_method !== "email"));
+      if (c.delivery_method) setField("delivery_method", c.delivery_method);
+      syncNoEmailUi();
+    }
+  }
   setField("job_name", j.name); setField("site_address", j.site_address);
   setField("job_monday_item_id", j.monday_item_id); setField("job_monday_job_type", j.monday_job_type);
   setField("job_project_type", j.project_type); setField("job_project_number", j.project_number);
@@ -1107,12 +1325,30 @@ $("#btn-new-invoice").addEventListener("click", () => {
   startNewInvoice();
 });
 $("#invoice-form").addEventListener("input", () => { lastPreviewOk = false; $("#btn-accept").disabled = true; scheduleAutosave(); });
-$("#btn-prefill").addEventListener("click", lookupProject);
-$("[name=project_number_lookup]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookupProject(); } });
+$("#btn-prefill").addEventListener("click", findProject);
+$("#project-search").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); findProject(); }
+});
+$("#btn-prefill-pn").addEventListener("click", () => {
+  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+  lookupProjectByNumber(pn);
+});
+$("[name=project_number_lookup]").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+    lookupProjectByNumber(pn);
+  }
+});
 $("[name=customer_search]").addEventListener("input", customerSearch);
 $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
+if ($("#client_no_email")) {
+  $("#client_no_email").addEventListener("change", syncNoEmailUi);
+  syncNoEmailUi();
+}
 checkHealth();
 refreshDrafts();
+bootInvoiceFromUrl();
 </script>
 </body>
 </html>

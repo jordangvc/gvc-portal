@@ -82,12 +82,14 @@ from orchestrators import lien_flow
 from orchestrators import jobcheck_flow
 from orchestrators import morning_flow
 from orchestrators import jobstart_flow
+from orchestrators import billing_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
 from adapters.monday import jobstart as monday_jobstart
 from adapters.monday import morning as monday_morning
 from adapters.monday import jobcheck as monday_jobcheck
+from adapters.monday import search as monday_search
 from subsystems.invoice import correct as invoice_correct
 from adapters.stripe_invoice import preflight_stripe, void_stripe_invoice
 
@@ -1032,6 +1034,140 @@ def ui_invoice_form(request: Request) -> HTMLResponse:
     return HTMLResponse(path.read_text(encoding="utf-8"))
 
 
+@app.get("/ui/billing", response_class=HTMLResponse)
+def ui_billing_hub(request: Request) -> HTMLResponse:
+    """
+    Invoicing hub — Ready-to-Invoice queue, accepted bids needing a next step,
+    and multi-field search so the office does not need a Project # memorized.
+    Gated by `invoice` (same grant as the invoice generator).
+    """
+    email = require_feature(request, "invoice")
+    activity.log_event("billing.open", actor=email, target="billing", result="ok")
+    path = WEB_DIR / "billing.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return HTMLResponse(
+        path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email))
+    )
+
+
+@app.get("/ui/api/billing/hub")
+def ui_billing_hub_data(request: Request) -> dict:
+    """Queue payload for the Billing hub (Ready to Invoice + Accepted bids…)."""
+    email = require_feature(request, "invoice")
+    try:
+        payload = billing_flow.billing_hub_payload()
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "BILLING_HUB_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Try again, or open a project from search below."},
+        )
+    counts = payload.get("counts") or {}
+    activity.log_event(
+        "billing.hub", actor=email, result="ok",
+        ready=counts.get("ready_to_invoice"),
+        accepted=counts.get("accepted_bids"),
+        projects=counts.get("projects_billing"),
+    )
+    return payload
+
+
+@app.get("/ui/api/billing/search")
+def ui_billing_search(request: Request, q: str = "") -> dict:
+    """Multi-field search across Projects + Bid Board for the Billing hub."""
+    email = require_feature(request, "invoice")
+    term = (q or "").strip()
+    if len(term) < 2:
+        return {"ok": True, "q": term, "projects": [], "bids": [], "notes": []}
+    try:
+        payload = billing_flow.search_billing(None, term)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "BILLING_SEARCH_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Try a shorter name, address fragment, or Project #."},
+        )
+    activity.log_event(
+        "billing.search", actor=email, result="ok", target=term,
+        **activity_detail.summarize(
+            "billing",
+            {"billing": {"q": term}, "name": term},
+            {"project_count": len(payload.get("projects") or []),
+             "bid_count": len(payload.get("bids") or [])},
+        ),
+    )
+    return payload
+
+
+@app.get("/ui/api/billing/activity")
+def ui_billing_activity(request: Request, limit: int = 30) -> dict:
+    """
+    Recent estimate/invoice/billing/check activity for the Billing hub strip.
+    Best-effort: if Cloud Logging is unavailable, return an empty list with a note
+    (hub queues still work).
+    """
+    require_feature(request, "invoice")
+    try:
+        n = max(1, min(int(limit or 30), 50))
+    except (TypeError, ValueError):
+        n = 30
+    wanted = (
+        "invoice.", "estimate.", "billing.", "check.", "estimate.qa",
+    )
+    events_out: list[dict] = []
+    note = None
+    try:
+        out = activity_read.fetch_events(
+            range_key="30d", page_size=activity_read.MAX_PAGE_SIZE,
+        )
+        for ev in out.get("events") or []:
+            action = str(ev.get("action") or "")
+            if not any(action.startswith(p) or action == p.rstrip(".")
+                       for p in wanted):
+                continue
+            events_out.append({
+                "action": action,
+                "actor": ev.get("actor"),
+                "customer": ev.get("customer"),
+                "job": ev.get("job"),
+                "target": ev.get("target"),
+                "amount": ev.get("amount"),
+                "result": ev.get("result"),
+                "time": ev.get("ts") or ev.get("time"),
+                "qa": ev.get("qa") or ev.get("qa_summary"),
+            })
+            if len(events_out) >= n:
+                break
+    except activity_read.ActivityReadNotConfigured as e:
+        note = str(e)
+    except Exception as e:  # noqa: BLE001 — strip must not break the hub
+        note = f"{type(e).__name__}: {e}"
+    payload: dict = {"ok": True, "events": events_out}
+    if note:
+        payload["note"] = note
+    return payload
+
+
 @app.post("/ui/api/invoice/run")
 def ui_invoice_run(req: FromJSONRequest, request: Request) -> dict:
     """Run the invoice flow for the browser form. Same core as /v1/from-json."""
@@ -1107,35 +1243,47 @@ def ui_invoice_original(request: Request, identifier: str = "") -> dict:
 
 
 @app.get("/ui/api/invoice/lookup")
-def ui_invoice_lookup(request: Request, project_number: str = "") -> dict:
+def ui_invoice_lookup(
+    request: Request,
+    project_number: str = "",
+    item_id: str = "",
+    monday_url: str = "",
+) -> dict:
     """
-    Prefill the invoice form from a canonical Project # (Projects board = SoT).
-    Pulls client (linked customer + billing identity), job name/site, the
-    Residential/Commercial/AIA classification, the project's Drive folder, and a
-    suggested identifier (GVC-<year>-<Project #>). Sets job.monday_item_id so the
-    live run links the ledger row + writes back to THIS project. Every field stays
-    editable in the form — the office still enters the dollar line items.
+    Prefill the invoice form from a Projects-board item (SoT).
+
+    Accepts Project # (preferred) OR a Monday item id / URL so the Billing hub
+    and Find-the-Project search can deep-link without forcing staff to memorize
+    numbers. Pulls client, job site, Res/Comm/AIA, Drive folder, suggested
+    identifier. Sets job.monday_item_id. Line items stay manual.
     """
     email = require_feature(request, "invoice")
     pn = (project_number or "").strip()
-    if not pn:
+    raw_id = (item_id or "").strip() or (monday_url or "").strip()
+    parsed_id = _parse_monday_item_id(raw_id) if raw_id else None
+    if not pn and not parsed_id:
         raise HTTPException(
             status_code=422,
             detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
-                    "detail": "Enter a Project # to look up.",
-                    "advice": "Type the project's Project # (e.g. C-005 or MV-001)."},
+                    "detail": "Enter a Project #, paste a Monday URL, or pick a search result.",
+                    "advice": "Search by builder, address, city, or Project # (e.g. C-005)."},
         )
     try:
         mc = MondayClient()
-        match = mc.find_project_by_number(pn)
-        if not match:
-            raise HTTPException(
-                status_code=404,
-                detail={"ok": False, "code": "PROJECT_NOT_FOUND",
-                        "detail": f"No project found with Project # '{pn}'.",
-                        "advice": "Check the Project # on the Projects board, or add it there."},
-            )
-        prefill = mc.build_invoice_prefill(match["item_id"])
+        target_id: Optional[int] = None
+        if pn:
+            match = mc.find_project_by_number(pn)
+            if not match:
+                raise HTTPException(
+                    status_code=404,
+                    detail={"ok": False, "code": "PROJECT_NOT_FOUND",
+                            "detail": f"No project found with Project # '{pn}'.",
+                            "advice": "Try search by builder/address, or check the Projects board."},
+                )
+            target_id = int(match["item_id"])
+        else:
+            target_id = int(parsed_id)  # type: ignore[arg-type]
+        prefill = mc.build_invoice_prefill(target_id)
     except HTTPException:
         raise
     except MondayNotConfigured as e:
@@ -1151,9 +1299,57 @@ def ui_invoice_lookup(request: Request, project_number: str = "") -> dict:
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Confirm the project exists on the Projects board."},
         )
-    activity.log_event("invoice.lookup", actor=email, target=pn)
+    activity.log_event(
+        "invoice.lookup", actor=email,
+        target=pn or str(parsed_id or ""),
+        result="ok",
+    )
     return {"ok": True, "prefill": prefill}
 
+
+@app.get("/ui/api/invoice/search")
+def ui_invoice_search(request: Request, q: str = "") -> dict:
+    """
+    Find-the-Project for the invoice form: builder, supervisor, address/city/
+    state (inside location), project name, or Project #. Returns light rows the
+    UI renders as tappable results.
+    """
+    email = require_feature(request, "invoice")
+    term = (q or "").strip()
+    if len(term) < 2:
+        return {"ok": True, "results": []}
+    try:
+        rows = monday_search.search_projects_rich(MondayClient(), term, limit=20)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "MONDAY_SEARCH_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Try again, or look the job up from the Billing hub."},
+        )
+    results = [{
+        "item_id": r.get("item_id"),
+        "name": r.get("name") or "",
+        "project_number": r.get("project_number") or "",
+        "builder": r.get("builder") or "",
+        "supervisor": r.get("supervisor") or "",
+        "location": r.get("location") or "",
+        "group": r.get("group") or "",
+        "invoice_status": r.get("invoice_status") or "",
+        "url": r.get("url") or "",
+        "match_fields": r.get("match_fields") or [],
+    } for r in (rows or [])]
+    activity.log_event(
+        "invoice.search", actor=email, target=term, result="ok",
+        hits=len(results),
+    )
+    return {"ok": True, "results": results}
 
 
 @app.get("/ui/api/invoice/billable-cos")
@@ -1353,11 +1549,24 @@ def ui_estimate_run(req: EstimateRunRequest, request: Request) -> dict:
         if req.mode == "finalize":
             wb["mode_warning"] = (
                 "FINALIZED — the estimate draft is waiting in hello@. Open it, "
-                "review, then click Send."
+                "review, then click Send. Office QA also notified Andrea automatically."
             )
             if not wb.get("gmail_draft_url") and "gmail_status" not in wb:
                 wb["gmail_status"] = "No draft URL returned — check hello@ configuration."
             _log_estimate_slack(wb, actor=user_email)
+            qa = wb.get("qa") if isinstance(wb.get("qa"), dict) else None
+            if qa is not None:
+                activity.log_event(
+                    "estimate.qa",
+                    actor=user_email,
+                    result="ok" if qa.get("ok") else "error",
+                    target=(wb.get("identifier")
+                            or (req.data.get("estimate") or {}).get("identifier")
+                            or ""),
+                    **activity_detail.summarize("estimate", req.data, wb, mode=_est_mode),
+                    qa_ok=bool(qa.get("ok")),
+                    qa_summary=(qa.get("summary") or "")[:240],
+                )
         activity.log_event(
             "estimate.run", actor=user_email, result=activity_detail.result_for(wb),
             **activity_detail.summarize("estimate", req.data, wb, mode=_est_mode))
@@ -1464,15 +1673,25 @@ def ui_estimate_lookup(request: Request, monday_url: str = "") -> dict:
 @app.get("/ui/api/estimate/search")
 def ui_estimate_search(request: Request, q: str = "") -> dict:
     """
-    Search the Bid Board by bid name or Estimate # (for the
-    estimate form's find-a-previous-estimate box). Returns light rows:
-    [{item_id, name, estimate_number, stage, url}]. Read-only.
+    Search the Bid Board by bid name, Estimate #, location (address/city/state),
+    or customer — so estimators don't need to remember a Monday id. Returns
+    light rows: [{item_id, name, estimate_number, stage, url, …}]. Read-only.
     """
     require_feature(request, "estimate")
     if len((q or "").strip()) < 2:
         return {"ok": True, "results": []}
     try:
-        results = monday_estimate.search_bids(MondayClient(), q)
+        rich = monday_search.search_bids_rich(MondayClient(), q, limit=20)
+        results = [{
+            "item_id": r.get("item_id"),
+            "name": r.get("name") or "",
+            "estimate_number": r.get("estimate_number") or "",
+            "stage": r.get("stage") or "",
+            "location": r.get("location") or "",
+            "customer": r.get("customer") or "",
+            "url": r.get("url") or "",
+            "match_fields": r.get("match_fields") or [],
+        } for r in (rich or [])]
     except MondayNotConfigured as e:
         raise HTTPException(
             status_code=503,
@@ -1480,12 +1699,17 @@ def ui_estimate_search(request: Request, q: str = "") -> dict:
                     "advice": "Ask an admin to set MONDAY_API_TOKEN."},
         )
     except Exception as e:  # noqa: BLE001
-        raise HTTPException(
-            status_code=502,
-            detail={"ok": False, "code": "MONDAY_SEARCH_FAILED",
-                    "detail": f"{type(e).__name__}: {e}",
-                    "advice": "Try again, or paste the Monday item URL directly."},
-        )
+        # Fall back to the classic name/Estimate# search if rich search fails.
+        try:
+            results = monday_estimate.search_bids(MondayClient(), q)
+        except Exception as e2:  # noqa: BLE001
+            raise HTTPException(
+                status_code=502,
+                detail={"ok": False, "code": "MONDAY_SEARCH_FAILED",
+                        "detail": f"{type(e).__name__}: {e}; fallback: "
+                                  f"{type(e2).__name__}: {e2}",
+                        "advice": "Try again, or paste the Monday item URL directly."},
+            )
     return {"ok": True, "results": results}
 
 

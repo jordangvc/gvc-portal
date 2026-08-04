@@ -22,6 +22,7 @@ from shared import paths
 from shared.paths import LOGS_DIR, OUTPUT_DIR, REPO_ROOT as ROOT
 from shared.errors import _friendly_error
 from shared import activity
+from shared.recipients import normalize_client_recipients
 from subsystems.invoice.model import enrich, validate, validate_environment
 from subsystems.invoice.pdf import render_co_pdfs, render_pdf
 from subsystems.invoice import correct as invoice_correct
@@ -240,7 +241,15 @@ def process_one(
                     "recipient or amounts, use Reissue/Correct."
                 )
         else:
-            customer = upsert_stripe_customer(enriched["client"])
+            # Stripe needs an email key for idempotent customer upsert. When the
+            # customer has no inbox, use a synthetic .invalid address (never mailed).
+            _recips = normalize_client_recipients(
+                enriched["client"],
+                top_level_cc=data.get("cc_email") or (data.get("_monday") or {}).get("cc_email"),
+            )
+            _stripe_client = dict(enriched["client"])
+            _stripe_client["email"] = _recips["stripe_email"]
+            customer = upsert_stripe_customer(_stripe_client)
             print(f"[live {identifier}] customer: {customer.id} ({customer.email})")
             invoice = create_stripe_invoice(customer, enriched, finalize=finalize,
                                              from_invoice_id=from_invoice_id)
@@ -520,9 +529,25 @@ def process_one(
     # any CO Template PDFs. Order matters because most email clients render
     # the attachment row in this sequence; keeping the invoice first signals
     # the payable doc.
+    # Multi-recipient To + Cc supported; no-email customers draft to the office
+    # with a print/mail banner (synthetic Stripe email is never the draft To).
     gmail_draft_url: Optional[str] = None
     try:
-        cc = data.get("cc_email") or (data.get("_monday") or {}).get("cc_email")
+        top_cc = data.get("cc_email") or (data.get("_monday") or {}).get("cc_email")
+        # No-email drafts stay in hello@/billing@ Drafts addressed to the office
+        # mailbox Andrea already reviews (same as estimate no-email path).
+        recipients = normalize_client_recipients(
+            enriched["client"],
+            office_fallback=os.environ.get("GVC_HELLO_FROM", "hello@greenvalleycontractors.com"),
+            top_level_cc=top_cc,
+        )
+        writeback["recipients"] = {
+            "no_email": recipients.get("no_email"),
+            "delivery_method": recipients.get("delivery_method"),
+            "to": recipients.get("to_emails") or [],
+            "cc": recipients.get("cc_emails") or [],
+            "customer_emails": recipients.get("customer_emails") or [],
+        }
         inv = enriched["invoice"]
         gmail_extras: list[Path] = []
         gmail_extras.extend(aia_pdfs)
@@ -530,8 +555,8 @@ def process_one(
         draft_result = draft_invoice_email(
             customer_name=enriched["client"]["name"],
             contact_name=enriched["client"].get("contact_name"),
-            to=enriched["client"]["email"],
-            cc=cc,
+            to=recipients["to_header"],
+            cc=recipients.get("cc_header"),
             invoice_identifier=identifier,
             job_name=enriched["job"]["name"],
             amount_pretty=inv["total_pretty"],
@@ -543,9 +568,12 @@ def process_one(
             period_end_date=inv.get("period_end_date_pretty"),
             extra_pdfs=gmail_extras or None,
             email_context=inv.get("email_context"),
+            office_notice=recipients.get("office_notice"),
+            subject_prefix=("[NO EMAIL — PRINT]" if recipients.get("no_email") else None),
         )
         gmail_draft_url = draft_result["gmail_url"]
-        print(f"[live {identifier}] Gmail draft: {gmail_draft_url}")
+        print(f"[live {identifier}] Gmail draft: {gmail_draft_url}"
+              f" to={recipients.get('to_header')!r}")
         writeback["gmail_draft_id"] = draft_result["draft_id"]
         writeback["gmail_draft_url"] = gmail_draft_url
         # TODO(monday-trigger): when a Monday "Ready to Invoice" automation
