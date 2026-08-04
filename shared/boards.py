@@ -54,8 +54,8 @@ OPERATIONS_BOARD_ID = int(os.environ.get("GVC_MONDAY_OPERATIONS_BOARD_ID", "1920
 #
 # ⚠ The trade-status columns (Framing/Hanging/Scrapping/Finishing…) exist on
 # Operations only as MIRRORS of the Projects board, and Monday cannot write to
-# a mirror. They are deliberately absent from the allowlist below; writing them
-# through the `link_to_projects` relation is phase 2.
+# a mirror. They are deliberately absent from JOBCHECK_COLUMNS below; phase-2
+# slice 1 writes them on the linked Projects item via JOBCHECK_PROJECTS_TRADE_COLUMNS.
 JOBCHECK_BOARD_ID = int(os.environ.get("GVC_MONDAY_JOBCHECK_BOARD_ID")
                         or OPERATIONS_BOARD_ID)
 
@@ -113,6 +113,17 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
     {"id": "text_mm14mhpm",    "label": "Shower Instructions", "type": "text"},
     {"id": "color_mm02xmc0",   "label": "Window type",        "type": "status"},
     {"id": "long_text_mkpzf3je", "label": "Open questions for Ops", "type": "long_text"},
+)
+
+# Phase-2 slice 1 — trade statuses on the Projects board (NOT Ops mirrors).
+# Crew edits these from Job Check; writes go to the linked Projects item via
+# `link_to_projects`. status_19 here is Hanging Status on Projects — the Ops
+# board's status_19 is Scheduled Day (in JOBCHECK_COLUMNS). Keep board-scoped.
+JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
+    {"id": "color_mkza9z7c",       "label": "Framing Status",   "type": "status"},
+    {"id": "status_19",            "label": "Hanging Status",   "type": "status"},
+    {"id": "dup__of_hung_status1", "label": "Scrapping Status", "type": "status"},
+    {"id": "color_mkza855s",       "label": "Finishing Stage",  "type": "status"},
 )
 
 

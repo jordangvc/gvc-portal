@@ -90,6 +90,11 @@
     font-size: 17px; cursor: pointer; flex: 1; }
   .btn.gold:hover { filter: brightness(1.06); }
   .btn.gold:disabled { opacity: .6; cursor: default; filter: none; }
+  .field.disabled { opacity: .55; }
+  .field.disabled input, .field.disabled select, .field.disabled textarea {
+    pointer-events: none; cursor: not-allowed;
+  }
+  #tradesection h2 { margin-top: 0; }
   #dirtycount { font-size: var(--gvc-fs-small); color: var(--gvc-muted); white-space: nowrap; }
 
 
@@ -148,6 +153,11 @@
     <div id="fields"></div>
     <div class="hint">Only the fields you change are saved. Money and contract columns can't be
       edited here by design.</div>
+    <div id="tradesection" style="display:none; margin-top: 22px;">
+      <h2>Trade status <span class="opt" style="text-transform:none;font-weight:400;">(Projects)</span></h2>
+      <div id="tradelinkhint" class="hint" style="display:none;"></div>
+      <div id="tradefields"></div>
+    </div>
   </div>
 
   <div class="card" id="updatescard" style="display:none;">
@@ -270,56 +280,70 @@ function renderContext(job) {
     <div class="ctx-meta">${rows}</div>`;
 }
 
+function fieldKey(col) {
+  return col.field_key || ((col.board || "ops") + ":" + col.id);
+}
+
 function statusSelectHtml(col) {
-  const val = current[col.id] ?? "";
-  const labels = (statusSeq[col.id] || []).filter(Boolean);
+  const key = fieldKey(col);
+  const val = current[key] ?? "";
+  const labels = (statusSeq[key] || []).filter(Boolean);
   const chosen = labels.find((l) => l.label === val);
   const bg = chosen && chosen.hex ? chosen.hex : "";
   const fg = bg ? textColorFor(bg) : "";
   const style = bg ? `background-color:${esc(bg)};color:${fg};border-color:${esc(bg)};` : "";
+  const disabled = col.writable === false ? " disabled" : "";
   const opts = [`<option value=""${val === "" ? " selected" : ""}>(not set)</option>`].concat(
     labels.map((l) =>
       `<option value="${esc(l.label)}"${l.label === val ? " selected" : ""}>${esc(l.label)}</option>`)
   );
   return `<span class="select-wrap">
-    <select class="status-select${bg ? "" : " unset"}" data-col="${esc(col.id)}"
-      aria-label="${esc(col.label)}" style="${style}">${opts.join("")}</select>
+    <select class="status-select${bg ? "" : " unset"}" data-col="${esc(key)}"
+      aria-label="${esc(col.label)}" style="${style}"${disabled}>${opts.join("")}</select>
     <span class="select-chev"${fg ? ` style="color:${fg};"` : ""}>▼</span></span>`;
 }
 
 function fieldHtml(col) {
-  const v = current[col.id];
+  const key = fieldKey(col);
+  const v = current[key];
+  const disabled = col.writable === false;
   let control = "";
   if (col.type === "status") {
     control = statusSelectHtml(col);
   } else if (col.type === "checkbox") {
-    control = `<label class="checkwrap"><input type="checkbox" data-col="${esc(col.id)}"
-      ${v ? "checked" : ""}/><span>${v ? "Done" : "Not done"}</span></label>`;
+    control = `<label class="checkwrap"><input type="checkbox" data-col="${esc(key)}"
+      ${v ? "checked" : ""}${disabled ? " disabled" : ""}/><span>${v ? "Done" : "Not done"}</span></label>`;
   } else if (col.type === "date") {
-    control = `<input type="date" data-col="${esc(col.id)}" value="${esc(v || "")}" />`;
+    control = `<input type="date" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   } else if (col.type === "number") {
-    control = `<input type="number" inputmode="decimal" step="any" data-col="${esc(col.id)}" value="${esc(v || "")}" />`;
+    control = `<input type="number" inputmode="decimal" step="any" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   } else if (col.type === "long_text") {
-    control = `<textarea data-col="${esc(col.id)}">${esc(v || "")}</textarea>`;
+    control = `<textarea data-col="${esc(key)}"${disabled ? " disabled" : ""}>${esc(v || "")}</textarea>`;
   } else {
-    control = `<input type="text" data-col="${esc(col.id)}" value="${esc(v || "")}" />`;
+    control = `<input type="text" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   }
-  return `<div class="field" data-field="${esc(col.id)}">
+  return `<div class="field${disabled ? " disabled" : ""}" data-field="${esc(key)}">
     <label>${esc(col.label)}</label>${control}</div>`;
 }
 
-function isDirty(colId) {
-  const a = baseline[colId] ?? "";
-  const b = current[colId] ?? "";
+function isDirty(key) {
+  const a = baseline[key] ?? "";
+  const b = current[key] ?? "";
   return String(a) !== String(b);
 }
 
 function refreshDirtyUi() {
   let n = 0;
   (detail?.columns || []).forEach((c) => {
-    const dirty = isDirty(c.id);
+    const key = fieldKey(c);
+    if (c.writable === false) {
+      const el = document.querySelector(`.field[data-field="${CSS.escape(key)}"]`);
+      if (el) el.classList.remove("dirty");
+      return;
+    }
+    const dirty = isDirty(key);
     if (dirty) n++;
-    const el = document.querySelector(`.field[data-field="${CSS.escape(c.id)}"]`);
+    const el = document.querySelector(`.field[data-field="${CSS.escape(key)}"]`);
     if (el) el.classList.toggle("dirty", dirty);
   });
   $("#dirtycount").textContent = n ? `${n} change${n === 1 ? "" : "s"}` : "No changes yet";
@@ -327,13 +351,14 @@ function refreshDirtyUi() {
 }
 
 function wireField(col) {
-  const root = document.querySelector(`.field[data-field="${CSS.escape(col.id)}"]`);
-  if (!root) return;
+  const key = fieldKey(col);
+  const root = document.querySelector(`.field[data-field="${CSS.escape(key)}"]`);
+  if (!root || col.writable === false) return;
   if (col.type === "status") {
     const sel = root.querySelector("select");
     sel.addEventListener("change", () => {
       // "" is the explicit clear option — store null so the save sends a clear.
-      current[col.id] = sel.value === "" ? null : sel.value;
+      current[key] = sel.value === "" ? null : sel.value;
       // Re-render so the control repaints in the newly chosen label's color.
       root.outerHTML = fieldHtml(col);
       wireField(col);
@@ -342,32 +367,56 @@ function wireField(col) {
   } else if (col.type === "checkbox") {
     const cb = root.querySelector("input[type=checkbox]");
     cb.addEventListener("change", () => {
-      current[col.id] = cb.checked ? "true" : null;
+      current[key] = cb.checked ? "true" : null;
       root.querySelector(".checkwrap span").textContent = cb.checked ? "Done" : "Not done";
       refreshDirtyUi();
     });
   } else {
     const input = root.querySelector("input, textarea");
     input.addEventListener("input", () => {
-      current[col.id] = input.value.trim() || null;
+      current[key] = input.value.trim() || null;
       refreshDirtyUi();
     });
   }
 }
 
 function renderForm() {
-  $("#fields").innerHTML = (detail.columns || []).map(fieldHtml).join("");
-  (detail.columns || []).forEach(wireField);
+  const cols = detail.columns || [];
+  const opsCols = cols.filter((c) => (c.board || "ops") !== "projects");
+  const tradeCols = cols.filter((c) => c.board === "projects");
+  $("#fields").innerHTML = opsCols.map(fieldHtml).join("");
+  opsCols.forEach(wireField);
+
+  const tradeSec = $("#tradesection");
+  const tradeHint = $("#tradelinkhint");
+  if (tradeCols.length) {
+    tradeSec.style.display = "";
+    const linked = !!(detail.job && detail.job.project_item_id);
+    if (!linked) {
+      tradeHint.style.display = "";
+      tradeHint.textContent = detail.job?.project_link_error
+        || "No linked Projects item (link_to_projects is empty). Trade status can't be edited until office links the project in Monday. Ops fields below still save.";
+    } else {
+      tradeHint.style.display = "none";
+      tradeHint.textContent = "";
+    }
+    $("#tradefields").innerHTML = tradeCols.map(fieldHtml).join("");
+    tradeCols.forEach(wireField);
+  } else {
+    tradeSec.style.display = "none";
+    $("#tradefields").innerHTML = "";
+  }
   refreshDirtyUi();
 }
 
 function setValuesFrom(columns, valueOf) {
   baseline = {}; current = {}; statusSeq = {};
   columns.forEach((c) => {
+    const key = fieldKey(c);
     const v = valueOf(c) ?? null;
-    baseline[c.id] = v;
-    current[c.id] = v;
-    if (c.type === "status") statusSeq[c.id] = [null, ...(c.labels || [])];
+    baseline[key] = v;
+    current[key] = v;
+    if (c.type === "status") statusSeq[key] = [null, ...(c.labels || [])];
   });
 }
 
@@ -422,7 +471,14 @@ async function save() {
   if (!detail) return;
   const values = {};
   (detail.columns || []).forEach((c) => {
-    if (isDirty(c.id)) values[c.id] = current[c.id] ?? "";
+    const key = fieldKey(c);
+    if (c.writable === false) return;
+    if (isDirty(key)) {
+      // Ops keeps bare ids for backward-compatible API clients; Projects uses
+      // board-scoped keys so status_19 (Hanging) never collides with Ops Scheduled Day.
+      const submitKey = (c.board === "projects") ? key : c.id;
+      values[submitKey] = current[key] ?? "";
+    }
   });
   if (!Object.keys(values).length) return;
   const btn = $("#save");
@@ -436,8 +492,10 @@ async function save() {
       body: JSON.stringify({ values }),
     });
     const body = await r.json();
-    const labelOf = (id) =>
-      ((detail.columns || []).find((c) => c.id === id) || {}).label || id;
+    const labelOf = (id) => {
+      const cols = detail.columns || [];
+      return (cols.find((c) => fieldKey(c) === id || c.id === id) || {}).label || id;
+    };
     if (!r.ok) {
       const d = body.detail || body;
       showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Save failed; nothing recorded.")}<br>${esc(d.advice || "")}`);
@@ -445,8 +503,12 @@ async function save() {
     }
     // Re-render from Monday's confirmed values — what you see is what landed.
     (detail.columns || []).forEach((c) => {
-      if (Object.prototype.hasOwnProperty.call(body.confirmed || {}, c.id)) {
-        c.value = body.confirmed[c.id];
+      const key = fieldKey(c);
+      const conf = body.confirmed || {};
+      if (Object.prototype.hasOwnProperty.call(conf, key)) {
+        c.value = conf[key];
+      } else if (Object.prototype.hasOwnProperty.call(conf, c.id) && (c.board || "ops") !== "projects") {
+        c.value = conf[c.id];
       }
     });
     setValuesFrom(detail.columns || [], (c) => c.value);
