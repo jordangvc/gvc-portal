@@ -112,6 +112,73 @@ def test_link_column_url_ignores_gfolder_label():
         "value": '{"url":"%s","text":"GFolder"}' % url,
     }) == url
 
+
+def test_card_includes_gfolder_url():
+    row = {
+        "item_id": 7,
+        "name": "Hang",
+        "url": "https://example.test/7",
+        "blocked": "Clear",
+        "overdue": "",
+        "gfolder_url": "https://drive.google.com/drive/folders/abc",
+    }
+    card = flow._card(row, reason="Ops. Owner")
+    assert card["gfolder_url"] == "https://drive.google.com/drive/folders/abc"
+    # Missing GFolder soft-fails to None (UI shows disabled Open Drive).
+    card2 = flow._card({**row, "gfolder_url": None}, reason="Ops. Owner")
+    assert card2["gfolder_url"] is None
+
+
+def test_attach_gfolder_urls_soft_fails():
+    calls = []
+
+    class _MC:
+        pass
+
+    def fake_get(mc, item_id):
+        calls.append(item_id)
+        if item_id == 2:
+            raise RuntimeError("monday down")
+        return f"https://drive.example/{item_id}"
+
+    cards = [{"item_id": 1}, {"item_id": 2}, {"item_id": 1}]
+    orig = mm.get_gfolder_url_for_ops_item
+    mm.get_gfolder_url_for_ops_item = fake_get
+    try:
+        flow._attach_gfolder_urls(_MC(), cards)
+    finally:
+        mm.get_gfolder_url_for_ops_item = orig
+    assert cards[0]["gfolder_url"] == "https://drive.example/1"
+    assert cards[1]["gfolder_url"] is None
+    assert cards[2]["gfolder_url"] == "https://drive.example/1"
+    assert calls == [1, 2]
+
+
+def test_hub_morning_route_aliases_registered():
+    """Hub links /ui/morning-gm and /ui/morning-owner; canonical is /ui/morning/gm."""
+    src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
+    for path in ("/ui/morning/gm", "/ui/morning-gm",
+                 "/ui/morning/owner", "/ui/morning-owner"):
+        assert f'@app.get("{path}"' in src, path
+
+
+def test_normalize_updated_at_feeds_hold_in_card():
+    from datetime import datetime, timezone
+    item = {
+        "id": "88",
+        "name": "Stale blocked",
+        "updated_at": "2026-07-01T00:00:00Z",
+        "group": {"id": "topics", "title": "Active"},
+        "column_values": [
+            {"id": boards.MORNING_COL_BLOCKED, "text": "Materials", "type": "status"},
+        ],
+    }
+    row = mm._normalize(item)
+    assert mm.is_long_term_hold(row, now=datetime(2026, 8, 3, tzinfo=timezone.utc))
+    card = flow._card(row, reason="Long-term hold")
+    assert card["updated_at"] == "2026-07-01T00:00:00Z"
+
+
 if __name__ == "__main__":
     tests = [
         test_roles_in_features,
@@ -123,6 +190,10 @@ if __name__ == "__main__":
         test_financial_still_excluded,
         test_long_term_hold,
         test_link_column_url_ignores_gfolder_label,
+        test_card_includes_gfolder_url,
+        test_attach_gfolder_urls_soft_fails,
+        test_hub_morning_route_aliases_registered,
+        test_normalize_updated_at_feeds_hold_in_card,
     ]
     failed = 0
     for fn in tests:

@@ -2205,6 +2205,7 @@ def ui_morning_page(request: Request) -> HTMLResponse:
 
 
 @app.get("/ui/morning/gm", response_class=HTMLResponse)
+@app.get("/ui/morning-gm", response_class=HTMLResponse)
 def ui_morning_gm_page(request: Request) -> HTMLResponse:
     email = require_feature(request, "morning_gm")
     activity.log_event("tool.open", actor=email, target="morning_gm")
@@ -2212,6 +2213,7 @@ def ui_morning_gm_page(request: Request) -> HTMLResponse:
 
 
 @app.get("/ui/morning/owner", response_class=HTMLResponse)
+@app.get("/ui/morning-owner", response_class=HTMLResponse)
 def ui_morning_owner_page(request: Request) -> HTMLResponse:
     email = require_feature(request, "morning_owner")
     # Superadmins also reach Owner Pulse via morning_role — allow morning feature
