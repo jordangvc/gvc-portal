@@ -43,6 +43,7 @@ from subsystems.invoice.model import validate_environment
 from orchestrators.invoice_flow import process_one, _run, _run_correction
 from shared.errors import _friendly_error, humanize_validation_message
 from orchestrators.estimate_flow import process_estimate
+from orchestrators import takeoff_import_flow
 from adapters.monday.client import (
     MondayClient,
     MondayInsufficientData,
@@ -67,6 +68,7 @@ from shared import activity_read as activity_read
 from shared import portal_store as portal_store
 from subsystems.estimate import drafts as estimate_drafts
 from subsystems.estimate import scope_catalog as scope_catalog
+from subsystems.estimate import takeoff_import as takeoff_import
 from subsystems.invoice import drafts as invoice_drafts
 from subsystems.change_order import drafts as co_drafts
 from subsystems.fieldguide import runs as fieldguide_runs
@@ -512,6 +514,66 @@ def _log_estimate_slack(wb: dict, *, actor: str) -> None:
         activity.log_event("estimate.slack", actor=actor, target=identifier,
                            result="skipped",
                            error=str(wb.get("slack_status") or "not configured"))
+
+
+def _stage_takeoff_import(body: dict, *, actor: str) -> dict:
+    raw = takeoff_import.extract_takeoff_payload(body)
+    try:
+        out = takeoff_import_flow.import_takeoff_as_draft(raw, actor)
+    except takeoff_import.TakeoffPayloadInvalid as exc:
+        activity.log_event(
+            "estimate.takeoff_import",
+            actor=actor,
+            result="error",
+            error="; ".join(exc.errors)[:500],
+        )
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "ok": False,
+                "code": "TAKEOFF_PAYLOAD_INVALID",
+                "detail": "Takeoff estimate could not be staged.",
+                "advice": "Fix: " + "; ".join(exc.errors),
+                "errors": exc.errors,
+            },
+        )
+
+    if not out.get("ok"):
+        activity.log_event(
+            "estimate.takeoff_import",
+            actor=actor,
+            result="error",
+            error=str(out.get("code") or "IMPORT_FAILED"),
+        )
+        raise HTTPException(
+            status_code=503,
+            detail={
+                "ok": False,
+                "code": out.get("code") or "TAKEOFF_IMPORT_FAILED",
+                "detail": out.get("detail") or "Takeoff draft could not be stored.",
+                "advice": out.get("advice") or "Ask an admin to check portal storage.",
+            },
+        )
+
+    draft = out.get("draft") or {}
+    activity.log_event(
+        "estimate.takeoff_import",
+        actor=actor,
+        target=draft.get("id"),
+        result="ok",
+        warnings=len(out.get("warnings") or []),
+    )
+    return out
+
+
+@app.post("/v1/estimate/from-takeoff")
+def estimate_from_takeoff(
+    body: dict,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """Stage a Takeoff export as a shared estimate draft. Never finalizes."""
+    require_api_key(x_api_key)
+    return _stage_takeoff_import(body, actor="api:takeoff")
 
 
 @app.post("/v1/estimate/from-json")
@@ -1185,6 +1247,20 @@ def ui_estimate_form(request: Request) -> HTMLResponse:
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(path.read_text(encoding="utf-8"))
+
+
+@app.post("/ui/api/estimate/from-takeoff")
+def ui_estimate_from_takeoff(body: dict, request: Request) -> dict:
+    """Stage a pasted/uploaded Takeoff export as a shared estimate draft."""
+    actor = require_feature(request, "estimate")
+    return _stage_takeoff_import(body, actor=actor)
+
+
+@app.get("/ui/api/estimate/takeoff-contract")
+def ui_estimate_takeoff_contract(request: Request) -> dict:
+    """Return machine-readable Takeoff export shape and staging guarantees."""
+    require_feature(request, "estimate")
+    return {"ok": True, "contract": takeoff_import.takeoff_contract()}
 
 
 @app.post("/ui/api/estimate/run")

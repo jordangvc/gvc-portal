@@ -2103,3 +2103,16 @@ TOTALS: 24 sections (20 procedures + home/index/glossary/sources), 329 checkboxe
 20 provenance blocks, 41 Component Index jumps. Verified: JS node --check clean, CSS braces balanced,
 every tile target resolves, every index jump resolves to a real anchor, no duplicate ids, all tag
 pairs balanced, py compileall clean.
+
+### 2026-08-04 — Seam 1: Takeoff → portal estimate draft
+- Added a draft-only Takeoff import path: pure normalization/validation in
+  `subsystems/estimate/takeoff_import.py`, one-store-write orchestration in
+  `orchestrators/takeoff_import_flow.py`, and session/API-key routes at
+  `/ui/api/estimate/from-takeoff` and `/v1/estimate/from-takeoff`.
+- Import accepts raw canonical estimate JSON or `{data: ...}`. Every supplied
+  identifier (including legacy `EST-*`) is cleared so finalize assigns a fresh
+  `YYYY-MMDD-NNN`; imports never
+  finalize, create Gmail/Slack/Monday side effects, or send anything.
+- Estimate Generator now uploads/pastes Takeoff JSON, resumes the returned
+  shared draft, and supports `/ui/estimate?takeoff=1`. Hub footer r21 → r22.
+- Phase 2 Firebase `gvc_portal_outbox/{draftId}` pickup remains deferred.
