@@ -647,6 +647,38 @@ def tasks_check_sent(
 
 
 
+class PollTakeoffOutboxRequest(BaseModel):
+    dry_run: bool = Field(False, description="Read and report only — no draft-store or RTDB writes")
+    limit: int = Field(20, ge=1, le=100, description="Max queued outbox entries per sweep")
+
+
+@app.post("/v1/tasks/poll-takeoff-outbox")
+def tasks_poll_takeoff_outbox(
+    req: PollTakeoffOutboxRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """
+    Takeoff outbox sweep: read queued estimate payloads from the takeoff
+    app's Firebase outbox (gvc_portal_outbox), normalize + validate each one,
+    and stage the valid ones as SHARED estimate drafts for office review —
+    the same draft-only staging as /v1/estimate/from-takeoff. Staged entries
+    are acked back to RTDB as "staged"; invalid ones are marked "error". This
+    endpoint NEVER finalizes, drafts Gmail, writes Monday, or sends anything.
+    Idempotent — only status == "queued" is consumed and the portal draft id
+    is deterministic per outbox entry, so Cloud Scheduler retries are safe.
+
+    X-API-Key protected, same as the other /v1/* endpoints — Cloud Scheduler
+    sends the key in the header (job: gvc-takeoff-outbox, every 10 min).
+    """
+    require_api_key(x_api_key)
+    from orchestrators.takeoff_outbox_flow import poll_outbox
+
+    # poll_outbox is graceful by contract (per-item try/except; returns
+    # ok=False + code on a sweep-level problem like unreachable RTDB or a
+    # missing draft store) — no _friendly_error translation needed here.
+    return poll_outbox(dry_run=req.dry_run, limit=req.limit)
+
+
 @app.post("/v1/tasks/warm-monday")
 def tasks_warm_monday(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
