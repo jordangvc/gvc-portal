@@ -602,6 +602,63 @@ def process_estimate(
             writeback["drive_status"] = f"FAILED — {type(e).__name__}: {e}"
             print(f"[finalize {identifier}] Drive save FAILED: {e}", file=sys.stderr)
 
+        # 0b) ALSO drop the PDF at the root of Jake's numbered plan folder when
+        #     Plan Folder # is known. Soft-fail: missing/ambiguous/no_access
+        #     never blocks Gmail / Monday / the Projects/.../Estimate/ path.
+        plan_no = ((enriched.get("job") or {}).get("plan_folder_number") or "").strip()
+        if plan_no:
+            try:
+                from adapters.drive import DriveNotConfigured, DriveUploader
+                from adapters.monday.estimate import JAKE_PLAN_FOLDER_ROOT
+                from subsystems.estimate.plan_folder import (
+                    upload_pdf_to_jake_plan_folder,
+                )
+                from subsystems.estimate.revision import estimate_pdf_filename as _est_pdf_name
+                _job = enriched.get("job") or {}
+                _client = enriched.get("client") or {}
+                _loc = (_job.get("street_address") or _job.get("location")
+                        or _job.get("name") or "").strip()
+                _label = f"{_loc} | {_client.get('name', '')}".strip(" |")
+                _pf_name = _est_pdf_name(identifier, _label)
+                try:
+                    _pf_up = DriveUploader()
+                    pf_report = upload_pdf_to_jake_plan_folder(
+                        _pf_up,
+                        pdf_path=output_path,
+                        filename=_pf_name,
+                        plan_number=plan_no,
+                        root_id=JAKE_PLAN_FOLDER_ROOT,
+                    )
+                    writeback.update(pf_report)
+                    if pf_report.get("plan_folder_ok"):
+                        print(
+                            f"[finalize {identifier}] Plan folder: "
+                            f"{pf_report.get('plan_folder_name')}/"
+                            f"{pf_report.get('plan_folder_filename')}"
+                        )
+                    else:
+                        print(
+                            f"[finalize {identifier}] Plan folder "
+                            f"{pf_report.get('plan_folder_status')}",
+                            file=sys.stderr,
+                        )
+                except DriveNotConfigured as e:
+                    writeback["plan_folder_ok"] = False
+                    writeback["plan_folder_reason"] = "no_access"
+                    writeback["plan_folder_status"] = f"SKIPPED — {e}"
+                    print(
+                        f"[finalize {identifier}] {writeback['plan_folder_status']}",
+                        file=sys.stderr,
+                    )
+            except Exception as e:  # noqa: BLE001 — never block finalize
+                writeback["plan_folder_ok"] = False
+                writeback["plan_folder_reason"] = "error"
+                writeback["plan_folder_status"] = f"FAILED — {type(e).__name__}: {e}"
+                print(
+                    f"[finalize {identifier}] Plan folder upload FAILED: {e}",
+                    file=sys.stderr,
+                )
+
         # 1) Gmail draft in hello@ (NOT sent). Graceful if hello@ token absent.
         try:
             from adapters.gmail import HELLO_TOKEN_PATH, GmailNotConfigured, create_draft

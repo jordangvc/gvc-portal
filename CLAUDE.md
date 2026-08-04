@@ -11,6 +11,19 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ ESTIMATE → JAKE PLAN FOLDER PDF — BUILT 2026-08-04
+
+On estimate finalize, when **Plan Folder #** is known, the PDF is ALSO uploaded to
+the root of Jake's numbered plan folder (not only `Projects/.../Estimate/`).
+
+- Form field `plan_folder_number` on `/ui/estimate` (Estimate details).
+- Prefill from Bid Board column `text_mm5rjq00` via `build_prefill` / `lookup_bid`.
+- Finalize: `set_plan_folder_number` on the bid (soft-fail) +
+  `DriveUploader.find_numbered_child_folder(JAKE_PLAN_FOLDER_ROOT, n)` +
+  `upload_pdf_to_folder` into that folder root (soft-fail).
+- Missing / ambiguous / no_access never blocks Gmail, Monday, or the Estimate/ path.
+- Helper: `subsystems/estimate/plan_folder.py`. Tests: `tests/test_estimate_plan_folder.py`.
+
 ## STANDING RULE — confirm before assuming (full rule in root CLAUDE.md)
 Never design/code against unconfirmed foundational facts: whether two accounts/logins
 are the same, which system owns which entity + sync direction, the auth model,
