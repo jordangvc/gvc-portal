@@ -335,10 +335,51 @@ function openUpdateDialog(itemId) {
   msg.className = "upd-msg";
   msg.textContent = "";
   $("#updGo").disabled = false;
+  $("#updFiles").disabled = true;
   const dlg = $("#updDlg");
   dlg.hidden = false;
   dlg.classList.add("show");
   $("#updNote").focus();
+  checkPhotoReady(itemId);
+}
+
+async function checkPhotoReady(itemId) {
+  if (!itemId) {
+    $("#updFiles").disabled = true;
+    setUpdMsg("warn", "Missing item — note-only update still works.");
+    return;
+  }
+  setUpdMsg("", "Checking Drive folder…");
+  try {
+    const body = await api(
+      "/ui/api/morning/photo-ready?item_id=" + encodeURIComponent(itemId)
+    );
+    if (body.photo_ready) {
+      $("#updFiles").disabled = false;
+      const msg = $("#updMsg");
+      msg.className = "upd-msg";
+      msg.textContent = "";
+    } else {
+      $("#updFiles").disabled = true;
+      $("#updFiles").value = "";
+      $("#updFilesMeta").textContent = "";
+      const reason = body.reason || body.photo_block_reason
+        || "No project Drive folder linked.";
+      setUpdMsg(
+        "warn",
+        reason + " Monday-only update still works — Post update for a note without photos."
+      );
+    }
+  } catch (err) {
+    // Fail open on the file picker so a transient Monday blip doesn't block
+    // photos entirely; server still warns if the chain is broken on upload.
+    $("#updFiles").disabled = false;
+    setUpdMsg(
+      "warn",
+      "Couldn't check photo readiness — photos may fail on upload. Note-only still works."
+    );
+  }
+  $("#updGo").disabled = false;
 }
 
 function closeUpdateDialog() {
