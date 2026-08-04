@@ -140,3 +140,85 @@ def test_stats_reports_keys():
     s = monday_cache.stats()
     assert s["keys"] >= 2
     assert s["fresh"] >= 2
+
+
+def test_swr_hydrates_from_snapshot_on_cold_miss():
+    """L1 empty + L2 hit must return immediately and not block on Monday."""
+    from adapters.monday import snapshot as monday_snapshot
+
+    store: dict = {}
+    monday_snapshot.set_hooks(
+        load=lambda key: (store[key], time.time()) if key in store else None,
+        save=lambda key, value: store.__setitem__(key, value),
+        delete=lambda key: store.pop(key, None),
+    )
+    try:
+        store["swr-snap"] = {"jobs": [1, 2, 3]}
+        calls = {"n": 0}
+        release = threading.Event()
+
+        def factory():
+            calls["n"] += 1
+            release.wait(timeout=2)
+            return {"jobs": [9]}
+
+        t0 = time.monotonic()
+        got = monday_cache.get_or_set_swr(
+            "swr-snap", factory, ttl=30, stale_ttl=60
+        )
+        elapsed = time.monotonic() - t0
+        assert got == {"jobs": [1, 2, 3]}
+        assert elapsed < 0.05
+
+        deadline = time.time() + 1
+        while calls["n"] < 1 and time.time() < deadline:
+            time.sleep(0.01)
+        assert calls["n"] == 1
+        release.set()
+        deadline = time.time() + 2
+        while time.time() < deadline:
+            if monday_cache._STORE.get("swr-snap", (0, 0, None))[2] == {"jobs": [9]}:
+                break
+            time.sleep(0.02)
+        assert monday_cache._STORE["swr-snap"][2] == {"jobs": [9]}
+        assert store["swr-snap"] == {"jobs": [9]}
+    finally:
+        monday_snapshot.clear_hooks()
+
+
+def test_refresh_persists_snapshot():
+    from adapters.monday import snapshot as monday_snapshot
+
+    store: dict = {}
+    monday_snapshot.set_hooks(
+        load=lambda key: (store[key], time.time()) if key in store else None,
+        save=lambda key, value: store.__setitem__(key, value),
+        delete=lambda key: store.pop(key, None),
+    )
+    try:
+        out = monday_cache.refresh(
+            "force-key", lambda: ["a", "b"], ttl=30, stale_ttl=60
+        )
+        assert out == ["a", "b"]
+        assert store["force-key"] == ["a", "b"]
+        assert monday_cache.get("force-key") == ["a", "b"]
+    finally:
+        monday_snapshot.clear_hooks()
+
+
+def test_invalidate_clears_snapshot():
+    from adapters.monday import snapshot as monday_snapshot
+
+    store: dict = {"list:x": [1]}
+    monday_snapshot.set_hooks(
+        load=lambda key: (store[key], time.time()) if key in store else None,
+        save=lambda key, value: store.__setitem__(key, value),
+        delete=lambda key: store.pop(key, None),
+    )
+    try:
+        monday_cache.put("list:x", [1], ttl=30, stale_ttl=60)
+        monday_cache.invalidate("list:x")
+        assert monday_cache.get("list:x") is None
+        assert "list:x" not in store
+    finally:
+        monday_snapshot.clear_hooks()

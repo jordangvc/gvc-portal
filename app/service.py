@@ -174,7 +174,12 @@ portal_store.MISSING_STORE_HOOK = _grants_store_missing_alert
 
 
 def _warm_monday_caches() -> dict:
-    """Best-effort: populate Job Start / Morning / Job Check list caches."""
+    """
+    Best-effort: force-refresh Job Start / Morning / Job Check list caches
+    and persist them to GCS so cold Cloud Run instances stay fast.
+    """
+    from adapters.monday import cache as monday_cache
+
     warmed: list[str] = []
     errors: dict[str, str] = {}
     try:
@@ -182,22 +187,38 @@ def _warm_monday_caches() -> dict:
     except Exception as e:  # noqa: BLE001 — warm is best-effort
         msg = f"{type(e).__name__}: {e}"
         print(f"[monday:warm] client init failed: {msg}", file=sys.stderr)
-        return {"ok": False, "warmed": [], "errors": {"client": msg}}
+        return {"ok": False, "warmed": [], "errors": {"client": msg},
+                "cache": monday_cache.stats()}
 
-    for key, fn in (
-        ("list:jobstart:bids", lambda: monday_jobstart.fetch_bids(mc)),
-        ("list:morning:ops_items", lambda: monday_morning.fetch_ops_items(mc)),
-        ("list:jobcheck:active_jobs", lambda: monday_jobcheck.fetch_active_jobs(mc)),
+    # Always hit Monday (refresh), not the SWR get path — otherwise a fresh L1
+    # would skip the write to durable L2 snapshots.
+    for key, factory in (
+        ("list:jobstart:bids",
+         lambda: monday_jobstart._fetch_bids_uncached(mc)),
+        ("list:morning:ops_items",
+         lambda: monday_morning._fetch_ops_items_uncached(mc)),
+        ("list:jobcheck:active_jobs",
+         lambda: monday_jobcheck._fetch_active_jobs_uncached(mc)),
     ):
         try:
-            fn()
+            monday_cache.refresh(
+                key,
+                factory,
+                ttl=monday_cache.list_ttl(),
+                stale_ttl=monday_cache.stale_ttl(),
+            )
             warmed.append(key)
         except Exception as e:  # noqa: BLE001 — keep warming the rest
             msg = f"{type(e).__name__}: {e}"
             errors[key] = msg
             print(f"[monday:warm] {key} failed: {msg}", file=sys.stderr)
 
-    return {"ok": not errors, "warmed": warmed, "errors": errors}
+    return {
+        "ok": not errors,
+        "warmed": warmed,
+        "errors": errors,
+        "cache": monday_cache.stats(),
+    }
 
 
 def require_api_key(x_api_key: Optional[str]) -> None:
@@ -569,9 +590,10 @@ def tasks_warm_monday(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
 ) -> dict:
     """
-    Best-effort warm of Monday list caches (Job Start / Morning / Job Check).
-    X-API-Key protected like check-sent — optional Cloud Scheduler trigger.
-    Returns immediately; work runs in a background thread.
+    Force-refresh Monday list caches into memory + GCS snapshots
+    (Job Start / Morning / Job Check). X-API-Key protected like check-sent.
+    Wire Cloud Scheduler every 2–5 minutes so cold Cloud Run instances still
+    open instantly. Returns immediately; work runs in a background thread.
     """
     require_api_key(x_api_key)
     threading.Thread(

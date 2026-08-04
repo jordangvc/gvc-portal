@@ -148,3 +148,13 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   standalone scripts, e.g. `python tests/test_lien_watch.py`) and
   `python -m compileall app orchestrators subsystems adapters shared scripts`. The
   Dockerfile's build-time smoke test is `python -c "import app.service"`.
+
+- **Monday durable snapshots (speed):** List data for Job Start / Morning Brief /
+  Job Check is cached in-process (L1) **and** as JSON objects in GCS under
+  `monday-cache/` (L2, same bucket as portal state / preview). Cold Cloud Run
+  instances hydrate from GCS instead of waiting on Monday. `POST /v1/tasks/warm-monday`
+  (API key) force-refreshes Monday → L1 + L2 — wire Cloud Scheduler every **2–5
+  minutes** in production or cold opens will eventually miss after
+  `GVC_MONDAY_SNAPSHOT_MAX_AGE` (default 2h). Hub also fires
+  `POST /ui/api/monday/warm` on load.
+
