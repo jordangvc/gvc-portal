@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GVC Billing</title>
+<link rel="stylesheet" href="/ui/gvc.css" />
+<style>
+  /* Billing hub — layout/behavior only; brand tokens from gvc.css. */
+  #health { font-size: var(--gvc-fs-caption); color: #DCE8DD; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; margin-right: 5px; }
+  .dot.ok { background: var(--gvc-brand-bright); } .dot.bad { background: #E88070; }
+
+  .queue-row {
+    display: grid; gap: 10px; padding: 14px 0;
+    border-bottom: 1px solid var(--gvc-line-soft);
+  }
+  .queue-row:last-child { border-bottom: 0; }
+  .queue-row .title { font-size: var(--gvc-fs-body); font-weight: 700; }
+  .queue-row .title a { color: var(--gvc-ink); text-decoration: none; }
+  .queue-row .title a:hover { color: var(--gvc-green-dark); text-decoration: underline; }
+  .queue-meta {
+    display: flex; flex-wrap: wrap; gap: 6px 12px;
+    font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+  }
+  .queue-meta b { color: var(--gvc-ink); font-weight: 600; }
+  .chip {
+    display: inline-flex; align-items: center; font-size: var(--gvc-fs-micro);
+    font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    padding: 2px 9px; border-radius: var(--gvc-r-pill); white-space: nowrap;
+    background: var(--gvc-warn-tint); color: var(--gvc-gold-dark);
+    border: 1px solid #E3CFA0;
+  }
+  .chip.ok { background: var(--gvc-ok-tint); color: var(--gvc-green-dark); border-color: #BCD6C8; }
+  .chip.warn { background: var(--gvc-warn-tint); color: #9A3412; border-color: #E0CDA9; }
+  .row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .row-note { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); }
+  .empty {
+    padding: 18px 4px; font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+  }
+  .count-pill {
+    font-size: var(--gvc-fs-small); font-weight: 600; padding: 4px 12px;
+    border-radius: var(--gvc-r-pill); border: 1px solid var(--gvc-line);
+    background: var(--gvc-surface);
+  }
+  .act-row {
+    display: grid; gap: 2px; padding: 10px 0;
+    border-bottom: 1px solid var(--gvc-line-soft); font-size: var(--gvc-fs-small);
+  }
+  .act-row:last-child { border-bottom: 0; }
+  .act-row .when { color: var(--gvc-muted); font-size: var(--gvc-fs-caption); }
+  #status { display: none; }
+  #status.show { display: flex; }
+  #search-status { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-top: 8px; }
+  @media (max-width: 640px) {
+    .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
+    .gvc-wordmark { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Billing</span>
+    <div class="gvc-topbar-right">
+      <div id="health">Checking service…</div>
+      <span class="gvc-topbar-sep"></span>
+      <span class="gvc-topbar-user">{{EMAIL}}</span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
+</header>
+
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Invoicing</p>
+    <h1 class="gvc-h1">Billing</h1>
+    <p class="gvc-sub">Find work ready to bill without memorizing project numbers — search by builder, address, or estimate.</p>
+  </div>
+
+  <div class="gvc-stack">
+    <div class="gvc-banner" id="status"></div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd">
+        <span class="gvc-card-title">Search</span>
+        <span class="gvc-help">builder · supervisor · street · city · Project # · Estimate #</span>
+      </div>
+      <div class="gvc-card-bd">
+        <label class="gvc-label" for="billing-q">Look up a job</label>
+        <div class="gvc-searchwrap">
+          <input class="gvc-input gvc-input--lg" id="billing-q" type="search"
+                 placeholder="e.g. Bryant, Gertrude, Zicka, 2026-0804-001"
+                 autocomplete="off" />
+        </div>
+        <div id="search-status"></div>
+        <div id="search-results" style="margin-top:14px;"></div>
+      </div>
+    </div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd">
+        <span class="gvc-card-title">Ready to Invoice</span>
+        <span class="count-pill" id="count-ready">—</span>
+      </div>
+      <div class="gvc-card-bd" id="queue-ready">
+        <div class="empty">Loading Operations Ready to Invoice…</div>
+      </div>
+    </div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd">
+        <span class="gvc-card-title">Accepted bids</span>
+        <span class="gvc-help">need handoff / next office step</span>
+        <span class="count-pill" id="count-bids">—</span>
+      </div>
+      <div class="gvc-card-bd" id="queue-bids">
+        <div class="empty">Loading accepted bids…</div>
+      </div>
+    </div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd">
+        <span class="gvc-card-title">Projects with invoice status</span>
+        <span class="gvc-help">secondary — Invoice Status set on Projects</span>
+        <span class="count-pill" id="count-projects">—</span>
+      </div>
+      <div class="gvc-card-bd" id="queue-projects">
+        <div class="empty">Loading Projects billing list…</div>
+      </div>
+    </div>
+
+    <div class="gvc-card">
+      <div class="gvc-card-hd">
+        <span class="gvc-card-title">Recent activity</span>
+        <span class="gvc-help">office billing / estimate events</span>
+      </div>
+      <div class="gvc-card-bd">
+        <label class="gvc-label" for="act-filter">Filter this list</label>
+        <input class="gvc-input" id="act-filter" type="search"
+               placeholder="Filter by action, customer, job…" autocomplete="off" />
+        <div id="activity-list" style="margin-top:12px;">
+          <div class="empty">Loading recent activity…</div>
+        </div>
+      </div>
+    </div>
+
+    <p class="gvc-help" id="hub-meta"></p>
+  </div>
+</main>
+
+<script>
+const $ = (s) => document.querySelector(s);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+let searchTimer = null;
+let activityRows = [];
+
+function showStatus(kind, html) {
+  const el = $("#status");
+  const cls = kind === "err" ? "gvc-banner--bad"
+    : kind === "warn" ? "gvc-banner--warn"
+    : "gvc-banner--info";
+  el.className = "gvc-banner show " + cls;
+  el.innerHTML = "<div>" + html + "</div>";
+}
+
+function clearStatus() {
+  const el = $("#status");
+  el.className = "gvc-banner";
+  el.innerHTML = "";
+}
+
+function chips(labels, item) {
+  const out = [];
+  (labels || []).forEach((lab) => {
+    const warn = /handoff|drift/i.test(lab);
+    out.push(`<span class="chip ${warn ? "warn" : "ok"}">${esc(lab)}</span>`);
+  });
+  if (item && item.needs_handoff) {
+    out.push(`<span class="chip warn">Needs handoff</span>`);
+  }
+  return out.join(" ");
+}
+
+function metaBits(item) {
+  const bits = [];
+  if (item.project_number) bits.push(`Project # <b>${esc(item.project_number)}</b>`);
+  if (item.estimate_number) bits.push(`Est <b>${esc(item.estimate_number)}</b>`);
+  if (item.builder) bits.push(`Builder <b>${esc(item.builder)}</b>`);
+  if (item.supervisor) bits.push(`Super <b>${esc(item.supervisor)}</b>`);
+  if (item.location) bits.push(esc(item.location));
+  if (item.project_name && item.project_name !== item.name) {
+    bits.push(`Project <b>${esc(item.project_name)}</b>`);
+  }
+  return bits.join('<span aria-hidden="true"> · </span>');
+}
+
+function rowHtml(item) {
+  const title = item.monday_url
+    ? `<a href="${esc(item.monday_url)}" target="_blank" rel="noopener">${esc(item.name)}</a>`
+    : esc(item.name);
+  const primary = item.primary_href
+    ? `<a class="gvc-btn gvc-btn--gold" href="${esc(item.primary_href)}">${esc(item.primary_label || "Open")}</a>`
+    : "";
+  const secondary = [];
+  if (item.invoice_href && item.invoice_href !== item.primary_href) {
+    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.invoice_href)}">Invoice</a>`);
+  }
+  if (item.estimate_href && item.estimate_href !== item.primary_href) {
+    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.estimate_href)}">Estimate</a>`);
+  }
+  if (item.jobstart_href && item.jobstart_href !== item.primary_href) {
+    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobstart_href)}">Job Start</a>`);
+  }
+  return `<div class="queue-row">
+    <div class="title">${title}</div>
+    <div class="queue-meta">${metaBits(item)}</div>
+    <div class="queue-meta">${chips(item.status_labels, item)}</div>
+    ${item.note ? `<div class="row-note">${esc(item.note)}</div>` : ""}
+    <div class="row-actions">${primary}${secondary.join("")}</div>
+  </div>`;
+}
+
+function renderQueue(el, items, emptyHtml) {
+  if (!items || !items.length) {
+    el.innerHTML = `<div class="empty">${emptyHtml}</div>`;
+    return;
+  }
+  el.innerHTML = items.map(rowHtml).join("");
+}
+
+function renderSearch(body) {
+  const box = $("#search-results");
+  const projects = body.projects || [];
+  const bids = body.bids || [];
+  if (!projects.length && !bids.length) {
+    const tip = (body.notes || []).map(esc).join(" ")
+      || "No matches. Try a different builder, street, or number.";
+    box.innerHTML = `<div class="empty">${tip}</div>`;
+    return;
+  }
+  let html = "";
+  if (projects.length) {
+    html += `<h3 class="gvc-card-title" style="margin:0 0 8px;">Projects (${projects.length})</h3>`;
+    html += projects.map(rowHtml).join("");
+  }
+  if (bids.length) {
+    html += `<h3 class="gvc-card-title" style="margin:16px 0 8px;">Bids (${bids.length})</h3>`;
+    html += bids.map(rowHtml).join("");
+  }
+  box.innerHTML = html;
+}
+
+async function runSearch(q) {
+  const status = $("#search-status");
+  if (!q || q.trim().length < 2) {
+    status.textContent = q ? "Type at least 2 characters." : "";
+    $("#search-results").innerHTML = "";
+    return;
+  }
+  status.textContent = "Searching Monday…";
+  try {
+    const r = await fetch("/ui/api/billing/search?q=" + encodeURIComponent(q.trim()));
+    const body = await r.json();
+    if (!r.ok || body.ok === false) {
+      const d = body.detail || body;
+      status.textContent = "";
+      $("#search-results").innerHTML =
+        `<div class="empty"><b>${esc(d.code || "ERROR")}</b> — ${esc(d.detail || "Search failed.")} ${esc(d.advice || "")}</div>`;
+      return;
+    }
+    const backend = body.backend === "rich" ? "multi-field" : "basic";
+    status.textContent = `${(body.projects || []).length + (body.bids || []).length} result(s) · ${backend} search`;
+    renderSearch(body);
+  } catch (e) {
+    status.textContent = "";
+    $("#search-results").innerHTML =
+      `<div class="empty">Network error — ${esc(e.message)}. Check your connection and try again.</div>`;
+  }
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  const q = $("#billing-q").value || "";
+  searchTimer = setTimeout(() => runSearch(q), 320);
+}
+
+function formatWhen(raw) {
+  if (!raw) return "";
+  try {
+    const d = new Date(raw);
+    if (isNaN(d.getTime())) return String(raw);
+    return d.toLocaleString(undefined, {
+      month: "short", day: "numeric", hour: "numeric", minute: "2-digit"
+    });
+  } catch (e) { return String(raw); }
+}
+
+function renderActivity(filter) {
+  const el = $("#activity-list");
+  const needle = (filter || "").trim().toLowerCase();
+  const rows = activityRows.filter((row) => {
+    if (!needle) return true;
+    const blob = [
+      row.action, row.customer, row.job, row.actor, row.target, row.result,
+      row.detail, row.summary
+    ].map((x) => String(x || "").toLowerCase()).join(" ");
+    return blob.includes(needle);
+  });
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty">${
+      activityRows.length
+        ? "No activity matches that filter."
+        : "No recent billing activity yet. Finalize an estimate or open an invoice and events will show here."
+    }</div>`;
+    return;
+  }
+  el.innerHTML = rows.map((row) => {
+    const action = esc(row.action || row.summary || "event");
+    const who = esc(row.actor || row.customer || "");
+    const job = esc(row.job || row.target || "");
+    const when = esc(formatWhen(row.time || row.ts || row.created_at));
+    return `<div class="act-row">
+      <div><b>${action}</b>${who ? " · " + who : ""}${job ? " · " + job : ""}</div>
+      <div class="when">${when}</div>
+    </div>`;
+  }).join("");
+}
+
+async function loadHub() {
+  try {
+    const r = await fetch("/ui/api/billing/hub");
+    const body = await r.json();
+    if (!r.ok || body.ok === false) {
+      const d = body.detail || body;
+      showStatus("err",
+        `<b>${esc(d.code || "ERROR")}</b> — ${esc(d.detail || "Couldn't load the billing queues.")}<br>${esc(d.advice || "Confirm you have the invoice grant and Monday is healthy on /health.")}`);
+      renderQueue($("#queue-ready"), [], "Queue unavailable — see the error above.");
+      renderQueue($("#queue-bids"), [], "Queue unavailable.");
+      renderQueue($("#queue-projects"), [], "Queue unavailable.");
+      return;
+    }
+    clearStatus();
+    const q = body.queues || {};
+    const c = body.counts || {};
+    $("#count-ready").textContent = String(c.ready_to_invoice ?? (q.ready_to_invoice || []).length);
+    $("#count-bids").textContent = String(c.accepted_bids ?? (q.accepted_bids || []).length);
+    $("#count-projects").textContent = String(c.projects_billing ?? (q.projects_billing || []).length);
+
+    renderQueue($("#queue-ready"), q.ready_to_invoice,
+      "Nothing in Ready to Invoice. When Ops moves a finished job into that Monday group, it appears here — then open Invoice from the row.");
+    renderQueue($("#queue-bids"), q.accepted_bids,
+      "No accepted bids waiting. Won deals that still need a Job Start handoff will list here.");
+    renderQueue($("#queue-projects"), q.projects_billing,
+      "No Projects rows with an Invoice Status set (beyond Not Started).");
+
+    if ((body.notes || []).length) {
+      showStatus("warn", "<b>Heads up</b><ul style='margin:6px 0 0;padding-left:18px;'>" +
+        body.notes.map((n) => `<li>${esc(n)}</li>`).join("") + "</ul>");
+    }
+    $("#hub-meta").textContent =
+      `Updated ${body.generated_at || "—"} · search ${body.search_backend || "—"}`;
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}. Reload the page, or open /ui/invoice and look up by Project # until Billing is back.`);
+  }
+}
+
+async function loadActivity() {
+  try {
+    const r = await fetch("/ui/api/billing/activity?limit=30");
+    const body = await r.json();
+    if (!r.ok || body.ok === false) {
+      $("#activity-list").innerHTML =
+        `<div class="empty">Activity feed isn't wired yet, or logging is unavailable. The integrator adds GET /ui/api/billing/activity — until then, use /ui/activity.</div>`;
+      return;
+    }
+    activityRows = body.events || body.items || body.activity || [];
+    renderActivity($("#act-filter").value);
+  } catch (e) {
+    $("#activity-list").innerHTML =
+      `<div class="empty">Couldn't load activity (${esc(e.message)}). Try /ui/activity, or ask an admin if Cloud Logging access is missing.</div>`;
+  }
+}
+
+async function checkHealth() {
+  try {
+    const r = await fetch("/health"); const h = await r.json();
+    const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
+    $("#health").innerHTML =
+      `<span>${dot(h.monday_configured)} Monday</span>` +
+      `<span>${dot(h.slack_configured)} Slack</span>`;
+  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+}
+
+$("#billing-q").addEventListener("input", onSearchInput);
+$("#billing-q").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); clearTimeout(searchTimer); runSearch($("#billing-q").value); }
+});
+$("#act-filter").addEventListener("input", () => renderActivity($("#act-filter").value));
+
+checkHealth();
+loadHub();
+loadActivity();
+</script>
+</body>
+</html>
