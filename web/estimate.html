@@ -207,6 +207,9 @@
       <div class="grid">
         <div><label>Estimate number <span class="opt">(leave blank — auto-assigned)</span></label><input name="identifier" placeholder="auto: YYYY-MMDD-NNN" />
           <div class="hint">Assigned by the service as <code>{year}-{monthday}-{NNN}</code> (e.g. <code>2026-0611-001</code>). Only fill this to re-issue a specific number.</div></div>
+        <div><label>Plan Folder # <span class="opt">(optional — Jake's numbered Drive folder)</span></label>
+          <input name="plan_folder_number" inputmode="numeric" placeholder="341" />
+          <div class="hint">Leading number of Jake's plan folder (e.g. <code>341</code>). Prefills from the Bid Board; saved back on Accept, and the PDF is also filed there.</div></div>
         <div><label>Date</label><input name="date" type="date" required /></div>
         <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input name="expiry_date" type="date" /></div>
         <div class="full" id="revise-row" style="display:none;">
@@ -344,6 +347,7 @@ function collectData() {
   // Carried from a Monday Bid Board prefill so finalize writes back to that
   // exact item instead of name-matching (Monday = source of truth).
   if (val("job_monday_item_id")) job.monday_item_id = Number(val("job_monday_item_id"));
+  if (val("plan_folder_number")) job.plan_folder_number = val("plan_folder_number");
 
   const line_items = [];
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
@@ -795,6 +799,7 @@ function applyData(p) {
   setField("client_email", c.email); setField("client_phone", c.phone);
   setField("job_name", j.name); setField("job_location", j.location);
   setField("job_monday_item_id", j.monday_item_id);
+  setField("plan_folder_number", j.plan_folder_number);
   setField("project_type", j.project_type || "residential"); setField("scope_summary", j.scope_summary);
   setField("identifier", e.identifier); setField("date", e.date || new Date().toISOString().slice(0, 10));
   setField("expiry_date", e.expiry_date);
