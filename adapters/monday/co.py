@@ -22,9 +22,10 @@ warning (WARN + ALLOW, locked 2026-07-16) — the linked invoice is never
 touched.
 
 LEGACY: the subitem functions (create_co_subitem, list_billable_cos,
-mark_billed*) are kept for pre-2026-07 COs and the invoice CO-billing
-writeback, which still targets subitem columns. They are no longer called at
-CO create time.
+mark_billed / mark_billed_batch's monday_subitem_id path) are kept for
+pre-2026-07 COs. Invoice CO-billing writeback prefers top-level item ids
+(monday_item_id → mark_billed_item); subitem ids still work for old rows.
+Subitem helpers are no longer called at CO create time.
 
 Linking (unchanged): PREFER the Monday Project item (pasted URL or the new
 text search); a pasted Drive folder URL is the backup — find_project_by_folder
@@ -100,6 +101,7 @@ CO_COL_BILLED_INVOICE = "link_mm4cb2wm"    # "CO Billed Invoice" (added 2026-06-
 
 CO_STATUS_DRAFTED = "Drafted"
 CO_STATUS_BILLED = "Billed"
+CO_STATUS_VOID = "Void"
 
 
 def _link_url(raw_value: Optional[str]) -> Optional[str]:
@@ -344,7 +346,7 @@ def list_co_items(mc, base_number: str) -> list[dict]:
     """
     Top-level CO items for a base (estimate) number: Projects items whose
     Project # column contains `-{base}` and parses as CO.{n}-{base}.
-    Returns [{item_id, identifier, status, name, url}].
+    Returns [{item_id, identifier, status, amount, name, url}].
     """
     from subsystems.change_order.number import parse_co_number
 
@@ -360,12 +362,13 @@ def list_co_items(mc, base_number: str) -> list[dict]:
           items {
             id
             name
-            column_values(ids: ["%s", "%s"]) { id text }
+            column_values(ids: ["%s", "%s", "%s"]) { id text }
           }
         }
       }
     }
-    """ % (P_COL_PROJECT_NUMBER, P_COL_PROJECT_NUMBER, CO_ITEM_COL_STATUS)
+    """ % (P_COL_PROJECT_NUMBER, P_COL_PROJECT_NUMBER, CO_ITEM_COL_STATUS,
+           CO_ITEM_COL_AMOUNT)
     data = mc._query(query, {"boardId": [str(PROJECTS_BOARD_ID)],
                              "value": f"-{base}"})
     out: list[dict] = []
@@ -377,14 +380,46 @@ def list_co_items(mc, base_number: str) -> list[dict]:
             parsed = parse_co_number(ident)
             if not parsed or parsed[1] != base:
                 continue
+            amount = None
+            raw_amt = texts.get(CO_ITEM_COL_AMOUNT) or ""
+            if raw_amt:
+                try:
+                    amount = float(raw_amt.replace(",", "").replace("$", ""))
+                except ValueError:
+                    amount = None
             out.append({
                 "item_id": int(item["id"]),
                 "identifier": ident,
                 "status": texts.get(CO_ITEM_COL_STATUS) or None,
+                "amount": amount,
                 "name": (item.get("name") or "").strip(),
                 "url": _item_url(PROJECTS_BOARD_ID, int(item["id"])),
             })
     out.sort(key=lambda c: c["identifier"])
+    return out
+
+
+def _is_unbilled_co_status(status: Optional[str]) -> bool:
+    """True when a top-level CO status is eligible for the invoice picker."""
+    label = (status or "").strip().lower()
+    if not label:
+        return True
+    return label not in {CO_STATUS_BILLED.lower(), CO_STATUS_VOID.lower()}
+
+
+def list_unbilled_co_items(mc, base_number: str) -> list[dict]:
+    """
+    Top-level CO items for a base number that are not yet Billed (and not Void).
+    Shape matches list_co_items, plus co_number (= identifier) for the invoice
+    picker / billed_change_orders payload.
+    """
+    out: list[dict] = []
+    for c in list_co_items(mc, base_number):
+        if not _is_unbilled_co_status(c.get("status")):
+            continue
+        row = dict(c)
+        row["co_number"] = c.get("identifier")
+        out.append(row)
     return out
 
 
@@ -911,6 +946,24 @@ def mark_billed(mc, subitem_id: int, *, invoice_identifier: str,
     _set_subitem_columns(mc, subitem_id, values)
 
 
+def mark_billed_item(mc, item_id: int, *, invoice_identifier: str,
+                     invoice_url: Optional[str] = None) -> None:
+    """
+    NEW MODEL: flip one top-level CO item to Status=Billed.
+    Idempotent: re-running writes the same Status=Billed value.
+    `invoice_identifier` / `invoice_url` are accepted for call-site parity with
+    the legacy helper (and future link-column support); the current top-level
+    CO columns only carry Status/Amount/PDF/Gmail, so status is what we write.
+    """
+    _ = (invoice_identifier, invoice_url)  # reserved for forward-compat / call parity
+    _update_item(
+        mc,
+        PROJECTS_BOARD_ID,
+        int(item_id),
+        {CO_ITEM_COL_STATUS: {"label": CO_STATUS_BILLED}},
+    )
+
+
 def mark_billed_batch(
     billed_change_orders: list[dict],
     *,
@@ -918,12 +971,19 @@ def mark_billed_batch(
     invoice_url: Optional[str] = None,
 ) -> dict:
     """
-    LEGACY: graceful batch writeback called from the invoice LIVE step. For
-    each referenced CO, flip its subitem to Billed + link the invoice. NEVER
-    raises; returns {co_billed: [...], co_billing_errors: [...]}.
+    Graceful batch writeback called from the invoice LIVE step.
+
+    Prefers the NEW top-level CO model when a ref carries `monday_item_id`
+    (mark_billed_item). Falls back to LEGACY subitem ids via
+    `monday_subitem_id` (mark_billed) for pre-2026-07 COs. NEVER raises;
+    returns {co_billed: [...], co_billing_errors: [...]}.
+    Idempotent: re-running writes the same Billed values.
     """
     report: dict = {"co_billed": [], "co_billing_errors": []}
-    refs = [r for r in (billed_change_orders or []) if (r or {}).get("monday_subitem_id")]
+    refs = [
+        r for r in (billed_change_orders or [])
+        if (r or {}).get("monday_item_id") or (r or {}).get("monday_subitem_id")
+    ]
     if not refs:
         return report
     try:
@@ -934,13 +994,27 @@ def mark_billed_batch(
             report["co_billing_status"] = f"SKIPPED — {e}"
             return report
         for r in refs:
-            co_no = r.get("co_number") or str(r["monday_subitem_id"])
+            item_id = r.get("monday_item_id")
+            sub_id = r.get("monday_subitem_id")
+            co_no = r.get("co_number") or str(item_id or sub_id)
             try:
-                mark_billed(mc, int(r["monday_subitem_id"]),
-                            invoice_identifier=invoice_identifier, invoice_url=invoice_url)
+                if item_id:
+                    mark_billed_item(
+                        mc, int(item_id),
+                        invoice_identifier=invoice_identifier,
+                        invoice_url=invoice_url,
+                    )
+                else:
+                    mark_billed(
+                        mc, int(sub_id),
+                        invoice_identifier=invoice_identifier,
+                        invoice_url=invoice_url,
+                    )
                 report["co_billed"].append(co_no)
             except Exception as e:  # noqa: BLE001 — one CO failing must not strand the others
-                report["co_billing_errors"].append({"co_number": co_no, "error": f"{type(e).__name__}: {e}"})
+                report["co_billing_errors"].append(
+                    {"co_number": co_no, "error": f"{type(e).__name__}: {e}"}
+                )
                 print(f"[monday-co] mark_billed failed for {co_no}: {e}", file=sys.stderr)
         return report
     except Exception as e:  # noqa: BLE001

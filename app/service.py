@@ -1123,6 +1123,42 @@ def ui_invoice_lookup(request: Request, project_number: str = "") -> dict:
     return {"ok": True, "prefill": prefill}
 
 
+
+@app.get("/ui/api/invoice/billable-cos")
+def ui_invoice_billable_cos(request: Request, project_number: str = "") -> dict:
+    """
+    List unbilled top-level Change Orders for a Project # (CO.{n}-{base}).
+    Used by the invoice CO picker. Read-only; excludes Billed and Void.
+    """
+    email = require_feature(request, "invoice")
+    pn = (project_number or "").strip()
+    if not pn:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
+                    "detail": "Enter a Project # to list billable change orders.",
+                    "advice": "Look up a project first, or type its Project #."},
+        )
+    try:
+        mc = MondayClient()
+        cos = monday_co.list_unbilled_co_items(mc, pn)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "MONDAY_LOOKUP_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Confirm the project exists and has CO items on the Projects board."},
+        )
+    activity.log_event("invoice.billable_cos", actor=email, target=pn, count=len(cos))
+    return {"ok": True, "project_number": pn, "change_orders": cos}
+
+
 @app.get("/ui/api/invoice/customer-search")
 def ui_invoice_customer_search(request: Request, q: str = "") -> dict:
     """
