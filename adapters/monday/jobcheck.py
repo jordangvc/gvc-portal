@@ -43,10 +43,11 @@ CONTEXT_COL_LOCATION = "lookup_mknf1rdw"        # "Job Location" (mirror)
 CONTEXT_COL_PROJECT_STATUS = "mirror3"          # "Project Status" (mirror)
 CONTEXT_COL_OPS_OWNER = "multiple_person_mm1ht2vj"  # "Ops. Owner"
 CONTEXT_COL_OVERDUE = "color_mm1x2172"          # "Overdue" (automation-owned)
+CONTEXT_COL_PROGRESS = "lookup_mkpeqd8w"        # mirrored Progress (read-only)
 
 CONTEXT_COLUMN_IDS = (
     CONTEXT_COL_PROJECT_LINK, CONTEXT_COL_LOCATION, CONTEXT_COL_PROJECT_STATUS,
-    CONTEXT_COL_OPS_OWNER, CONTEXT_COL_OVERDUE,
+    CONTEXT_COL_OPS_OWNER, CONTEXT_COL_OVERDUE, CONTEXT_COL_PROGRESS,
 )
 
 # A job whose parent project was lost/cancelled shouldn't be in the crew's
@@ -324,3 +325,158 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any]) -> dict:
     if written:
         monday_cache.invalidate("list:jobcheck:active_jobs")
     return {"written": sorted(written), "failed": failed}
+
+
+# ---------------------------------------------------------------------------
+# Monday updates (view + post) — Operations item only; never auto-changes Stage
+# ---------------------------------------------------------------------------
+
+def list_item_updates(mc, item_id: int, *, limit: int = 25) -> list[dict]:
+    """
+    Recent updates on ONE Ops item, newest first:
+      [{id, body, created_at, creator_name, creator_email}, ...]
+    Adapted from adapters/monday/jobstart.fetch_item_updates (structured for UI).
+    Read-only.
+    """
+    if not item_id:
+        return []
+    query = """
+    query ($itemIds: [ID!], $limit: Int!) {
+      items(ids: $itemIds) {
+        id
+        updates(limit: $limit) {
+          id
+          body
+          created_at
+          creator { id name email }
+        }
+      }
+    }
+    """
+    data = mc._query(query, {"itemIds": [str(int(item_id))], "limit": int(limit)})
+    rows: list[dict] = []
+    for item in data.get("items") or []:
+        for upd in item.get("updates") or []:
+            body = (upd.get("body") or "").strip()
+            if not body:
+                continue
+            creator = upd.get("creator") or {}
+            rows.append({
+                "id": str(upd.get("id") or ""),
+                "body": body,
+                "created_at": upd.get("created_at") or "",
+                "creator_name": (creator.get("name") or "").strip() or None,
+                "creator_email": (creator.get("email") or "").strip() or None,
+            })
+    rows.sort(key=lambda r: r.get("created_at") or "", reverse=True)
+    return rows
+
+
+def create_item_update(mc, item_id: int, body: str) -> dict:
+    """
+    Post a Monday update on an Operations item. Does NOT touch Stage or any
+    column — updates only. Raises ValueError on empty body.
+    """
+    body = (body or "").strip()
+    if not body:
+        raise ValueError("update body required")
+    query = """
+    mutation ($itemId: ID!, $body: String!) {
+      create_update (item_id: $itemId, body: $body) { id }
+    }
+    """
+    data = mc._query(query, {"itemId": str(int(item_id)), "body": body})
+    return data.get("create_update") or {}
+
+
+def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
+    """
+    Resolve Ops item → linked Projects item → GFolder Link (link_mkwr6ef9).
+
+    Returns {
+      gfolder_url, folder_id, project_item_id, error?
+    }
+    `error` is a clear human message when the chain is incomplete (no linked
+    project, missing GFolder, or unparseable URL). Never raises for missing
+    data — callers decide whether to fail hard (photo upload) or warn.
+    """
+    from adapters.drive import folder_id_from_url
+    from shared.boards import PROJECTS_GFOLDER_COL
+
+    out: dict = {
+        "gfolder_url": None,
+        "folder_id": None,
+        "project_item_id": None,
+        "error": None,
+    }
+    col = CONTEXT_COL_PROJECT_LINK
+    gcol = PROJECTS_GFOLDER_COL
+    q1 = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) {
+          id
+          text
+          ... on BoardRelationValue { linked_item_ids }
+        }
+      }
+    }
+    """
+    try:
+        data = mc._query(q1, {"ids": [str(int(ops_item_id))], "cols": [col]})
+    except Exception as e:  # noqa: BLE001
+        out["error"] = f"Couldn't read the linked project ({type(e).__name__})."
+        return out
+    items = data.get("items") or []
+    if not items:
+        out["error"] = f"Operations item {ops_item_id} not found."
+        return out
+    linked_ids: list[str] = []
+    for cv in items[0].get("column_values") or []:
+        if cv.get("id") != col:
+            continue
+        linked_ids = [str(x) for x in (cv.get("linked_item_ids") or [])]
+        break
+    if not linked_ids:
+        out["error"] = ("No linked Projects item on this Operations task "
+                        "(link_to_projects is empty).")
+        return out
+    out["project_item_id"] = int(linked_ids[0])
+
+    q2 = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) { id text }
+      }
+    }
+    """
+    try:
+        data2 = mc._query(q2, {"ids": linked_ids[:3], "cols": [gcol]})
+    except Exception as e:  # noqa: BLE001
+        out["error"] = f"Couldn't read GFolder Link ({type(e).__name__})."
+        return out
+    gurl = None
+    for it in data2.get("items") or []:
+        for cv in it.get("column_values") or []:
+            if cv.get("id") == gcol and (cv.get("text") or "").strip():
+                gurl = (cv.get("text") or "").strip()
+                out["project_item_id"] = int(it["id"])
+                break
+        if gurl:
+            break
+    if not gurl:
+        out["error"] = ("No GFolder Link on the linked Projects item. "
+                        "Ask office to paste the project Drive folder URL "
+                        "into Monday's GFolder Link column.")
+        return out
+    out["gfolder_url"] = gurl
+    folder_id = folder_id_from_url(gurl)
+    if not folder_id:
+        out["error"] = (f"GFolder Link isn't a recognizable Drive folder URL: "
+                        f"{gurl!r}")
+        return out
+    out["folder_id"] = folder_id
+    return out
+

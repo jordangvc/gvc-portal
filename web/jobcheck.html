@@ -92,6 +92,18 @@
   .btn.gold:disabled { opacity: .6; cursor: default; filter: none; }
   #dirtycount { font-size: var(--gvc-fs-small); color: var(--gvc-muted); white-space: nowrap; }
 
+
+  .updlist { display: grid; gap: 10px; max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
+  .upd { border: 1px solid var(--gvc-line-soft); border-radius: var(--gvc-r); padding: 10px 12px; background: var(--gvc-bg); }
+  .upd .meta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-bottom: 4px; }
+  .upd .body { font-size: var(--gvc-fs-small); white-space: pre-wrap; word-break: break-word; }
+  .actrow { display: grid; gap: 10px; }
+  .actrow .btnrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .btn.secondary { background: var(--gvc-surface); color: var(--gvc-ink); border: 1px solid var(--gvc-line);
+    border-radius: var(--gvc-r-lg); min-height: 48px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
+  .btn.secondary:disabled { opacity: .6; cursor: default; }
+  .filepick { font-size: var(--gvc-fs-small); }
+
   @media (max-width: 640px) {
     .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
     .gvc-wordmark { font-size: 15px; }
@@ -136,6 +148,30 @@
     <div id="fields"></div>
     <div class="hint">Only the fields you change are saved. Money and contract columns can't be
       edited here by design.</div>
+  </div>
+
+  <div class="card" id="updatescard" style="display:none;">
+    <h2>Monday updates</h2>
+    <div id="updlist" class="updlist"><div class="hint">Loading updates…</div></div>
+    <div class="actrow">
+      <textarea id="updtext" placeholder="Post a Monday update for this job…" rows="3"></textarea>
+      <div class="btnrow">
+        <button class="btn secondary" id="updpost" type="button">Post update</button>
+      </div>
+      <div class="hint">Posts to the Operations item. Does not change Stage.</div>
+    </div>
+  </div>
+
+  <div class="card" id="photocard" style="display:none;">
+    <h2>Site photos</h2>
+    <div class="actrow">
+      <input class="filepick" id="photos" type="file" accept="image/*" capture="environment" multiple />
+      <textarea id="photonote" placeholder="Optional note for the Monday update…" rows="2"></textarea>
+      <div class="btnrow">
+        <button class="btn secondary" id="photoupload" type="button">Upload photos</button>
+      </div>
+      <div class="hint">Uploads into the project Drive folder → Pictures, then notes the links on a Monday update. Needs GFolder Link on the linked Projects item.</div>
+    </div>
   </div>
 </main>
 
@@ -222,6 +258,7 @@ function renderContext(job) {
     job.location ? `<span>${esc(job.location)}</span>` : "",
     job.ops_owner ? `<span>Ops owner <b>${esc(job.ops_owner)}</b></span>` : "",
     job.project_status ? `<span>Project status <b>${esc(job.project_status)}</b></span>` : "",
+    job.progress ? `<span>Progress <b>${esc(job.progress)}</b></span>` : "",
     // "Overdue" is set by a Monday automation — read-only context, and only
     // worth showing when it's actually flagging something.
     job.overdue && job.overdue.toLowerCase() !== "clear"
@@ -353,7 +390,10 @@ async function loadJob(itemId) {
     $("#pickcard").style.display = "none";
     $("#ctxcard").style.display = "";
     $("#formcard").style.display = "";
+    $("#updatescard").style.display = "";
+    $("#photocard").style.display = "";
     $("#savebar").classList.add("show");
+    loadUpdates();
     window.scrollTo({ top: 0 });
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}`);
@@ -365,6 +405,11 @@ function backToList() {
   detail = null;
   $("#ctxcard").style.display = "none";
   $("#formcard").style.display = "none";
+  $("#updatescard").style.display = "none";
+  $("#photocard").style.display = "none";
+  $("#updtext").value = "";
+  $("#photonote").value = "";
+  $("#photos").value = "";
   $("#savebar").classList.remove("show");
   $("#pickcard").style.display = "";
   hideStatus();
@@ -429,6 +474,128 @@ async function save() {
   }
 }
 
+
+/* ---------- Monday updates ---------- */
+
+function fmtWhen(iso) {
+  if (!iso) return "";
+  try {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return iso;
+    return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+  } catch (e) { return iso; }
+}
+
+function renderUpdates(updates) {
+  if (!updates || !updates.length) {
+    $("#updlist").innerHTML = `<div class="hint">No Monday updates yet on this job.</div>`;
+    return;
+  }
+  $("#updlist").innerHTML = updates.map((u) => {
+    const who = u.creator_name || u.creator_email || "Monday";
+    const when = fmtWhen(u.created_at);
+    return `<div class="upd"><div class="meta">${esc(who)}${when ? " · " + esc(when) : ""}</div>
+      <div class="body">${esc(u.body)}</div></div>`;
+  }).join("");
+}
+
+async function loadUpdates() {
+  if (!detail?.job?.item_id) return;
+  $("#updlist").innerHTML = `<div class="hint">Loading updates…</div>`;
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}/updates`);
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      $("#updlist").innerHTML = `<div class="hint">${esc(d.detail || "Couldn't load updates.")}</div>`;
+      return;
+    }
+    renderUpdates(body.updates || []);
+  } catch (e) {
+    $("#updlist").innerHTML = `<div class="hint">Network error — ${esc(e.message)}</div>`;
+  }
+}
+
+async function postUpdate() {
+  if (!detail?.job?.item_id) return;
+  const text = ($("#updtext").value || "").trim();
+  if (!text) {
+    showStatus("err", "Write an update before posting.");
+    return;
+  }
+  const btn = $("#updpost");
+  btn.disabled = true;
+  btn.textContent = "Posting…";
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}/updates`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ text }),
+    });
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't post the update.")}<br>${esc(d.advice || "")}`);
+      return;
+    }
+    $("#updtext").value = "";
+    showStatus("ok", "✔ Update posted to Monday.");
+    await loadUpdates();
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Post update";
+  }
+}
+
+/* ---------- photos ---------- */
+
+async function uploadPhotos() {
+  if (!detail?.job?.item_id) return;
+  const input = $("#photos");
+  const files = input.files ? Array.from(input.files) : [];
+  if (!files.length) {
+    showStatus("err", "Choose at least one photo first.");
+    return;
+  }
+  const btn = $("#photoupload");
+  btn.disabled = true;
+  btn.textContent = "Uploading…";
+  hideStatus();
+  try {
+    const fd = new FormData();
+    const note = ($("#photonote").value || "").trim();
+    if (note) fd.append("note", note);
+    files.forEach((f) => fd.append("files", f, f.name));
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}/photos`, {
+      method: "POST",
+      body: fd,
+    });
+    const body = await r.json();
+    if (!r.ok || (!body.ok && !(body.uploaded || []).length)) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Photo upload failed.")}<br>${esc(d.advice || "")}`);
+      return;
+    }
+    const n = (body.uploaded || []).length;
+    const failN = (body.failures || []).length;
+    input.value = "";
+    $("#photonote").value = "";
+    if (failN) {
+      showStatus("err", `Uploaded ${n} photo(s); ${failN} failed. Monday update posted for the ones that landed.`);
+    } else {
+      showStatus("ok", `✔ Uploaded ${n} photo${n === 1 ? "" : "s"} to Drive Pictures and noted them on Monday.`);
+    }
+    await loadUpdates();
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Upload photos";
+  }
+}
+
 /* ---------- boot ---------- */
 
 async function checkHealth() {
@@ -442,6 +609,8 @@ async function checkHealth() {
 $("#search").addEventListener("input", renderJobList);
 $("#changejob").addEventListener("click", backToList);
 $("#save").addEventListener("click", save);
+$("#updpost").addEventListener("click", postUpdate);
+$("#photoupload").addEventListener("click", uploadPhotos);
 checkHealth();
 loadJobs();
 </script>

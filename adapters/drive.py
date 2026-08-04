@@ -59,6 +59,28 @@ def folder_id_from_url(url: str) -> Optional[str]:
     return None
 
 
+
+
+def pick_pictures_folder(children: list) -> Optional[dict]:
+    """
+    PURE. Among Drive child folders named exactly "Pictures" (case-insensitive),
+    return the most recently modified one: {id, name, modifiedTime?}.
+
+    Spec (docs/MORNING_BRIEF_BUILD_SPEC.md): if multiple Pictures folders exist,
+    automatically use the most recently modified. Returns None when none match.
+    """
+    pics = []
+    for child in children or []:
+        if (child.get("mimeType") or "") != "application/vnd.google-apps.folder":
+            continue
+        if (child.get("name") or "").strip().lower() != "pictures":
+            continue
+        pics.append(child)
+    if not pics:
+        return None
+    pics.sort(key=lambda c: c.get("modifiedTime") or "", reverse=True)
+    return pics[0]
+
 def slug_for_path(s: str, *, max_len: int = 80) -> str:
     """
     Sanitize a string for use in a Drive folder/file name.
@@ -334,6 +356,31 @@ class DriveUploader:
             .execute()
         )
         return created["id"]
+
+
+    def resolve_project_pictures_folder(self, project_folder_id: str) -> dict:
+        """
+        Resolve (or create) the Pictures subfolder under a project Drive folder.
+
+        Convention: GFolder Link → exact project folder → Pictures
+        (docs/MORNING_BRIEF_BUILD_SPEC.md). Never creates employee/date-named
+        media folders. If multiple Pictures children exist, uses the most
+        recently modified. If none exist, creates one.
+
+        Returns {folder_id, created, web_view_link?}.
+        """
+        if not project_folder_id:
+            raise ValueError("project_folder_id is required")
+        children = self._list_children(project_folder_id, folders_only=True)
+        existing = pick_pictures_folder(children)
+        if existing:
+            return {
+                "folder_id": existing["id"],
+                "created": False,
+                "web_view_link": existing.get("webViewLink"),
+            }
+        folder_id = self.ensure_folder("Pictures", project_folder_id)
+        return {"folder_id": folder_id, "created": True, "web_view_link": None}
 
     def list_child_names(self, parent_id: str, *, folders: bool = False) -> list[str]:
         """

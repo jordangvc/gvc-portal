@@ -106,10 +106,13 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
     {"id": "status_19",        "label": "Scheduled Day",      "type": "status"},
     {"id": "date_mm1kwzf9",    "label": "Stage Completion",   "type": "date"},
     {"id": "date_mm1ghszy",    "label": "Full Completion",    "type": "date"},
+    {"id": "date",             "label": "Start Date",         "type": "date"},
     {"id": "text_mkz4p9tk",    "label": "Scaffolding",        "type": "text"},
     {"id": "text_mkz4q570",    "label": "Heater/Cans",        "type": "text"},
     {"id": "text_mkz49r0m",    "label": "Lock Box",           "type": "text"},
     {"id": "text_mm14mhpm",    "label": "Shower Instructions", "type": "text"},
+    {"id": "color_mm02xmc0",   "label": "Window type",        "type": "status"},
+    {"id": "long_text_mkpzf3je", "label": "Open questions for Ops", "type": "long_text"},
 )
 
 
@@ -136,6 +139,11 @@ MORNING_COL_LOCATION = "lookup_mknf1rdw"
 MORNING_COL_PROJECT_LINK = "link_to_projects"
 MORNING_COL_PROJECT_STATUS = "mirror3"
 MORNING_COL_PROGRESS = "lookup_mkpeqd8w"  # mirrored Progress — may be empty
+
+# Projects-board GFolder Link — Ops items resolve here via link_to_projects.
+# Used by Job Check photo upload and Morning Brief Drive open/upload.
+PROJECTS_GFOLDER_COL = "link_mkwr6ef9"
+MORNING_PROJECTS_GFOLDER_COL = PROJECTS_GFOLDER_COL
 
 MORNING_READ_COLUMN_IDS: tuple[str, ...] = (
     MORNING_COL_OPS_OWNER,
