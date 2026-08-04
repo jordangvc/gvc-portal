@@ -27,6 +27,13 @@ import urllib.parse
 import urllib.request
 from typing import Optional
 
+from adapters.gmail import (
+    HELLO_TOKEN_PATH,
+    GmailNotConfigured,
+    create_draft,
+)
+from subsystems.estimate import qa as estimate_qa
+
 SLACK_POST_URL = "https://slack.com/api/chat.postMessage"
 SLACK_AUTH_TEST_URL = "https://slack.com/api/auth.test"
 
@@ -246,6 +253,67 @@ def notify_estimate_drafted(enriched: dict, *, channel: Optional[str] = None,
         _estimate_message(enriched, revised=revised, version=version),
         channel=channel,
     )
+
+
+def notify_estimate_qa_result(enriched: dict, qa_result: dict) -> dict:
+    """
+    After estimate finalize QA: DM the office reviewer on Slack and leave a
+    short Gmail draft TO them (never sent) summarizing pass/fail + links.
+
+    Returns a status dict suitable for writeback["qa_notify"]:
+      {slack_dm, gmail_notice, office_email, gmail_draft_url?}
+    Each of slack_dm / gmail_notice is "ok" | "error" | "skipped".
+    Never raises.
+    """
+    office = estimate_qa.office_review_email()
+    status: dict = {
+        "slack_dm": "skipped",
+        "gmail_notice": "skipped",
+        "office_email": office,
+    }
+    try:
+        slack_text = estimate_qa.format_qa_slack_message(qa_result, enriched)
+        dm = post_dm(office, slack_text)
+        if dm.get("ok"):
+            status["slack_dm"] = "ok"
+        elif dm.get("skipped"):
+            status["slack_dm"] = "skipped"
+            status["slack_dm_error"] = dm.get("error")
+        else:
+            status["slack_dm"] = "error"
+            status["slack_dm_error"] = dm.get("error")
+    except Exception as e:  # noqa: BLE001
+        status["slack_dm"] = "error"
+        status["slack_dm_error"] = f"{type(e).__name__}: {e}"
+        print(f"[slack_notify] estimate QA DM failed: {e}", file=sys.stderr)
+
+    try:
+        subject = estimate_qa.qa_email_subject(qa_result, enriched)
+        body = estimate_qa.format_qa_email_body(qa_result, enriched)
+        ident = ((enriched or {}).get("estimate") or {}).get("identifier") or ""
+        draft = create_draft(
+            to=office,
+            subject=subject,
+            body=body,
+            from_addr="hello@greenvalleycontractors.com",
+            invoice_identifier=f"QA-{ident}" if ident else "QA-estimate",
+            token_path=HELLO_TOKEN_PATH,
+        )
+        status["gmail_notice"] = "ok"
+        status["gmail_draft_url"] = draft.get("gmail_url")
+        status["gmail_draft_id"] = draft.get("draft_id")
+    except GmailNotConfigured as e:
+        status["gmail_notice"] = "skipped"
+        status["gmail_notice_error"] = str(e)
+        print(f"[slack_notify] estimate QA Gmail notice skipped: {e}",
+              file=sys.stderr)
+    except Exception as e:  # noqa: BLE001
+        status["gmail_notice"] = "error"
+        status["gmail_notice_error"] = f"{type(e).__name__}: {e}"
+        print(f"[slack_notify] estimate QA Gmail notice failed: {e}",
+              file=sys.stderr)
+
+    return status
 
 
 def _co_message(info: dict, *, revised: bool = False,

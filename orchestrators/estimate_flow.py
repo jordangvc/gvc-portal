@@ -532,24 +532,31 @@ def process_estimate(
             print(f"[finalize {identifier}] Drive save FAILED: {e}", file=sys.stderr)
 
         # 1) Gmail draft in hello@ (NOT sent). Graceful if hello@ token absent.
+        #    Compose the body once so create_draft and the post-finalize QA
+        #    see the exact same text Andrea will review.
+        client = enriched["client"]
+        email_subject = (
+            f"Green Valley Contractors — Estimate {identifier} — "
+            f"{enriched['job'].get('name','')}"
+        ).strip(" —")
+        email_body = _compose_email_body(enriched, revised=revise)
+        to_email = (client.get("email") or "").strip()
         try:
             from adapters.gmail import HELLO_TOKEN_PATH, GmailNotConfigured, create_draft
-            client = enriched["client"]
-            subject = f"Green Valley Contractors — Estimate {identifier} — {enriched['job'].get('name','')}".strip(" —")
             filename = f"{identifier} - {enriched['job'].get('name','Estimate')}.pdf"
             # CC the salesperson (the estimate's prepared_by) on the hello@ draft so
             # the sales→office handoff is visible: when the office reviews and Sends,
             # the salesperson is looped in automatically. Skip if there's no
             # salesperson email or it's the same as the client recipient.
             pb_email = ((enriched.get("prepared_by") or {}).get("email") or "").strip()
-            cc_salesperson = pb_email if (pb_email and pb_email.lower() != (client.get("email") or "").lower()) else None
+            cc_salesperson = pb_email if (pb_email and pb_email.lower() != to_email.lower()) else None
             if cc_salesperson:
                 writeback["cc_salesperson"] = cc_salesperson
             try:
                 draft = create_draft(
-                    to=client["email"],
-                    subject=subject,
-                    body=_compose_email_body(enriched, revised=revise),
+                    to=to_email,
+                    subject=email_subject,
+                    body=email_body,
                     attachment_path=output_path,
                     attachment_filename=filename,
                     from_addr=HELLO_FROM_ADDR,
@@ -621,6 +628,34 @@ def process_estimate(
             notify_finalize_degraded("Estimate", identifier, failed)
         except Exception:  # noqa: BLE001 — alerting must never break the flow
             pass
+
+        # 5) Auto-QA the hello@ draft (Andrea's manual checklist) + notify her
+        #    via Slack DM and a short office Gmail draft. Entirely non-fatal.
+        try:
+            from subsystems.estimate.qa import check_estimate_draft
+            from adapters.slack_notify import notify_estimate_qa_result
+            qa_result = check_estimate_draft(
+                enriched=enriched,
+                email_body=email_body,
+                email_subject=email_subject,
+                writeback=writeback,
+                to_email=to_email,
+            )
+            writeback["qa"] = {
+                "ok": qa_result["ok"],
+                "summary": qa_result["summary"],
+                "checks": qa_result["checks"],
+            }
+            writeback["qa_notify"] = notify_estimate_qa_result(enriched, qa_result)
+            print(
+                f"[finalize {identifier}] QA: "
+                f"{'PASS' if qa_result['ok'] else 'NEEDS FIX'} — "
+                f"{qa_result['summary']}"
+            )
+        except Exception as e:  # noqa: BLE001 — QA must never break finalize
+            writeback["qa_error"] = f"{type(e).__name__}: {e}"
+            print(f"[finalize {identifier}] QA failed (non-fatal): {e}",
+                  file=sys.stderr)
 
         return writeback
 
