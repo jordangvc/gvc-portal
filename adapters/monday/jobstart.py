@@ -62,6 +62,14 @@ except ImportError:  # pragma: no cover — cold path when cache.py isn't shippe
             return factory()
 
         @staticmethod
+        def get_or_set_swr(key, factory, *, ttl=None, stale_ttl=None):
+            return factory()
+
+        @staticmethod
+        def stale_ttl() -> float:
+            return 0.0
+
+        @staticmethod
         def invalidate(*_keys) -> None:
             return None
 
@@ -164,10 +172,11 @@ def fetch_bids(mc) -> list[dict]:
     Picker uses a slim column projection + short-TTL cache so search/reload
     isn't re-paying a full-board Monday walk every keystroke/page open.
     """
-    return monday_cache.get_or_set(
+    return monday_cache.get_or_set_swr(
         "list:jobstart:bids",
         lambda: _fetch_bids_uncached(mc),
         ttl=monday_cache.list_ttl(),
+        stale_ttl=monday_cache.stale_ttl(),
     )
 
 

@@ -66,21 +66,7 @@
     <a class="gvc-tile" data-feature="morning" href="/ui/morning">
       <div class="hub-ico">☀️</div>
       <div class="gvc-tile-name">Your Morning Brief</div>
-      <div class="gvc-tile-desc">Prep readiness, your route, blockers, and action requests — private to you, ready before the 6:45 huddle.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="morning_gm" href="/ui/morning/gm">
-      <div class="hub-ico">📋</div>
-      <div class="gvc-tile-name">GM Huddle</div>
-      <div class="gvc-tile-desc">Team prep, today's sequence, open action requests, and the 6:45 run sheet.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="morning_owner" href="/ui/morning/owner">
-      <div class="hub-ico">📡</div>
-      <div class="gvc-tile-name">Owner Pulse</div>
-      <div class="gvc-tile-desc">Exception-only — team prep, safety, and owner-level risks without the task list.</div>
+      <div class="gvc-tile-desc">Your stops, blockers, and what needs attention today — private to you, ready before the 6:45 huddle.</div>
       <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
     </a>
 
@@ -206,6 +192,9 @@
     document.getElementById('tiles').style.display = 'none';
     document.getElementById('empty').style.display = 'block';
   }
+  // Warm Monday list caches in the background so Job Start / Morning /
+  // Job Check open on last-known data instead of a cold board walk.
+  fetch('/ui/api/monday/warm', { method: 'POST', credentials: 'same-origin', keepalive: true }).catch(()=>{});
 </script>
 </body>
 </html>

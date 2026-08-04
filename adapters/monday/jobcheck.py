@@ -96,10 +96,11 @@ def fetch_active_jobs(mc) -> list[dict]:
     Short-TTL cached (see adapters/monday/cache.py) — Job Check + Field Guide
     both hit this on every page open, and the UI searches client-side.
     """
-    return monday_cache.get_or_set(
+    return monday_cache.get_or_set_swr(
         "list:jobcheck:active_jobs",
         lambda: _fetch_active_jobs_uncached(mc),
         ttl=monday_cache.list_ttl(),
+        stale_ttl=monday_cache.stale_ttl(),
     )
 
 
