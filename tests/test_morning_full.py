@@ -98,6 +98,20 @@ def test_long_term_hold():
     assert mm.is_long_term_hold(row, now=now)
 
 
+
+
+def test_link_column_url_ignores_gfolder_label():
+    from adapters.monday import jobcheck as mj
+    from adapters.drive import folder_id_from_url
+    assert mj._link_column_url({"text": "GFolder"}) is None
+    assert folder_id_from_url("GFolder") is None
+    url = "https://drive.google.com/drive/folders/1AbCdEfGhIjKlMnOpQrStUvWxYz012345"
+    assert mj._link_column_url({"url": url, "text": "GFolder"}) == url
+    assert mj._link_column_url({
+        "text": "GFolder",
+        "value": '{"url":"%s","text":"GFolder"}' % url,
+    }) == url
+
 if __name__ == "__main__":
     tests = [
         test_roles_in_features,
@@ -108,6 +122,7 @@ if __name__ == "__main__":
         test_owner_pulse_filters,
         test_financial_still_excluded,
         test_long_term_hold,
+        test_link_column_url_ignores_gfolder_label,
     ]
     failed = 0
     for fn in tests:

@@ -310,9 +310,17 @@ class DriveUploader:
             f"name = '{safe}' and {mime_clause} and "
             f"'{parent_id}' in parents and trashed = false"
         )
+        # Parent-scoped lookup must use allDrives — job folders often live
+        # outside the invoice shared-drive id pinned by `_list_kwargs`.
         result = (
             self.service.files()
-            .list(q=q, fields="files(id, name)", **self._list_kwargs())
+            .list(
+                q=q,
+                fields="files(id, name)",
+                corpora="allDrives",
+                includeItemsFromAllDrives=True,
+                supportsAllDrives=True,
+            )
             .execute()
         )
         files = result.get("files", [])
@@ -336,7 +344,11 @@ class DriveUploader:
         return created["id"]
 
     def list_child_folders(self, parent_id: str) -> list[dict]:
-        """Children folders as {id, name, modifiedTime}."""
+        """Children folders as {id, name, modifiedTime}.
+
+        Lists by parent id across all drives the SA can see — job folders are
+        often outside the invoice shared-drive id pinned by `_list_kwargs`.
+        """
         q = (f"'{parent_id}' in parents and trashed = false and "
              f"mimeType = 'application/vnd.google-apps.folder'")
         out: list[dict] = []
@@ -349,7 +361,9 @@ class DriveUploader:
                     fields="nextPageToken, files(id, name, modifiedTime)",
                     pageToken=page_token,
                     pageSize=200,
-                    **self._list_kwargs(),
+                    corpora="allDrives",
+                    includeItemsFromAllDrives=True,
+                    supportsAllDrives=True,
                 )
                 .execute()
             )

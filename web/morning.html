@@ -113,11 +113,47 @@
   #offline.show { display: block; background: var(--gvc-warn-tint); border: 1px solid #E3CFA0; color: var(--gvc-gold-dark); }
   .role-links { display: flex; flex-wrap: wrap; gap: 8px; }
   .role-links a { min-height: 40px; }
-  dialog {
-    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg); padding: 16px;
-    max-width: 420px; width: calc(100% - 32px);
+  .upd-overlay {
+    position: fixed; inset: 0; z-index: 80; display: none;
+    align-items: center; justify-content: center;
+    padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+    background: rgba(26, 62, 43, .48);
   }
-  dialog::backdrop { background: rgba(26,62,43,.45); }
+  .upd-overlay.show { display: flex; }
+  .upd-modal {
+    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
+    border-radius: var(--gvc-r-lg); box-shadow: 0 16px 40px rgba(0,0,0,.18);
+    width: 100%; max-width: 440px; max-height: min(90vh, 640px);
+    overflow: auto; display: grid;
+  }
+  .upd-hd {
+    padding: 14px 16px; border-bottom: 1px solid var(--gvc-line-soft);
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .upd-hd h2 {
+    margin: 0; font-size: var(--gvc-fs-h3, 18px); color: var(--gvc-green-dark);
+    font-weight: 700;
+  }
+  .upd-bd { padding: 16px; display: grid; gap: 12px; }
+  .upd-ft {
+    padding: 12px 16px; border-top: 1px solid var(--gvc-line-soft);
+    display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
+  }
+  .upd-ft .row-btn.gold {
+    background: var(--gvc-gold); border-color: var(--gvc-gold-dark);
+    color: var(--gvc-green-dark);
+  }
+  .upd-ft .row-btn:disabled { opacity: .55; cursor: wait; }
+  .upd-hint { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin: 0; }
+  .upd-msg {
+    display: none; padding: 10px 12px; border-radius: var(--gvc-r);
+    font-size: var(--gvc-fs-small);
+  }
+  .upd-msg.show { display: block; }
+  .upd-msg.ok { background: var(--gvc-ok-tint); border: 1px solid #bcd6c8; color: var(--gvc-green-dark); }
+  .upd-msg.warn { background: var(--gvc-warn-tint); border: 1px solid #E3CFA0; color: var(--gvc-gold-dark); }
+  .upd-msg.err { background: var(--gvc-danger-tint); border: 1px solid #E2C3BA; color: var(--gvc-danger-dark); }
+  .upd-files-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-ink-soft); }
 </style>
 </head>
 <body>
@@ -200,18 +236,34 @@
   </p>
 </main>
 
-<dialog id="updDlg">
-  <form method="dialog" id="updForm" style="display:grid;gap:10px">
-    <strong>Add update</strong>
-    <input type="hidden" id="updItem" />
-    <label>Note<textarea id="updNote"></textarea></label>
-    <label>Photos<input type="file" id="updFiles" accept="image/*" multiple capture="environment" /></label>
-    <div style="display:flex;gap:8px">
-      <button type="submit" class="row-btn" id="updGo">Confirm upload</button>
-      <button type="button" class="row-btn" id="updCancel">Cancel</button>
+<div class="upd-overlay" id="updDlg" role="dialog" aria-modal="true" aria-labelledby="updTitle" hidden>
+  <div class="upd-modal">
+    <div class="upd-hd">
+      <h2 id="updTitle">Add update</h2>
+      <button type="button" class="row-btn" id="updCancel" aria-label="Close">Close</button>
     </div>
-  </form>
-</dialog>
+    <form id="updForm">
+      <div class="upd-bd">
+        <input type="hidden" id="updItem" />
+        <p class="upd-hint">Posts a Monday update. Photos go to the job’s Pictures folder in Drive, with links on the update.</p>
+        <div class="field" style="padding:0">
+          <label for="updNote">Note</label>
+          <textarea id="updNote" placeholder="What changed on site?" rows="4"></textarea>
+        </div>
+        <div class="field" style="padding:0">
+          <label for="updFiles">Photos</label>
+          <input type="file" id="updFiles" accept="image/*" multiple capture="environment" />
+          <div class="upd-files-meta" id="updFilesMeta"></div>
+        </div>
+        <div class="upd-msg" id="updMsg" role="status"></div>
+      </div>
+      <div class="upd-ft">
+        <button type="button" class="row-btn" id="updCancel2">Cancel</button>
+        <button type="submit" class="row-btn gold" id="updGo">Post update</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <script>
 const $ = (s) => document.querySelector(s);
@@ -270,13 +322,29 @@ function renderList(el, rows, empty) {
     });
   });
   el.querySelectorAll(".js-upd").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      $("#updItem").value = btn.dataset.id;
-      $("#updNote").value = "";
-      $("#updFiles").value = "";
-      $("#updDlg").showModal();
-    });
+    btn.addEventListener("click", () => openUpdateDialog(btn.dataset.id));
   });
+}
+
+function openUpdateDialog(itemId) {
+  $("#updItem").value = itemId || "";
+  $("#updNote").value = "";
+  $("#updFiles").value = "";
+  $("#updFilesMeta").textContent = "";
+  const msg = $("#updMsg");
+  msg.className = "upd-msg";
+  msg.textContent = "";
+  $("#updGo").disabled = false;
+  const dlg = $("#updDlg");
+  dlg.hidden = false;
+  dlg.classList.add("show");
+  $("#updNote").focus();
+}
+
+function closeUpdateDialog() {
+  const dlg = $("#updDlg");
+  dlg.classList.remove("show");
+  dlg.hidden = true;
 }
 
 function renderStops(stops) {
@@ -525,17 +593,62 @@ $("#notes").addEventListener("input", () => {
   }, 600);
 });
 
-$("#updCancel").addEventListener("click", () => $("#updDlg").close());
+function setUpdMsg(kind, text) {
+  const msg = $("#updMsg");
+  msg.className = "upd-msg show " + (kind || "");
+  msg.textContent = text || "";
+}
+
+$("#updCancel").addEventListener("click", closeUpdateDialog);
+$("#updCancel2").addEventListener("click", closeUpdateDialog);
+$("#updDlg").addEventListener("click", (e) => {
+  if (e.target === $("#updDlg")) closeUpdateDialog();
+});
+$("#updFiles").addEventListener("change", () => {
+  const n = $("#updFiles").files.length;
+  $("#updFilesMeta").textContent = n
+    ? (n === 1 ? "1 photo selected" : n + " photos selected")
+    : "";
+});
 $("#updForm").addEventListener("submit", async (e) => {
   e.preventDefault();
+  const go = $("#updGo");
+  const nFiles = $("#updFiles").files.length;
+  go.disabled = true;
+  setUpdMsg("", "Posting…");
   const fd = new FormData();
   fd.append("item_id", $("#updItem").value);
   fd.append("note", $("#updNote").value);
   for (const f of $("#updFiles").files) fd.append("files", f);
-  const r = await fetch("/ui/api/morning/update", { method: "POST", body: fd });
-  const body = await r.json().catch(() => ({}));
-  if (!r.ok) alert((body.detail && body.detail.detail) || "Upload failed");
-  $("#updDlg").close();
+  try {
+    const r = await fetch("/ui/api/morning/update", { method: "POST", body: fd });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok) {
+      const detail = (body.detail && (body.detail.detail || body.detail)) || "Upload failed";
+      setUpdMsg("err", typeof detail === "string" ? detail : "Upload failed");
+      go.disabled = false;
+      return;
+    }
+    const uploaded = body.photos_uploaded || 0;
+    const requested = body.photos_requested != null ? body.photos_requested : nFiles;
+    if (body.warning) {
+      setUpdMsg("warn",
+        "Monday update posted. " + body.warning
+        + (requested ? ` (${uploaded}/${requested} photos in Drive)` : ""));
+      go.disabled = false;
+      return;
+    }
+    const photoLine = requested
+      ? (uploaded === requested
+        ? `${uploaded} photo${uploaded === 1 ? "" : "s"} saved to Drive.`
+        : `${uploaded}/${requested} photos saved to Drive.`)
+      : "No photos attached.";
+    setUpdMsg("ok", "Posted to Monday. " + photoLine);
+    setTimeout(closeUpdateDialog, 1200);
+  } catch (err) {
+    setUpdMsg("err", "Network error — try again.");
+    go.disabled = false;
+  }
 });
 
 load();
