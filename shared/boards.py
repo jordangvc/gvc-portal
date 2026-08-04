@@ -275,22 +275,24 @@ JOBSTART_FIELDS: tuple[dict, ...] = (
      "targets": (("projects", "text5"),), "required": True, "prefill": None,
      "help": "Who the crew calls from the driveway. Name and number."},
 
-    # Packet-only, but load-bearing: these address the GC scope-confirmation
-    # email. Getting the GC to reconcile our scope in writing BEFORE we
-    # mobilize is the cheapest change order we'll ever avoid.
+    # Packet-only, optional: used when Sales drafts the GC scope-confirmation
+    # email. Never part of the send/accept gate — skip anytime. Getting the GC
+    # to reconcile our scope in writing BEFORE we mobilize is still the cheapest
+    # change order we'll ever avoid when they do use it.
     {"key": "gc_pm", "label": "GC project manager", "type": "text",
      "targets": (), "required": False, "prefill": None,
-     "help": "Name of the GC's PM — the person who signs off on scope."},
+     "help": "Name of the GC's PM — the person who signs off on scope. "
+             "Optional; only needed if you draft the scope confirmation."},
 
     {"key": "gc_email", "label": "GC PM email", "type": "text",
      "targets": (), "required": False, "prefill": "mirror34",
-     "help": "Where the scope confirmation goes. Prefilled from the bid's "
-             "customer record when we have it."},
+     "help": "Where the scope confirmation goes (optional). Prefilled from "
+             "the bid's customer record when we have it."},
 
     {"key": "super_email", "label": "Site super email", "type": "text",
      "targets": (), "required": False, "prefill": None,
-     "help": "Copied on the scope confirmation, so the super can't say they "
-             "never saw it."},
+     "help": "Optional CC on the scope confirmation, so the super can't say "
+             "they never saw it."},
 
     {"key": "scope", "label": "Scope of work", "type": "long_text",
      "targets": (("projects", "details"),), "required": True,
@@ -380,15 +382,13 @@ JOBSTART_FIELDS: tuple[dict, ...] = (
      "targets": (("projects", "link"),), "required": False, "prefill": "link_1",
      "help": "Google Sheet link, if a takeoff was done."},
 
-    # Packet-only: no Monday column, appears on the PDF. Reconciling our scope
-    # with the GC's in writing before mobilization is the cheapest change order
-    # we will ever avoid — but there's no board column for it, and inventing one
-    # to hold a date isn't worth it.
+    # Packet-only: no Monday column, appears on the PDF when used. Optional —
+    # skip anytime; never part of the send/accept gate.
     {"key": "gc_confirmed_on", "label": "Scope emailed to the GC on",
      "type": "date", "targets": (), "required": False, "prefill": None,
-     "help": "Fills in by itself once the scope email actually leaves hello@ "
-             "(checked every 10 minutes). Only type it for a send that "
-             "happened outside the portal."},
+     "help": "Optional. Fills in by itself once a scope confirmation actually "
+             "leaves hello@ (checked every 10 minutes). Only type it for a "
+             "send that happened outside the portal."},
 )
 
 
