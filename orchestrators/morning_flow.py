@@ -10,10 +10,13 @@ from datetime import datetime
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
 
+from adapters.monday import jobcheck as mj
+from adapters.monday import lien as ml
 from adapters.monday import morning as mm
 from adapters.monday.client import MondayClient
 from shared import access
 from subsystems.morning import action_requests as ar
+from subsystems.morning import link_suggest as ls
 from subsystems.morning import meeting as meet
 from subsystems.morning import owner_pulse as opulse
 from subsystems.morning import personal as personal
@@ -477,8 +480,7 @@ def add_project_update(email: str, item_id: int, *, note: str,
     Monday update with the note + Drive links. Never silently drops photos —
     if files were attached, failures surface in `warning` / `drive_error`.
     """
-    from adapters.drive import DriveUploader, folder_id_from_url
-    from adapters.monday import jobcheck as mj
+    from adapters.drive import DriveUploader
 
     files = list(files or [])
     mc = MondayClient()
@@ -533,6 +535,84 @@ def add_project_update(email: str, item_id: int, *, note: str,
         "gfolder_url": gurl,
         "gfolder": ginfo,
         "warning": warning,
+    }
+
+
+def photo_ready(item_id: int) -> dict[str, Any]:
+    """
+    Read-only: is this Ops item ready for Drive photo uploads?
+    Resolves Ops → Projects → GFolder and returns photo_ready_status fields.
+    """
+    item_id = int(item_id)
+    mc = MondayClient()
+    ginfo = mj.get_linked_project_gfolder(mc, item_id)
+    status = mj.photo_ready_status(ginfo)
+    return {
+        "ok": True,
+        "item_id": item_id,
+        **status,
+        "gfolder": ginfo,
+    }
+
+
+def suggest_links(item_id: int, *, limit: int = 100) -> dict[str, Any]:
+    """
+    Read-only heuristic suggestions for Ops→Projects link and Drive folder.
+    NEVER writes Monday. Caps Projects candidates at `limit` (default 100).
+    """
+    item_id = int(item_id)
+    limit = max(1, min(int(limit or 100), 100))
+    mc = MondayClient()
+
+    item = mj.get_item_values(mc, item_id, [])
+    if item is None:
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "ITEM_NOT_FOUND",
+            "detail": f"Monday item {item_id} not found.",
+        }
+
+    ops_name = item.get("name") or ""
+    ginfo = mj.get_linked_project_gfolder(mc, item_id)
+    status = mj.photo_ready_status(ginfo)
+
+    projects = ml.fetch_active_projects(mc)[:limit]
+    project_candidates = [
+        {"id": p["item_id"], "name": p["name"], "url": p.get("url")}
+        for p in projects
+    ]
+    project_sug = ls.suggest_project_for_ops(ops_name, project_candidates)
+
+    # Drive suggestion: prefer the already-linked GFolder; else look up
+    # GFolder on the suggested Projects item and score it as a one-candidate list.
+    folder_candidates: list[dict] = []
+    if ginfo.get("folder_id") and ginfo.get("gfolder_url"):
+        folder_candidates.append({
+            "id": ginfo["folder_id"],
+            "name": ops_name,
+            "url": ginfo["gfolder_url"],
+        })
+    elif (project_sug.get("match") and not project_sug.get("ambiguous")
+          and project_sug["match"].get("id")):
+        pg = mj.get_project_gfolder(mc, int(project_sug["match"]["id"]))
+        if pg.get("folder_id"):
+            folder_candidates.append({
+                "id": pg["folder_id"],
+                "name": project_sug["match"].get("name") or ops_name,
+                "url": pg.get("gfolder_url"),
+            })
+    drive_sug = ls.suggest_drive_folder(ops_name, folder_candidates)
+
+    return {
+        "ok": True,
+        "item_id": item_id,
+        "ops_name": ops_name,
+        "photo_ready": status,
+        "current": ginfo,
+        "project": project_sug,
+        "drive": drive_sug,
+        "candidates_scanned": len(project_candidates),
     }
 
 

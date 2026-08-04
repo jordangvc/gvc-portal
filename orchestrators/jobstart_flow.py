@@ -997,10 +997,12 @@ def accept(bid_id: int, actor: str) -> dict:
     # Only on full success — a partial handoff shouldn't mint an "accepted"
     # PDF that claims Ops signed off when the Ops item never landed.
     packet_url = None
+    gfolder_write = None
     if complete:
         try:
             pdf_path, _ = _render_packet(bid, record, values, name, accepted=True)
-            from adapters.drive import DriveUploader
+            from adapters.drive import DriveUploader, drive_folder_url
+            from adapters.monday import jobcheck as mj_check
 
             uploader = DriveUploader()
             folder = uploader.ensure_handoff_folder(
@@ -1017,6 +1019,25 @@ def accept(bid_id: int, actor: str) -> dict:
                 bid_id, status=drafts.STATUS_ACCEPTED, actor=actor,
                 extra={"packet_url": packet_url,
                        "drive_folder_path": folder.get("folder_path")})
+            # Fill-if-empty Projects GFolder Link with the PROJECT folder
+            # (parent of Handoff/), never the Handoff/ leaf.
+            project_folder_id = folder.get("project_folder_id")
+            if report.get("project_id") and project_folder_id:
+                try:
+                    gfolder_write = mj_check.set_projects_gfolder_if_empty(
+                        mc, int(report["project_id"]),
+                        drive_folder_url(project_folder_id),
+                    )
+                except Exception as ge:  # noqa: BLE001 — non-fatal
+                    gfolder_write = {
+                        "ok": False, "written": False, "skipped": False,
+                        "reason": f"{type(ge).__name__}: {ge}",
+                    }
+                    warnings.append(
+                        f"GFolder Link wasn't written ({type(ge).__name__}). "
+                        f"Paste the project Drive folder into Monday by hand.")
+                    print(f"[jobstart] GFolder write failed: "
+                          f"{type(ge).__name__}: {ge}", file=sys.stderr)
         except Exception as e:  # noqa: BLE001 — Drive is graceful by contract
             warnings.append(f"The packet PDF wasn't filed to Drive "
                             f"({type(e).__name__}). The job is still accepted.")
@@ -1059,6 +1080,7 @@ def accept(bid_id: int, actor: str) -> dict:
     return {"ok": True, "complete": complete, "status": record["status"],
             "job_name": name, "packet_url": packet_url, "warnings": warnings,
             "unwritable_fields": field_error_list(unwritable),
+            "gfolder_write": gfolder_write,
             "slack": slack_status, **report}
 
 

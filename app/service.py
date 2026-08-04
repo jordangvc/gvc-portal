@@ -2518,6 +2518,45 @@ async def ui_morning_update(request: Request) -> dict:
         )
 
 
+@app.get("/ui/api/morning/photo-ready")
+def ui_morning_photo_ready(request: Request, item_id: int) -> dict:
+    """Is this Ops item's Projects → GFolder chain ready for photo uploads?"""
+    require_feature(request, "morning")
+    if not item_id:
+        raise HTTPException(status_code=422, detail={"ok": False, "detail": "item_id required"})
+    try:
+        return morning_flow.photo_ready(item_id)
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "PHOTO_READY_FAILED",
+                    "detail": f"{type(e).__name__}: {e}"},
+        )
+
+
+@app.get("/ui/api/morning/suggest-links")
+def ui_morning_suggest_links(request: Request, item_id: int,
+                             limit: int = 100) -> dict:
+    """
+    Heuristic Ops→Projects / Drive-folder suggestions (read-only — never writes).
+    """
+    require_feature(request, "morning")
+    if not item_id:
+        raise HTTPException(status_code=422, detail={"ok": False, "detail": "item_id required"})
+    try:
+        out = morning_flow.suggest_links(item_id, limit=limit)
+        if not out.get("ok") and out.get("error") == "ITEM_NOT_FOUND":
+            raise HTTPException(status_code=404, detail=out)
+        return out
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "SUGGEST_LINKS_FAILED",
+                    "detail": f"{type(e).__name__}: {e}"},
+        )
+
 
 @app.post("/ui/api/morning/meeting/start")
 def ui_morning_meeting_start(request: Request) -> dict:

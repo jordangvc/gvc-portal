@@ -24,8 +24,13 @@ from __future__ import annotations
 import sys
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date as _date
+from pathlib import Path as _Path
 from typing import Any, Optional
 
+from adapters import slack_notify
+from adapters.drive import DriveUploader
+from adapters.monday import jobcheck as mj
+from adapters.monday.client import MondayClient
 from shared import activity
 from shared import boards
 
@@ -248,9 +253,6 @@ def describe_changes(old: dict, new: dict, columns: dict[str, dict]) -> str:
 
 def list_active_jobs() -> dict:
     """Dropdown payload: every active Projects-board job, A→Z by name."""
-    from adapters.monday.client import MondayClient
-    from adapters.monday import jobcheck as mj
-
     jobs = mj.fetch_active_jobs(MondayClient())
     jobs.sort(key=lambda j: j["name"].lower())
     return {"ok": True, "count": len(jobs), "jobs": jobs}
@@ -267,29 +269,30 @@ def get_job_detail(item_id: int) -> Optional[dict]:
     field_key. project_item_id is additive on the job payload (None when
     link_to_projects is empty — trade fields stay visible but disabled).
     """
-    from adapters.monday.client import MondayClient
-    from adapters.monday import jobcheck as mj
-
     ops_cols = allowlisted_columns()
     trade_cols = allowlisted_projects_trade_columns()
     ops_ids = [c["id"] for c in ops_cols]
     trade_ids = [c["id"] for c in trade_cols]
     item_id = int(item_id)
 
-    mc_item, mc_meta, mc_link = MondayClient(), MondayClient(), MondayClient()
+    # Item values + Ops metadata + the Projects/GFolder chain are independent
+    # Monday reads. Use separate sessions because requests.Session is not
+    # thread-safe.
+    mc_item, mc_meta, mc_gf = MondayClient(), MondayClient(), MondayClient()
     with ThreadPoolExecutor(max_workers=3) as pool:
         item_fut = pool.submit(mj.get_item_values, mc_item, item_id, ops_ids)
         meta_fut = pool.submit(mj.get_board_columns, mc_meta, ops_ids)
-        link_fut = pool.submit(mj.get_linked_project_id, mc_link, item_id)
+        gf_fut = pool.submit(
+            mj.get_linked_project_gfolder, mc_gf, item_id)
         item = item_fut.result()
         meta = meta_fut.result()
-        link = link_fut.result()
+        ginfo = gf_fut.result()
     if item is None:
         return None
 
     values = item["values"]
-    project_item_id = link.get("project_item_id")
-    project_link_error = link.get("error")
+    project_item_id = ginfo.get("project_item_id")
+    project_link_error = ginfo.get("error")
 
     trade_values: dict = {}
     trade_meta: dict = {}
@@ -327,6 +330,7 @@ def get_job_detail(item_id: int) -> Optional[dict]:
             row["labels"] = m.get("labels") or []
         form_columns.append(row)
 
+    photo_ready = mj.photo_ready_status(ginfo)
     return {
         "ok": True,
         "job": {
@@ -344,8 +348,14 @@ def get_job_detail(item_id: int) -> Optional[dict]:
             "progress": values.get(mj.CONTEXT_COL_PROGRESS),
             "project_item_id": project_item_id,
             "project_link_error": project_link_error,
+            "photo_ready": photo_ready.get("photo_ready"),
+            "photo_ready_reason": photo_ready.get("photo_block_reason")
+                or photo_ready.get("reason"),
+            "gfolder_url": photo_ready.get("gfolder_url"),
+            "gfolder": ginfo,
         },
         "columns": form_columns,
+        "photo_ready": photo_ready,
     }
 
 
@@ -365,9 +375,6 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
              failures: {field_key: message}, confirmed: {field_key|col_id: text}}.
     `ok` is True only when every submitted column was written.
     """
-    from adapters.monday.client import MondayClient
-    from adapters.monday import jobcheck as mj
-
     item_id = int(item_id)
     ops_cols = allowlisted_columns()
     trade_cols = allowlisted_projects_trade_columns()
@@ -512,7 +519,6 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
     # save has nothing to announce).
     slack_status = None
     if written:
-        from adapters import slack_notify
         try:
             slack_changes = []
             for key in written:
@@ -551,9 +557,6 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
 
 def list_updates(item_id: int, *, limit: int = 25) -> dict:
     """Recent Monday updates on the Ops item for the Job Check Updates card."""
-    from adapters.monday.client import MondayClient
-    from adapters.monday import jobcheck as mj
-
     item_id = int(item_id)
     mc = MondayClient()
     # Prove the item exists (same board the form edits).
@@ -579,9 +582,6 @@ def post_update(item_id: int, text: str, actor: str) -> dict:
     if len(body) > MAX_UPDATE_LEN:
         return {"ok": False, "item_id": item_id, "error": "UPDATE_TOO_LONG",
                 "detail": f"Update too long ({len(body)} chars; max {MAX_UPDATE_LEN})."}
-
-    from adapters.monday.client import MondayClient
-    from adapters.monday import jobcheck as mj
 
     mc = MondayClient()
     before = mj.get_item_values(mc, item_id, [])
@@ -620,12 +620,6 @@ def upload_photos(item_id: int, files: list, actor: str,
     if not files:
         return {"ok": False, "item_id": item_id, "error": "NO_FILES",
                 "detail": "Choose at least one photo to upload."}
-
-    from pathlib import Path as _Path
-
-    from adapters.drive import DriveUploader
-    from adapters.monday.client import MondayClient
-    from adapters.monday import jobcheck as mj
 
     mc = MondayClient()
     before = mj.get_item_values(mc, item_id, [])

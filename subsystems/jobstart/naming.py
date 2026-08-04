@@ -411,14 +411,17 @@ def best_folder(job_name: str, folders: list) -> Optional[dict]:
     return scored[0]
 
 
-def best_match(name: str, candidates: list) -> Optional[dict]:
+def best_match(name: str, candidates: list, *,
+               threshold: float = MATCH_THRESHOLD) -> Optional[dict]:
     """
     PURE. Pick the candidate that is the same job as `name`, or None.
 
     `candidates` are dicts with at least {id, name}. An exact name match always
-    wins; otherwise the highest scorer above MATCH_THRESHOLD, and only when it
-    beats the runner-up — an ambiguous match is treated as no match, because
-    adopting the wrong item is worse than creating a new one.
+    wins; otherwise the highest scorer above `threshold` (default
+    MATCH_THRESHOLD), and only when it beats the runner-up — an ambiguous
+    match is treated as no match, because adopting the wrong item is worse
+    than creating a new one. Callers that need a stricter bar (e.g. Ops↔
+    Projects link backfill at 0.85) pass threshold explicitly.
     """
     if not name or not candidates:
         return None
@@ -431,7 +434,7 @@ def best_match(name: str, candidates: list) -> Optional[dict]:
         ({**c, "score": match_score(name, c.get("name") or "")}
          for c in candidates),
         key=lambda c: c["score"], reverse=True)
-    if not scored or scored[0]["score"] < MATCH_THRESHOLD:
+    if not scored or scored[0]["score"] < threshold:
         return None
     if len(scored) > 1 and scored[1]["score"] >= scored[0]["score"] - 0.05:
         return None                      # ambiguous ⇒ don't adopt
