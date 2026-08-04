@@ -23,6 +23,7 @@ import json
 import os
 import re
 import sys
+import threading
 from html import escape as html_escape
 from pathlib import Path
 from typing import Literal, Optional
@@ -82,6 +83,9 @@ from orchestrators import jobstart_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
+from adapters.monday import jobstart as monday_jobstart
+from adapters.monday import morning as monday_morning
+from adapters.monday import jobcheck as monday_jobcheck
 from subsystems.invoice import correct as invoice_correct
 from adapters.stripe_invoice import preflight_stripe, void_stripe_invoice
 
@@ -167,6 +171,34 @@ portal_store.MISSING_STORE_HOOK = _grants_store_missing_alert
 # ---------------------------------------------------------------------------
 # Auth
 # ---------------------------------------------------------------------------
+
+
+def _warm_monday_caches() -> dict:
+    """Best-effort: populate Job Start / Morning / Job Check list caches."""
+    warmed: list[str] = []
+    errors: dict[str, str] = {}
+    try:
+        mc = MondayClient()
+    except Exception as e:  # noqa: BLE001 — warm is best-effort
+        msg = f"{type(e).__name__}: {e}"
+        print(f"[monday:warm] client init failed: {msg}", file=sys.stderr)
+        return {"ok": False, "warmed": [], "errors": {"client": msg}}
+
+    for key, fn in (
+        ("list:jobstart:bids", lambda: monday_jobstart.fetch_bids(mc)),
+        ("list:morning:ops_items", lambda: monday_morning.fetch_ops_items(mc)),
+        ("list:jobcheck:active_jobs", lambda: monday_jobcheck.fetch_active_jobs(mc)),
+    ):
+        try:
+            fn()
+            warmed.append(key)
+        except Exception as e:  # noqa: BLE001 — keep warming the rest
+            msg = f"{type(e).__name__}: {e}"
+            errors[key] = msg
+            print(f"[monday:warm] {key} failed: {msg}", file=sys.stderr)
+
+    return {"ok": not errors, "warmed": warmed, "errors": errors}
+
 
 def require_api_key(x_api_key: Optional[str]) -> None:
     if not API_KEY:
@@ -529,6 +561,23 @@ def tasks_check_sent(
     # + code on a sweep-level problem like a missing Gmail scope) — no
     # _friendly_error translation needed here.
     return check_sent(limit_days=req.limit_days, dry_run=req.dry_run)
+
+
+
+@app.post("/v1/tasks/warm-monday")
+def tasks_warm_monday(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """
+    Best-effort warm of Monday list caches (Job Start / Morning / Job Check).
+    X-API-Key protected like check-sent — optional Cloud Scheduler trigger.
+    Returns immediately; work runs in a background thread.
+    """
+    require_api_key(x_api_key)
+    threading.Thread(
+        target=_warm_monday_caches, name="warm-monday", daemon=True
+    ).start()
+    return {"ok": True, "started": True}
 
 
 @app.post("/v1/activity/export-month")
@@ -2056,65 +2105,16 @@ def ui_lien_status(request: Request) -> dict:
 
 
 # ---------------------------------------------------------------------------
-# Morning Brief — employee daily control center + GM huddle + Owner Pulse
-# (docs/MORNING_BRIEF_BUILD_SPEC.md). `morning` is baseline; morning_gm /
-# morning_owner / morning_ops are role grants in /ui/admin.
+# Morning Brief — employee daily control center (docs/MORNING_BRIEF_BUILD_SPEC.md,
+# slice 1 2026-08-03). Gated by `morning` (baseline for every provisioned user).
 # ---------------------------------------------------------------------------
 
-class MorningPrepRequest(BaseModel):
-    criterion_id: str
-    done: bool = True
-    note: Optional[str] = None
-
-
-class MorningOriginRequest(BaseModel):
-    kind: str
-    label: Optional[str] = None
-    address: Optional[str] = None
-    lat: Optional[float] = None
-    lng: Optional[float] = None
-
-
-class MorningRouteRequest(BaseModel):
-    stops: list = Field(default_factory=list)
-    optimized: bool = False
-    mark_override: bool = False
-
-
-class MorningCompleteStopRequest(BaseModel):
-    item_id: int
-    note: Optional[str] = None
-    post_monday: bool = True
-
-
-class MorningActionRequestBody(BaseModel):
-    needed_from_email: str
-    category: str = "other"
-    need: str
-    trade_subtype: Optional[str] = None
-    project_item_id: Optional[int] = None
-    project_name: Optional[str] = None
-    due_at: Optional[str] = None
-
-
-class MorningNotesRequest(BaseModel):
-    text: str = ""
-
-
-class MorningMeetingActionRequest(BaseModel):
-    text: str
-    owner: str
-    due: Optional[str] = None
-
-
-class MorningMeetingParkingRequest(BaseModel):
-    topic: str
-    owner: str
-    follow_up: Optional[str] = None
-
-
-def _serve_morning_html(name: str, email: str) -> HTMLResponse:
-    path = WEB_DIR / name
+@app.get("/ui/morning", response_class=HTMLResponse)
+def ui_morning_page(request: Request) -> HTMLResponse:
+    """Serve the private employee Morning Brief."""
+    email = require_feature(request, "morning")
+    activity.log_event("tool.open", actor=email, target="morning")
+    path = WEB_DIR / "morning.html"
     if not path.exists():
         raise HTTPException(
             status_code=500,
@@ -2125,34 +2125,24 @@ def _serve_morning_html(name: str, email: str) -> HTMLResponse:
     return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
 
 
-@app.get("/ui/morning", response_class=HTMLResponse)
-def ui_morning_page(request: Request) -> HTMLResponse:
-    email = require_feature(request, "morning")
-    activity.log_event("tool.open", actor=email, target="morning")
-    return _serve_morning_html("morning.html", email)
 
-
-@app.get("/ui/morning/gm", response_class=HTMLResponse)
-def ui_morning_gm_page(request: Request) -> HTMLResponse:
-    email = require_feature(request, "morning_gm")
-    activity.log_event("tool.open", actor=email, target="morning_gm")
-    return _serve_morning_html("morning-gm.html", email)
-
-
-@app.get("/ui/morning/owner", response_class=HTMLResponse)
-def ui_morning_owner_page(request: Request) -> HTMLResponse:
-    email = require_feature(request, "morning_owner")
-    # Superadmins also reach Owner Pulse via morning_role — allow morning feature
-    # if they hold owner flag through superadmin even without explicit grant.
-    from shared.access import morning_role
-    if not morning_role(email).get("is_owner"):
-        require_feature(request, "morning_owner")
-    activity.log_event("tool.open", actor=email, target="morning_owner")
-    return _serve_morning_html("morning-owner.html", email)
+@app.post("/ui/api/monday/warm")
+def ui_monday_warm(request: Request) -> dict:
+    """
+    Hub-triggered warm of Monday list caches. Any signed-in portal user can
+    kick this; the hub fires it after tile filtering so Job Start / Morning /
+    Job Check open on last-known data. Returns immediately.
+    """
+    require_ui_access(request)
+    threading.Thread(
+        target=_warm_monday_caches, name="ui-warm-monday", daemon=True
+    ).start()
+    return {"ok": True, "started": True}
 
 
 @app.get("/ui/api/morning/brief")
 def ui_morning_brief(request: Request) -> dict:
+    """Personalized employee brief from live Operations-board data."""
     email = require_feature(request, "morning")
     try:
         return morning_flow.build_employee_brief(email)
@@ -2174,6 +2164,7 @@ def ui_morning_brief(request: Request) -> dict:
 
 @app.get("/ui/api/morning/hub")
 def ui_morning_hub(request: Request) -> dict:
+    """Compact hub-tile summary (same personalization as the full brief)."""
     email = require_feature(request, "morning")
     try:
         return morning_flow.hub_summary(email)
@@ -2191,217 +2182,6 @@ def ui_morning_hub(request: Request) -> dict:
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Check Cloud Run logs for [morning] / Monday errors."},
         )
-
-
-@app.get("/ui/api/morning/gm")
-def ui_morning_gm_api(request: Request) -> dict:
-    email = require_feature(request, "morning_gm")
-    try:
-        out = morning_flow.build_gm_view(email)
-        if not out.get("ok"):
-            raise HTTPException(status_code=403, detail=out)
-        return out
-    except HTTPException:
-        raise
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(
-            status_code=502,
-            detail={"ok": False, "code": "MORNING_GM_FAILED",
-                    "detail": f"{type(e).__name__}: {e}"},
-        )
-
-
-@app.get("/ui/api/morning/owner")
-def ui_morning_owner_api(request: Request) -> dict:
-    email = require_feature(request, "morning")
-    from shared.access import morning_role
-    if not morning_role(email).get("is_owner"):
-        require_feature(request, "morning_owner")
-    try:
-        out = morning_flow.build_owner_pulse(email)
-        if not out.get("ok", True) and out.get("code") == "FORBIDDEN":
-            raise HTTPException(status_code=403, detail=out)
-        return out
-    except HTTPException:
-        raise
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(
-            status_code=502,
-            detail={"ok": False, "code": "MORNING_OWNER_FAILED",
-                    "detail": f"{type(e).__name__}: {e}"},
-        )
-
-
-@app.post("/ui/api/morning/prep")
-def ui_morning_prep(request: Request, body: MorningPrepRequest) -> dict:
-    email = require_feature(request, "morning")
-    try:
-        out = morning_flow.set_prep_criterion(
-            email, body.criterion_id, done=body.done, note=body.note)
-        activity.log_event("morning.prep", actor=email,
-                           target=body.criterion_id, result="ok")
-        return out
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail={"ok": False, "detail": str(e)})
-
-
-@app.post("/ui/api/morning/origin")
-def ui_morning_origin(request: Request, body: MorningOriginRequest) -> dict:
-    email = require_feature(request, "morning")
-    try:
-        return morning_flow.save_origin(email, body.model_dump())
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail={"ok": False, "detail": str(e)})
-
-
-@app.post("/ui/api/morning/route")
-def ui_morning_route(request: Request, body: MorningRouteRequest) -> dict:
-    email = require_feature(request, "morning")
-    return morning_flow.save_stops(
-        email, body.stops, optimized=body.optimized,
-        mark_override=body.mark_override)
-
-
-@app.post("/ui/api/morning/route/optimize")
-def ui_morning_route_optimize(request: Request, body: MorningRouteRequest) -> dict:
-    email = require_feature(request, "morning")
-    return morning_flow.optimize_stops(email, body.stops or None)
-
-
-@app.post("/ui/api/morning/route/complete")
-def ui_morning_route_complete(request: Request, body: MorningCompleteStopRequest) -> dict:
-    email = require_feature(request, "morning")
-    try:
-        out = morning_flow.complete_stop(
-            email, body.item_id, note=body.note, post_monday=body.post_monday)
-        activity.log_event("morning.stop_complete", actor=email,
-                           target=str(body.item_id), result="ok")
-        return out
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail={"ok": False, "detail": str(e)})
-
-
-@app.post("/ui/api/morning/action-requests")
-def ui_morning_ar_create(request: Request, body: MorningActionRequestBody) -> dict:
-    email = require_feature(request, "morning")
-    try:
-        out = morning_flow.create_action_request(email, body.model_dump())
-        activity.log_event("morning.ar_create", actor=email,
-                           target=body.needed_from_email, result="ok")
-        return out
-    except ValueError as e:
-        raise HTTPException(status_code=422, detail={"ok": False, "detail": str(e)})
-
-
-@app.post("/ui/api/morning/action-requests/{request_id}/ack")
-def ui_morning_ar_ack(request: Request, request_id: str) -> dict:
-    email = require_feature(request, "morning")
-    try:
-        return morning_flow.ack_action_request(email, request_id)
-    except KeyError:
-        raise HTTPException(status_code=404, detail={"ok": False, "detail": "not found"})
-
-
-@app.post("/ui/api/morning/action-requests/{request_id}/complete")
-def ui_morning_ar_complete(request: Request, request_id: str) -> dict:
-    email = require_feature(request, "morning")
-    try:
-        return morning_flow.complete_action_request(email, request_id)
-    except KeyError:
-        raise HTTPException(status_code=404, detail={"ok": False, "detail": "not found"})
-
-
-@app.put("/ui/api/morning/notes")
-def ui_morning_notes(request: Request, body: MorningNotesRequest) -> dict:
-    email = require_feature(request, "morning")
-    from subsystems.morning import personal as personal
-    return {"ok": True, **personal.set_notes(email, body.text)}
-
-
-@app.post("/ui/api/morning/update")
-async def ui_morning_update(request: Request) -> dict:
-    """Multipart: item_id, note, files[] — Drive Pictures + Monday update."""
-    email = require_feature(request, "morning")
-    form = await request.form()
-    try:
-        item_id = int(form.get("item_id") or 0)
-    except (TypeError, ValueError):
-        item_id = 0
-    if not item_id:
-        raise HTTPException(status_code=422, detail={"ok": False, "detail": "item_id required"})
-    note = str(form.get("note") or "")
-    files = []
-    for key in form.keys():
-        if key in ("item_id", "note"):
-            continue
-        val = form.get(key)
-        if hasattr(val, "read"):
-            raw = await val.read()
-            files.append((getattr(val, "filename", None) or "photo.jpg", raw,
-                          getattr(val, "content_type", None) or "image/jpeg"))
-    try:
-        out = morning_flow.add_project_update(email, item_id, note=note, files=files or None)
-        activity.log_event("morning.update", actor=email, target=str(item_id), result="ok")
-        return out
-    except Exception as e:  # noqa: BLE001
-        raise HTTPException(
-            status_code=502,
-            detail={"ok": False, "code": "MORNING_UPDATE_FAILED",
-                    "detail": f"{type(e).__name__}: {e}"},
-        )
-
-
-@app.post("/ui/api/morning/meeting/start")
-def ui_morning_meeting_start(request: Request) -> dict:
-    email = require_feature(request, "morning_gm")
-    from subsystems.morning import meeting as meet
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    workdate = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
-    return {"ok": True, "meeting": meet.start(workdate, email)}
-
-
-@app.post("/ui/api/morning/meeting/end")
-def ui_morning_meeting_end(request: Request) -> dict:
-    email = require_feature(request, "morning_gm")
-    from subsystems.morning import meeting as meet
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    workdate = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
-    activity.log_event("morning.meeting_end", actor=email, target=workdate, result="ok")
-    return {"ok": True, "meeting": meet.end(workdate)}
-
-
-@app.post("/ui/api/morning/meeting/parking")
-def ui_morning_meeting_parking(request: Request, body: MorningMeetingParkingRequest) -> dict:
-    require_feature(request, "morning_gm")
-    from subsystems.morning import meeting as meet
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    workdate = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
-    return {"ok": True, "meeting": meet.add_parking(
-        workdate, topic=body.topic, owner=body.owner, follow_up=body.follow_up)}
-
-
-@app.post("/ui/api/morning/meeting/action")
-def ui_morning_meeting_action(request: Request, body: MorningMeetingActionRequest) -> dict:
-    require_feature(request, "morning_gm")
-    from subsystems.morning import meeting as meet
-    from datetime import datetime
-    from zoneinfo import ZoneInfo
-    workdate = datetime.now(ZoneInfo("America/New_York")).date().isoformat()
-    return {"ok": True, "meeting": meet.add_action(
-        workdate, text=body.text, owner=body.owner, due=body.due)}
-
-
-@app.post("/v1/tasks/morning-prep-cutoff")
-def v1_morning_prep_cutoff(
-    request: Request,
-    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
-) -> dict:
-    """Cloud Scheduler ~6:50 AM ET — miss streaks + AR escalations."""
-    require_api_key(x_api_key)
-    return morning_flow.run_prep_cutoff_sweep()
 
 
 # ---------------------------------------------------------------------------
