@@ -1036,8 +1036,16 @@ async function lookupProject() {
 }
 
 function bootInvoiceFromUrl() {
+  // Deep links from Billing Hub / other tools:
+  //   ?project_number=C-005
+  //   ?monday_item_id=123  (or ?item_id=123)
+  //   ?q=builder+or+address
+  // Prefer Project #, then Monday item id, then free-text search.
   const params = new URLSearchParams(location.search);
   const pn = (params.get("project_number") || "").trim();
+  const mondayItemId = (
+    params.get("monday_item_id") || params.get("item_id") || ""
+  ).trim();
   const q = (params.get("q") || "").trim();
   if (pn) {
     const adv = $("#advanced-pn");
@@ -1046,6 +1054,11 @@ function bootInvoiceFromUrl() {
     if (pnInput) pnInput.value = pn;
     if ($("#project-search")) $("#project-search").value = pn;
     lookupProjectByNumber(pn);
+    return;
+  }
+  if (mondayItemId) {
+    if ($("#project-search")) $("#project-search").value = mondayItemId;
+    lookupProjectByItemId(mondayItemId);
     return;
   }
   if (q) {

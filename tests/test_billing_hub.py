@@ -18,12 +18,20 @@ from subsystems.invoice import billing_queue as bq  # noqa: E402
 
 # ---------------------------------------------------------------- deep links
 
-def test_invoice_href_prefers_project_number():
+def test_invoice_href_carries_all_known_keys():
+    # Carry Project # AND Monday id so the invoice page can prefill even if
+    # one lookup path fails. Free-text q is only added when Project # missing.
     assert mb.invoice_href(project_number="C-005", monday_item_id=99) == (
-        "/ui/invoice?project_number=C-005"
+        "/ui/invoice?project_number=C-005&monday_item_id=99"
     )
     assert mb.invoice_href(monday_item_id=12345) == (
         "/ui/invoice?monday_item_id=12345"
+    )
+    assert mb.invoice_href(monday_item_id=12345, q="Gertrude") == (
+        "/ui/invoice?monday_item_id=12345&q=Gertrude"
+    )
+    assert mb.invoice_href(project_number="C-005", q="noise") == (
+        "/ui/invoice?project_number=C-005"
     )
     assert mb.invoice_href() == "/ui/invoice"
 
@@ -57,7 +65,9 @@ def test_shape_ready_to_invoice_with_project_number():
     })
     assert item["kind"] == "ready_to_invoice"
     assert item["project_number"] == "C-100"
-    assert item["invoice_href"] == "/ui/invoice?project_number=C-100"
+    assert item["invoice_href"] == (
+        "/ui/invoice?project_number=C-100&monday_item_id=20"
+    )
     assert item["primary_href"] == item["invoice_href"]
     assert item["primary_label"] == "Open invoice"
     assert item["builder"] == "Zicka"
@@ -73,7 +83,9 @@ def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
         "project_item_id": 20,
         "project_number": None,
     })
-    assert item["invoice_href"] == "/ui/invoice?monday_item_id=20"
+    assert item["invoice_href"] == (
+        "/ui/invoice?monday_item_id=20&q=No%20number%20yet"
+    )
     assert "monday_item_id" in item["note"]
 
 
@@ -128,7 +140,9 @@ def test_shape_project_billing():
         "group_title": "Active",
     })
     assert item["kind"] == "project_billing"
-    assert item["invoice_href"] == "/ui/invoice?project_number=C-005"
+    assert item["invoice_href"] == (
+        "/ui/invoice?project_number=C-005&monday_item_id=33"
+    )
     assert "Ready" in item["status_labels"]
 
 
@@ -279,7 +293,7 @@ def test_search_billing_fallback_to_co_and_estimate():
         assert out["backend"] == "fallback"
         assert calls["projects"] == 1 and calls["bids"] == 1
         assert out["projects"][0]["project_number"] == "C-100"
-        assert out["projects"][0]["invoice_href"].endswith("C-100")
+        assert "project_number=C-100" in out["projects"][0]["invoice_href"]
         assert out["bids"][0]["estimate_number"] == "2026-0724-002"
         assert any("fallback" in n.lower() for n in out["notes"])
     finally:
@@ -407,7 +421,7 @@ def test_billing_hub_payload_shapes_queues():
         assert out["ok"] is True
         assert out["counts"]["ready_to_invoice"] == 1
         assert out["counts"]["needs_handoff"] == 1
-        assert out["queues"]["ready_to_invoice"][0]["invoice_href"].endswith("C-1")
+        assert "project_number=C-1" in out["queues"]["ready_to_invoice"][0]["invoice_href"]
         assert out["queues"]["accepted_bids"][0]["needs_handoff"] is True
         assert out["queues"]["projects_billing"][0]["invoice_status"] == "Ready"
         assert "generated_at" in out
@@ -460,3 +474,22 @@ def _run_all():
 
 if __name__ == "__main__":
     sys.exit(0 if _run_all() else 1)
+
+
+def test_invoice_page_boots_monday_item_id_deep_link():
+    """Billing Hub emits ?monday_item_id= — Invoice must consume it on boot."""
+    html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text()
+    assert "monday_item_id" in html
+    assert "lookupProjectByItemId" in html
+    # boot order: project_number first, then monday item id, then q
+    boot_idx = html.index("function bootInvoiceFromUrl")
+    snippet = html[boot_idx:boot_idx + 900]
+    assert 'params.get("monday_item_id")' in snippet
+    assert "lookupProjectByItemId(mondayItemId)" in snippet
+
+
+def test_jobstart_page_boots_bid_deep_link():
+    html = (Path(__file__).resolve().parents[1] / "web" / "jobstart.html").read_text()
+    assert "function bootJobStartFromUrl" in html
+    assert 'params.get("bid")' in html
+

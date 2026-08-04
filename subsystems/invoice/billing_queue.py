@@ -45,11 +45,13 @@ def shape_ready_to_invoice(row: dict) -> dict:
     project_number = _clean(row.get("project_number"))
     project_item_id = row.get("project_item_id")
     ops_item_id = row.get("item_id")
-    # Prefer Projects item for monday_item_id — that's what invoice lookup
-    # would resolve. Documented: invoice page may need to honor ?monday_item_id=.
+    # Prefer Projects item for monday_item_id — that's what invoice lookup resolves.
     monday_for_invoice = project_item_id or ops_item_id
-    href = invoice_href(project_number=project_number,
-                        monday_item_id=monday_for_invoice)
+    href = invoice_href(
+        project_number=project_number,
+        monday_item_id=monday_for_invoice,
+        q=_clean(row.get("name")) or _clean(row.get("project_name")),
+    )
     status_labels = [s for s in (
         _clean(row.get("billable")) and f"Billable: {row.get('billable')}",
         _clean(row.get("stage")),

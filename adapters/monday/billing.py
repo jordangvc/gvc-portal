@@ -476,20 +476,31 @@ def _normalize_project_billing(item: dict) -> Optional[dict]:
 # ---------------------------------------------------------------------------
 
 def invoice_href(*, project_number: Optional[str] = None,
-                 monday_item_id: Optional[Any] = None) -> str:
+                 monday_item_id: Optional[Any] = None,
+                 q: Optional[str] = None) -> str:
     """
     Portal deep link into the invoice generator.
 
-    Prefer project_number (the form's existing lookup). When only a Monday
-    item id is known, pass monday_item_id — the invoice page may need a
-    small update to honor that query param (integrator / invoice-form agent).
+    Pass every known key so the invoice page can prefill without the crew
+    copying Project # / Monday ids between screens:
+      - project_number (preferred lookup)
+      - monday_item_id (Projects item id when Project # missing)
+      - q (name/builder/address fallback search)
     """
+    params: list[str] = []
     pn = (project_number or "").strip()
     if pn:
-        return f"/ui/invoice?project_number={quote(pn)}"
+        params.append(f"project_number={quote(pn)}")
     if monday_item_id is not None and str(monday_item_id).strip():
-        return f"/ui/invoice?monday_item_id={quote(str(monday_item_id))}"
-    return "/ui/invoice"
+        params.append(f"monday_item_id={quote(str(monday_item_id))}")
+    needle = (q or "").strip()
+    # Only add free-text when Project # is unknown — otherwise the form
+    # already has a precise key and q just adds noise.
+    if needle and not pn:
+        params.append(f"q={quote(needle)}")
+    if not params:
+        return "/ui/invoice"
+    return "/ui/invoice?" + "&".join(params)
 
 
 def estimate_href(*, estimate_number: Optional[str] = None,
