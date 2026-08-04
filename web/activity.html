@@ -27,10 +27,12 @@
   @media (max-width:560px){ .controls { grid-template-columns:1fr; } }
   .controls .field label { display:block; font-size:var(--gvc-fs-caption); font-weight:600;
     color:var(--gvc-ink-soft); margin-bottom:4px; }
+  .controls .field.span-all { grid-column:1 / -1; }
   .controls input, .controls select {
     width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
     font:inherit; background:var(--gvc-surface); min-height:var(--gvc-ctl-h);
   }
+  .controls input[type=search] { font-size:var(--gvc-fs-body); }
   .meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin:0 0 10px; }
   .ledger { background:var(--gvc-surface); border:1px solid var(--gvc-line);
     border-radius:var(--gvc-r-lg); overflow:hidden; }
@@ -100,6 +102,10 @@
   <div id="banner" class="gvc-banner gvc-banner--warn banner warn"></div>
 
   <div class="controls">
+    <div class="field span-all">
+      <label for="f-q">Search loaded events</label>
+      <input id="f-q" type="search" placeholder="qa, builder name, estimate #, customer, job…" autocomplete="off" />
+    </div>
     <div class="field">
       <label for="f-actor">Who</label>
       <input id="f-actor" type="text" placeholder="anyone" autocomplete="off" />
@@ -110,8 +116,12 @@
       <datalist id="actions">
         <option value="invoice.run">Invoice</option>
         <option value="estimate.run">Estimate</option>
+        <option value="estimate.qa">Estimate QA</option>
         <option value="change_order.run">Change order</option>
         <option value="coi.run">COI</option>
+        <option value="billing.open">Billing hub</option>
+        <option value="billing.search">Billing search</option>
+        <option value="billing.lookup">Billing lookup</option>
         <option value="check.commit">Check payment recorded</option>
         <option value="check.extract">Check read</option>
         <option value="jobcheck.save">Job check saved</option>
@@ -187,11 +197,15 @@
   let nextToken = null;
   let autoTimer = null;
   let lastDay = null;   // for day separators across "Load more" appends
+  let loadedEvents = []; // all events fetched under the current server filters
 
   // Human labels — the log stores machine actions; the office reads English.
   const KINDS = {
-    'invoice.run': 'Invoice', 'estimate.run': 'Estimate', 'change_order.run': 'Change order',
+    'invoice.run': 'Invoice', 'estimate.run': 'Estimate', 'estimate.qa': 'Estimate QA',
+    'change_order.run': 'Change order',
     'coi.run': 'COI', 'coi.bulk.run': 'COI bulk run',
+    'billing.open': 'Billing hub', 'billing.search': 'Billing search',
+    'billing.lookup': 'Billing lookup',
     'check.commit': 'Check payment', 'check.extract': 'Check read',
     'check.already_deposited': 'Check — already deposited',
     'jobcheck.save': 'Job check', 'signin': 'Sign-in', 'hub.open': 'Opened the hub',
@@ -207,7 +221,8 @@
   };
   // Keys rendered in dedicated columns — everything else falls to the tail line.
   const COLUMN_KEYS = ['customer', 'amount', 'sent_to', 'job', 'error'];
-  const STEP_KEYS = ['gmail', 'drive', 'monday', 'stripe_invoice_id', 'reused', 'revision', 'steps'];
+  const STEP_KEYS = ['gmail', 'drive', 'monday', 'stripe_invoice_id', 'reused', 'revision',
+                     'steps', 'qa', 'qa_summary'];
   const STEP_LABELS = { gmail: 'Draft', drive: 'Drive', monday: 'Monday', stripe_invoice_id: 'Stripe' };
 
   function esc(s) {
@@ -256,10 +271,69 @@
                        : (key === 'stripe_invoice_id' ? `${label} ✓` : `${label} ✓`);
       out.push(`<span class="chip ${bad ? 'bad' : ''}">${esc(text)}</span>`);
     }
+    if (extra.qa === 'passed') out.push(`<span class="chip">QA ✓</span>`);
+    else if (extra.qa === 'failed') {
+      const why = extra.qa_summary ? `: ${extra.qa_summary}` : '';
+      out.push(`<span class="chip bad">QA failed${esc(why)}</span>`);
+    } else if (extra.qa_summary) {
+      out.push(`<span class="chip info">QA: ${esc(String(extra.qa_summary).slice(0, 120))}</span>`);
+    }
     if (extra.reused) out.push(`<span class="chip info">reused — no duplicate</span>`);
     if (extra.revision) out.push(`<span class="chip info">revision ${esc(extra.revision)}</span>`);
     if (extra.steps) out.push(`<span class="chip info">${esc(String(extra.steps).slice(0, 120))}</span>`);
     return out.length ? `<div class="chips">${out.join('')}</div>` : '';
+  }
+
+  // Free-text haystack for instant client-side filter (server filters stay separate).
+  function eventHaystack(ev) {
+    const extra = ev.extra || {};
+    const parts = [
+      KINDS[ev.action] || '', ev.action, ev.actor, ev.target, ev.result,
+      extra.customer, extra.job, extra.amount, extra.sent_to, extra.error,
+      extra.qa, extra.qa_summary, extra.builder, extra.location,
+      extra.project_number, extra.query, extra.source, extra.mode,
+      extra.gmail, extra.drive, extra.monday, extra.revision, extra.reused,
+      extra.steps, extra.cc, extra.due, extra.stripe_invoice_id,
+    ];
+    for (const [k, v] of Object.entries(extra)) {
+      if (v != null && v !== '') parts.push(k, v);
+    }
+    return parts.filter((x) => x != null && x !== '').join(' ').toLowerCase();
+  }
+
+  function matchesQuery(ev, q) {
+    if (!q) return true;
+    const tokens = q.toLowerCase().split(/\s+/).filter(Boolean);
+    if (!tokens.length) return true;
+    const hay = eventHaystack(ev);
+    return tokens.every((t) => hay.includes(t));
+  }
+
+  function updateMeta() {
+    const q = $('f-q').value.trim();
+    const shown = $('rows').querySelectorAll('tr.row').length;
+    const total = loadedEvents.length;
+    $('empty').style.display = shown ? 'none' : 'block';
+    if (!shown) {
+      $('empty').innerHTML = q
+        ? `<strong>No matches</strong><br>No loaded events match “${esc(q)}”. Clear the search box or widen Who / Activity / Range, then Apply.`
+        : `<strong>Nothing here yet</strong><br>No activity matches these filters.`;
+    }
+    if (!total) { $('meta').textContent = ''; return; }
+    if (q) {
+      $('meta').textContent = `Showing ${shown} of ${total} loaded event${total === 1 ? '' : 's'} matching “${q}”` +
+        (nextToken ? ' — load more to search further back.' : '.');
+    } else {
+      $('meta').textContent = `Showing ${total} event${total === 1 ? '' : 's'}${nextToken ? ' — more available' : ''}.`;
+    }
+  }
+
+  function renderFiltered() {
+    lastDay = null;
+    $('rows').innerHTML = '';
+    const q = $('f-q').value.trim();
+    addRows(loadedEvents.filter((ev) => matchesQuery(ev, q)));
+    updateMeta();
   }
 
   // Anything the design doesn't have a home for is still shown — never hide data.
@@ -333,7 +407,7 @@
   }
 
   async function load(reset) {
-    if (reset) { nextToken = null; lastDay = null; $('rows').innerHTML = ''; }
+    if (reset) { nextToken = null; lastDay = null; loadedEvents = []; $('rows').innerHTML = ''; }
     $('loading').textContent = 'Loading…';
     $('banner').style.display = 'none';
     const p = filters();
@@ -350,14 +424,10 @@
         $('loading').textContent = '';
         return;
       }
-      addRows(body.events || []);
+      loadedEvents = loadedEvents.concat(body.events || []);
       nextToken = body.next_page_token || null;
       $('more').style.display = nextToken ? 'inline-block' : 'none';
-      const count = $('rows').querySelectorAll('tr.row').length;
-      $('empty').style.display = count ? 'none' : 'block';
-      $('meta').textContent = count
-        ? `Showing ${count} event${count === 1 ? '' : 's'}${nextToken ? ' — more available' : ''}.`
-        : '';
+      renderFiltered();
       $('loading').textContent = '';
     } catch (e) {
       $('banner').textContent = 'Network error loading activity. Try Refresh.';
@@ -373,6 +443,8 @@
   $('f-range').addEventListener('change', () => load(true));
   $('f-actor').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(true); });
   $('f-action').addEventListener('keydown', (e) => { if (e.key === 'Enter') load(true); });
+  $('f-q').addEventListener('input', () => renderFiltered());
+  $('f-q').addEventListener('keydown', (e) => { if (e.key === 'Escape') { $('f-q').value = ''; renderFiltered(); } });
 
   $('export').addEventListener('click', () => {
     window.location = '/ui/api/activity/export.csv?' + filters().toString();

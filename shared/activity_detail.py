@@ -27,11 +27,13 @@ from typing import Any, Optional
 
 # Kinds the portal logs. Each maps to the nested key holding its document
 # fields in the input payload ("invoice" / "estimate" / "change_order" …).
+# "billing" is the Billing hub (queue / search / deep-link) — no nested doc key.
 _DOC_KEYS = {
     "invoice": "invoice",
     "estimate": "estimate",
     "change_order": "change_order",
     "coi": "coi",
+    "billing": "billing",
 }
 
 
@@ -76,6 +78,76 @@ def _step(value: Any, *, ok_label: str) -> Optional[str]:
     return ok_label
 
 
+def _qa_fields(writeback: dict) -> dict:
+    """
+    Estimate auto-QA writeback chips. Accepts nested ``qa: {ok, summary}``
+    (preferred) or flat ``qa_ok`` / ``qa_summary``. Never invents a pass.
+    """
+    out: dict = {}
+    qa = writeback.get("qa")
+    if isinstance(qa, dict):
+        ok = qa.get("ok")
+        summary = _first(qa.get("summary"))
+    else:
+        ok = writeback.get("qa_ok")
+        summary = _first(writeback.get("qa_summary"))
+        if ok is None and summary is None:
+            return out
+
+    if ok is True:
+        out["qa"] = "passed"
+    elif ok is False:
+        out["qa"] = "failed"
+    if summary:
+        out["qa_summary"] = summary[:180]
+    return out
+
+
+def _billing_fields(data: dict, writeback: dict) -> dict:
+    """Billing-hub chips: project #, builder, location, search query."""
+    out: dict = {}
+    pn = _first(
+        writeback.get("project_number"), data.get("project_number"),
+        _nested(writeback, "job", "project_number"),
+        _nested(data, "job", "project_number"),
+        _nested(data, "billing", "project_number"),
+    )
+    if pn:
+        out["project_number"] = pn
+
+    builder = _first(
+        writeback.get("builder"), data.get("builder"),
+        _nested(data, "billing", "builder"),
+    )
+    if builder:
+        out["builder"] = builder
+
+    location = _first(
+        writeback.get("location"), data.get("location"),
+        _nested(writeback, "job", "location"), _nested(data, "job", "location"),
+        _nested(data, "billing", "location"),
+    )
+    if location:
+        out["location"] = location
+
+    query = _first(
+        writeback.get("q"), writeback.get("query"),
+        data.get("q"), data.get("query"),
+        _nested(data, "billing", "q"),
+    )
+    if query:
+        out["query"] = query
+
+    source = _first(
+        writeback.get("source"), data.get("source"),
+        _nested(data, "billing", "source"),
+    )
+    if source:
+        out["source"] = source
+
+    return out
+
+
 def _outcome_fields(writeback: dict) -> dict:
     """Per-step results, shared shape across invoice / estimate / CO / COI."""
     out: dict = {}
@@ -113,6 +185,8 @@ def _outcome_fields(writeback: dict) -> dict:
     if writeback.get("revised") or writeback.get("revision_version"):
         out["revision"] = _first(writeback.get("revision_version"), "revised")
 
+    out.update(_qa_fields(writeback))
+
     return out
 
 
@@ -149,6 +223,7 @@ def summarize(
             _nested(wb, doc_key, "identifier"),
             _nested(data, doc_key, "identifier"),
             wb.get("co_number"), _nested(data, doc_key, "co_number"),
+            wb.get("project_number"), data.get("project_number"),
             kind,
         )
 
@@ -165,6 +240,7 @@ def summarize(
             # "6845 Hager Rd | Ken Roell" — is what Drive/Monday actually filed under.
             _nested(wb, "job", "name"), wb.get("job_name"),
             _nested(data, "job", "name"), _nested(data, "project", "name"),
+            wb.get("name"), data.get("name"),         # billing hub item name
         )
         if job:
             fields["job"] = job
@@ -201,6 +277,9 @@ def summarize(
         # --- what actually happened ----------------------------------------
         fields.update(_outcome_fields(wb))
 
+        if kind == "billing":
+            fields.update(_billing_fields(data, wb))
+
         if error is not None:
             fields["error"] = f"{type(error).__name__}: {error}"[:300]
 
@@ -217,14 +296,19 @@ def result_for(writeback: Optional[dict]) -> str:
     """
     "ok" when every step that ran succeeded, "partial" when the run returned
     200 but a downstream step failed (the silent-failure class that hid the
-    Slack outage for days — worth being able to filter for).
+    Slack outage for days — worth being able to filter for). Estimate QA
+    failures (``qa.ok is False``) also count as partial — the draft may exist
+    but the office still needs to fix something before Send.
     """
     try:
-        outcome = _outcome_fields(writeback if isinstance(writeback, dict) else {})
+        wb = writeback if isinstance(writeback, dict) else {}
+        outcome = _outcome_fields(wb)
         for key in ("gmail", "drive", "monday"):
             value = str(outcome.get(key) or "")
             if value.upper().startswith("FAILED") or "not synced" in value:
                 return "partial"
+        if outcome.get("qa") == "failed":
+            return "partial"
         return "ok"
     except Exception:  # noqa: BLE001
         return "ok"

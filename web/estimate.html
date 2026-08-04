@@ -140,10 +140,10 @@
   <div class="gvc-banner" id="status"></div>
 
   <div class="card" id="monday-prefill-card">
-    <h2>Find the Bid <span class="opt" style="text-transform:none;font-weight:400;">(paste a Monday Bid Board link — or search by client, address, or estimate # — fills the form and links the estimate to that bid; bids with a sent estimate load for revision)</span></h2>
+    <h2>Find the Bid <span class="opt" style="text-transform:none;font-weight:400;">(paste a Monday Bid Board link — or search by client, builder, address, city, or estimate # — fills the form and links the estimate to that bid; bids with a sent estimate load for revision)</span></h2>
     <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
       <div><label>Monday Bid URL — or search</label>
-        <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
+        <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “Greg Gavin”, “Cincinnati”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
       <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
     </div>
     <div id="search-results" style="margin-top:10px;"></div>
@@ -940,7 +940,10 @@ async function lookupFromMonday() {
   const val = ($("#monday-url").value || "").trim();
   const note = $("#prefill-note");
   $("#search-results").innerHTML = "";
-  if (!val) { note.textContent = "Paste a Monday Bid Board URL — or type a client, address, or estimate # to search."; return; }
+  if (!val) {
+    note.textContent = "Paste a Monday Bid Board URL — or type a client, builder, address, city, or estimate # to search.";
+    return;
+  }
   if (looksLikeMondayRef(val)) return loadBid(val);
   return searchBids(val);
 }
@@ -1169,6 +1172,16 @@ checkHealth();
 refreshDrafts();
 loadSalespeople();
 loadScopes();
+
+// Deep link from Billing hub / Activity / QA notices: /ui/estimate?q=…
+(function bootEstimateFromUrl() {
+  const q = (new URLSearchParams(location.search).get("q") || "").trim();
+  if (!q) return;
+  const input = $("#monday-url");
+  if (!input) return;
+  input.value = q;
+  lookupFromMonday();
+})();
 </script>
 </body>
 </html>

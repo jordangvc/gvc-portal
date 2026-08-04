@@ -141,15 +141,23 @@
 
   <form id="invoice-form" autocomplete="off">
     <div class="card" id="prefill-card">
-      <h2>Start from a project</h2>
-      <div class="grid">
-        <div><label>Project # <span class="opt">(Projects board — pulls customer, job, type &amp; folder)</span></label>
-          <input name="project_number_lookup" placeholder="C-005 or MV-001" /></div>
-        <div style="display:flex;align-items:flex-end;gap:8px;">
-          <button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button>
-        </div>
+      <h2>Find the Project <span class="opt">(search by client, builder, address, city, or project # — or paste a Monday Project link)</span></h2>
+      <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div><label>Search — or Monday Project URL</label>
+          <input id="project-search" name="project_search" autocomplete="off"
+            placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, C-005…" /></div>
+        <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
       </div>
+      <div id="search-results" style="margin-top:10px;"></div>
       <div id="prefill-note" class="hint"></div>
+      <details id="advanced-pn" style="margin-top:12px;">
+        <summary style="cursor:pointer;font-size:var(--gvc-fs-caption);color:var(--gvc-muted);font-weight:600;">Advanced: Project # only</summary>
+        <div class="grid" style="grid-template-columns: 1fr auto; align-items: end; margin-top:8px;">
+          <div><label>Project # <span class="opt">(Projects board)</span></label>
+            <input name="project_number_lookup" placeholder="C-005 or MV-001" /></div>
+          <div><button type="button" class="btn secondary small" id="btn-prefill-pn">Look up Project #</button></div>
+        </div>
+      </details>
       <!-- carry-through from the matched project (Projects board = source of truth) -->
       <input type="hidden" name="job_monday_item_id" />
       <input type="hidden" name="job_monday_job_type" />
@@ -709,27 +717,168 @@ function applyPrefill(p) {
     $("#commercial-toggle").dispatchEvent(new Event("change"));
   }
 }
-async function lookupProject() {
-  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+/* ===================== Find the Project (search / URL / Project #) ===================== */
+
+function looksLikeMondayRef(s) {
+  return /\/pulses\/\d+/.test(s) || /^\d{8,}$/.test(s.trim()) || s.includes("monday.com");
+}
+function looksLikeProjectNumber(s) {
+  const t = (s || "").trim();
+  // Legacy series (C-005 / MV-001) or estimate-style spine (2026-0615-002).
+  return /^(C|MV)-\d+/i.test(t) || /^\d{4}-\d{4}-\d{2,}$/.test(t);
+}
+function mondayItemIdFromRef(s) {
+  const m = String(s || "").match(/\/pulses\/(\d+)/);
+  if (m) return m[1];
+  const t = String(s || "").trim();
+  return /^\d{8,}$/.test(t) ? t : "";
+}
+
+async function findProject() {
+  const q = ($("#project-search").value || "").trim();
+  const note = $("#prefill-note");
+  const results = $("#search-results");
+  if (results) results.innerHTML = "";
+  if (!q) {
+    note.textContent = "Type a client, builder, address, city, or project # — or paste a Monday Project URL.";
+    return;
+  }
+  if (looksLikeMondayRef(q)) return loadProjectFromLookup({ item_id: mondayItemIdFromRef(q) || q });
+  if (looksLikeProjectNumber(q)) return lookupProjectByNumber(q);
+  return searchProjects(q);
+}
+
+async function searchProjects(q) {
+  const note = $("#prefill-note");
+  const list = $("#search-results");
+  $("#btn-prefill").disabled = true;
+  note.textContent = "Searching Monday…";
+  let r;
+  try { r = await fetch("/ui/api/invoice/search?q=" + encodeURIComponent(q)); }
+  catch (e) { $("#btn-prefill").disabled = false; note.textContent = "Network error."; return; }
+  $("#btn-prefill").disabled = false;
+  if (r.status === 401) { location.reload(); return; }
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = data.detail || data;
+    note.textContent = (d.detail || d.advice) || ("Search failed (HTTP " + r.status + ").");
+    return;
+  }
+  const rows = data.results || [];
+  if (!rows.length) {
+    note.textContent = `No projects matched “${q}”. Try fewer words, a Project #, or paste the Monday URL.`;
+    return;
+  }
+  note.textContent = `${rows.length} match${rows.length === 1 ? "" : "es"} — pick one:`;
+  list.innerHTML = "";
+  rows.forEach((row) => {
+    const div = document.createElement("div");
+    div.className = "draft-row";
+    const pn = row.project_number
+      ? `<span class="badge synced">${escapeHtml(row.project_number)}</span>` : "";
+    const grp = row.group ? `<span class="badge local">${escapeHtml(row.group)}</span>` : "";
+    const metaBits = [row.builder, row.location].filter(Boolean).map(escapeHtml).join(" · ");
+    const meta = metaBits ? `<div class="d-meta">${metaBits}</div>` : "";
+    div.innerHTML =
+      `<div class="d-main"><div class="d-label">${escapeHtml(row.name || "Untitled")}${pn}${grp}</div>${meta}</div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small";
+    btn.textContent = "Load";
+    btn.addEventListener("click", () => {
+      list.innerHTML = "";
+      loadProjectFromLookup(row);
+    });
+    div.appendChild(btn);
+    // Whole row is tappable (button still works).
+    div.style.cursor = "pointer";
+    div.addEventListener("click", (ev) => {
+      if (ev.target === btn || btn.contains(ev.target)) return;
+      list.innerHTML = "";
+      loadProjectFromLookup(row);
+    });
+    list.appendChild(div);
+  });
+}
+
+async function loadProjectFromLookup(row) {
+  const pn = (row && (row.project_number || row.projectNumber) || "").trim();
+  const itemId = String((row && (row.item_id || row.itemId || row.monday_item_id)) || "").trim();
+  if (pn) return lookupProjectByNumber(pn);
+  if (itemId) return lookupProjectByItemId(itemId);
+  $("#prefill-note").textContent = "That result has no Project # or Monday item id to load.";
+}
+
+async function lookupProjectByNumber(pn) {
   const note = $("#prefill-note");
   if (!pn) { note.textContent = "Enter a Project # first."; return; }
   note.textContent = "Looking up…";
+  $("#btn-prefill").disabled = true;
   try {
     const r = await fetch("/ui/api/invoice/lookup?project_number=" + encodeURIComponent(pn));
-    const body = await r.json();
-    if (!r.ok || !body.ok) {
-      note.textContent = (body.detail && body.detail.detail) || ("Lookup failed (" + r.status + ").");
-      return;
-    }
-    applyPrefill(body.prefill);
-    currentDraftId = null;  // a project prefill starts a fresh draft
-    scheduleAutosave();
-    const m = body.prefill._matched || {};
-    const notes = (body.prefill._notes || []).join(" ");
-    note.innerHTML = "Filled from <strong>" + (m.item_name || pn) + "</strong>" +
-      (m.url ? " (<a href='" + m.url + "' target='_blank' rel='noopener'>open project</a>)" : "") +
-      ". " + notes;
+    await applyLookupResponse(r, pn);
   } catch (e) { note.textContent = "Lookup error: " + e.message; }
+  finally { $("#btn-prefill").disabled = false; }
+}
+
+async function lookupProjectByItemId(itemId) {
+  const note = $("#prefill-note");
+  note.textContent = "Looking up…";
+  $("#btn-prefill").disabled = true;
+  try {
+    // Integrator may honor item_id and/or monday_url on the existing lookup route.
+    const qs = "item_id=" + encodeURIComponent(itemId) +
+      "&monday_url=" + encodeURIComponent(itemId);
+    const r = await fetch("/ui/api/invoice/lookup?" + qs);
+    await applyLookupResponse(r, itemId);
+  } catch (e) { note.textContent = "Lookup error: " + e.message; }
+  finally { $("#btn-prefill").disabled = false; }
+}
+
+async function applyLookupResponse(r, label) {
+  const note = $("#prefill-note");
+  if (r.status === 401) { location.reload(); return; }
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok || body.ok === false) {
+    const d = body.detail || body;
+    note.textContent = (d.detail || d.advice) || ("Lookup failed (" + r.status + ").");
+    return;
+  }
+  const prefill = body.prefill || body;
+  applyPrefill(prefill);
+  currentDraftId = null;  // a project prefill starts a fresh draft
+  scheduleAutosave();
+  const m = prefill._matched || {};
+  const notes = (prefill._notes || []).join(" ");
+  note.innerHTML = "Filled from <strong>" + escapeHtml(m.item_name || label) + "</strong>" +
+    (m.url ? " (<a href='" + escapeHtml(m.url) + "' target='_blank' rel='noopener'>open project</a>)" : "") +
+    ". " + escapeHtml(notes);
+  $("#invoice-form").scrollIntoView({ behavior: "smooth" });
+}
+
+/** @deprecated name kept for any leftover callers — routes to Find the Project. */
+async function lookupProject() {
+  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+  if (pn) return lookupProjectByNumber(pn);
+  return findProject();
+}
+
+function bootInvoiceFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const pn = (params.get("project_number") || "").trim();
+  const q = (params.get("q") || "").trim();
+  if (pn) {
+    const adv = $("#advanced-pn");
+    if (adv) adv.open = true;
+    const pnInput = $("#invoice-form").elements["project_number_lookup"];
+    if (pnInput) pnInput.value = pn;
+    if ($("#project-search")) $("#project-search").value = pn;
+    lookupProjectByNumber(pn);
+    return;
+  }
+  if (q) {
+    if ($("#project-search")) $("#project-search").value = q;
+    findProject();
+  }
 }
 
 /* ---- Customer search (Customer & Vendor Directory) ---- */
@@ -990,12 +1139,26 @@ $("#btn-new-invoice").addEventListener("click", () => {
   startNewInvoice();
 });
 $("#invoice-form").addEventListener("input", () => { lastPreviewOk = false; $("#btn-accept").disabled = true; scheduleAutosave(); });
-$("#btn-prefill").addEventListener("click", lookupProject);
-$("[name=project_number_lookup]").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); lookupProject(); } });
+$("#btn-prefill").addEventListener("click", findProject);
+$("#project-search").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); findProject(); }
+});
+$("#btn-prefill-pn").addEventListener("click", () => {
+  const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+  lookupProjectByNumber(pn);
+});
+$("[name=project_number_lookup]").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    const pn = ($("#invoice-form").elements["project_number_lookup"].value || "").trim();
+    lookupProjectByNumber(pn);
+  }
+});
 $("[name=customer_search]").addEventListener("input", customerSearch);
 $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
 checkHealth();
 refreshDrafts();
+bootInvoiceFromUrl();
 </script>
 </body>
 </html>
