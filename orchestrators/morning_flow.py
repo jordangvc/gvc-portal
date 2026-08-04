@@ -442,17 +442,41 @@ def complete_action_request(email: str, request_id: str) -> dict:
 
 def add_project_update(email: str, item_id: int, *, note: str,
                        files: Optional[list] = None) -> dict:
+    """
+    Upload photos to the job's Pictures folder (when present) and post a
+    Monday update with the note + Drive links. Never silently drops photos —
+    if files were attached, failures surface in `warning` / `drive_error`.
+    """
     from adapters.drive import DriveUploader, folder_id_from_url
 
+    files = list(files or [])
     mc = MondayClient()
     gurl = mm.get_gfolder_url_for_ops_item(mc, int(item_id))
     drive_result = None
-    if gurl and files:
+    drive_error = None
+    warning = None
+
+    if files and not gurl:
+        warning = ("Photos were not uploaded — this Ops item has no linked "
+                   "Projects GFolder Link. The Monday note was still posted.")
+    elif files and gurl:
         folder_id = folder_id_from_url(gurl)
-        if folder_id:
-            up = DriveUploader()
-            drive_result = up.upload_job_site_photos(
-                folder_id, files, note=note)
+        if not folder_id:
+            warning = ("Photos were not uploaded — GFolder Link is not a "
+                       "Drive folder URL. The Monday note was still posted.")
+            drive_error = f"unusable_gfolder:{gurl[:120]}"
+        else:
+            try:
+                up = DriveUploader()
+                drive_result = up.upload_job_site_photos(
+                    folder_id, files, note=note)
+            except Exception as e:  # noqa: BLE001
+                drive_error = f"{type(e).__name__}: {e}"
+                warning = ("Photos failed to upload to Drive — "
+                           f"{type(e).__name__}. The Monday note was still posted.")
+                print(f"[morning] drive photo upload failed: {drive_error}",
+                      file=sys.stderr)
+
     links = []
     if drive_result:
         for u in drive_result.get("uploaded") or []:
@@ -461,15 +485,23 @@ def add_project_update(email: str, item_id: int, *, note: str,
     body = f"Field update via Morning Brief ({email.split('@')[0]})"
     if note:
         body += f"\n{note}"
-    for link in links:
-        body += f"\n{link}"
+    if links:
+        body += "\n\nPhotos:"
+        for link in links:
+            body += f"\n{link}"
+    elif files and not links:
+        body += f"\n\n({len(files)} photo(s) attached in portal — Drive upload pending)"
+
     upd = mm.create_item_update(mc, int(item_id), body)
     return {
         "ok": True,
         "drive": drive_result,
+        "drive_error": drive_error,
+        "photos_uploaded": len(links),
+        "photos_requested": len(files),
         "monday_update": upd,
         "gfolder_url": gurl,
-        "warning": (None if gurl else "No GFolder Link on the linked Projects item."),
+        "warning": warning,
     }
 
 

@@ -449,7 +449,12 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
     query ($ids: [ID!], $cols: [String!]) {
       items(ids: $ids) {
         id
-        column_values(ids: $cols) { id text }
+        column_values(ids: $cols) {
+          id
+          text
+          value
+          ... on LinkValue { url text }
+        }
       }
     }
     """
@@ -461,8 +466,10 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
     gurl = None
     for it in data2.get("items") or []:
         for cv in it.get("column_values") or []:
-            if cv.get("id") == gcol and (cv.get("text") or "").strip():
-                gurl = (cv.get("text") or "").strip()
+            if cv.get("id") != gcol:
+                continue
+            gurl = _link_column_url(cv)
+            if gurl:
                 out["project_item_id"] = int(it["id"])
                 break
         if gurl:
@@ -480,4 +487,30 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
         return out
     out["folder_id"] = folder_id
     return out
+
+
+def _link_column_url(cv: dict) -> Optional[str]:
+    """
+    Monday Link columns store the real URL in LinkValue.url / value JSON.
+    Column `text` is often just the label ("GFolder") — not usable for Drive.
+    """
+    url = (cv.get("url") or "").strip()
+    if url.startswith("http") or "/folders/" in url:
+        return url
+    raw = cv.get("value")
+    if raw:
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+            if isinstance(parsed, dict):
+                u = (parsed.get("url") or "").strip()
+                if u:
+                    return u
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+    text = (cv.get("text") or "").strip()
+    if text and ("/folders/" in text or text.startswith("http")
+                 or (len(text) >= 10 and " " not in text and "/" not in text
+                     and text.lower() != "gfolder")):
+        return text
+    return None
 
