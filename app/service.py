@@ -10,8 +10,10 @@ Endpoints:
   POST /v1/invoice/from-json   — build + create an invoice from inline JSON
 
 Auth: All POST endpoints require an X-API-Key header that matches the
-GVC_SERVICE_API_KEY env var. Cloud Run can optionally layer Google IAM
-auth on top — see docs/cloud-run-deploy.md.
+GVC_SERVICE_API_KEY env var, EXCEPT /v1/webhooks/stripe — Stripe can't send
+that header, so its auth is the Stripe-Signature header + STRIPE_WEBHOOK_SECRET
+instead. Cloud Run can optionally layer Google IAM auth on top — see
+docs/cloud-run-deploy.md.
 
 Local dev:
   uvicorn service:app --reload --port 8080
@@ -28,6 +30,7 @@ from html import escape as html_escape
 from pathlib import Path
 from typing import Literal, Optional
 
+import stripe
 from dotenv import load_dotenv
 from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
 from fastapi.exception_handlers import http_exception_handler
@@ -78,6 +81,7 @@ from adapters import slack_notify as slack_notify
 from subsystems.checks import deposit as check_deposit
 from orchestrators import change_order_flow as change_order_flow
 from orchestrators import check_flow
+from orchestrators import stripe_paid_flow
 from orchestrators import coi_flow
 from orchestrators import lien_flow
 from orchestrators import jobcheck_flow
@@ -697,6 +701,50 @@ def tasks_warm_monday(
         target=_warm_monday_caches, name="warm-monday", daemon=True
     ).start()
     return {"ok": True, "started": True}
+
+
+@app.post("/v1/webhooks/stripe")
+async def webhook_stripe(request: Request) -> dict:
+    """
+    Stripe webhook receiver — v1 slice: `invoice.paid` -> Monday Paid.
+
+    Online Stripe pay (the customer paying the hosted invoice) has no
+    webhook wired up yet, so a paid invoice never updates the Invoices Sent
+    board on its own; this closes that gap the same way the paid-by-check
+    flow does (MondayClient.set_invoice_paid), just with a Stripe-flavored
+    note instead of "Paid by check #...".
+
+    NOT protected by X-API-Key (Stripe can't send it) — the Stripe-Signature
+    header + STRIPE_WEBHOOK_SECRET IS the auth. Bad/missing signature -> 400
+    (Stripe will retry). Everything else — wrong event type, no matching
+    Monday row, already Paid, even a downstream write error — comes back 200
+    so Stripe doesn't retry forever on a business case that will never
+    resolve by itself; orchestrators.stripe_paid_flow.handle_stripe_event
+    never raises for those.
+    """
+    secret = os.environ.get("STRIPE_WEBHOOK_SECRET")
+    if not secret:
+        raise HTTPException(status_code=503, detail={
+            "ok": False, "code": "SERVICE_MISCONFIGURED",
+            "detail": "STRIPE_WEBHOOK_SECRET env var not set on the service.",
+            "advice": "Ask an admin to set the STRIPE_WEBHOOK_SECRET secret "
+                      "(from the Stripe webhook endpoint's signing secret).",
+        })
+
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    try:
+        event = stripe.Webhook.construct_event(payload, sig_header, secret)
+    except (stripe.SignatureVerificationError, ValueError) as e:
+        raise HTTPException(status_code=400, detail={
+            "ok": False, "code": "BAD_SIGNATURE",
+            "detail": f"{type(e).__name__}: {e}",
+            "advice": "Confirm the Cloud Run STRIPE_WEBHOOK_SECRET matches "
+                      "the signing secret on the Stripe webhook endpoint.",
+        })
+
+    result = stripe_paid_flow.handle_stripe_event(event.to_dict())
+    return {"ok": True, "result": result}
 
 
 @app.post("/v1/activity/export-month")
