@@ -34,7 +34,10 @@ def test_shipped_config_survives_the_hard_exclusion_gate():
     assert [c["id"] for c in effective] == [c["id"] for c in boards.JOBCHECK_COLUMNS]
     # Display order is config order.
     assert effective[0]["label"] == "Stage"
-    assert effective[-1]["label"] == "Shower Instructions"
+    assert effective[-1]["label"] == "Open questions for Ops"
+    assert any(c["id"] == "date" for c in effective)
+    assert any(c["id"] == "long_text_mkpzf3je" for c in effective)
+    assert any(c["id"] == "color_mm02xmc0" for c in effective)
 
 
 def test_hard_exclusions_beat_config_edits():
@@ -274,6 +277,92 @@ def test_describe_changes_reads_like_the_audit_trail():
     assert "Hanging Status: Hanging Not Started → 100% Hanging Completed" in text
     assert "Notes: (empty) → swept garage" in text
     assert jf.describe_changes({}, {}, {}) == ""
+
+
+
+
+def test_new_writable_columns_are_allowlisted_and_shapeable():
+    ids = {c["id"] for c in jf.allowlisted_columns()}
+    assert {"date", "long_text_mkpzf3je", "color_mm02xmc0"} <= ids
+    # Progress is context-only — never a write target even if someone adds it.
+    assert "lookup_mkpeqd8w" not in ids
+    shaped, errors, _ = jf.validate_values({
+        "date": "2026-08-04",
+        "long_text_mkpzf3je": "GC still owes paint schedule",
+        "color_mm02xmc0": "Drywall",
+        "lookup_mkpeqd8w": "50%",   # hard-excluded type / not allowlisted
+    })
+    assert shaped["date"] == {"date": "2026-08-04"}
+    assert shaped["long_text_mkpzf3je"] == {"text": "GC still owes paint schedule"}
+    assert shaped["color_mm02xmc0"] == {"label": "Drywall"}
+    assert "lookup_mkpeqd8w" in errors
+
+
+def test_hard_exclusions_still_block_money_and_gfolder_link():
+    # GFolder Link / Progress are excluded by TYPE (link / lookup); Board Count by ID.
+    assert "link" in boards.JOBCHECK_HARD_EXCLUDED_TYPES
+    assert "lookup" in boards.JOBCHECK_HARD_EXCLUDED_TYPES
+    assert "board_counts" in boards.JOBCHECK_HARD_EXCLUDED_IDS
+    saved = boards.JOBCHECK_COLUMNS
+    boards.JOBCHECK_COLUMNS = saved + (
+        {"id": "link_mkwr6ef9", "label": "GFolder Link", "type": "link"},
+        {"id": "lookup_mkpeqd8w", "label": "Progress", "type": "lookup"},
+        {"id": "board_counts", "label": "Board Count", "type": "text"},
+    )
+    try:
+        ids = {c["id"] for c in jf.allowlisted_columns()}
+        assert "link_mkwr6ef9" not in ids
+        assert "lookup_mkpeqd8w" not in ids
+        assert "board_counts" not in ids
+    finally:
+        boards.JOBCHECK_COLUMNS = saved
+
+
+def test_pick_pictures_folder_prefers_most_recently_modified():
+    from adapters.drive import pick_pictures_folder
+    kids = [
+        {"id": "1", "name": "Photos", "mimeType": "application/vnd.google-apps.folder",
+         "modifiedTime": "2026-08-01T00:00:00.000Z"},
+        {"id": "2", "name": "Pictures", "mimeType": "application/vnd.google-apps.folder",
+         "modifiedTime": "2026-07-01T00:00:00.000Z"},
+        {"id": "3", "name": "pictures", "mimeType": "application/vnd.google-apps.folder",
+         "modifiedTime": "2026-08-03T12:00:00.000Z"},
+        {"id": "4", "name": "Pictures", "mimeType": "image/jpeg",
+         "modifiedTime": "2026-08-04T00:00:00.000Z"},
+    ]
+    picked = pick_pictures_folder(kids)
+    assert picked["id"] == "3"   # most recent folder named Pictures
+    assert pick_pictures_folder([]) is None
+    assert pick_pictures_folder([{"id": "x", "name": "Other",
+                                  "mimeType": "application/vnd.google-apps.folder"}]) is None
+
+
+def test_post_update_validation_without_network():
+    # Empty / whitespace rejected before any Monday call.
+    out = jf.post_update(101, "   ", "mark@greenvalleycontractors.com")
+    assert out["ok"] is False and out["error"] == "EMPTY_UPDATE"
+    out = jf.post_update(101, "", "mark@greenvalleycontractors.com")
+    assert out["ok"] is False and out["error"] == "EMPTY_UPDATE"
+    # Over-cap rejected before network.
+    out = jf.post_update(101, "x" * (jf.MAX_UPDATE_LEN + 1), "mark@x.com")
+    assert out["ok"] is False and out["error"] == "UPDATE_TOO_LONG"
+
+
+def test_upload_photos_validation_without_network():
+    out = jf.upload_photos(101, [], "mark@x.com", note="hi")
+    assert out["ok"] is False and out["error"] == "NO_FILES"
+
+
+def test_create_item_update_requires_body():
+    class _MC:
+        def _query(self, *a, **k):
+            raise AssertionError("should not call Monday on empty body")
+    try:
+        mj.create_item_update(_MC(), 101, "  ")
+    except ValueError as e:
+        assert "required" in str(e).lower()
+    else:
+        raise AssertionError("empty update body did not raise")
 
 
 if __name__ == "__main__":

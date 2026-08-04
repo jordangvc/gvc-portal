@@ -32,6 +32,7 @@ from shared import boards
 # Longest value the form may write to a text/long_text column. Generous for
 # field notes, small enough that a runaway client can't stuff megabytes in.
 MAX_TEXT_LEN = 4000
+MAX_UPDATE_LEN = 4000
 
 
 # ---------------------------------------------------------------------------
@@ -235,6 +236,7 @@ def get_job_detail(item_id: int) -> Optional[dict]:
             "ops_owner": values.get(mj.CONTEXT_COL_OPS_OWNER),
             "overdue": values.get(mj.CONTEXT_COL_OVERDUE),
             "project_status": values.get(mj.CONTEXT_COL_PROJECT_STATUS),
+            "progress": values.get(mj.CONTEXT_COL_PROGRESS),
         },
         "columns": form_columns,
     }
@@ -333,3 +335,195 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
     return {"ok": not failures, "item_id": item_id, "written": written,
             "failures": failures, "confirmed": confirmed,
             "slack": slack_status}
+
+
+# ---------------------------------------------------------------------------
+# Monday updates + Drive photos (Operations item; never auto-changes Stage)
+# ---------------------------------------------------------------------------
+
+def list_updates(item_id: int, *, limit: int = 25) -> dict:
+    """Recent Monday updates on the Ops item for the Job Check Updates card."""
+    from adapters.monday.client import MondayClient
+    from adapters.monday import jobcheck as mj
+
+    item_id = int(item_id)
+    mc = MondayClient()
+    # Prove the item exists (same board the form edits).
+    before = mj.get_item_values(mc, item_id, [])
+    if before is None:
+        return {"ok": False, "item_id": item_id, "error": "ITEM_NOT_FOUND",
+                "detail": f"Monday item {item_id} not found.", "updates": []}
+    updates = mj.list_item_updates(mc, item_id, limit=limit)
+    return {"ok": True, "item_id": item_id, "job": before["name"],
+            "count": len(updates), "updates": updates}
+
+
+def post_update(item_id: int, text: str, actor: str) -> dict:
+    """
+    Post a Monday update on the Operations item. Pure validation first
+    (empty/over-long rejected); never changes Stage or any column.
+    """
+    item_id = int(item_id)
+    body = (text or "").strip()
+    if not body:
+        return {"ok": False, "item_id": item_id, "error": "EMPTY_UPDATE",
+                "detail": "Update text is required."}
+    if len(body) > MAX_UPDATE_LEN:
+        return {"ok": False, "item_id": item_id, "error": "UPDATE_TOO_LONG",
+                "detail": f"Update too long ({len(body)} chars; max {MAX_UPDATE_LEN})."}
+
+    from adapters.monday.client import MondayClient
+    from adapters.monday import jobcheck as mj
+
+    mc = MondayClient()
+    before = mj.get_item_values(mc, item_id, [])
+    if before is None:
+        return {"ok": False, "item_id": item_id, "error": "ITEM_NOT_FOUND",
+                "detail": f"Monday item {item_id} not found."}
+
+    # Tag the poster so Monday's update stream shows who wrote it from the portal.
+    who = (actor or "").split("@")[0] or "portal"
+    full = f"Job Check update ({who}):\n{body}"
+    upd = mj.create_item_update(mc, item_id, full)
+    activity.log_event(
+        "jobcheck.update",
+        actor=actor,
+        target=str(item_id),
+        result="ok",
+        job=before["name"],
+        chars=len(body),
+        update_id=str((upd or {}).get("id") or "") or None,
+    )
+    return {"ok": True, "item_id": item_id, "update": upd, "body": full}
+
+
+def upload_photos(item_id: int, files: list, actor: str,
+                  note: Optional[str] = None) -> dict:
+    """
+    Upload photo files to the project's Drive Pictures folder, then post a
+    Monday update on the Operations item with the note + Drive links.
+
+    Chain: Ops item → linked Projects item → GFolder Link → Pictures
+    (create Pictures if missing). Clear error if GFolder is missing/unshared.
+    Does NOT change Stage.
+    """
+    item_id = int(item_id)
+    files = list(files or [])
+    if not files:
+        return {"ok": False, "item_id": item_id, "error": "NO_FILES",
+                "detail": "Choose at least one photo to upload."}
+
+    from pathlib import Path as _Path
+
+    from adapters.drive import DriveUploader
+    from adapters.monday.client import MondayClient
+    from adapters.monday import jobcheck as mj
+
+    mc = MondayClient()
+    before = mj.get_item_values(mc, item_id, [])
+    if before is None:
+        return {"ok": False, "item_id": item_id, "error": "ITEM_NOT_FOUND",
+                "detail": f"Monday item {item_id} not found."}
+
+    ginfo = mj.get_linked_project_gfolder(mc, item_id)
+    if not ginfo.get("folder_id"):
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "GFOLDER_MISSING",
+            "detail": ginfo.get("error") or "No GFolder Link for this job.",
+            "advice": ("Open the linked Projects item in Monday and paste the "
+                       "project Drive folder URL into GFolder Link. The portal "
+                       "uploads into that folder's Pictures subfolder — not "
+                       "Jake Completed Plans."),
+            "gfolder": ginfo,
+        }
+
+    try:
+        drive = DriveUploader()
+        pictures = drive.resolve_project_pictures_folder(ginfo["folder_id"])
+    except Exception as e:  # noqa: BLE001
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "DRIVE_UNAVAILABLE",
+            "detail": (f"Couldn't open the project Drive folder "
+                       f"({type(e).__name__}: {e}). Is the folder shared with "
+                       f"the portal service account?"),
+            "advice": ("Ask an admin to share the project folder with the Drive "
+                       "service account, then retry."),
+            "gfolder": ginfo,
+        }
+
+    uploaded: list[dict] = []
+    failures: list[str] = []
+    for entry in files:
+        # Accept (filename, bytes, mimetype) tuples or dicts.
+        if isinstance(entry, dict):
+            filename = entry.get("filename") or "photo.jpg"
+            data = entry.get("data") or b""
+            mimetype = entry.get("mimetype") or "image/jpeg"
+        else:
+            filename, data, mimetype = entry[0], entry[1], (
+                entry[2] if len(entry) > 2 else "image/jpeg")
+        filename = _Path(str(filename)).name or "photo.jpg"
+        if not data:
+            failures.append(f"{filename}: empty file")
+            continue
+        try:
+            result = drive.upload_or_replace_file(
+                folder_id=pictures["folder_id"],
+                filename=filename,
+                data=data,
+                mimetype=mimetype or "image/jpeg",
+            )
+            uploaded.append(result)
+        except Exception as e:  # noqa: BLE001
+            failures.append(f"{filename}: {type(e).__name__}: {e}")
+
+    if not uploaded:
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "UPLOAD_FAILED",
+            "detail": "No photos uploaded. " + "; ".join(failures[:5]),
+            "failures": failures,
+            "gfolder": ginfo,
+            "pictures": pictures,
+        }
+
+    who = (actor or "").split("@")[0] or "portal"
+    note_text = (note or "").strip()
+    lines = [f"Job Check photos ({who})"]
+    if note_text:
+        lines.append(note_text)
+    for u in uploaded:
+        link = u.get("web_view_link") or ""
+        name = u.get("filename") or "photo"
+        lines.append(f"{name}: {link}" if link else name)
+    body = "\n".join(lines)
+    upd = mj.create_item_update(mc, item_id, body)
+
+    activity.log_event(
+        "jobcheck.photo",
+        actor=actor,
+        target=str(item_id),
+        result="ok" if not failures else "partial",
+        severity="INFO" if not failures else "WARNING",
+        job=before["name"],
+        files=len(uploaded),
+        failed=len(failures),
+        pictures_folder=pictures.get("folder_id"),
+        update_id=str((upd or {}).get("id") or "") or None,
+    )
+    return {
+        "ok": not failures,
+        "item_id": item_id,
+        "uploaded": uploaded,
+        "failures": failures,
+        "monday_update": upd,
+        "body": body,
+        "gfolder": ginfo,
+        "pictures": pictures,
+    }
+

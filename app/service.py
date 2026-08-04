@@ -2308,6 +2308,124 @@ def ui_jobcheck_save(item_id: int, req: JobCheckSaveRequest, request: Request) -
         )
 
 
+class JobCheckUpdateRequest(BaseModel):
+    text: str = Field(..., description="Monday update body to post on the Ops item.")
+
+
+@app.get("/ui/api/jobcheck/job/{item_id}/updates")
+def ui_jobcheck_updates(item_id: int, request: Request) -> dict:
+    """Recent Monday updates on the Operations item. Read-only."""
+    require_feature(request, "jobcheck")
+    try:
+        out = jobcheck_flow.list_updates(item_id)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] updates error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail_msg, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail_msg, "advice": advice},
+        )
+    if not out.get("ok") and out.get("error") == "ITEM_NOT_FOUND":
+        raise HTTPException(
+            status_code=404,
+            detail={"ok": False, "code": "ITEM_NOT_FOUND",
+                    "detail": out.get("detail") or f"Monday item {item_id} doesn't exist.",
+                    "advice": "Reload the job list and pick again."},
+        )
+    return out
+
+
+@app.post("/ui/api/jobcheck/job/{item_id}/updates")
+def ui_jobcheck_post_update(item_id: int, req: JobCheckUpdateRequest,
+                            request: Request) -> dict:
+    """Post a Monday update on the Operations item. Never changes Stage."""
+    actor = require_feature(request, "jobcheck")
+    try:
+        out = jobcheck_flow.post_update(item_id, req.text, actor)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] post update error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail_msg, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail_msg, "advice": advice},
+        )
+    if not out.get("ok"):
+        code = out.get("error") or "UPDATE_FAILED"
+        status = 404 if code == "ITEM_NOT_FOUND" else 400
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code,
+                    "detail": out.get("detail") or "Couldn't post the update.",
+                    "advice": "Write a short note and try again."},
+        )
+    return out
+
+
+@app.post("/ui/api/jobcheck/job/{item_id}/photos")
+async def ui_jobcheck_photos(item_id: int, request: Request) -> dict:
+    """
+    Multipart photo upload → project Drive Pictures folder → Monday update
+    on the Operations item (note + Drive links). Never changes Stage.
+    """
+    actor = require_feature(request, "jobcheck")
+    form = await request.form()
+    note = str(form.get("note") or "")
+    files = []
+    for key in form.keys():
+        if key == "note":
+            continue
+        val = form.get(key)
+        # form.getlist for repeated keys
+        values = form.getlist(key) if hasattr(form, "getlist") else [val]
+        for v in values:
+            if hasattr(v, "read"):
+                raw = await v.read()
+                files.append((
+                    getattr(v, "filename", None) or "photo.jpg",
+                    raw,
+                    getattr(v, "content_type", None) or "image/jpeg",
+                ))
+    try:
+        out = jobcheck_flow.upload_photos(item_id, files, actor, note=note)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] photos error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail_msg, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail_msg, "advice": advice},
+        )
+    if not out.get("ok") and not out.get("uploaded"):
+        code = out.get("error") or "PHOTO_FAILED"
+        status = 404 if code == "ITEM_NOT_FOUND" else 400
+        if code in ("GFOLDER_MISSING", "DRIVE_UNAVAILABLE"):
+            status = 422
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code,
+                    "detail": out.get("detail") or "Photo upload failed.",
+                    "advice": out.get("advice") or "Fix the Drive folder link and retry."},
+        )
+    return out
+
+
 # ---------------------------------------------------------------------------
 # Job Start routes — the Sales → Operations handoff (designed 2026-07-29,
 # docs/portal-job-start-design.md). Gated by the `jobstart` grant.

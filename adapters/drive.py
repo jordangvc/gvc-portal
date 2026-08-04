@@ -412,6 +412,34 @@ class DriveUploader:
             "uploaded": uploaded,
             "note": note,
         }
+
+    def resolve_project_pictures_folder(self, project_folder_id: str) -> dict:
+        """
+        Resolve (or create) the Pictures subfolder under a project Drive folder.
+
+        Convention: GFolder Link → exact project folder → Pictures
+        (docs/MORNING_BRIEF_BUILD_SPEC.md). Never creates employee/date-named
+        media folders. If multiple Pictures children exist, uses the most
+        recently modified. If none exist, creates one.
+
+        Returns {folder_id, created, web_view_link?}.
+        Used by Job Check photo upload; Morning Brief uses resolve_pictures_folder.
+        """
+        if not project_folder_id:
+            raise ValueError("project_folder_id is required")
+        from subsystems.morning.media import pick_pictures_folder
+
+        children = self._list_children(project_folder_id, folders_only=True)
+        existing = pick_pictures_folder(children)
+        if existing:
+            return {
+                "folder_id": existing["id"],
+                "created": False,
+                "web_view_link": existing.get("webViewLink"),
+            }
+        folder_id = self.ensure_folder("Pictures", project_folder_id)
+        return {"folder_id": folder_id, "created": True, "web_view_link": None}
+
     def list_child_names(self, parent_id: str, *, folders: bool = False) -> list[str]:
         """
         Return the names of children under parent_id (non-folders by default).
