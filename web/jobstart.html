@@ -4,177 +4,182 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Job Start</title>
+<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  :root {
-    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
-    --err-bg: #FEE7E7; --err-line: #DC2626; --ok-bg: #F2F7EE; --ok-line: #bcd6c8;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
-  .who a { color: #fff; text-decoration: underline; }
-  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
-  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
-  main { max-width: 760px; margin: 0 auto; padding: 20px 16px 130px; display: grid; gap: 16px; }
-  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 18px; }
-  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 12px; }
-  .hint { font-size: 12.5px; color: var(--muted); margin-top: 6px; }
-  /* Standard GVC Portal header (shared across all tool pages) */
-  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-  header h1 { text-align: center; }
-  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
-    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
-    border-radius: 8px; opacity: .95; }
-  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
-  header .home-link .chev { font-size: 17px; line-height: 1; }
-  header #health, header .who { justify-self: end; }
-  @media (max-width: 720px) {
-    header { grid-template-columns: auto 1fr; }
-    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-    header #health, header .who { grid-row: 1; }
-  }
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px; justify-content: center; }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
 
-  /* Job Start page */
-  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
-  #status.show { display: block; }
-  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
-  #status.ok  { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
-  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); color: #6B4E12; }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
-  #status ul { margin: 6px 0 0; padding-left: 20px; }
-  #status a { color: inherit; font-weight: 700; }
+  /* Money-generator page-local styles on gvc tokens. JS keeps .btn/.card/.line-item. */
+  #health { font-size:var(--gvc-fs-caption); color:#DCE8DD; display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; align-items:center; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#C8C2B0; display:inline-block; margin-right:5px; }
+  .dot.ok { background:var(--gvc-brand-bright); } .dot.bad { background:#E88070; }
+  #status { display:none; } #status.show { display:flex; }
+  #preview-card { display:none; } #preview-card.show { display:block; }
+  iframe { width:100%; height:760px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-surface); }
 
-  #search { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; }
-  #search:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
-  #bidlist { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; gap: 6px; }
-  .bidbtn { display: block; width: 100%; text-align: left; min-height: 48px; padding: 10px 14px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; font: inherit; cursor: pointer; }
-  .bidbtn:hover { border-color: var(--green); }
-  .bidbtn .jname { font-weight: 600; }
-  .bidbtn .jmeta { font-size: 12.5px; color: var(--muted); }
-  .bidbtn.done { opacity: .62; }
-  .linkish { background: none; border: 0; padding: 8px 0; color: var(--green-dark);
-    text-decoration: underline; font: inherit; font-size: 14px; cursor: pointer; min-height: 44px; }
+  .card { background:var(--gvc-surface); border:1px solid var(--gvc-line); border-radius:var(--gvc-r-lg);
+    box-shadow:var(--gvc-shadow-sm, 0 1px 2px rgba(28,25,23,.06)); overflow:hidden; }
+  .card > h2 { margin:0; padding:14px 18px; font-size:var(--gvc-fs-small); font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--gvc-ink-soft);
+    border-bottom:1px solid var(--gvc-line-soft); background:var(--gvc-bg); }
+  .card > h2 .opt { text-transform:none; letter-spacing:0; font-weight:400; color:var(--gvc-muted); }
+  .card > :not(h2) { margin-left:18px; margin-right:18px; }
+  .card > :not(h2):first-of-type { margin-top:16px; }
+  .card > :last-child { margin-bottom:18px; }
+  /* When card body is only an actions row / nested blocks, keep padding sane */
+  .card .actions { margin:16px 18px 18px; }
+  .card .grid { margin:16px 18px; }
+  .card .hint { margin-left:18px; margin-right:18px; }
+  .card form, form .card { } /* no-op marker */
 
-  .pill { display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; padding: 2px 9px; border-radius: 999px; margin-left: 6px; }
-  .pill.done { background: var(--ok-bg); color: var(--green-dark); border: 1px solid var(--ok-line); }
-  .pill.draft { background: #FBF3E1; color: var(--gold-dark); border: 1px solid #E3CFA0; }
-  /* Bid Board stage, shown on every row — a bid no longer has to BE accepted to
-     appear here, so the row has to say which it is. */
-  .pill.stage { background: #F1F5F9; color: #475569; border: 1px solid #CBD5E1; }
-  .pill.drift { background: #FFF7ED; color: #9A3412; border: 1px solid #FDBA74; }
-  /* Section headers keep open bids visibly BELOW work in flight without hiding
-     them behind a filter toggle nobody finds. */
-  .listhead { margin: 16px 0 6px; font-size: 11.5px; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
-  .listhead:first-child { margin-top: 2px; }
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--gvc-space-4); }
+  .grid .full { grid-column:1 / -1; }
+  @media (max-width:720px){ .grid { grid-template-columns:1fr; } }
 
-  .ctx { display: grid; gap: 4px; }
-  .ctx .jobname { font-size: 17px; font-weight: 700; }
-  .ctx .jobname a { color: var(--ink); text-decoration: none; }
-  .ctx .jobname a:hover { color: var(--green-dark); text-decoration: underline; }
-  .ctx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13.5px; color: var(--muted); }
-  .ctx-meta b { color: var(--ink); font-weight: 600; }
+  label { display:block; font-size:var(--gvc-fs-small); font-weight:600; margin-bottom:4px; color:var(--gvc-ink-soft); }
+  label .opt { font-weight:400; color:var(--gvc-muted); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
+  textarea, select {
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
+    min-height:var(--gvc-ctl-h); }
+  textarea { resize:vertical; min-height:64px; height:auto; }
+  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
 
-  .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid #f1ece0; }
-  .field:last-child { border-bottom: 0; }
-  .field > label { font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
-    color: var(--muted); }
-  .field.req > label::after { content: " *"; color: var(--err-line); font-size: 15px; }
-  /* A required field that's still empty is the gate talking. Show it plainly
-     rather than only counting it in the bar — the person filling this in on a
-     phone should see WHICH box is holding up the handoff. */
-  .field.missing { background: #FFF8F8; border-radius: 8px; padding-left: 10px; padding-right: 10px;
-    box-shadow: inset 3px 0 0 var(--err-line); }
-  /* A value that's PRESENT but can't be written to Monday (a board count of
-     "340 sheets", a status label that no longer exists). Different failure from
-     `missing`, so it looks different — and it's caught here at fill time rather
-     than by Operations at accept time, when the packet is already locked. */
-  .field.bad { background: #FFFBF2; border-radius: 8px; padding-left: 10px; padding-right: 10px;
-    box-shadow: inset 3px 0 0 var(--gold-dark); }
-  .field .fbad { font-size: 12.5px; font-weight: 600; color: #8A5A00; }
-  .field .fhelp { font-size: 12.5px; color: var(--muted); }
-  .srctag { margin-left: 8px; font-size: 10.5px; font-weight: 600; text-transform: none;
-    letter-spacing: 0; color: var(--gold-dark); background: #FBF3E1;
-    border: 1px solid #E3CFA0; border-radius: 999px; padding: 1px 8px; }
-  .srcnote { background: #F2F7EE; border: 1px solid var(--ok-line); border-radius: 8px;
-    padding: 10px 13px; font-size: 13.5px; color: var(--green-dark); margin-bottom: 12px; }
-  .srcnote.none { background: #F6F5F0; border-color: var(--line); color: var(--muted); }
-  .srcnote a { color: inherit; font-weight: 700; }
-  .select-wrap { position: relative; display: block; width: 100%; }
-  .status-select { -webkit-appearance: none; appearance: none;
-    width: 100%; min-height: 48px; padding: 10px 42px 10px 16px; border-radius: 10px;
-    border: 1px solid var(--line); background-color: #F6F5F0; color: var(--ink);
-    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
-  .status-select.unset { color: var(--muted); font-weight: 600; }
-  .status-select:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
-  .select-chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    pointer-events: none; font-size: 13px; opacity: .85; }
-  .status-select option { background: #fff; color: var(--ink); font-weight: 600; }
-  .field input[type="text"], .field input[type="date"], .field input[type="url"],
-  .field input[type="number"], .field textarea {
-    width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
-  .field textarea { min-height: 96px; resize: vertical; }
-  .field input:focus, .field textarea:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    border:1px solid transparent; border-radius:var(--gvc-r-md); padding:0 16px; min-height:var(--gvc-ctl-h);
+    font:inherit; font-size:var(--gvc-fs-small); font-weight:700; cursor:pointer;
+    background:var(--gvc-green); color:#fff; }
+  .btn:hover { background:var(--gvc-green-dark); }
+  .btn.secondary { background:var(--gvc-surface); color:var(--gvc-green-dark); border-color:var(--gvc-line); }
+  .btn.secondary:hover { background:var(--gvc-tint-green); }
+  .btn.danger { background:var(--gvc-surface); color:var(--gvc-danger); border-color:#E2C3BA; }
+  .btn.gold { background:var(--gvc-gold); color:#3A2D0E; border-color:var(--gvc-gold-dark); font-weight:700; }
+  .btn.gold:hover { background:var(--gvc-gold-dark); color:#fff; }
+  .btn.small { min-height:36px; padding:0 12px; font-size:var(--gvc-fs-caption); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .actions { display:flex; gap:var(--gvc-space-3); align-items:center; flex-wrap:wrap; }
+  .totals { margin-left:auto; text-align:right; font-size:var(--gvc-fs-small); color:var(--gvc-muted); }
+  .totals strong { color:var(--gvc-ink); font-size:var(--gvc-fs-body); }
+  .result-line { padding:4px 0; } .result-line a { color:var(--gvc-green-dark); font-weight:600; }
+  code { background:var(--gvc-line-soft); padding:1px 5px; border-radius:var(--gvc-r-sm); font-size:var(--gvc-fs-caption); }
+  .spinner { display:none; } .spinner.show { display:inline; }
+  .save-state { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-left:auto; align-self:center; }
+  .save-state.synced { color:var(--gvc-green-dark); } .save-state.local { color:var(--gvc-gold-dark); }
+  .draft-row { display:flex; align-items:center; gap:var(--gvc-space-3); padding:10px 12px;
+    border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); margin-bottom:8px; background:var(--gvc-bg); }
+  .draft-row.active { border-color:var(--gvc-green); background:var(--gvc-tint-green); }
+  .draft-row .d-main { flex:1; min-width:0; }
+  .draft-row .d-label { font-weight:600; color:var(--gvc-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .draft-row .d-meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:2px; }
+  .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px; font-weight:600; }
+  .badge.synced { background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; }
+  .badge.local { background:var(--gvc-warn-tint); color:var(--gvc-gold-dark); border:1px solid #E3CFA0; }
+  .badge.active { background:#e0f2fe; color:#1A72B8; border:1px solid #bae6fd; }
+  .line-item { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:12px; margin-bottom:10px; background:var(--gvc-bg); }
+  .line-item .row1 { display:grid; grid-template-columns:1fr 130px 70px auto; gap:10px; align-items:end; }
+  @media (max-width:720px){ .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
+  .line-item .detail { margin-top:8px; }
+  .line-item .opt-row { margin-top:8px; font-size:var(--gvc-fs-small); color:var(--gvc-ink-soft); display:flex; align-items:center; gap:6px; }
+  .line-item .opt-row input { width:auto; min-height:auto; }
+  .li-scope-badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px;
+    background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; font-weight:600; }
+  .scope-trade { margin-bottom:12px; }
+  .scope-trade + .scope-trade { border-top:1px dashed var(--gvc-line); padding-top:12px; }
+  .scope-trade-name { font-size:var(--gvc-fs-caption); font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--gvc-green-dark); margin-bottom:6px; }
+  .scope-item { padding:5px 0; }
+  .scope-check { display:flex; align-items:center; gap:8px; font-weight:600; color:var(--gvc-ink-soft); cursor:pointer; margin:0; }
+  .scope-check input { width:auto; min-height:auto; }
+  .scope-editor { margin:8px 0 4px 26px; padding:10px 12px; border:1px solid var(--gvc-line); border-left:3px solid var(--gvc-green); border-radius:var(--gvc-r-md); background:var(--gvc-surface); }
+  .scope-editor-row { display:flex; align-items:end; gap:12px; margin-top:8px; flex-wrap:wrap; }
+  .scope-editor-row .price-wrap { width:150px; }
+  .sc-state { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
+  .sc-state.ok { color:var(--gvc-green-dark); font-weight:600; } .sc-state.err { color:var(--gvc-danger); font-weight:600; }
+  .scope-hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:6px; }
+  #scope-admin { margin-top:12px; padding:12px; border:1px dashed var(--gvc-green); border-radius:var(--gvc-r-md); background:var(--gvc-surface); }
+  .cat-trade { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:10px; margin-bottom:10px; background:var(--gvc-bg); }
+  .cat-trade-head { display:flex; gap:8px; align-items:end; margin-bottom:8px; } .cat-trade-head .grow { flex:1; }
+  .cat-scope { border-top:1px dashed var(--gvc-line); padding:8px 0; margin-top:4px; }
+  .cat-scope .row { display:flex; gap:8px; align-items:end; } .cat-scope .row .grow { flex:1; } .cat-scope .row .price { width:120px; }
+  .sub { margin-top:var(--gvc-space-3); padding:var(--gvc-space-3); border:1px dashed var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-bg); }
+  .modal-overlay { position:fixed; inset:0; background:rgba(28,25,23,.45); display:none; align-items:center; justify-content:center; z-index:80; padding:var(--gvc-space-4); }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--gvc-surface); border-radius:var(--gvc-r-lg); border:1px solid var(--gvc-line); max-width:640px; width:100%; max-height:90vh; overflow:auto; box-shadow:0 16px 40px rgba(0,0,0,.18); }
+  .modal-hd { padding:var(--gvc-space-4) var(--gvc-space-5); border-bottom:1px solid var(--gvc-line); display:flex; justify-content:space-between; align-items:center; gap:var(--gvc-space-3); }
+  .modal-bd { padding:var(--gvc-space-5); }
+  .modal-ft { padding:var(--gvc-space-4) var(--gvc-space-5); border-top:1px solid var(--gvc-line); display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; justify-content:flex-end; }
 
-  #jobname { width: 100%; min-height: 48px; padding: 10px 14px; font-size: 16px;
-    border: 1px solid var(--line); border-radius: 8px; background: #fff; font-family: inherit; }
-  #jobname:focus { outline: 2px solid var(--gold); border-color: var(--gold); }
 
-  .savebar { position: fixed; left: 0; right: 0; bottom: 0; background: rgba(250,250,248,.96);
-    border-top: 1px solid var(--line); padding: 12px 16px calc(12px + env(safe-area-inset-bottom));
-    display: none; }
-  .savebar.show { display: block; }
-  .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700;
-    border: 0; border-radius: 10px; min-height: 52px; padding: 12px 22px; font-size: 17px;
-    cursor: pointer; flex: 1; }
-  .btn.gold:hover { filter: brightness(1.06); }
-  .btn.gold:disabled { opacity: .55; cursor: not-allowed; filter: none; }
-  .btn.ghost { background: #fff; color: var(--green-dark); border: 1px solid var(--line);
-    border-radius: 10px; min-height: 52px; padding: 12px 18px; font-size: 15px;
-    font-weight: 700; cursor: pointer; flex: 0 0 auto; }
-  .btn.ghost:hover { border-color: var(--green); }
+  /* Job Start widgets */
+  #health { font-size:var(--gvc-fs-caption); color:#DCE8DD; display:flex; gap:var(--gvc-space-3);
+    flex-wrap:wrap; align-items:center; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#C8C2B0; display:inline-block; margin-right:5px; }
+  .dot.ok { background:var(--gvc-brand-bright); } .dot.bad { background:#E88070; }
+  .listhead { display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-bottom:12px; }
+  .listhead input#search { flex:1; min-width:200px; }
+  .bidbtn { display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px;
+    border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-bg);
+    cursor:pointer; font:inherit; color:var(--gvc-ink); }
+  .bidbtn:hover { border-color:var(--gvc-green); background:var(--gvc-tint-green); }
+  .bidbtn .meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:2px; }
+  .pill { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill);
+    margin-left:6px; font-weight:600; border:1px solid var(--gvc-line); background:var(--gvc-surface); }
+  .pill.open { background:#e0f2fe; color:#1A72B8; border-color:#bae6fd; }
+  .pill.accepted { background:var(--gvc-ok-tint); color:var(--gvc-green-dark); border-color:#BCD6C8; }
+  .ctx { font-size:var(--gvc-fs-small); color:var(--gvc-muted); margin-bottom:12px; }
+  .ctx-meta { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  .field { margin-bottom:12px; }
+  .field label { display:block; font-size:var(--gvc-fs-small); font-weight:600; margin-bottom:4px; color:var(--gvc-ink-soft); }
+  .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
+  .srcnote { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
+  .srcnote.none { color:var(--gvc-danger); }
+  .srctag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:var(--gvc-r-pill);
+    background:var(--gvc-line-soft); color:var(--gvc-muted); margin-left:6px; }
+  .state { font-size:var(--gvc-fs-small); margin:8px 0; }
+  .state.blocked, .fbad { color:var(--gvc-danger); font-weight:600; }
+  .readonly-note { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); padding:8px 10px;
+    background:var(--gvc-bg); border-radius:var(--gvc-r-md); border:1px dashed var(--gvc-line); }
+  .select-wrap { position:relative; }
+  .select-chev { pointer-events:none; }
+  .status-select { width:100%; }
+  .linkish { color:var(--gvc-green-dark); font-weight:600; cursor:pointer; text-decoration:underline;
+    background:none; border:0; font:inherit; padding:0; }
+  .savebar { position:sticky; bottom:0; background:var(--gvc-surface); border-top:1px solid var(--gvc-line);
+    padding:12px 0; margin-top:16px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;
+    z-index:5; }
+  #gatecount { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
+  #savestate { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-left:auto; }
+  .who { display:none; }
 
-  /* Handoff state banner — the first thing you should see on opening a job. */
-  .state { border-radius: 8px; padding: 11px 14px; font-size: 14px; margin-bottom: 4px; }
-  .state .lead { font-weight: 700; }
-  .state.draft { background: #F6F5F0; border: 1px solid var(--line); color: var(--muted); }
-  .state.with_ops { background: var(--warn-bg); border: 1px solid var(--warn-line); color: #6B4E12; }
-  .state.sent_back { background: var(--err-bg); border: 1px solid #F3C7C2; color: #7A1F1F; }
-  .state.accepted { background: var(--ok-bg); border: 1px solid var(--ok-line); color: var(--green-dark); }
-  .state a { color: inherit; font-weight: 700; }
-  .readonly-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
-  fieldset.lock { border: 0; padding: 0; margin: 0; opacity: .72; }
-  #gatecount { font-size: 13px; color: var(--muted); white-space: nowrap; }
-  #gatecount.blocked { color: #7A1F1F; font-weight: 700; }
-  #savestate { font-size: 12px; color: var(--muted); text-align: center; margin-top: 6px; min-height: 16px; }
 </style>
 </head>
 <body>
-<header>
-  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
-  <h1>Job Start</h1>
-  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Job Start</span>
+    <div class="gvc-topbar-right">
+      <div id="health">Checking service…</div>
+      <span class="gvc-topbar-sep"></span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
 </header>
 
-<main>
-  <div id="status"></div>
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Projects</p>
+    <h1 class="gvc-h1">Job Start</h1>
+    <p class="gvc-sub">Turn an accepted bid into a job packet — Drive folder, Operations task, and the handoff PDF.</p>
+  </div>
+
+  <div class="gvc-stack">
+
+  <div class="gvc-banner" id="status"></div>
 
   <div class="card" id="pickcard">
     <h2>Pick a bid</h2>
@@ -230,6 +235,7 @@
     <div class="hint">Creates a draft in hello@ — nothing sends until a person reviews it
       and clicks send.</div>
   </div>
+  </div><!-- /gvc-stack -->
 </main>
 
 <div class="savebar" id="savebar">
@@ -256,11 +262,12 @@ let savingNow = false;
 
 function showStatus(kind, html) {
   const el = $("#status");
-  el.className = "show " + kind;
-  el.innerHTML = html;
+  const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
+  el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+  el.innerHTML = "<div>" + html + "</div>";
   el.scrollIntoView({ block: "nearest" });
 }
-function hideStatus() { $("#status").className = ""; }
+function hideStatus() { $("#status").className = "gvc-banner"; }
 
 /* ---------- bid list ---------- */
 
