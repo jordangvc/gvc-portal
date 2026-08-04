@@ -27,6 +27,7 @@ from typing import Any, Optional
 import requests
 
 from adapters.monday import cache as monday_cache
+from shared.doc_number import for_invoice, for_project, is_spine_number
 
 MONDAY_API_URL = "https://api.monday.com/v2"
 MONDAY_API_VERSION = "2024-10"  # pin so query semantics don't drift on us
@@ -911,12 +912,15 @@ class MondayClient:
                 drive_project_folder_url = None
         drive_project_folder_url = drive_project_folder_url or col_text(COL_GFOLDER_LINK)
 
-        # ---- Project # → the invoice identifier IS the project number ----
-        # The estimate generator assigns the canonical number once; it carries
-        # through the project unchanged onto the invoice (and onto change orders).
-        # No separate invoice-number generation.
+        # ---- Project # → invoice Document # = INV-{same core} ----
+        # Estimate assigns the core once (EST-…); Job Start stamps PRO-… on
+        # the project; invoicing uses INV-… — letters change, number doesn't.
         project_number = col_text(COL_PROJECT_NUMBER)
-        suggested_identifier = project_number or None
+        if project_number and is_spine_number(project_number):
+            project_number = for_project(project_number)
+        suggested_identifier = (
+            for_invoice(project_number) if project_number else None
+        )
 
         job: dict = {"name": project["name"], "monday_item_id": int(item_id)}
         if site_address:

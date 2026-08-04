@@ -143,12 +143,10 @@ def identifier_issue(payload: dict) -> Optional[str]:
         return None
     if ESTIMATE_NUMBER_RE.fullmatch(identifier):
         return None
-    if identifier.upper().startswith("EST-"):
-        return (
-            f"legacy identifier {identifier!r}; portal accepts blank (auto-assign) "
-            "or YYYY-MMDD-NNN"
-        )
-    return f"identifier {identifier!r} is not blank or YYYY-MMDD-NNN"
+    return (
+        f"identifier {identifier!r} is not blank or EST-YYYY-MMDD-NNN "
+        "(bare YYYY-MMDD-NNN also accepted)"
+    )
 
 
 def run_contract_check() -> bool:

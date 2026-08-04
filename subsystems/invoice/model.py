@@ -6,6 +6,7 @@ import os
 from datetime import date, datetime, timedelta
 
 from shared import paths
+from shared.doc_number import core_number, for_invoice
 from shared.money import fmt_date, fmt_money
 from shared.recipients import validate_client_recipients
 
@@ -18,7 +19,9 @@ STRIPE_KEY_PREFIXES = ("sk_live_", "rk_live_", "sk_test_", "rk_test_")
 # Email is validated separately via shared.recipients (multi-address OR
 # explicit no-email / print-mail-hand-deliver path for customers without inbox).
 REQUIRED_CLIENT_FIELDS = ["name", "billing_address"]
-REQUIRED_INVOICE_FIELDS = ["identifier", "issue_date", "payment_terms", "line_items"]
+# identifier may be blank when job.project_number carries the spine — see
+# ensure_invoice_identifier() (auto INV-YYYY-MMDD-NNN).
+REQUIRED_INVOICE_FIELDS = ["issue_date", "payment_terms", "line_items"]
 
 
 def validate_environment(
@@ -82,10 +85,33 @@ def validate_environment(
     return warnings, errors
 
 
+def ensure_invoice_identifier(data: dict) -> None:
+    """
+    In-place: normalize / auto-assign the invoice Document #.
+
+    Portal spine: INV-{same core as EST-/PRO-}. Prefer an explicit identifier;
+    otherwise derive from job.project_number. Legacy non-spine ids (GVC-…,
+    C-005) are left untouched.
+    """
+    inv = data.setdefault("invoice", {})
+    raw = (inv.get("identifier") or "").strip()
+    if raw:
+        if core_number(raw):
+            inv["identifier"] = for_invoice(raw)
+        else:
+            inv["identifier"] = raw
+        return
+    src = ((data.get("job") or {}).get("project_number") or "").strip()
+    if core_number(src):
+        inv["identifier"] = for_invoice(src)
+
+
 def validate(data: dict) -> None:
     """Cheap validation — clear errors beat silent Stripe failures."""
     if "client" not in data or "invoice" not in data or "job" not in data:
         raise ValueError("Input must have top-level keys: client, job, invoice")
+
+    ensure_invoice_identifier(data)
 
     for f in REQUIRED_CLIENT_FIELDS:
         if not data["client"].get(f):
@@ -95,6 +121,12 @@ def validate(data: dict) -> None:
     for f in REQUIRED_INVOICE_FIELDS:
         if not data["invoice"].get(f):
             raise ValueError(f"invoice.{f} is required")
+
+    if not (data["invoice"].get("identifier") or "").strip():
+        raise ValueError(
+            "invoice.identifier is required (or set job.project_number so "
+            "INV-YYYY-MMDD-NNN can be auto-assigned)."
+        )
 
     if not data["job"].get("name"):
         raise ValueError("job.name is required")

@@ -11,9 +11,9 @@ the estimate —
   2. Backfill FILL-IF-EMPTY ONLY — existing Monday values are never
      overwritten (Monday stays canonical). Columns: scope long-text,
      estimate date, expiration date, rounded total, Project Type.
-  3. Always set: `Estimate #` (the assigned YYYY-MMDD-NNN) and
-     Stage -> "Sent to Client" (the office sends same-day or next-morning;
-     corrections are handled manually at send time).
+  3. Always set: `Estimate #` (bare YYYY-MMDD-NNN core; outbound docs use
+     EST-{core}) and Stage -> "Sent to Client" (the office sends same-day
+     or next-morning; corrections are handled manually at send time).
   4. Attach the PDF to the `Estimate PDF` files column.
 
 Every step is graceful: write_back() returns a report dict and never
@@ -36,6 +36,7 @@ from typing import Optional
 from adapters.monday import cache as monday_cache
 from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID
+from shared.doc_number import is_spine_number
 NEW_DEALS_GROUP_ID = "new_group__1"  # "New Deals (For Estimate)" — leads awaiting an estimate
 OPEN_DEALS_GROUP_ID = "topics"       # "Open Deals" — estimate sent / deal open
 
@@ -672,15 +673,12 @@ COL_PLAN_FOLDER = os.environ.get("GVC_MONDAY_BID_PLAN_FOLDER_COL", "text_mm5rjq0
 JAKE_PLAN_FOLDER_ROOT = os.environ.get(
     "GVC_JAKE_PLAN_FOLDER_ID", "1X1vuutnTuCN0hxTZSANmm3QC6SQ41Gc0")
 
-# An Estimate # the portal recognises as its own: YYYY-MMDD-NNN.
-_PORTAL_EST_RE = re.compile(r"^\d{4}-\d{4}-\d{3}$")
-
-
 def is_portal_estimate_number(value) -> bool:
-    """True when the Estimate # cell already holds a portal-format number.
-    Anything else — blank, or a project name like 'Hickey Residence' — is
-    treated as unset so finalize can write the real number over it."""
-    return bool(_PORTAL_EST_RE.match(str(value or "").strip()))
+    """True when the Estimate # cell already holds a portal spine number
+    (bare YYYY-MMDD-NNN or EST-/PRO-/INV- prefixed). Anything else — blank,
+    or a project name like 'Hickey Residence' — is treated as unset so
+    finalize can write the real number over it."""
+    return is_spine_number(str(value or "").strip())
 
 
 def read_plan_folder_number(mc, item_id: int) -> Optional[str]:

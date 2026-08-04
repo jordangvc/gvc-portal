@@ -43,6 +43,12 @@ from subsystems.estimate.scope_catalog import (
     default_catalog,
     group_scope_details,
 )
+from subsystems.estimate.number import (
+    ESTIMATE_NUMBER_RE,
+    monday_estimate_cell,
+    next_estimate_number,
+    normalize_estimate_identifier,
+)
 
 ESTIMATE_VALIDITY_DAYS = 30
 HELLO_FROM_ADDR = "hello@greenvalleycontractors.com"
@@ -153,14 +159,13 @@ def validate(data: dict) -> None:
         _require(False, str(e))
     _require(bool(job.get("name")), "job.name (project name) is required.")
     # estimate.identifier is OPTIONAL — when absent the service assigns the
-    # next YYYY-MMDD-NNN (see estimate_number.py). A supplied value must be
-    # well-formed (manual numbers were retired 2026-06-10).
+    # next EST-YYYY-MMDD-NNN (see estimate_number.py / shared.doc_number).
+    # A supplied value must be a portal spine number (bare or EST-/PRO-/INV-).
     ident = (est.get("identifier") or "").strip()
     if ident:
-        from subsystems.estimate.number import ESTIMATE_NUMBER_RE
         _require(
             bool(ESTIMATE_NUMBER_RE.match(ident)),
-            f"estimate.identifier {ident!r} is not YYYY-MMDD-NNN "
+            f"estimate.identifier {ident!r} is not EST-YYYY-MMDD-NNN "
             "(leave it blank to auto-assign).",
         )
 
@@ -416,11 +421,14 @@ def process_estimate(
     # dry-run shows the PROPOSED next number (not reserved); finalize
     # re-resolves at that moment so the number reflects reality even if
     # other estimates finalized since the preview.
-    if not (data.get("estimate") or {}).get("identifier"):
-        from subsystems.estimate.number import next_estimate_number
-        data = deepcopy(data)
-        data.setdefault("estimate", {})["identifier"] = next_estimate_number(
-            output_dir=Path(output_dir)
+    data = deepcopy(data)
+    est_block = data.setdefault("estimate", {})
+    if not (est_block.get("identifier") or "").strip():
+        est_block["identifier"] = next_estimate_number(output_dir=Path(output_dir))
+    else:
+        # Normalize bare / PRO- / INV- inputs to the EST- outbound form.
+        est_block["identifier"] = normalize_estimate_identifier(
+            est_block["identifier"]
         )
 
     # Load the standard-scope catalog for the Additional Services page. Never
@@ -755,8 +763,12 @@ def process_estimate(
         #    write_back() never raises (see monday_estimate.py).
         from adapters.monday.estimate import write_back as monday_write_back
         writeback.update(
-            monday_write_back(enriched, pdf_path=output_path,
-                              estimate_number=identifier, revise=revise)
+            # Bid Board Estimate # is a numbers column — write bare core.
+            monday_write_back(
+                enriched, pdf_path=output_path,
+                estimate_number=monday_estimate_cell(identifier),
+                revise=revise,
+            )
         )
         if revise:
             writeback["revised"] = True

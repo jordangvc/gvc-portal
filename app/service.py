@@ -66,6 +66,7 @@ from shared import activity as activity
 from shared import activity_detail as activity_detail
 from shared import activity_read as activity_read
 from shared import portal_store as portal_store
+from shared.doc_number import core_number, for_estimate
 from subsystems.estimate import drafts as estimate_drafts
 from subsystems.estimate import scope_catalog as scope_catalog
 from subsystems.estimate import takeoff_import as takeoff_import
@@ -1627,7 +1628,16 @@ def ui_estimate_lookup(request: Request, monday_url: str = "") -> dict:
     existing = prefill.pop("_existing_estimate", None)
     revision: Optional[dict] = None
     if existing and existing.get("number"):
-        est_no = existing["number"]
+        from subsystems.estimate.revision import merge_revision_prefill, sidecar_filename
+        # Monday stores bare core; outbound / Drive use EST-{core}. Prefer EST-
+        # for the form; try both sidecar names so pre-prefix estimates still load.
+        raw_no = existing["number"]
+        est_no = for_estimate(raw_no) if core_number(raw_no) else raw_no
+        sidecar_names = []
+        for candidate in (est_no, core_number(raw_no) or "", raw_no):
+            name = sidecar_filename(candidate) if candidate else ""
+            if name and name not in sidecar_names:
+                sidecar_names.append(name)
         # Capture the customer the LIVE Monday bid is linked to BEFORE a sidecar
         # merge replaces `prefill` — this is the name the estimate would reuse, and
         # the one to surface in the duplicate-bid guard (a duplicated bid keeps the
@@ -1636,16 +1646,22 @@ def ui_estimate_lookup(request: Request, monday_url: str = "") -> dict:
         revision = {"estimate_number": est_no, "sidecar_found": False,
                     "customer_name": bid_customer}
         try:
-            from subsystems.estimate.revision import merge_revision_prefill, sidecar_filename
             from adapters.drive import DriveUploader
             uploader = DriveUploader()
-            sidecar = uploader.find_file_anywhere(sidecar_filename(est_no))
+            sidecar = None
+            for name in sidecar_names:
+                sidecar = uploader.find_file_anywhere(name)
+                if sidecar:
+                    break
             if sidecar:
                 original = uploader.download_json(sidecar["id"])
                 full = merge_revision_prefill(original, monday_item_id=item_id)
                 # Keep the lookup's match context; the sidecar wins on data.
                 full["_matched"] = prefill.get("_matched") or {}
                 full["_notes"] = []
+                # Normalize identifier to EST-… for the revise form.
+                if (full.get("estimate") or {}).get("identifier"):
+                    full["estimate"]["identifier"] = est_no
                 prefill = full
                 revision["sidecar_found"] = True
                 revision["prior_total"] = sum(
