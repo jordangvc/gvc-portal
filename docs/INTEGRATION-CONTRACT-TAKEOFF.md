@@ -1,4 +1,4 @@
-# Integration Contract — GVC Portal ↔ Takeoff App (Jul 26, 2026)
+# Integration Contract — GVC Portal ↔ Takeoff App (updated Aug 4, 2026)
 
 Mirror of `docs/PORTAL-INTEGRATION-BRIEF.md` in the takeoff repo
 (`C:\GVC\Takeoff\gvc-takeoff-deploy_16`). When this contract changes,
@@ -27,10 +27,45 @@ Field sources on the takeoff side: `prepared_by` = signed-in user;
 quantity 1, `optional: true` for alternates); `special_notes` = board-size /
 MR / Type-X callouts; `notes` = lead-time text.
 
-Phase 2 (later): takeoff writes the same JSON to Firebase
-`gvc_portal_outbox/{draftId}`; an agent or portal endpoint stages a portal
-estimate DRAFT from it. Per this portal's standing rule (confirm before
-assuming): staged as draft, never auto-sent.
+### Phase 1 — manual export/import (live contract)
+
+1. In Takeoff, use **Export for Portal** on the Review screen.
+2. Open `/ui/estimate?takeoff=1`.
+3. In **Import from Takeoff**, upload the `.json` file or paste its contents,
+   then choose **Import & save draft**.
+4. The portal normalizes and validates the export, saves it to the shared
+   estimate-draft store, and fills the Estimate Generator form. The estimator
+   reviews every field before previewing or finalizing.
+
+The portal accepts either the raw `example_estimate.json` object or
+`{"data": <that object>}`:
+
+- `POST /ui/api/estimate/from-takeoff` — browser session + `estimate` grant.
+- `POST /v1/estimate/from-takeoff` — `X-API-Key`, for Takeoff automation or an
+  agent. This endpoint stages the same shared draft and has no finalize mode.
+- `GET /ui/api/estimate/takeoff-contract` — browser session + `estimate` grant;
+  returns machine-readable body-shape, required-field, endpoint, and identifier
+  hints.
+
+Both POST routes return `{ok, draft, warnings}`. The returned `draft.payload`
+is the normalized canonical estimate. A missing draft store returns
+`STORE_NOT_CONFIGURED`; invalid exports return `TAKEOFF_PAYLOAD_INVALID` with
+field-level errors.
+
+Legacy identifiers such as `EST-2026-1103` are always cleared during import.
+The staged draft keeps `estimate.identifier` blank; the portal assigns the
+canonical `YYYY-MMDD-NNN` only when a person later finalizes the estimate.
+
+**Safety boundary:** these routes only upsert `portal/estimate-drafts.json`.
+They do not render/finalize, create a Gmail draft, write Monday, post Slack,
+call PandaDoc, or send anything to a client.
+
+### Phase 2 — Firebase outbox (later)
+
+Takeoff may later write the same JSON to Firebase
+`gvc_portal_outbox/{draftId}` for automated pickup. The outbox reader/poller is
+not part of Phase 1 and is not built. When added, it must call the same
+draft-only staging flow; it must never auto-finalize or auto-send.
 
 ## Seam 2 — outbound results (portal/Monday → takeoff history)
 
@@ -53,3 +88,10 @@ Projects board, that's a contract change → update both copies.
 - hello@ = billing@ = ONE Gmail token, shared with takeoff dispatch drafts.
 - GVC Workspace revokes cloud-scoped OAuth tokens within hours (May 2026
   finding) — expect gcloud re-auth at deploy time.
+
+## 2026-08-04 — Seam 1 portal staging implemented
+
+The portal now owns normalization, validation, and shared-draft staging through
+the two `from-takeoff` POST routes above. The Estimate Generator gained the
+upload/paste card and `?takeoff=1` focus link. Firebase outbox pickup remains a
+separate Phase 2 change.
