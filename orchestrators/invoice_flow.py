@@ -689,8 +689,9 @@ def _run(data: dict, *, mode: str, finalize: bool, source_label: str) -> dict:
             )
 
         # Change Order billing writeback: if this LIVE invoice bills one or more
-        # COs (invoice.billed_change_orders), flip each CO subitem → Billed and
-        # link this invoice. Runs only after Stripe success, on live; graceful +
+        # COs (invoice.billed_change_orders), flip each CO → Billed on Monday.
+        # Prefers top-level item ids (monday_item_id); legacy monday_subitem_id
+        # still works. Runs only after Stripe success, on live; graceful +
         # idempotent (never unwinds the invoice). Works for standard or AIA
         # invoices alike — it's just a reference-driven status write.
         if mode == "live":
