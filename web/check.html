@@ -39,11 +39,19 @@
   label .opt { font-weight:400; color:var(--gvc-muted); }
   input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
   textarea, select {
-    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line-strong); border-radius:var(--gvc-r-md);
     font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
-    min-height:var(--gvc-ctl-h); }
+    min-height:var(--gvc-ctl-h);
+    transition: border-color .12s ease, box-shadow .12s ease; }
   textarea { resize:vertical; min-height:64px; height:auto; }
-  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):hover,
+  textarea:hover, select:hover { border-color: var(--gvc-muted); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):focus,
+  textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--gvc-green);
+    box-shadow: var(--gvc-focus);
+  }
   .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
 
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -189,7 +197,7 @@
         <label>Search &amp; pick the open invoice(s) this check pays</label>
         <p class="muted" style="margin:2px 0 6px;">One check can pay several invoices — click to select each one. Each invoice is prefilled with its remaining balance; lower an amount to record a <strong>partial payment</strong> (the invoice stays open with the new balance).</p>
         <input id="m-search" placeholder="Filter by invoice #, customer, or amount…" autocomplete="off" />
-        <div id="m-list"></div>
+        <div id="m-list" class="gvc-results"></div>
         <div id="m-picked" class="muted" style="margin-top:6px;">No invoice selected.</div>
         <div id="m-total" class="muted" style="margin-top:4px;"></div>
         <div id="m-mismatch" style="display:none; background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px; padding:8px 12px; margin-top:8px; font-size:13px;">

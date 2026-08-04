@@ -39,11 +39,19 @@
   label .opt { font-weight:400; color:var(--gvc-muted); }
   input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
   textarea, select {
-    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line-strong, var(--gvc-line)); border-radius:var(--gvc-r-md);
     font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
-    min-height:var(--gvc-ctl-h); }
+    min-height:var(--gvc-ctl-h);
+    transition: border-color .12s ease, box-shadow .12s ease; }
   textarea { resize:vertical; min-height:64px; height:auto; }
-  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):hover,
+  textarea:hover, select:hover { border-color: var(--gvc-muted); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):focus,
+  textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--gvc-green);
+    box-shadow: var(--gvc-focus);
+  }
   .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
 
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -153,7 +161,7 @@
             placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, C-005…" /></div>
         <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
       </div>
-      <div id="search-results" style="margin-top:10px;"></div>
+      <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
       <div id="prefill-note" class="hint"></div>
       <details id="advanced-pn" style="margin-top:12px;">
         <summary style="cursor:pointer;font-size:var(--gvc-fs-caption);color:var(--gvc-muted);font-weight:600;">Advanced: Project # only</summary>
@@ -172,7 +180,7 @@
 
     <div class="card" id="drafts-card" style="display:none;">
       <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress invoices — yours and your teammates')</span></h2>
-      <div id="drafts-list"></div>
+      <div id="drafts-list" class="gvc-results"></div>
     </div>
 
     <div class="card">
@@ -180,7 +188,7 @@
       <div class="grid">
         <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports billing identity)</span></label>
           <input name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
-          <div id="customer-results" style="display:none;border:1px solid var(--border,#ccc);border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;"></div></div>
+          <div id="customer-results" class="gvc-results" style="display:none;"></div></div>
         <div><label>Client / company name</label><input name="client_name" required placeholder="Henderson Residence" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Mark Henderson" /></div>
         <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>

@@ -39,11 +39,19 @@
   label .opt { font-weight:400; color:var(--gvc-muted); }
   input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
   textarea, select {
-    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line-strong, var(--gvc-line)); border-radius:var(--gvc-r-md);
     font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
-    min-height:var(--gvc-ctl-h); }
+    min-height:var(--gvc-ctl-h);
+    transition: border-color .12s ease, box-shadow .12s ease; }
   textarea { resize:vertical; min-height:64px; height:auto; }
-  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):hover,
+  textarea:hover, select:hover { border-color: var(--gvc-muted); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):focus,
+  textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--gvc-green);
+    box-shadow: var(--gvc-focus);
+  }
   .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
 
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -146,7 +154,7 @@
         <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “Greg Gavin”, “Cincinnati”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
       <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
     </div>
-    <div id="search-results" style="margin-top:10px;"></div>
+    <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
     <div id="dup-guard" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid #d9a300;background:#fff8e1;border-radius:8px;">
       <div style="font-weight:600;margin-bottom:6px;">⚠ This bid already has an estimate</div>
       <div id="dup-guard-msg" style="font-size:14px;line-height:1.45;"></div>
@@ -179,7 +187,7 @@
 
   <div class="card" id="drafts-card" style="display:none;">
     <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress estimates — yours and your teammates')</span></h2>
-    <div id="drafts-list"></div>
+    <div id="drafts-list" class="gvc-results"></div>
   </div>
 
   <form id="estimate-form" autocomplete="off">
