@@ -41,6 +41,7 @@ OPTIONAL_ROUTES = (
 # Keep discovery narrow and explicit so this smoke check never imports every
 # package in the repo looking for a function with a vague name.
 NORMALIZER_CANDIDATES = (
+    ("subsystems.estimate.takeoff_import", "normalize_takeoff_payload"),
     ("subsystems.estimate.takeoff", "normalize_takeoff_estimate"),
     ("subsystems.estimate.takeoff", "normalize_estimate"),
     ("subsystems.estimate.takeoff_import", "normalize_takeoff_estimate"),
