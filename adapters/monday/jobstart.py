@@ -610,15 +610,24 @@ mutation ($itemId: ID!, $groupId: String!) {
 
 
 def mark_bid_accepted(mc, bid_id: int, *, current_stage: Optional[str] = None,
-                      current_group: Optional[str] = None) -> dict:
+                      current_group: Optional[str] = None,
+                      current_accepted_date: Optional[str] = None,
+                      accepted_date: Optional[str] = None) -> dict:
     """
-    Set the bid's Stage to Accepted and move it into the Won Deals group, so
-    Sales never has to leave Job Start to flip a stage by hand.
+    Set the bid's Stage to Accepted, stamp Accepted Date when blank, and move
+    it into the Won Deals group, so Sales never has to leave Job Start to flip
+    a stage by hand.
 
-    Returns {stage_written, group_moved, errors} — a report, never an exception.
-    Both halves are INDEPENDENT and IDEMPOTENT: pass the values already read
-    from the board and each is skipped when it's already right, so re-sending a
-    packet doesn't rewrite a stage somebody else set.
+    Returns {stage_written, date_written, group_moved, errors} — a report, never
+    an exception. The three halves are INDEPENDENT and IDEMPOTENT: pass the
+    values already read from the board and each is skipped when it's already
+    right, so re-sending a packet doesn't rewrite a stage somebody else set or
+    clobber an Accepted Date a human typed.
+
+    Accepted Date (`date6`) was null on every won deal before the portal — the
+    legacy automation never wrote it. Stamping it here (when Sales marks the
+    bid won) is the truthful moment; hand_off() only fills the date if it is
+    still blank, so an earlier stamp survives ops acceptance days later.
 
     SAFETY NOTE (checked against the live board 2026-07-30 before this was
     written, per the standing "confirm, don't assume" rule): no ACTIVE Bid Board
@@ -630,18 +639,38 @@ def mark_bid_accepted(mc, bid_id: int, *, current_stage: Optional[str] = None,
     fires on Accepted. If someone re-enables 1939926362, this write will start
     racing it — and adopt-or-create in hand_off() is what absorbs that.
     """
-    report: dict = {"stage_written": False, "group_moved": False, "errors": []}
+    from datetime import date as _date
+
+    report: dict = {"stage_written": False, "date_written": False,
+                    "group_moved": False, "errors": []}
     bid_id = int(bid_id)
 
     already_accepted = ((current_stage or "").strip().lower()
                         == boards.JOBSTART_ACCEPTED_STAGE.strip().lower())
+    # Fill-if-empty. When the caller omits current_accepted_date: assume blank
+    # only while flipping an open bid (Accepted Date is blank in practice on
+    # those rows). When stage is already Accepted and no date was passed, leave
+    # the column alone — preserves idempotent re-sends that don't re-read it.
+    if current_accepted_date is None:
+        date_empty = not already_accepted
+    else:
+        date_empty = not str(current_accepted_date).strip()
+    today = (accepted_date or _date.today().isoformat()).strip()[:10]
+
+    values: dict = {}
     if not already_accepted:
+        values[boards.JOBSTART_BID_STAGE_COL] = {
+            "label": boards.JOBSTART_ACCEPTED_STAGE}
+    if date_empty and today:
+        values[boards.JOBSTART_BID_ACCEPTED_DATE_COL] = {"date": today}
+
+    if values:
         try:
-            _update_item(mc, BID_BOARD_ID, bid_id, {
-                boards.JOBSTART_BID_STAGE_COL: {
-                    "label": boards.JOBSTART_ACCEPTED_STAGE},
-            })
-            report["stage_written"] = True
+            _update_item(mc, BID_BOARD_ID, bid_id, values)
+            if boards.JOBSTART_BID_STAGE_COL in values:
+                report["stage_written"] = True
+            if boards.JOBSTART_BID_ACCEPTED_DATE_COL in values:
+                report["date_written"] = True
         except Exception as e:  # noqa: BLE001 — never lose the packet over this
             report["errors"].append(f"stage: {type(e).__name__}: {e}")
 
@@ -653,7 +682,7 @@ def mark_bid_accepted(mc, bid_id: int, *, current_stage: Optional[str] = None,
         except Exception as e:  # noqa: BLE001
             report["errors"].append(f"group: {type(e).__name__}: {e}")
 
-    if report["stage_written"] or report["group_moved"]:
+    if report["stage_written"] or report["group_moved"] or report["date_written"]:
         monday_cache.invalidate("list:jobstart:bids")
     return report
 
@@ -844,10 +873,15 @@ def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
               file=sys.stderr)
 
     # ---- Bid Board stamp: the columns the legacy automation never wrote ----
+    # Accepted Date is fill-if-empty: mark_bid_accepted() already stamps it when
+    # Sales marks the bid won. Overwriting here with ops-accept day would lie
+    # about when the bid was Accepted. Project/ops links always write — linking
+    # the boards IS the handoff's job.
     stamp: dict[str, Any] = {
-        boards.JOBSTART_BID_ACCEPTED_DATE_COL: {"date": accepted_date},
         boards.JOBSTART_BID_PROJECT_LINK_COL: {"item_ids": [project_id]},
     }
+    if not (bid.get("accepted_date") or "").strip():
+        stamp[boards.JOBSTART_BID_ACCEPTED_DATE_COL] = {"date": accepted_date}
     if report.get("ops_id"):
         stamp[boards.JOBSTART_BID_OPS_LINK_COL] = {"item_ids": [report["ops_id"]]}
     try:

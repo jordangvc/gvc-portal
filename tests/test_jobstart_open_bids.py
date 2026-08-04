@@ -184,7 +184,8 @@ rep2 = mj.mark_bid_accepted(mc2, 1, current_stage="Accepted",
                             current_group=boards.JOBSTART_BID_WON_GROUP)
 check("ALREADY CORRECT ⇒ no writes at all", mc2.calls == [], mc2.calls)
 check("...and the report says nothing was done",
-      rep2 == {"stage_written": False, "group_moved": False, "errors": []}, rep2)
+      rep2 == {"stage_written": False, "date_written": False,
+               "group_moved": False, "errors": []}, rep2)
 
 mc3 = FakeClient()
 rep3 = mj.mark_bid_accepted(mc3, 1, current_stage="Accepted",
@@ -205,6 +206,54 @@ mc5 = FakeClient(fail_on=("update", "move"))
 rep5 = mj.mark_bid_accepted(mc5, 1, current_stage="Open", current_group="topics")
 check("both halves failing still returns a report",
       len(rep5["errors"]) == 2 and rep5["stage_written"] is False, rep5)
+
+
+
+# Accepted Date (`date6`) — the legacy automation never wrote it; every won deal
+# used to leave it blank. mark_bid_accepted now stamps today fill-if-empty.
+import json as _json
+from datetime import date as _date
+_today = _date.today().isoformat()
+
+mc_date = FakeClient()
+rep_date = mj.mark_bid_accepted(mc_date, 99, current_stage="Sent to Client",
+                                current_group="topics")
+check("accepting an open bid also stamps Accepted Date",
+      rep_date["date_written"] is True, rep_date)
+upd = next(v for kind, v in mc_date.calls if kind == "update")
+written = _json.loads(upd["values"])
+check("the stage label is in the same mutation as the date",
+      boards.JOBSTART_BID_STAGE_COL in written
+      and boards.JOBSTART_BID_ACCEPTED_DATE_COL in written, written)
+check("Accepted Date is today",
+      written[boards.JOBSTART_BID_ACCEPTED_DATE_COL]["date"] == _today, written)
+
+mc_keep = FakeClient()
+rep_keep = mj.mark_bid_accepted(
+    mc_keep, 99, current_stage="Sent to Client", current_group="topics",
+    current_accepted_date="2026-07-01")
+check("a typed Accepted Date is never overwritten",
+      rep_keep["date_written"] is False, rep_keep)
+upd_keep = _json.loads(next(v for k, v in mc_keep.calls if k == "update")["values"])
+check("...and is absent from the write",
+      boards.JOBSTART_BID_ACCEPTED_DATE_COL not in upd_keep, upd_keep)
+
+mc_fill = FakeClient()
+rep_fill = mj.mark_bid_accepted(
+    mc_fill, 99, current_stage="Accepted",
+    current_group=boards.JOBSTART_BID_WON_GROUP,
+    current_accepted_date="")
+check("already-Accepted with a blank date still gets stamped",
+      rep_fill["date_written"] is True and rep_fill["stage_written"] is False
+      and rep_fill["group_moved"] is False, rep_fill)
+check("...and that is the only mutation", len(mc_fill.calls) == 1, mc_fill.calls)
+
+mc_skip = FakeClient()
+rep_skip = mj.mark_bid_accepted(
+    mc_skip, 99, current_stage="Accepted",
+    current_group=boards.JOBSTART_BID_WON_GROUP)
+check("already-Accepted with no date arg stays a no-op",
+      mc_skip.calls == [] and rep_skip["date_written"] is False, rep_skip)
 
 
 # ---------------------------------------------------------------------------

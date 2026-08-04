@@ -378,7 +378,8 @@ function renderContext(bid, d) {
   const notes = [];
   if (d.will_mark_accepted) {
     notes.push(`This bid is still open on Monday. Sending the packet will mark it `
-      + `<b>${esc(d.accepted_stage || "Accepted")}</b> and move it to Won Deals.`);
+      + `<b>${esc(d.accepted_stage || "Accepted")}</b>, stamp Accepted Date, `
+      + `and move it to Won Deals.`);
   }
   if (d.already && (d.already.project || d.already.ops)) {
     const which = [d.already.project ? "a project" : null, d.already.ops ? "an ops task" : null]
