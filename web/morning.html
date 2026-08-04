@@ -365,10 +365,23 @@ async function checkPhotoReady(itemId) {
       $("#updFilesMeta").textContent = "";
       const reason = body.reason || body.photo_block_reason
         || "No project Drive folder linked.";
-      setUpdMsg(
-        "warn",
-        reason + " Monday-only update still works — Post update for a note without photos."
-      );
+      let hint = reason
+        + " Monday-only update still works — Post update for a note without photos.";
+      // Read-only name-match tip (never auto-writes). Best-effort; ignore failures.
+      try {
+        const sug = await api(
+          "/ui/api/morning/suggest-links?item_id=" + encodeURIComponent(itemId)
+        );
+        const proj = sug.project || {};
+        const match = proj.match;
+        if (match && !proj.ambiguous && match.name) {
+          hint += " Possible Projects match: “" + match.name + "”"
+            + " — link it on Operations (link_to_projects), then set GFolder.";
+        } else if (proj.ambiguous) {
+          hint += " Several Projects names look similar — confirm the link in Monday by hand.";
+        }
+      } catch (_e) { /* tip is optional */ }
+      setUpdMsg("warn", hint);
     }
   } catch (err) {
     // Fail open on the file picker so a transient Monday blip doesn't block
