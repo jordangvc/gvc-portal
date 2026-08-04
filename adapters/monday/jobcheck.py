@@ -31,9 +31,16 @@ from __future__ import annotations
 import json
 from typing import Any, Optional
 
+from adapters.drive import folder_id_from_url
 from adapters.monday import cache as monday_cache
-from shared.boards import (JOBCHECK_BOARD_ID, JOBCHECK_SKIP_GROUP_IDS,
-                             PROJECTS_BOARD_ID)
+from shared.boards import (
+    JOBCHECK_BOARD_ID,
+    JOBCHECK_SKIP_GROUP_IDS,
+    JOBSTART_BID_PROJECT_LINK_COL,
+    OPERATIONS_BOARD_ID,
+    PROJECTS_BOARD_ID,
+    PROJECTS_GFOLDER_COL,
+)
 
 # Read-only context columns shown at the top of the Job Check page (never
 # editable there). OPERATIONS-board ids, verified live via get_board_info
@@ -401,6 +408,234 @@ def create_item_update(mc, item_id: int, body: str) -> dict:
     return data.get("create_update") or {}
 
 
+def _link_column_url(cv: dict) -> Optional[str]:
+    """
+    Monday Link columns store the real URL in LinkValue.url / value JSON.
+    Column `text` is often just the label ("GFolder") — not usable for Drive.
+    """
+    url = (cv.get("url") or "").strip()
+    if url.startswith("http") or "/folders/" in url:
+        return url
+    raw = cv.get("value")
+    if raw:
+        try:
+            parsed = json.loads(raw) if isinstance(raw, str) else raw
+            if isinstance(parsed, dict):
+                u = (parsed.get("url") or "").strip()
+                if u:
+                    return u
+        except (TypeError, ValueError, json.JSONDecodeError):
+            pass
+    text = (cv.get("text") or "").strip()
+    if text and ("/folders/" in text or text.startswith("http")
+                 or (len(text) >= 10 and " " not in text and "/" not in text
+                     and text.lower() != "gfolder")):
+        return text
+    return None
+
+
+def photo_ready_status(ginfo: dict) -> dict:
+    """
+    Map get_linked_project_gfolder() (or get_project_gfolder) output into a
+    photo-upload readiness verdict. Pure — no I/O. `photo_ready` is True only
+    when a concrete Drive folder_id is present.
+    """
+    ginfo = ginfo or {}
+    folder_id = ginfo.get("folder_id")
+    return {
+        "has_project_link": bool(ginfo.get("project_item_id")),
+        "has_gfolder": bool(ginfo.get("gfolder_url")),
+        "gfolder_url": ginfo.get("gfolder_url"),
+        "project_item_id": ginfo.get("project_item_id"),
+        "folder_id": folder_id,
+        "photo_ready": bool(folder_id),
+        "photo_block_reason": (
+            None if folder_id
+            else (ginfo.get("error") or "Drive folder not linked.")
+        ),
+        # Alias kept for callers that still read `.reason`.
+        "reason": (
+            None if folder_id
+            else (ginfo.get("error") or "Drive folder not linked.")
+        ),
+    }
+
+
+def set_projects_gfolder_if_empty(
+    mc, project_item_id: int, folder_url: str, *, text: str = "GFolder",
+) -> dict:
+    """
+    Fill-if-empty write to Projects GFolder Link (link_mkwr6ef9 /
+    PROJECTS_GFOLDER_COL). Never overwrites a non-empty GFolder Link.
+
+    Returns {ok, written: bool, skipped: bool, reason?, gfolder_url, error?}.
+    Bare Drive folder IDs are wrapped into a folders/ URL.
+    """
+    url = (folder_url or "").strip()
+    out: dict = {
+        "ok": False,
+        "written": False,
+        "skipped": False,
+        "gfolder_url": None,
+    }
+    if not project_item_id:
+        out["reason"] = "No Projects item id."
+        out["error"] = out["reason"]
+        return out
+    if not url:
+        out["reason"] = "No Drive folder URL."
+        out["error"] = out["reason"]
+        return out
+    if "/folders/" not in url and not url.startswith("http"):
+        if " " not in url and "/" not in url and len(url) >= 10:
+            url = f"https://drive.google.com/drive/folders/{url}"
+        else:
+            out["reason"] = "folder_url required"
+            out["error"] = out["reason"]
+            return out
+    out["gfolder_url"] = url
+
+    gcol = PROJECTS_GFOLDER_COL
+    read_q = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) {
+          id
+          text
+          value
+          ... on LinkValue { url text }
+        }
+      }
+    }
+    """
+    try:
+        data = mc._query(read_q, {
+            "ids": [str(int(project_item_id))],
+            "cols": [gcol],
+        })
+    except Exception as e:  # noqa: BLE001
+        out["reason"] = f"read failed: {type(e).__name__}: {e}"
+        out["error"] = out["reason"]
+        return out
+    items = data.get("items") or []
+    if not items:
+        out["reason"] = f"Projects item {project_item_id} not found."
+        out["error"] = out["reason"]
+        return out
+    existing = None
+    for cv in items[0].get("column_values") or []:
+        if cv.get("id") == gcol:
+            existing = _link_column_url(cv)
+            break
+    if existing:
+        out["ok"] = True
+        out["skipped"] = True
+        out["reason"] = "GFolder Link already set."
+        out["gfolder_url"] = existing
+        return out
+
+    values = {gcol: {"url": url, "text": text or "GFolder"}}
+    write_q = """
+    mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
+      change_multiple_column_values(
+        board_id: $boardId,
+        item_id: $itemId,
+        column_values: $values
+      ) { id }
+    }
+    """
+    try:
+        mc._query(write_q, {
+            "boardId": str(PROJECTS_BOARD_ID),
+            "itemId": str(int(project_item_id)),
+            "values": json.dumps(values),
+        })
+    except Exception as e:  # noqa: BLE001
+        out["reason"] = f"write failed: {type(e).__name__}: {e}"
+        out["error"] = out["reason"]
+        return out
+    out["ok"] = True
+    out["written"] = True
+    out["gfolder_url"] = url
+    return out
+
+
+def set_ops_project_link_if_empty(mc, ops_item_id: int,
+                                  project_item_id: int) -> dict:
+    """
+    Fill-if-empty write of Operations `link_to_projects` → one Projects item.
+
+    NEVER overwrites an existing relation. Returns
+      {ok, written, skipped, project_item_id, reason?, error?}
+    """
+    if not ops_item_id or not project_item_id:
+        return {"ok": False, "written": False, "skipped": False,
+                "project_item_id": None, "error": "ops + project ids required"}
+    col = CONTEXT_COL_PROJECT_LINK
+    q = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) {
+          id
+          text
+          ... on BoardRelationValue {
+            linked_item_ids
+            linked_items { id }
+          }
+        }
+      }
+    }
+    """
+    try:
+        data = mc._query(q, {"ids": [str(int(ops_item_id))], "cols": [col]})
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "written": False, "skipped": False,
+                "project_item_id": None,
+                "error": f"read failed: {type(e).__name__}: {e}"}
+    items = data.get("items") or []
+    if not items:
+        return {"ok": False, "written": False, "skipped": False,
+                "project_item_id": None,
+                "error": f"Operations item {ops_item_id} not found"}
+    linked: list[int] = []
+    for cv in items[0].get("column_values") or []:
+        if cv.get("id") != col:
+            continue
+        linked = [int(x) for x in (cv.get("linked_item_ids") or []) if x]
+        if not linked:
+            linked = [int(x["id"]) for x in (cv.get("linked_items") or [])
+                      if x and x.get("id")]
+        break
+    if linked:
+        return {"ok": True, "written": False, "skipped": True,
+                "project_item_id": linked[0], "reason": "already_set"}
+
+    values = {col: {"item_ids": [int(project_item_id)]}}
+    mutation = """
+    mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
+      change_multiple_column_values(
+        board_id: $boardId, item_id: $itemId, column_values: $values
+      ) { id }
+    }
+    """
+    board_id = JOBCHECK_BOARD_ID or OPERATIONS_BOARD_ID
+    try:
+        mc._query(mutation, {
+            "boardId": str(board_id),
+            "itemId": str(int(ops_item_id)),
+            "values": json.dumps(values),
+        })
+    except Exception as e:  # noqa: BLE001
+        return {"ok": False, "written": False, "skipped": False,
+                "project_item_id": int(project_item_id),
+                "error": f"write failed: {type(e).__name__}: {e}"}
+    monday_cache.invalidate("list:jobcheck:active_jobs")
+    return {"ok": True, "written": True, "skipped": False,
+            "project_item_id": int(project_item_id)}
+
+
 def get_linked_project_id(mc, ops_item_id: int) -> dict:
     """
     Resolve Ops item → linked Projects item via `link_to_projects`.
@@ -467,9 +702,6 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
     project, missing GFolder, or unparseable URL). Never raises for missing
     data — callers decide whether to fail hard (photo upload) or warn.
     """
-    from adapters.drive import folder_id_from_url
-    from shared.boards import PROJECTS_GFOLDER_COL
-
     link = get_linked_project_id(mc, ops_item_id)
     out: dict = {
         "gfolder_url": None,
@@ -524,37 +756,104 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
                         "into Monday's GFolder Link column.")
         return out
     out["gfolder_url"] = gurl
-    folder_id = folder_id_from_url(gurl)
-    if not folder_id:
+    fid = folder_id_from_url(gurl)
+    if not fid:
         out["error"] = (f"GFolder Link isn't a recognizable Drive folder URL: "
                         f"{gurl!r}")
         return out
-    out["folder_id"] = folder_id
+    out["folder_id"] = fid
     return out
 
 
-def _link_column_url(cv: dict) -> Optional[str]:
+def get_project_gfolder(mc, project_item_id: int) -> dict:
     """
-    Monday Link columns store the real URL in LinkValue.url / value JSON.
-    Column `text` is often just the label ("GFolder") — not usable for Drive.
+    Read GFolder Link on one Projects item. Same return shape as
+    get_linked_project_gfolder (minus the Ops→Projects hop).
     """
-    url = (cv.get("url") or "").strip()
-    if url.startswith("http") or "/folders/" in url:
-        return url
-    raw = cv.get("value")
-    if raw:
-        try:
-            parsed = json.loads(raw) if isinstance(raw, str) else raw
-            if isinstance(parsed, dict):
-                u = (parsed.get("url") or "").strip()
-                if u:
-                    return u
-        except (TypeError, ValueError, json.JSONDecodeError):
-            pass
-    text = (cv.get("text") or "").strip()
-    if text and ("/folders/" in text or text.startswith("http")
-                 or (len(text) >= 10 and " " not in text and "/" not in text
-                     and text.lower() != "gfolder")):
-        return text
-    return None
+    out: dict = {
+        "gfolder_url": None,
+        "folder_id": None,
+        "project_item_id": int(project_item_id),
+        "error": None,
+    }
+    gcol = PROJECTS_GFOLDER_COL
+    q = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) {
+          id
+          text
+          value
+          ... on LinkValue { url text }
+        }
+      }
+    }
+    """
+    try:
+        data = mc._query(q, {"ids": [str(int(project_item_id))], "cols": [gcol]})
+    except Exception as e:  # noqa: BLE001
+        out["error"] = f"Couldn't read GFolder Link ({type(e).__name__})."
+        return out
+    items = data.get("items") or []
+    if not items:
+        out["error"] = f"Projects item {project_item_id} not found."
+        return out
+    gurl = None
+    for cv in items[0].get("column_values") or []:
+        if cv.get("id") == gcol:
+            gurl = _link_column_url(cv)
+            break
+    if not gurl:
+        out["error"] = ("No GFolder Link on this Projects item. "
+                        "Ask office to paste the project Drive folder URL "
+                        "into Monday's GFolder Link column.")
+        return out
+    out["gfolder_url"] = gurl
+    fid = folder_id_from_url(gurl)
+    if not fid:
+        out["error"] = (f"GFolder Link isn't a recognizable Drive folder URL: "
+                        f"{gurl!r}")
+        return out
+    out["folder_id"] = fid
+    return out
 
+
+def linked_project_ids_from_bid(mc, bid_item_id: int) -> list[int]:
+    """
+    Read Bid Board connect_boards4 ("Projects") → linked Projects item ids.
+    Empty list when the relation is blank or the item is missing. Never raises
+    for empty data.
+    """
+    col = JOBSTART_BID_PROJECT_LINK_COL
+    query = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) {
+          id
+          ... on BoardRelationValue {
+            linked_item_ids
+            linked_items { id }
+          }
+        }
+      }
+    }
+    """
+    data = mc._query(query, {"ids": [str(int(bid_item_id))], "cols": [col]})
+    items = data.get("items") or []
+    if not items:
+        return []
+    out: list[int] = []
+    for cv in items[0].get("column_values") or []:
+        if cv.get("id") != col:
+            continue
+        for x in (cv.get("linked_item_ids") or []):
+            if x:
+                out.append(int(x))
+        if not out:
+            for li in (cv.get("linked_items") or []):
+                if li and li.get("id"):
+                    out.append(int(li["id"]))
+        break
+    return out
