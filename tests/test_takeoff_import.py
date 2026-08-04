@@ -10,12 +10,16 @@ Runs under pytest OR directly: ``python tests/test_takeoff_import.py``.
 from __future__ import annotations
 
 import json
+import re
+import subprocess
 import sys
 from copy import deepcopy
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from fastapi import HTTPException  # noqa: E402
+from app import service  # noqa: E402
 from orchestrators import estimate_flow  # noqa: E402
 from orchestrators import takeoff_import_flow  # noqa: E402
 from subsystems.estimate import drafts as estimate_drafts  # noqa: E402
@@ -95,11 +99,9 @@ def test_request_and_contract_helpers_describe_both_supported_shapes():
 
 
 def test_service_registers_takeoff_staging_routes_without_finalize_mode():
-    from app.service import app
-
     routes = {
         (route.path, method)
-        for route in app.routes
+        for route in service.app.routes
         for method in (route.methods or set())
     }
     assert ("/ui/api/estimate/from-takeoff", "POST") in routes
@@ -108,9 +110,6 @@ def test_service_registers_takeoff_staging_routes_without_finalize_mode():
 
 
 def test_api_key_route_stages_raw_payload_without_finalize_controls():
-    from fastapi import HTTPException
-    from app import service
-
     original_key = service.API_KEY
     original_import = service.takeoff_import_flow.import_takeoff_as_draft
     seen = {}
@@ -147,6 +146,22 @@ def test_api_key_route_stages_raw_payload_without_finalize_controls():
     assert response["draft"]["payload"]["estimate"]["identifier"] == ""
     assert seen["actor"] == "api:takeoff"
     assert "mode" not in seen["raw"] and "finalize" not in seen["raw"]
+
+
+def test_estimate_import_ui_script_parses_and_exposes_deep_link():
+    html = (ROOT / "web" / "estimate.html").read_text(encoding="utf-8")
+    scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.DOTALL)
+    assert scripts, "estimate page has no inline script"
+    checked = subprocess.run(
+        ["node", "--check", "-"],
+        input="\n".join(scripts),
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert checked.returncode == 0, checked.stderr
+    assert 'id="takeoff-import-card"' in html
+    assert 'get("takeoff") === "1"' in html
 
 
 def test_generated_draft_record_has_safe_takeoff_id_and_blank_identifier():
