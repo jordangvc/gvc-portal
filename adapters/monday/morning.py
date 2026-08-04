@@ -23,7 +23,8 @@ _VALUE_FRAGMENT = """
           ... on MirrorValue { display_value }
           ... on BoardRelationValue { display_value }
           ... on PeopleValue {
-            persons_and_teams { id name }
+            text
+            persons_and_teams { id kind }
           }
 """
 
@@ -48,16 +49,30 @@ def _column_text(cv: dict) -> Optional[str]:
 
 
 def _people(cv: dict) -> list[dict]:
-    """People column → [{id, name, email}, ...] (email may be missing)."""
+    """
+    People column → [{id, name, email}, ...].
+
+    Monday's PeopleEntity only exposes id+kind (not name). Names come from the
+    column `text` (comma-separated). Email requires a separate users query —
+    slice 1 matches on display name from portal_store + this text.
+    """
+    names = [n.strip() for n in (_column_text(cv) or "").split(",") if n.strip()]
+    entities = cv.get("persons_and_teams") or []
     out: list[dict] = []
-    for p in cv.get("persons_and_teams") or []:
+    for i, p in enumerate(entities):
         if not p:
             continue
+        kind = (p.get("kind") or "").lower()
+        if kind and kind not in ("person", "user", ""):
+            continue  # skip teams/agents for Ops. Owner matching
         out.append({
             "id": p.get("id"),
-            "name": (p.get("name") or "").strip() or None,
-            "email": None,  # Monday User.email needs a scoped fragment; name match is enough for GVC
+            "name": names[i] if i < len(names) else (names[0] if len(names) == 1 else None),
+            "email": None,
         })
+    # Text-only fallback when persons_and_teams is empty but text is set.
+    if not out and names:
+        out = [{"id": None, "name": n, "email": None} for n in names]
     return out
 
 
