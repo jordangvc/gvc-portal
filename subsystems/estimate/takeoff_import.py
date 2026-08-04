@@ -79,9 +79,9 @@ def _has_text(value: Any) -> bool:
 def normalize_takeoff_payload(raw: Any) -> dict:
     """Return a deep-copied canonical estimate payload.
 
-    Unsupported top-level fields are intentionally dropped.  Valid portal
-    estimate numbers survive, while legacy Takeoff identifiers such as
-    ``EST-...`` are cleared so finalize can assign ``YYYY-MMDD-NNN``.
+    Unsupported top-level fields are intentionally dropped.  Every supplied
+    estimate identifier is cleared so a person finalizing the reviewed draft
+    receives a fresh portal-assigned ``YYYY-MMDD-NNN``.
     """
     source = raw if isinstance(raw, dict) else {}
     normalized = {
@@ -105,13 +105,10 @@ def normalize_takeoff_payload(raw: Any) -> dict:
 
     estimate = normalized["estimate"]
     _strip_string_fields(estimate, ("identifier", "date", "expiry_date", "notes"))
-    identifier = estimate.get("identifier") or ""
-    if not isinstance(identifier, str) or (
-        identifier and not ESTIMATE_NUMBER_RE.fullmatch(identifier)
-    ):
-        estimate["identifier"] = ""
-    else:
-        estimate["identifier"] = identifier
+    # A Takeoff import is always a NEW estimate draft, never a revision.  Even a
+    # syntactically valid portal number must not survive staging: the portal
+    # assigns the next number only after a person reviews and finalizes it.
+    estimate["identifier"] = ""
 
     raw_items = estimate.get("line_items")
     if not isinstance(raw_items, list):
@@ -220,8 +217,8 @@ def normalization_warnings(raw: Any, data: dict) -> list[str]:
     normalized_identifier = (data.get("estimate") or {}).get("identifier")
     if raw_identifier and not normalized_identifier:
         warnings.append(
-            f"Cleared legacy or invalid estimate identifier {raw_identifier!r}; "
-            "the portal will auto-assign a number at finalize."
+            f"Cleared supplied estimate identifier {raw_identifier!r}; the "
+            "portal will auto-assign a fresh number at finalize."
         )
     unknown = sorted(set(source) - set(CANONICAL_TOP_LEVEL_KEYS))
     if unknown:

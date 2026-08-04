@@ -44,6 +44,19 @@ def test_normalize_blanks_legacy_identifier_without_mutating_source():
     assert normalized["client"]["name"] == "Maxwell Construction"
 
 
+def test_normalize_blanks_portal_identifier_to_force_fresh_assignment():
+    raw = _example()
+    raw["estimate"]["identifier"] = "2026-0804-001"
+
+    normalized = ti.normalize_takeoff_payload(raw)
+
+    assert normalized["estimate"]["identifier"] == ""
+    assert any(
+        "fresh number" in warning
+        for warning in ti.normalization_warnings(raw, normalized)
+    )
+
+
 def test_normalize_coerces_prices_quantities_notes_and_strips_top_level_junk():
     raw = _example()
     raw["estimate"]["line_items"][0]["unit_price"] = "$15,200.50"

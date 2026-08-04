@@ -52,9 +52,10 @@ is the normalized canonical estimate. A missing draft store returns
 `STORE_NOT_CONFIGURED`; invalid exports return `TAKEOFF_PAYLOAD_INVALID` with
 field-level errors.
 
-Legacy identifiers such as `EST-2026-1103` are always cleared during import.
-The staged draft keeps `estimate.identifier` blank; the portal assigns the
-canonical `YYYY-MMDD-NNN` only when a person later finalizes the estimate.
+Every supplied identifier is cleared during import, including legacy values
+such as `EST-2026-1103` and even a syntactically valid portal number. The staged
+draft keeps `estimate.identifier` blank; the portal assigns a fresh canonical
+`YYYY-MMDD-NNN` only when a person later finalizes the estimate.
 
 **Safety boundary:** these routes only upsert `portal/estimate-drafts.json`.
 They do not render/finalize, create a Gmail draft, write Monday, post Slack,
