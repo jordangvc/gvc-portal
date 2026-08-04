@@ -1,0 +1,85 @@
+# One-click deploy: portal → Cloud Run (gvc-invoice)
+#
+# After this file is on master, open:
+#   https://github.com/jordangvc/gvc-portal/actions/workflows/deploy-cloud-run.yml
+# → "Run workflow" → master → Run.
+#
+# ONE-TIME SETUP (Jordan, in browser — no Mac gcloud required if you use Cloud Shell):
+# 1. Open Cloud Shell as hello@:
+#    https://console.cloud.google.com/cloudshell/editor?project=gvc-invoice-system&cloudshell=true
+# 2. Create a deploy key (Cloud Build + Run admin on the existing bot SA is fine,
+#    or a dedicated deploy SA). Easiest path — mint a key for the runtime bot
+#    ONLY if you already trust that pattern; preferred is a dedicated SA:
+#
+#      gcloud iam service-accounts create github-deploy \
+#        --display-name="GitHub Actions Cloud Run deploy" \
+#        --project=gvc-invoice-system
+#      # Grant roles/run.admin, roles/iam.serviceAccountUser on
+#      # gvc-invoice-bot@..., roles/cloudbuild.builds.editor,
+#      # roles/storage.admin (source staging) — adjust to least privilege.
+#      gcloud iam service-accounts keys create /tmp/github-deploy.json \
+#        --iam-account=github-deploy@gvc-invoice-system.iam.gserviceaccount.com \
+#        --project=gvc-invoice-system
+#      cat /tmp/github-deploy.json
+#      rm /tmp/github-deploy.json
+#
+# 3. GitHub → repo Settings → Secrets and variables → Actions → New repository secret
+#    Name:  GCP_SA_KEY
+#    Value: paste the entire JSON key
+#
+# Until GCP_SA_KEY exists, use docs/DEPLOY-IN-BROWSER.md (Cloud Shell paste).
+
+name: Deploy Cloud Run
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to deploy (branch, tag, or SHA). Default master."
+        required: false
+        default: master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-gvc-invoice
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy gvc-invoice
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: gvc-invoice-system
+      REGION: us-central1
+      SERVICE: gvc-invoice
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref || 'master' }}
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy from source
+        # Same shape as local: --source . keeps existing env/secrets on the service.
+        run: |
+          set -euo pipefail
+          gcloud config set project "${PROJECT_ID}"
+          gcloud run deploy "${SERVICE}" \
+            --source . \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --quiet
+          echo "Deployed revision:"
+          gcloud run services describe "${SERVICE}" \
+            --region "${REGION}" \
+            --project "${PROJECT_ID}" \
+            --format='value(status.latestReadyRevisionName)'
