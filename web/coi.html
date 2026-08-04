@@ -4,102 +4,149 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC COI Generator</title>
+<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  :root {
-    --green: #235339; --green-dark: #1A3E2B; --gold: #C9A24B; --gold-dark: #96763B; --ink: #1C1917; --muted: #78716C;
-    --line: #E7E0CE; --bg: #FAFAF8; --warn-bg: #FBF3E1; --warn-line: #E3CFA0;
-    --err-bg: #FEE7E7; --err-line: #DC2626;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--bg); color: var(--ink);
-    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-  header { background: var(--green); border-bottom: 2.5px solid var(--gold); color: #fff; padding: 16px 24px; }
-  header h1 { font-size: 18px; margin: 0; font-weight: 600; }
-  .who { font-size: 13px; opacity: .95; display: flex; align-items: center; gap: 12px; }
-  .who a { color: #fff; text-decoration: underline; }
-  #health { font-size: 12px; opacity: .95; display: flex; gap: 12px; flex-wrap: wrap; }
-  .dot { width: 9px; height: 9px; border-radius: 50%; background: #C8C2B0; display: inline-block; }
-  .dot.ok { background: #5FB878; } .dot.bad { background: #E88070; }
-  main { max-width: 1100px; margin: 0 auto; padding: 24px; display: grid; gap: 28px; }
-  .card { background: #fff; border: 1px solid var(--line); border-top: 2px solid #B9954E; border-radius: 10px; padding: 20px; }
-  .card h2 { font-size: 14px; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin: 0 0 14px; }
-  .card h2 .opt { text-transform: none; font-weight: 400; }
-  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; }
-  .grid .full { grid-column: 1 / -1; }
-  label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 4px; color: #44403C; }
-  label .opt { font-weight: 400; color: var(--muted); }
-  input, textarea { width: 100%; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px;
-    font: inherit; color: var(--ink); background: #fff; }
-  input:focus, textarea:focus { outline: 2px solid var(--green); border-color: var(--green); }
-  textarea { resize: vertical; min-height: 64px; }
-  .hint { font-size: 12px; color: var(--muted); margin-top: 4px; }
-  .btn { border: 0; border-radius: 8px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer;
-    background: var(--green); color: #fff; }
-  .btn:hover { background: var(--green-dark); }
-  .btn.secondary { background: #fff; color: var(--green); border: 1px solid var(--green); }
-  .btn.small { padding: 7px 12px; font-size: 13px; }
-  .btn:disabled { opacity: .5; cursor: not-allowed; }
-  .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
-  #status { padding: 12px 14px; border-radius: 8px; font-size: 14px; display: none; }
-  #status.show { display: block; }
-  #status.info { background: #EAF2FF; border: 1px solid #9CC4E4; }
-  #status.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
-  #status.err { background: var(--err-bg); border: 1px solid var(--err-line); color: #7A1F1F; }
-  #preview-card { display: none; } #preview-card.show { display: block; }
-  iframe { width: 100%; height: 760px; border: 1px solid var(--line); border-radius: 8px; }
-  .result-line { padding: 4px 0; } .result-line a { color: var(--green-dark); font-weight: 600; }
-  code { background: #f1f5f9; padding: 1px 5px; border-radius: 4px; font-size: 13px; }
-  .spinner { display: none; } .spinner.show { display: inline; }
-  #tmpl-state { font-size: 13px; margin-top: 4px; }
-  #tmpl-state.ok { color: var(--green-dark); } #tmpl-state.warn { color: #96763B; }
-  /* Standard GVC Portal header (shared across all tool pages) */
-  header { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
-  header h1 { text-align: center; }
-  header .home-link { justify-self: start; color: #fff; text-decoration: none; font-weight: 700;
-    font-size: 15px; display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px;
-    border-radius: 8px; opacity: .95; }
-  header .home-link:hover { background: rgba(255, 255, 255, .16); opacity: 1; }
-  header .home-link .chev { font-size: 17px; line-height: 1; }
-  header #health, header .who { justify-self: end; }
-  @media (max-width: 720px) {
-    header { grid-template-columns: auto 1fr; }
-    header h1 { grid-column: 1 / -1; grid-row: 2; text-align: left; }
-    header #health, header .who { grid-row: 1; }
-  }
-  /* Section color (2026-06-24 standard) — tinted cards + accent bars. */
-  :root {
-    --sec-tint-a: #F2F7EE; --sec-bar-a: #235339; --sec-band-a: #F2F7EE; --sec-band-a-ink: #1A3E2B;
-    --sec-tint-b: #F3EBDD; --sec-bar-b: #96763B; --sec-band-b: #F3EBDD; --sec-band-b-ink: #57534E;
-  }
-  .card { background: var(--sec-tint-a); border-left: 4px solid var(--sec-bar-a);
-    box-shadow: 0 4px 0 0 var(--sec-bar-a); }
-  .card h2 { background: var(--sec-band-a); color: var(--sec-band-a-ink);
-    margin: -8px -8px 16px; padding: 10px 12px; border-radius: 8px; }
-  .card:nth-of-type(even) { background: var(--sec-tint-b); border-left-color: var(--sec-bar-b);
-    box-shadow: 0 4px 0 0 var(--sec-bar-b); }
-  .card:nth-of-type(even) h2 { background: var(--sec-band-b); color: var(--sec-band-b-ink); }
-  main form .card + .card { margin-top: 28px; }
 
-  /* GVC brand kit (Jul 2026): serif wordmark + G monogram, gold on commitments */
-  header h1 { font-family: Georgia, 'Times New Roman', serif; font-weight: 700; letter-spacing: .01em;
-    display: flex; align-items: center; gap: 9px; justify-content: center; }
-  header h1::before { content: "G"; width: 26px; height: 26px; border-radius: 50%; flex: 0 0 26px;
-    background: #1B382B; border: 1.5px solid var(--gold, #C9A24B); color: var(--gold, #C9A24B);
-    display: inline-flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; font-family: Georgia, serif; }
-  .btn.gold { background: linear-gradient(0deg, #B9954E, #C9A24B); color: #231A08; font-weight: 700; }
-  .btn.gold:hover { background: linear-gradient(0deg, #B9954E, #C9A24B); filter: brightness(1.06); }
+  /* Money-generator page-local styles on gvc tokens. JS keeps .btn/.card/.line-item. */
+  #health { font-size:var(--gvc-fs-caption); color:#DCE8DD; display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; align-items:center; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#C8C2B0; display:inline-block; margin-right:5px; }
+  .dot.ok { background:var(--gvc-brand-bright); } .dot.bad { background:#E88070; }
+  #status { display:none; } #status.show { display:flex; }
+  #preview-card { display:none; } #preview-card.show { display:block; }
+  iframe { width:100%; height:760px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-surface); }
+
+  .card { background:var(--gvc-surface); border:1px solid var(--gvc-line); border-radius:var(--gvc-r-lg);
+    box-shadow:var(--gvc-shadow-sm, 0 1px 2px rgba(28,25,23,.06)); overflow:hidden; }
+  .card > h2 { margin:0; padding:14px 18px; font-size:var(--gvc-fs-small); font-weight:700;
+    letter-spacing:.04em; text-transform:uppercase; color:var(--gvc-ink-soft);
+    border-bottom:1px solid var(--gvc-line-soft); background:var(--gvc-bg); }
+  .card > h2 .opt { text-transform:none; letter-spacing:0; font-weight:400; color:var(--gvc-muted); }
+  .card > :not(h2) { margin-left:18px; margin-right:18px; }
+  .card > :not(h2):first-of-type { margin-top:16px; }
+  .card > :last-child { margin-bottom:18px; }
+  /* When card body is only an actions row / nested blocks, keep padding sane */
+  .card .actions { margin:16px 18px 18px; }
+  .card .grid { margin:16px 18px; }
+  .card .hint { margin-left:18px; margin-right:18px; }
+  .card form, form .card { } /* no-op marker */
+
+  .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:var(--gvc-space-4); }
+  .grid .full { grid-column:1 / -1; }
+  @media (max-width:720px){ .grid { grid-template-columns:1fr; } }
+
+  label { display:block; font-size:var(--gvc-fs-small); font-weight:600; margin-bottom:4px; color:var(--gvc-ink-soft); }
+  label .opt { font-weight:400; color:var(--gvc-muted); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
+  textarea, select {
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
+    min-height:var(--gvc-ctl-h); }
+  textarea { resize:vertical; min-height:64px; height:auto; }
+  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
+
+  .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
+    border:1px solid transparent; border-radius:var(--gvc-r-md); padding:0 16px; min-height:var(--gvc-ctl-h);
+    font:inherit; font-size:var(--gvc-fs-small); font-weight:700; cursor:pointer;
+    background:var(--gvc-green); color:#fff; }
+  .btn:hover { background:var(--gvc-green-dark); }
+  .btn.secondary { background:var(--gvc-surface); color:var(--gvc-green-dark); border-color:var(--gvc-line); }
+  .btn.secondary:hover { background:var(--gvc-tint-green); }
+  .btn.danger { background:var(--gvc-surface); color:var(--gvc-danger); border-color:#E2C3BA; }
+  .btn.gold { background:var(--gvc-gold); color:#3A2D0E; border-color:var(--gvc-gold-dark); font-weight:700; }
+  .btn.gold:hover { background:var(--gvc-gold-dark); color:#fff; }
+  .btn.small { min-height:36px; padding:0 12px; font-size:var(--gvc-fs-caption); }
+  .btn:disabled { opacity:.5; cursor:not-allowed; }
+  .actions { display:flex; gap:var(--gvc-space-3); align-items:center; flex-wrap:wrap; }
+  .totals { margin-left:auto; text-align:right; font-size:var(--gvc-fs-small); color:var(--gvc-muted); }
+  .totals strong { color:var(--gvc-ink); font-size:var(--gvc-fs-body); }
+  .result-line { padding:4px 0; } .result-line a { color:var(--gvc-green-dark); font-weight:600; }
+  code { background:var(--gvc-line-soft); padding:1px 5px; border-radius:var(--gvc-r-sm); font-size:var(--gvc-fs-caption); }
+  .spinner { display:none; } .spinner.show { display:inline; }
+  .save-state { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-left:auto; align-self:center; }
+  .save-state.synced { color:var(--gvc-green-dark); } .save-state.local { color:var(--gvc-gold-dark); }
+  .draft-row { display:flex; align-items:center; gap:var(--gvc-space-3); padding:10px 12px;
+    border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); margin-bottom:8px; background:var(--gvc-bg); }
+  .draft-row.active { border-color:var(--gvc-green); background:var(--gvc-tint-green); }
+  .draft-row .d-main { flex:1; min-width:0; }
+  .draft-row .d-label { font-weight:600; color:var(--gvc-ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .draft-row .d-meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:2px; }
+  .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px; font-weight:600; }
+  .badge.synced { background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; }
+  .badge.local { background:var(--gvc-warn-tint); color:var(--gvc-gold-dark); border:1px solid #E3CFA0; }
+  .badge.active { background:#e0f2fe; color:#1A72B8; border:1px solid #bae6fd; }
+  .line-item { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:12px; margin-bottom:10px; background:var(--gvc-bg); }
+  .line-item .row1 { display:grid; grid-template-columns:1fr 130px 70px auto; gap:10px; align-items:end; }
+  @media (max-width:720px){ .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
+  .line-item .detail { margin-top:8px; }
+  .line-item .opt-row { margin-top:8px; font-size:var(--gvc-fs-small); color:var(--gvc-ink-soft); display:flex; align-items:center; gap:6px; }
+  .line-item .opt-row input { width:auto; min-height:auto; }
+  .li-scope-badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px;
+    background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; font-weight:600; }
+  .scope-trade { margin-bottom:12px; }
+  .scope-trade + .scope-trade { border-top:1px dashed var(--gvc-line); padding-top:12px; }
+  .scope-trade-name { font-size:var(--gvc-fs-caption); font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:var(--gvc-green-dark); margin-bottom:6px; }
+  .scope-item { padding:5px 0; }
+  .scope-check { display:flex; align-items:center; gap:8px; font-weight:600; color:var(--gvc-ink-soft); cursor:pointer; margin:0; }
+  .scope-check input { width:auto; min-height:auto; }
+  .scope-editor { margin:8px 0 4px 26px; padding:10px 12px; border:1px solid var(--gvc-line); border-left:3px solid var(--gvc-green); border-radius:var(--gvc-r-md); background:var(--gvc-surface); }
+  .scope-editor-row { display:flex; align-items:end; gap:12px; margin-top:8px; flex-wrap:wrap; }
+  .scope-editor-row .price-wrap { width:150px; }
+  .sc-state { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
+  .sc-state.ok { color:var(--gvc-green-dark); font-weight:600; } .sc-state.err { color:var(--gvc-danger); font-weight:600; }
+  .scope-hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:6px; }
+  #scope-admin { margin-top:12px; padding:12px; border:1px dashed var(--gvc-green); border-radius:var(--gvc-r-md); background:var(--gvc-surface); }
+  .cat-trade { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:10px; margin-bottom:10px; background:var(--gvc-bg); }
+  .cat-trade-head { display:flex; gap:8px; align-items:end; margin-bottom:8px; } .cat-trade-head .grow { flex:1; }
+  .cat-scope { border-top:1px dashed var(--gvc-line); padding:8px 0; margin-top:4px; }
+  .cat-scope .row { display:flex; gap:8px; align-items:end; } .cat-scope .row .grow { flex:1; } .cat-scope .row .price { width:120px; }
+  .sub { margin-top:var(--gvc-space-3); padding:var(--gvc-space-3); border:1px dashed var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-bg); }
+  .modal-overlay { position:fixed; inset:0; background:rgba(28,25,23,.45); display:none; align-items:center; justify-content:center; z-index:80; padding:var(--gvc-space-4); }
+  .modal-overlay.show { display:flex; }
+  .modal { background:var(--gvc-surface); border-radius:var(--gvc-r-lg); border:1px solid var(--gvc-line); max-width:640px; width:100%; max-height:90vh; overflow:auto; box-shadow:0 16px 40px rgba(0,0,0,.18); }
+  .modal-hd { padding:var(--gvc-space-4) var(--gvc-space-5); border-bottom:1px solid var(--gvc-line); display:flex; justify-content:space-between; align-items:center; gap:var(--gvc-space-3); }
+  .modal-bd { padding:var(--gvc-space-5); }
+  .modal-ft { padding:var(--gvc-space-4) var(--gvc-space-5); border-top:1px solid var(--gvc-line); display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; justify-content:flex-end; }
+
+
+  /* COI Generator extras on top of shared money-form local CSS */
+  #health { font-size:var(--gvc-fs-caption); color:#DCE8DD; display:flex; gap:var(--gvc-space-3);
+    flex-wrap:wrap; align-items:center; }
+  .dot { width:9px; height:9px; border-radius:50%; background:#C8C2B0; display:inline-block; margin-right:5px; }
+  .dot.ok { background:var(--gvc-brand-bright); } .dot.bad { background:#E88070; }
+  .who { display:none; }
+  label .opt { font-weight:400; color:var(--gvc-muted); }
+
 </style>
 </head>
 <body>
-<header>
-  <a class="home-link" href="/" title="Back to the GVC Portal home"><span class="chev">‹</span> GVC Portal</a>
-  <h1>COI Generator</h1>
-  <div class="who"><div id="health">Checking service…</div><a href="/auth/logout">Sign out</a></div>
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">COI Generator</span>
+    <div class="gvc-topbar-right">
+      <div id="health">Checking service…</div>
+      <span class="gvc-topbar-sep"></span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
 </header>
 
-<main>
-  <div id="status"></div>
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Insurance</p>
+    <h1 class="gvc-h1">COI Generator</h1>
+    <p class="gvc-sub">Fill a blank ACORD 25 for a certificate holder — preview, then create the PDF and hello@ draft.</p>
+  </div>
+
+  <div class="gvc-stack">
+
+  <div class="gvc-banner" id="status"></div>
 
   <form id="coi-form" autocomplete="off">
     <div class="card">
@@ -184,6 +231,7 @@
     <h2>Preview</h2>
     <iframe id="preview-frame" title="COI PDF preview"></iframe>
   </div>
+  </div><!-- /gvc-stack -->
 </main>
 
 <script>
@@ -207,8 +255,14 @@ function validateData(d) {
   return e;
 }
 
-function setStatus(kind, html) { const el = $("#status"); el.className = "show " + kind; el.innerHTML = html; window.scrollTo({ top: 0, behavior: "smooth" }); }
-function clearStatus() { $("#status").className = ""; }
+function setStatus(kind, html) {
+  const el = $("#status");
+  const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
+  el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+  el.innerHTML = "<div>" + html + "</div>";
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+function clearStatus() { $("#status").className = "gvc-banner"; }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 let lastPreviewOk = false;
