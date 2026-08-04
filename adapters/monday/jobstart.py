@@ -824,6 +824,15 @@ def hand_off(mc, *, bid: dict, job_name: str, projects_values: dict,
         except (json.JSONDecodeError, TypeError):
             pass
 
+    # Invoice "Look up & fill" finds jobs by Projects Project #. Carry the Bid
+    # Board Estimate # across fill-if-empty — never overwrite a human-typed
+    # value; _apply_conflicts below drops the write when Monday already has one.
+    estimate_number = (
+        (bid.get("context") or {}).get("estimate_number") or ""
+    ).strip()
+    if estimate_number:
+        p_values[boards.JOBSTART_P_COL_PROJECT_NUMBER] = estimate_number
+
     p_values, p_conflicts = _apply_conflicts(
         mc, item_id=project_id, values=p_values, board_label="Projects")
     for row in p_conflicts:
