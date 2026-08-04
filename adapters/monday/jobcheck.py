@@ -419,7 +419,10 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
         column_values(ids: $cols) {
           id
           text
-          ... on BoardRelationValue { linked_item_ids }
+          ... on BoardRelationValue {
+            linked_item_ids
+            linked_items { id }
+          }
         }
       }
     }
@@ -437,11 +440,18 @@ def get_linked_project_gfolder(mc, ops_item_id: int) -> dict:
     for cv in items[0].get("column_values") or []:
         if cv.get("id") != col:
             continue
-        linked_ids = [str(x) for x in (cv.get("linked_item_ids") or [])]
+        linked_ids = [str(x) for x in (cv.get("linked_item_ids") or []) if x]
+        if not linked_ids:
+            linked_ids = [
+                str(x.get("id")) for x in (cv.get("linked_items") or [])
+                if x and x.get("id")
+            ]
         break
     if not linked_ids:
         out["error"] = ("No linked Projects item on this Operations task "
-                        "(link_to_projects is empty).")
+                        "(link_to_projects is empty). Link the Projects item "
+                        "in Monday, and make sure that Projects row has a "
+                        "GFolder Link.")
         return out
     out["project_item_id"] = int(linked_ids[0])
 

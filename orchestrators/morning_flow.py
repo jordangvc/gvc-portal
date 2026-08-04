@@ -448,34 +448,34 @@ def add_project_update(email: str, item_id: int, *, note: str,
     if files were attached, failures surface in `warning` / `drive_error`.
     """
     from adapters.drive import DriveUploader, folder_id_from_url
+    from adapters.monday import jobcheck as mj
 
     files = list(files or [])
     mc = MondayClient()
-    gurl = mm.get_gfolder_url_for_ops_item(mc, int(item_id))
+    ginfo = mj.get_linked_project_gfolder(mc, int(item_id))
+    gurl = ginfo.get("gfolder_url")
+    folder_id = ginfo.get("folder_id")
     drive_result = None
     drive_error = None
     warning = None
 
-    if files and not gurl:
-        warning = ("Photos were not uploaded — this Ops item has no linked "
-                   "Projects GFolder Link. The Monday note was still posted.")
-    elif files and gurl:
-        folder_id = folder_id_from_url(gurl)
-        if not folder_id:
-            warning = ("Photos were not uploaded — GFolder Link is not a "
-                       "Drive folder URL. The Monday note was still posted.")
-            drive_error = f"unusable_gfolder:{gurl[:120]}"
-        else:
-            try:
-                up = DriveUploader()
-                drive_result = up.upload_job_site_photos(
-                    folder_id, files, note=note)
-            except Exception as e:  # noqa: BLE001
-                drive_error = f"{type(e).__name__}: {e}"
-                warning = ("Photos failed to upload to Drive — "
-                           f"{type(e).__name__}. The Monday note was still posted.")
-                print(f"[morning] drive photo upload failed: {drive_error}",
-                      file=sys.stderr)
+    if files and not folder_id:
+        detail = (ginfo.get("error")
+                  or "Couldn't resolve the project Drive folder.")
+        warning = (f"Photos were not uploaded — {detail} "
+                   "The Monday note was still posted.")
+        drive_error = detail
+    elif files and folder_id:
+        try:
+            up = DriveUploader()
+            drive_result = up.upload_job_site_photos(
+                folder_id, files, note=note)
+        except Exception as e:  # noqa: BLE001
+            drive_error = f"{type(e).__name__}: {e}"
+            warning = ("Photos failed to upload to Drive — "
+                       f"{type(e).__name__}. The Monday note was still posted.")
+            print(f"[morning] drive photo upload failed: {drive_error}",
+                  file=sys.stderr)
 
     links = []
     if drive_result:
@@ -501,6 +501,7 @@ def add_project_update(email: str, item_id: int, *, note: str,
         "photos_requested": len(files),
         "monday_update": upd,
         "gfolder_url": gurl,
+        "gfolder": ginfo,
         "warning": warning,
     }
 
