@@ -11,6 +11,10 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ MULTI-EMAIL + NO-EMAIL DELIVERY (estimate + invoice) — BUILT 2026-08-04 (same branch as Billing Hub)
+Office ask: draft to several people at once; support elderly / no-inbox customers.
+BUILT: `shared/recipients.py` parses multi To/Cc (comma/semicolon/newline), validates, and for `no_email` + `delivery_method` (print|mail|hand_deliver) routes the Gmail draft TO hello@ with a `[NO EMAIL — PRINT]` subject + body banner (never invents a customer inbox). Stripe upsert uses a synthetic `no-email.{slug}@noemail.gvc.invalid` address (reserved TLD — not mailed). Estimate + invoice forms: emails textarea, CC, “Customer has no email” checkbox. QA understands multi-To and no-email. Tests: `tests/test_recipients.py` + estimate QA cases.
+
 ## ✨ ESTIMATE AUTO-QA + BILLING HUB + MULTI-WAY SEARCH — BUILT 2026-08-04 (ships next --source . deploy)
 Jordan's ask: stop Andrea manually re-reading every hello@ estimate draft; connect Estimating → Invoicing so staff don't memorize Project #s; keep a searchable report of what happened in each hub.
 BUILT:

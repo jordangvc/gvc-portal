@@ -7,6 +7,7 @@ from datetime import date, datetime, timedelta
 
 from shared import paths
 from shared.money import fmt_date, fmt_money
+from shared.recipients import validate_client_recipients
 
 OUTPUT_DIR = paths.OUTPUT_DIR
 GOOGLE_SERVICE_ACCOUNT_PATH = paths.DEFAULT_SA_PATH
@@ -14,7 +15,9 @@ GMAIL_TOKEN_PATH = paths.DEFAULT_GMAIL_TOKEN_PATH
 
 STRIPE_KEY_PREFIXES = ("sk_live_", "rk_live_", "sk_test_", "rk_test_")
 
-REQUIRED_CLIENT_FIELDS = ["name", "email", "billing_address"]
+# Email is validated separately via shared.recipients (multi-address OR
+# explicit no-email / print-mail-hand-deliver path for customers without inbox).
+REQUIRED_CLIENT_FIELDS = ["name", "billing_address"]
 REQUIRED_INVOICE_FIELDS = ["identifier", "issue_date", "payment_terms", "line_items"]
 
 
@@ -87,6 +90,7 @@ def validate(data: dict) -> None:
     for f in REQUIRED_CLIENT_FIELDS:
         if not data["client"].get(f):
             raise ValueError(f"client.{f} is required")
+    validate_client_recipients(data["client"])
 
     for f in REQUIRED_INVOICE_FIELDS:
         if not data["invoice"].get(f):

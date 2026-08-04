@@ -178,8 +178,27 @@
           <div id="customer-results" style="display:none;border:1px solid var(--border,#ccc);border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;"></div></div>
         <div><label>Client / company name</label><input name="client_name" required placeholder="Henderson Residence" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Mark Henderson" /></div>
-        <div><label>Email <span class="opt">(Stripe customer lookup)</span></label><input name="client_email" type="email" required placeholder="mark@example.com" /></div>
-        <div><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
+        <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
+          <textarea name="client_emails" id="client_emails" rows="2" placeholder="mark@example.com&#10;ap@builder.com"></textarea>
+          <div class="hint">Everyone who should get the invoice draft. Stripe still keys off the first address.</div></div>
+        <div class="full"><label>CC <span class="opt">(optional)</span></label>
+          <input name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
+        <div class="full">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <input type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
+            Customer has no email
+          </label>
+          <div class="hint">For customers without an inbox — the billing@ draft stays with the office for print / mail / hand-delivery. Stripe uses an internal placeholder (never emailed).</div>
+          <div id="no-email-opts" style="display:none;margin-top:8px;">
+            <label>How will we deliver it?</label>
+            <select name="delivery_method" id="delivery_method">
+              <option value="print">Print / hand-deliver PDF</option>
+              <option value="mail">Mail a printed copy</option>
+              <option value="hand_deliver">Hand-deliver on site</option>
+            </select>
+          </div>
+        </div>
+        <div class="full"><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
       </div>
     </div>
 
@@ -396,13 +415,38 @@ function extraPdfRow() {
 
 function commercialOn() { return $("#commercial-toggle").checked; }
 
+/** Split comma / semicolon / whitespace / newline email lists; drop junk. */
+function parseEmails(raw) {
+  return String(raw || "").split(/[,;\s]+/).map(s => s.trim()).filter(s => s && s.includes("@"));
+}
+
+function syncNoEmailUi() {
+  const on = !!($("#client_no_email") && $("#client_no_email").checked);
+  const opts = $("#no-email-opts");
+  if (opts) opts.style.display = on ? "block" : "none";
+  ["client_emails", "client_cc_emails"].forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) { el.disabled = on; el.style.opacity = on ? ".5" : ""; }
+  });
+}
+
 function collectData() {
   const f = $("#invoice-form");
   const val = (n) => (f.elements[n] ? (f.elements[n].value || "").trim() : "");
 
-  const client = { name: val("client_name"), email: val("client_email") };
+  const client = { name: val("client_name") };
   if (val("contact_name")) client.contact_name = val("contact_name");
   if (val("billing_address")) client.billing_address = val("billing_address");
+  if ($("#client_no_email") && $("#client_no_email").checked) {
+    client.no_email = true;
+    client.delivery_method = val("delivery_method") || "print";
+  } else {
+    const emails = parseEmails(val("client_emails"));
+    if (emails[0]) client.email = emails[0];
+    if (emails.length) client.emails = emails;
+    const cc = parseEmails(val("client_cc_emails"));
+    if (cc.length) client.cc_emails = cc;
+  }
 
   const job = { name: val("job_name") };
   if (val("site_address")) job.site_address = val("site_address");
@@ -475,7 +519,11 @@ function collectData() {
 function validateData(d) {
   const e = [];
   if (!d.client.name) e.push("Client name is required.");
-  if (!d.client.email) e.push("Client email is required.");
+  if (d.client.no_email) {
+    if (!d.client.delivery_method) e.push("Choose how to deliver when the customer has no email.");
+  } else if (!(d.client.email || (d.client.emails && d.client.emails.length))) {
+    e.push("Client email is required — or check “Customer has no email”.");
+  }
   if (!d.client.billing_address) e.push("Billing address is required (it prints on the invoice “Bill To”).");
   if (!d.job.name) e.push("Job name is required.");
   if (!d.invoice.identifier) e.push("Invoice number is required.");
@@ -702,8 +750,16 @@ function applyPrefill(p) {
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   if (c.name) setVal("client_name", c.name);
   if (c.contact_name) setVal("contact_name", c.contact_name);
-  if (c.email) setVal("client_email", c.email);
+  if (c.email || (c.emails && c.emails.length)) {
+    const emails = Array.isArray(c.emails) && c.emails.length ? c.emails : [c.email];
+    setVal("client_emails", emails.filter(Boolean).join("\n"));
+  }
   if (c.billing_address) setVal("billing_address", c.billing_address);
+  if ($("#client_no_email") && (c.no_email || c.delivery_method)) {
+    $("#client_no_email").checked = !!(c.no_email || (c.delivery_method && c.delivery_method !== "email"));
+    if (c.delivery_method) setVal("delivery_method", c.delivery_method);
+    syncNoEmailUi();
+  }
   if (j.name) setVal("job_name", j.name);
   if (j.site_address) setVal("site_address", j.site_address);
   if (inv.identifier) setVal("identifier", inv.identifier);
@@ -908,8 +964,9 @@ function customerSearch() {
         d.addEventListener("click", () => {
           setVal("client_name", c.name || "");
           if (c.contact_name) setVal("contact_name", c.contact_name);
-          if (c.email) setVal("client_email", c.email);
+          if (c.email) setVal("client_emails", c.email);
           if (c.billing_address) setVal("billing_address", c.billing_address);
+          if ($("#client_no_email")) { $("#client_no_email").checked = false; syncNoEmailUi(); }
           setVal("customer_search", c.name || "");
           box.style.display = "none"; box.innerHTML = "";
           scheduleAutosave();
@@ -973,7 +1030,19 @@ function applyData(p) {
   p = p || {};
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   setField("client_name", c.name); setField("contact_name", c.contact_name);
-  setField("client_email", c.email); setField("billing_address", c.billing_address);
+  setField("billing_address", c.billing_address);
+  {
+    const emails = Array.isArray(c.emails) && c.emails.length
+      ? c.emails : (c.email ? [c.email] : []);
+    setField("client_emails", emails.join("\n"));
+    const cc = Array.isArray(c.cc_emails) ? c.cc_emails : [];
+    setField("client_cc_emails", cc.join(", "));
+    if ($("#client_no_email")) {
+      $("#client_no_email").checked = !!(c.no_email || (c.delivery_method && c.delivery_method !== "email"));
+      if (c.delivery_method) setField("delivery_method", c.delivery_method);
+      syncNoEmailUi();
+    }
+  }
   setField("job_name", j.name); setField("site_address", j.site_address);
   setField("job_monday_item_id", j.monday_item_id); setField("job_monday_job_type", j.monday_job_type);
   setField("job_project_type", j.project_type); setField("job_project_number", j.project_number);
@@ -1156,6 +1225,10 @@ $("[name=project_number_lookup]").addEventListener("keydown", (e) => {
 });
 $("[name=customer_search]").addEventListener("input", customerSearch);
 $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
+if ($("#client_no_email")) {
+  $("#client_no_email").addEventListener("change", syncNoEmailUi);
+  syncNoEmailUi();
+}
 checkHealth();
 refreshDrafts();
 bootInvoiceFromUrl();

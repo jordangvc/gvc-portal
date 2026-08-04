@@ -25,6 +25,12 @@
 | Deep links on fail | Gmail draft URL, Monday item URL, portal `/ui/estimate?q=` / `/ui/billing?project=` | One click to the problem |
 | Activity | Log `estimate.qa`, `billing.open`, `billing.search`, `billing.lookup`; free-text search on Activity page | Answers “what happened to X?” |
 
+## Addendum — multi-email + no-email delivery (same ship)
+
+- **Multi To/Cc:** `client.emails` / comma-separated `client.email` + `client.cc_emails` → Gmail To/Cc on estimate + invoice drafts.
+- **No email:** checkbox → `client.no_email` + `delivery_method` (`print`|`mail`|`hand_deliver`). Draft addressed to hello@ with `[NO EMAIL — PRINT]` banner; Stripe uses synthetic `@noemail.gvc.invalid` (never mailed).
+- Pure helper: `shared/recipients.py`.
+
 ## Non-goals (this ship)
 
 - Auto-sending the client estimate (Andrea still clicks Send).

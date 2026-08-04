@@ -12,6 +12,12 @@ import re
 from typing import Any, Optional
 from urllib.parse import quote
 
+from shared.recipients import (
+    customer_emails_from_client,
+    is_no_email_client,
+    parse_email_list,
+)
+
 DEFAULT_OFFICE_REVIEW_EMAIL = "andrea@greenvalleycontractors.com"
 DEFAULT_PORTAL_PUBLIC_URL = "https://portal.greenvalleycontractors.com"
 
@@ -162,40 +168,64 @@ def check_estimate_draft(
                 f"{client_name!r} not found in subject/body",
             ))
 
-    # 2) Customer email
-    if not client_email:
-        checks.append(_check(
-            "client_email", "Customer email", False,
-            "client.email is empty",
-        ))
-    elif not _EMAIL_RE.match(client_email):
-        checks.append(_check(
-            "client_email", "Customer email", False,
-            f"{client_email!r} does not look like an email address",
-        ))
-    else:
-        recipient_ok = (
-            recipient.lower() == client_email.lower()
-            if recipient
-            else False
+    # 2) Customer email(s) — or an explicit no-email / print delivery path
+    if is_no_email_client(client):
+        banner_ok = (
+            "no email" in combined_l
+            or "customer has no email" in body_l
+            or str((wb.get("recipients") or {}).get("no_email")).lower()
+            in ("true", "1")
         )
-        in_body = client_email.lower() in body_l
-        if recipient_ok or in_body:
-            detail_bits = []
-            if recipient_ok:
-                detail_bits.append(f"draft To matches {client_email}")
-            if in_body:
-                detail_bits.append("email appears in body")
+        if banner_ok:
             checks.append(_check(
                 "client_email", "Customer email", True,
-                "; ".join(detail_bits),
+                "No-email delivery marked — office draft / print path",
             ))
         else:
             checks.append(_check(
                 "client_email", "Customer email", False,
-                f"{client_email!r} not in body and draft To "
-                f"({recipient or '—'}) does not match",
+                "Client marked no-email but draft lacks the office/print banner",
             ))
+    else:
+        emails = customer_emails_from_client(client) or (
+            [client_email] if client_email else []
+        )
+        if not emails:
+            checks.append(_check(
+                "client_email", "Customer email", False,
+                "client.email is empty",
+            ))
+        else:
+            bad = [e for e in emails if not _EMAIL_RE.match(e)]
+            if bad:
+                checks.append(_check(
+                    "client_email", "Customer email", False,
+                    f"Invalid address(es): {', '.join(bad)}",
+                ))
+            else:
+                to_list = {a.lower() for a in parse_email_list(recipient)}
+                missing_to = [e for e in emails if e.lower() not in to_list]
+                # Multi-recipient drafts put addresses on To, not always in body.
+                if not missing_to:
+                    label = (
+                        f"draft To includes {', '.join(emails)}"
+                        if len(emails) > 1
+                        else f"draft To matches {emails[0]}"
+                    )
+                    checks.append(_check(
+                        "client_email", "Customer email", True, label,
+                    ))
+                elif all(e.lower() in body_l for e in emails):
+                    checks.append(_check(
+                        "client_email", "Customer email", True,
+                        "customer email(s) appear in body",
+                    ))
+                else:
+                    checks.append(_check(
+                        "client_email", "Customer email", False,
+                        f"Missing on draft To: {', '.join(missing_to)} "
+                        f"(To={recipient or '—'})",
+                    ))
 
     # 3) Amount in body
     if main_total is None and not main_pretty:

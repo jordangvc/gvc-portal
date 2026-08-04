@@ -193,6 +193,46 @@ def test_wrong_or_missing_client_name():
     assert _by_id(result2, "client_name")["ok"] is False
 
 
+def test_multi_email_on_to_passes():
+    enriched = _enriched(client={
+        "name": "Acme Builders",
+        "email": "billing@acmebuilders.com",
+        "emails": ["billing@acmebuilders.com", "ap@acmebuilders.com"],
+        "contact_name": "Pat",
+    })
+    result = qa.check_estimate_draft(
+        enriched=enriched,
+        email_body=_good_body(enriched),
+        email_subject=_good_subject(enriched),
+        writeback=_good_writeback(),
+        to_email="billing@acmebuilders.com, ap@acmebuilders.com",
+    )
+    assert _by_id(result, "client_email")["ok"] is True
+
+
+def test_no_email_delivery_passes_with_banner():
+    enriched = _enriched(client={
+        "name": "Pat Elderly",
+        "email": "",
+        "no_email": True,
+        "delivery_method": "print",
+        "contact_name": "Pat",
+    })
+    body = (
+        "⚠ CUSTOMER HAS NO EMAIL — print / hand-deliver the PDF.\n\n"
+        + _good_body(enriched)
+    )
+    result = qa.check_estimate_draft(
+        enriched=enriched,
+        email_body=body,
+        email_subject="[NO EMAIL — PRINT] Green Valley Contractors — Estimate 2026-0804-001",
+        writeback={**_good_writeback(), "recipients": {"no_email": True}},
+        to_email="hello@greenvalleycontractors.com",
+    )
+    assert _by_id(result, "client_email")["ok"] is True
+    assert result["ok"] is True
+
+
 def test_client_name_via_greeting_when_builder_not_in_job_title():
     """Real drafts greet with contact_name; job title may omit the builder."""
     enriched = _enriched(job={"name": "123 Main Street Renovation"})
@@ -330,6 +370,8 @@ def _run_all():
         test_amount_formatting_variants,
         test_missing_amount_in_body,
         test_wrong_or_missing_client_name,
+        test_multi_email_on_to_passes,
+        test_no_email_delivery_passes_with_banner,
         test_client_name_via_greeting_when_builder_not_in_job_title,
         test_missing_gmail_draft,
         test_client_email_via_to_email_param,

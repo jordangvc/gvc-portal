@@ -181,7 +181,26 @@
       <div class="grid">
         <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
-        <div><label>Email <span class="opt">(estimate draft is sent here)</span></label><input name="client_email" type="email" required placeholder="dave@example.com" /></div>
+        <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
+          <textarea name="client_emails" id="client_emails" rows="2" placeholder="dave@example.com&#10;ap@builder.com"></textarea>
+          <div class="hint">Add every person who should receive the estimate. Optional CC below.</div></div>
+        <div class="full"><label>CC <span class="opt">(optional)</span></label>
+          <input name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
+        <div class="full">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <input type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
+            Customer has no email
+          </label>
+          <div class="hint">For homeowners who don’t use email (print, mail, or hand-deliver the PDF). The hello@ draft goes to the office with a clear banner — nothing is sent to the customer.</div>
+          <div id="no-email-opts" style="display:none;margin-top:8px;">
+            <label>How will we deliver it?</label>
+            <select name="delivery_method" id="delivery_method">
+              <option value="print">Print / hand-deliver PDF</option>
+              <option value="mail">Mail a printed copy</option>
+              <option value="hand_deliver">Hand-deliver on site</option>
+            </select>
+          </div>
+        </div>
         <div><label>Phone <span class="opt">(optional)</span></label><input name="client_phone" placeholder="(812) 537-2200" /></div>
       </div>
     </div>
@@ -311,6 +330,21 @@ function addLineItem(v) { lineItemsEl.appendChild(lineItemRow(v)); recalc(); }
 
 function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
+/** Split comma / semicolon / whitespace / newline email lists; drop junk. */
+function parseEmails(raw) {
+  return String(raw || "").split(/[,;\s]+/).map(s => s.trim()).filter(s => s && s.includes("@"));
+}
+
+function syncNoEmailUi() {
+  const on = !!($("#client_no_email") && $("#client_no_email").checked);
+  const opts = $("#no-email-opts");
+  if (opts) opts.style.display = on ? "block" : "none";
+  ["client_emails", "client_cc_emails"].forEach((id) => {
+    const el = document.getElementById(id) || ($("#estimate-form") && $("#estimate-form").elements[id]);
+    if (el) { el.disabled = on; if (on) el.style.opacity = ".5"; else el.style.opacity = ""; }
+  });
+}
+
 function recalc() {
   let main = 0, opt = 0;
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
@@ -334,9 +368,20 @@ function collectData() {
   if (val("pb_email")) prepared_by.email = val("pb_email");
   if (val("pb_phone")) prepared_by.phone = val("pb_phone");
 
-  const client = { name: val("client_name"), email: val("client_email") };
+  const client = { name: val("client_name") };
   if (val("contact_name")) client.contact_name = val("contact_name");
   if (val("client_phone")) client.phone = val("client_phone");
+  if ($("#client_no_email") && $("#client_no_email").checked) {
+    client.no_email = true;
+    client.delivery_method = val("delivery_method") || "print";
+  } else {
+    const emails = parseEmails(val("client_emails"));
+    if (emails[0]) client.email = emails[0];
+    if (emails.length > 1) client.emails = emails;
+    else if (emails.length === 1) client.emails = emails;
+    const cc = parseEmails(val("client_cc_emails"));
+    if (cc.length) client.cc_emails = cc;
+  }
 
   const job = { name: val("job_name"), project_type: val("project_type") || "residential" };
   if (val("job_location")) job.location = val("job_location");
@@ -380,7 +425,11 @@ function collectData() {
 function validateData(d) {
   const e = [];
   if (!d.client.name) e.push("Client name is required.");
-  if (!d.client.email) e.push("Client email is required.");
+  if (d.client.no_email) {
+    if (!d.client.delivery_method) e.push("Choose how to deliver when the customer has no email.");
+  } else if (!(d.client.email || (d.client.emails && d.client.emails.length))) {
+    e.push("Client email is required — or check “Customer has no email”.");
+  }
   if (!d.job.name) e.push("Project name is required.");
   if (!d.estimate.date) e.push("Date is required.");
   if (!d.estimate.line_items.length) e.push("At least one line item is required.");
@@ -792,7 +841,18 @@ function applyData(p) {
   p = p || {}; const pb = p.prepared_by || {}, c = p.client || {}, j = p.job || {}, e = p.estimate || {};
   setField("pb_name", pb.name); setField("pb_email", pb.email); setField("pb_phone", pb.phone);
   setField("client_name", c.name); setField("contact_name", c.contact_name);
-  setField("client_email", c.email); setField("client_phone", c.phone);
+  setField("client_phone", c.phone);
+  const emails = Array.isArray(c.emails) && c.emails.length
+    ? c.emails
+    : (c.email ? [c.email] : []);
+  setField("client_emails", emails.join("\n"));
+  const cc = Array.isArray(c.cc_emails) ? c.cc_emails : (c.cc ? [].concat(c.cc) : []);
+  setField("client_cc_emails", Array.isArray(cc) ? cc.join(", ") : (cc || ""));
+  if ($("#client_no_email")) {
+    $("#client_no_email").checked = !!(c.no_email || (c.delivery_method && c.delivery_method !== "email"));
+    if (c.delivery_method) setField("delivery_method", c.delivery_method);
+    syncNoEmailUi();
+  }
   setField("job_name", j.name); setField("job_location", j.location);
   setField("job_monday_item_id", j.monday_item_id);
   setField("project_type", j.project_type || "residential"); setField("scope_summary", j.scope_summary);
@@ -1111,7 +1171,8 @@ $("#dup-guard-new").addEventListener("click", () => {
   // scope/type + line items are kept (the bid itself didn't change).
   setField("identifier", "");
   $("#revise-flag").checked = false;
-  ["client_name", "contact_name", "client_email", "client_phone"].forEach(n => setField(n, ""));
+  ["client_name", "contact_name", "client_emails", "client_cc_emails", "client_phone"].forEach(n => setField(n, ""));
+  if ($("#client_no_email")) { $("#client_no_email").checked = false; syncNoEmailUi(); }
   updateReviseUI();
   $("#dup-guard").style.display = "none";
   pendingBidGuard = null;
@@ -1168,6 +1229,10 @@ $("#scope-admin-toggle").addEventListener("click", openScopeAdmin);
 
 $("[name=date]").value = new Date().toISOString().slice(0, 10);
 updateReviseUI();
+if ($("#client_no_email")) {
+  $("#client_no_email").addEventListener("change", syncNoEmailUi);
+  syncNoEmailUi();
+}
 checkHealth();
 refreshDrafts();
 loadSalespeople();

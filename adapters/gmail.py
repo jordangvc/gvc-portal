@@ -424,6 +424,8 @@ def draft_invoice_email(
     period_end_date: Optional[str] = None,
     extra_pdfs: Optional[list] = None,
     email_context: Optional[str] = None,
+    office_notice: Optional[str] = None,
+    subject_prefix: Optional[str] = None,
 ) -> dict:
     """
     Build a draft email per the GVC Invoice Messaging Guide.
@@ -441,6 +443,8 @@ def draft_invoice_email(
         subject = f"{job_name} - Pay Application #{pay_app_number} / Invoice {invoice_identifier}"
     else:
         subject = f"Invoice {invoice_identifier} - {job_name}"
+    if subject_prefix:
+        subject = f"{subject_prefix.rstrip()} {subject}"
 
     payment_block: list[str] = []
     if hosted_invoice_url:
@@ -513,6 +517,8 @@ def draft_invoice_email(
         ]
 
     body = "\n".join(body_parts)
+    if office_notice:
+        body = f"{office_notice.strip()}\n\n{body}"
 
     # Build attachments: GVC invoice PDF first, then any extra docs (G702, G703, etc.)
     extra_attachment_list = []
