@@ -64,6 +64,16 @@
     font:inherit; font-size:var(--gvc-fs-small); font-weight:700; cursor:pointer;
     background:var(--gvc-green); color:#fff; }
   .btn.secondary { background:var(--gvc-surface); color:var(--gvc-green-dark); border-color:var(--gvc-line); }
+  .js-summary { margin-bottom:var(--gvc-space-4); display:none; }
+  .js-stats { display:flex; flex-wrap:wrap; gap:var(--gvc-space-3); margin-bottom:var(--gvc-space-3); }
+  .js-stat { flex:1 1 120px; padding:10px 14px; background:var(--gvc-bg); border:1px solid var(--gvc-line);
+    border-radius:var(--gvc-r-md); }
+  .js-stat b { display:block; font-size:var(--gvc-fs-caption); color:var(--gvc-muted); font-weight:600; }
+  .js-stat span { font-size:var(--gvc-fs-body); font-weight:700; color:var(--gvc-green-dark); }
+  .js-notes { margin:0; padding:0; list-style:none; font-size:var(--gvc-fs-small); }
+  .js-notes li { padding:8px 0; border-bottom:1px solid var(--gvc-line-soft); }
+  .js-notes li:last-child { border-bottom:none; }
+  .js-notes .sub { color:var(--gvc-muted); font-size:var(--gvc-fs-caption); }
 
 </style>
 </head>
@@ -125,6 +135,11 @@
         <option value="check.commit">Check payment recorded</option>
         <option value="check.extract">Check read</option>
         <option value="jobcheck.save">Job check saved</option>
+        <option value="jobstart.sent_to_ops">Job Start — sent to ops</option>
+        <option value="jobstart.sent_back">Job Start — sent back</option>
+        <option value="jobstart.accepted">Job Start — accepted</option>
+        <option value="jobstart.send_blocked">Job Start — send blocked</option>
+        <option value="jobstart.gc_confirmation_drafted">Job Start — GC confirmation drafted</option>
         <option value="signin">Sign-in</option>
         <option value="tool.open">Tool opened</option>
         <option value="hub.open">Hub opened</option>
@@ -163,6 +178,11 @@
   </div>
 
   <p class="meta" id="meta"></p>
+
+  <div id="jobstart-summary" class="gvc-card js-summary" aria-live="polite">
+    <div class="gvc-card-hd"><span class="gvc-card-title">Job Start (loaded window)</span></div>
+    <div class="gvc-card-bd" id="jobstart-summary-body"></div>
+  </div>
 
   <div class="ledger">
     <table>
@@ -218,6 +238,11 @@
     'change_order.draft.save': 'CO draft saved', 'change_order.draft.delete': 'CO draft deleted',
     'invoice.lookup': 'Invoice lookup', 'estimate.scopes.save': 'Scope catalog saved',
     'coi.template.upload': 'COI template uploaded', 'lien.status': 'Lien watch viewed',
+    'jobstart.sent_to_ops': 'Job Start — sent to ops',
+    'jobstart.sent_back': 'Job Start — sent back to sales',
+    'jobstart.accepted': 'Job Start — accepted',
+    'jobstart.send_blocked': 'Job Start — send blocked',
+    'jobstart.gc_confirmation_drafted': 'Job Start — GC confirmation drafted',
   };
   // Keys rendered in dedicated columns — everything else falls to the tail line.
   const COLUMN_KEYS = ['customer', 'amount', 'sent_to', 'job', 'error'];
@@ -293,7 +318,7 @@
       extra.qa, extra.qa_summary, extra.builder, extra.location,
       extra.project_number, extra.query, extra.source, extra.mode,
       extra.gmail, extra.drive, extra.monday, extra.revision, extra.reused,
-      extra.steps, extra.cc, extra.due, extra.stripe_invoice_id,
+      extra.steps, extra.cc, extra.due, extra.stripe_invoice_id, extra.note,
     ];
     for (const [k, v] of Object.entries(extra)) {
       if (v != null && v !== '') parts.push(k, v);
@@ -307,6 +332,95 @@
     if (!tokens.length) return true;
     const hay = eventHaystack(ev);
     return tokens.every((t) => hay.includes(t));
+  }
+
+  // Mirrors shared/jobstart_metrics.first_pass_stats for the loaded event window.
+  function jobstartMetrics(events) {
+    const js = (events || []).filter((ev) => ev.action && ev.action.startsWith('jobstart.'));
+    let sent = 0, sentBack = 0, accepted = 0;
+    const byBid = {};
+    for (const ev of js) {
+      const target = String(ev.target || '').trim();
+      if (!target) continue;
+      const ts = ev.ts ? Date.parse(ev.ts) : NaN;
+      (byBid[target] ||= []).push({ ts, action: ev.action, ev });
+      if (ev.action === 'jobstart.sent_to_ops') sent++;
+      else if (ev.action === 'jobstart.sent_back') sentBack++;
+      else if (ev.action === 'jobstart.accepted') accepted++;
+    }
+    for (const rows of Object.values(byBid)) {
+      rows.sort((a, b) => (isNaN(a.ts) ? Infinity : a.ts) - (isNaN(b.ts) ? Infinity : b.ts));
+    }
+    let firstPass = 0;
+    const hours = [];
+    for (const rows of Object.values(byBid)) {
+      let firstSent = NaN;
+      rows.forEach((row, idx) => {
+        if (row.action === 'jobstart.sent_to_ops' && isNaN(firstSent)) firstSent = row.ts;
+        if (row.action !== 'jobstart.accepted') return;
+        const hadBack = rows.slice(0, idx).some((r) => r.action === 'jobstart.sent_back');
+        if (!hadBack) firstPass++;
+        if (!isNaN(firstSent) && !isNaN(row.ts) && row.ts >= firstSent) {
+          hours.push((row.ts - firstSent) / 3600000);
+        }
+      });
+    }
+    const notes = js.filter((ev) => ev.action === 'jobstart.sent_back')
+      .map((ev) => ({
+        bid: String(ev.target || ''),
+        note: String((ev.extra || {}).note || ''),
+        actor: String(ev.actor || ''),
+        at: String(ev.ts || ''),
+        job: String((ev.extra || {}).job || ''),
+      }))
+      .sort((a, b) => (b.at || '').localeCompare(a.at || ''))
+      .slice(0, 10);
+    return {
+      sent_count: sent,
+      accepted_count: accepted,
+      sent_back_count: sentBack,
+      first_pass_accepted: firstPass,
+      first_pass_rate: accepted ? firstPass / accepted : null,
+      avg_send_to_accept_hours: hours.length
+        ? hours.reduce((a, b) => a + b, 0) / hours.length : null,
+      recent_send_back_notes: notes,
+    };
+  }
+
+  function pct(rate) {
+    if (rate == null || isNaN(rate)) return '—';
+    return Math.round(rate * 100) + '%';
+  }
+
+  function renderJobstartSummary() {
+    const card = $('jobstart-summary');
+    const body = $('jobstart-summary-body');
+    const hasJobstart = loadedEvents.some((ev) => ev.action && ev.action.startsWith('jobstart.'));
+    if (!hasJobstart) {
+      card.style.display = 'none';
+      return;
+    }
+    const s = jobstartMetrics(loadedEvents);
+    const avgH = s.avg_send_to_accept_hours != null
+      ? s.avg_send_to_accept_hours.toFixed(1) + ' h' : '—';
+    let notesHtml = '';
+    if (s.recent_send_back_notes.length) {
+      notesHtml = '<p class="sub" style="margin:12px 0 6px;font-weight:600;">Recent send-backs</p><ul class="js-notes">' +
+        s.recent_send_back_notes.map((n) =>
+          `<li><strong>${esc(n.job || n.bid)}</strong> — ${esc(n.note || '(no note)')}` +
+          `<div class="sub">${esc(n.actor)} · ${esc((n.at || '').replace('T', ' ').replace(/\..*$/, ''))}</div></li>`
+        ).join('') + '</ul>';
+    }
+    body.innerHTML =
+      `<div class="js-stats">` +
+      `<div class="js-stat"><b>Sent to ops</b><span>${s.sent_count}</span></div>` +
+      `<div class="js-stat"><b>Accepted</b><span>${s.accepted_count}</span></div>` +
+      `<div class="js-stat"><b>Sent back</b><span>${s.sent_back_count}</span></div>` +
+      `<div class="js-stat"><b>First-pass accepts</b><span>${s.first_pass_accepted}</span></div>` +
+      `<div class="js-stat"><b>First-pass rate</b><span>${pct(s.first_pass_rate)}</span></div>` +
+      `<div class="js-stat"><b>Avg send → accept</b><span>${esc(avgH)}</span></div>` +
+      `</div>${notesHtml}`;
+    card.style.display = 'block';
   }
 
   function updateMeta() {
@@ -334,6 +448,7 @@
     const q = $('f-q').value.trim();
     addRows(loadedEvents.filter((ev) => matchesQuery(ev, q)));
     updateMeta();
+    renderJobstartSummary();
   }
 
   // Anything the design doesn't have a home for is still shown — never hide data.

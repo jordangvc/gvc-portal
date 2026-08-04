@@ -61,8 +61,16 @@
 
   .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--gvc-line-soft); }
   .field:last-child { border-bottom: 0; }
-  .field > label { font-size: var(--gvc-fs-small); font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
-    color: var(--gvc-muted); }
+  .field-label-row { display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; flex-wrap: wrap; }
+  .field > label, .field-label-row > label { font-size: var(--gvc-fs-small); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; color: var(--gvc-muted); }
+  .field .howto { font-size: var(--gvc-fs-caption); font-weight: 600; text-transform: none;
+    letter-spacing: 0; color: var(--gvc-green-dark); text-decoration: underline;
+    min-height: 40px; min-width: 40px; display: inline-flex; align-items: center;
+    justify-content: center; padding: 4px 10px; flex-shrink: 0; }
+  .field .howto:hover { color: var(--gvc-green); }
+  .field.dirty > .field-label-row > label::after,
   .field.dirty > label::after { content: " •"; color: var(--gvc-gold-dark); }
   /* Status picker — native <select> so phones open the OS picker. Closed control
      still carries the chosen label's real board color. */
@@ -327,8 +335,14 @@ function fieldHtml(col) {
   } else {
     control = `<input type="text" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   }
+  const howto = col.fieldguide_anchor
+    ? `<a class="howto" href="/ui/fieldguide${esc(col.fieldguide_anchor)}" target="_self">How-to</a>`
+    : "";
+  const labelRow = howto
+    ? `<div class="field-label-row"><label>${esc(col.label)}</label>${howto}</div>`
+    : `<label>${esc(col.label)}</label>`;
   return `<div class="field${disabled ? " disabled" : ""}" data-field="${esc(key)}">
-    <label>${esc(col.label)}</label>${control}</div>`;
+    ${labelRow}${control}</div>`;
 }
 
 function isDirty(key) {

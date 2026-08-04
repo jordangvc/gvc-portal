@@ -424,6 +424,7 @@ function extraPdfRow() {
  * The invoice bills existing top-level COs via the picker (or a manual
  * kind:"co" line with co_number). Live finalize marks those COs Billed. */
 let lastBillableCos = [];
+let pendingCoFromUrl = null;
 
 function selectedCoItemIds() {
   const ids = new Set();
@@ -485,16 +486,30 @@ function addBillableCo(co) {
   scheduleAutosave();
 }
 
+function tryAutoAddBillableCo(coIdentifier) {
+  const want = String(coIdentifier || "").trim().replace(/\s+Rev\s+\d+$/i, "");
+  if (!want) return false;
+  const match = lastBillableCos.find((co) => {
+    const id = String(co.co_number || co.identifier || "").trim().replace(/\s+Rev\s+\d+$/i, "");
+    return id && id.toLowerCase() === want.toLowerCase();
+  });
+  if (match) {
+    addBillableCo(match);
+    return true;
+  }
+  return false;
+}
+
 async function loadBillableCos(projectNumber) {
   const note = $("#billable-cos-note");
   const wrap = $("#billable-cos");
   const pn = (projectNumber || "").trim();
-  if (!note || !wrap) return;
+  if (!note || !wrap) return [];
   if (!pn) {
     lastBillableCos = [];
     wrap.innerHTML = "";
     note.textContent = "Look up a Project # to load unbilled change orders.";
-    return;
+    return [];
   }
   note.textContent = "Loading unbilled change orders…";
   wrap.innerHTML = "";
@@ -504,11 +519,13 @@ async function loadBillableCos(projectNumber) {
     if (!r.ok || !body.ok) {
       note.textContent = (body.detail && body.detail.detail)
         || ("Could not load change orders (" + r.status + ").");
-      return;
+      return [];
     }
     renderBillableCos(body.change_orders || []);
+    return lastBillableCos;
   } catch (e) {
     note.textContent = "Change order load error: " + e.message;
+    return [];
   }
 }
 
@@ -1026,7 +1043,16 @@ async function applyLookupResponse(r, label) {
     (m.url ? " (<a href='" + escapeHtml(m.url) + "' target='_blank' rel='noopener'>open project</a>)" : "") +
     ". " + escapeHtml(notes);
   const basePn = ((prefill.job && prefill.job.project_number) || label || "").trim();
-  if (basePn && typeof loadBillableCos === "function") loadBillableCos(basePn);
+  if (basePn && typeof loadBillableCos === "function") {
+    await loadBillableCos(basePn);
+    const coDeepLink = pendingCoFromUrl;
+    if (coDeepLink) {
+      pendingCoFromUrl = null;
+      if (tryAutoAddBillableCo(coDeepLink)) {
+        note.innerHTML += " <strong>Change order added from link.</strong>";
+      }
+    }
+  }
   $("#invoice-form").scrollIntoView({ behavior: "smooth" });
 }
 
@@ -1038,12 +1064,15 @@ async function lookupProject() {
 }
 
 function bootInvoiceFromUrl() {
-  // Deep links from Billing Hub / other tools:
+  // Deep links from Billing Hub / Change Order / other tools:
   //   ?project_number=C-005
   //   ?monday_item_id=123  (or ?item_id=123)
+  //   ?co=CO.1-2026-0603-004  (auto-add after project lookup + billable list load)
   //   ?q=builder+or+address
   // Prefer Project #, then Monday item id, then free-text search.
   const params = new URLSearchParams(location.search);
+  const co = (params.get("co") || "").trim();
+  if (co) pendingCoFromUrl = co;
   const pn = (params.get("project_number") || "").trim();
   const mondayItemId = (
     params.get("monday_item_id") || params.get("item_id") || ""

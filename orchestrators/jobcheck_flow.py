@@ -107,6 +107,20 @@ def field_key(entry_or_board, col_id: Optional[str] = None) -> str:
     return f"{board}:{col_id}"
 
 
+def fieldguide_anchor(column_id: str, board: str) -> Optional[str]:
+    """
+    Field Manual deep-link for a Job Check column, if one exists.
+    status_19 on Ops is Scheduled Day — not Hanging — so the shared id
+    only maps on the Projects board.
+    """
+    anchor = boards.JOBCHECK_FIELDGUIDE_ANCHORS.get(column_id)
+    if not anchor:
+        return None
+    if column_id == "status_19" and board != BOARD_PROJECTS:
+        return None
+    return anchor
+
+
 def parse_value_key(key: str) -> tuple[str, str]:
     """
     Split a submitted values key into (board, col_id).
@@ -317,6 +331,9 @@ def get_job_detail(item_id: int) -> Optional[dict]:
                "value": values.get(c["id"]), "writable": True}
         if c["type"] == "status":
             row["labels"] = m.get("labels") or []
+        anchor = fieldguide_anchor(c["id"], BOARD_OPS)
+        if anchor:
+            row["fieldguide_anchor"] = anchor
         form_columns.append(row)
 
     trade_writable = bool(project_item_id)
@@ -328,6 +345,9 @@ def get_job_detail(item_id: int) -> Optional[dict]:
                "writable": trade_writable}
         if c["type"] == "status":
             row["labels"] = m.get("labels") or []
+        anchor = fieldguide_anchor(c["id"], BOARD_PROJECTS)
+        if anchor:
+            row["fieldguide_anchor"] = anchor
         form_columns.append(row)
 
     photo_ready = mj.photo_ready_status(ginfo)

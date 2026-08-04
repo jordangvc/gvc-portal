@@ -400,6 +400,17 @@ def test_projects_trade_config_well_formed_and_gated():
         boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved
 
 
+def test_fieldguide_anchors_map_trade_columns():
+    trade_ids = {c["id"] for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS, "fieldguide anchor map is empty"
+    for col_id, anchor in boards.JOBCHECK_FIELDGUIDE_ANCHORS.items():
+        assert col_id in trade_ids, f"{col_id} not in trade columns"
+        assert isinstance(anchor, str) and anchor.startswith("#") and len(anchor) > 1
+    # status_19 on Ops is Scheduled Day — no Hanging how-to there.
+    assert jf.fieldguide_anchor("status_19", "ops") is None
+    assert jf.fieldguide_anchor("status_19", "projects") == "#hang"
+
+
 def test_status_19_collision_is_board_scoped():
     # Ops status_19 = Scheduled Day; Projects status_19 = Hanging Status.
     ops = next(c for c in jf.allowlisted_columns() if c["id"] == "status_19")
