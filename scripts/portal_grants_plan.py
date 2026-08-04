@@ -1,4 +1,4 @@
-"""
+r"""
 Plan portal grants without changing the grants store.
 
 Run from the repository root so ``shared`` is importable:
