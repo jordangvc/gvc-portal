@@ -889,8 +889,21 @@ $("#jobname").addEventListener("input", () => {
     : "Missing the | separator — GVC standard is Street | Builder.";
   onEdit();
 });
+function bootJobStartFromUrl() {
+  // Billing Hub → Job Start: /ui/jobstart?bid=<monday item id>
+  const params = new URLSearchParams(location.search);
+  const bid = (params.get("bid") || params.get("item_id") || "").trim();
+  if (bid) {
+    loadBid(bid);
+    return true;
+  }
+  return false;
+}
+
 checkHealth();
-loadBids();
+if (!bootJobStartFromUrl()) {
+  loadBids();
+}
 </script>
 </body>
 </html>
