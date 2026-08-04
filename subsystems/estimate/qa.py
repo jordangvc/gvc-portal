@@ -123,22 +123,44 @@ def check_estimate_draft(
 
     checks: list[dict[str, Any]] = []
 
-    # 1) Client name in body
+    # 1) Customer name — real hello@ bodies greet with contact_name and often
+    # put the builder only in the job title ("Street | Builder"). Pass if the
+    # full client.name appears in subject/body, OR a distinctive token (≥4
+    # chars) from the name does, OR the contact greeting is present while
+    # client.name is filled (form completeness + human-visible greeting).
+    contact_name = str(client.get("contact_name") or "").strip()
     if not client_name:
         checks.append(_check(
             "client_name", "Customer name", False,
             "client.name is empty",
         ))
-    elif client_name.lower() in body_l:
+    elif client_name.lower() in combined_l:
         checks.append(_check(
             "client_name", "Customer name", True,
-            f"Found {client_name!r} in email body",
+            f"Found {client_name!r} in subject/body",
         ))
     else:
-        checks.append(_check(
-            "client_name", "Customer name", False,
-            f"{client_name!r} not found in email body",
-        ))
+        tokens = [
+            t for t in re.split(r"[^\w]+", client_name.lower())
+            if len(t) >= 4 and t not in {"llc", "inc", "corp", "ltd", "the", "and"}
+        ]
+        hit = next((t for t in tokens if t in combined_l), None)
+        if hit:
+            checks.append(_check(
+                "client_name", "Customer name", True,
+                f"Found customer token {hit!r} from {client_name!r} in subject/body",
+            ))
+        elif contact_name and contact_name.lower().split()[0] in body_l:
+            checks.append(_check(
+                "client_name", "Customer name", True,
+                f"client.name set ({client_name!r}); greeting uses "
+                f"{contact_name.split()[0]!r}",
+            ))
+        else:
+            checks.append(_check(
+                "client_name", "Customer name", False,
+                f"{client_name!r} not found in subject/body",
+            ))
 
     # 2) Customer email
     if not client_email:

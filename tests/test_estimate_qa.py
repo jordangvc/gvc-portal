@@ -163,11 +163,16 @@ def test_missing_amount_in_body():
 
 def test_wrong_or_missing_client_name():
     enriched = _enriched()
-    body = _good_body(enriched).replace("Acme Builders", "Wrong Client")
-    # Job name still has Acme in it from job.name — strip that too for name check.
-    # Client name check only looks at body for client.name; job name is separate.
-    # After replace, "Acme Builders" may still be in job line of body.
-    body = body.replace("123 Main | Acme Builders", "123 Main | Other")
+    # Strip every trace of the customer name/token and the contact greeting.
+    body = (
+        "Hello,\n\n"
+        "Thank you for the opportunity to bid 123 Main. "
+        "Attached is our estimate (2026-0804-001), valid through Aug 31, 2026.\n\n"
+        "The estimate total is $12,345.00.\n\n"
+        "Please review the attached scope and pricing.\n\n"
+        "Thanks,\n"
+        "Green Valley Contractors\n"
+    )
     result = qa.check_estimate_draft(
         enriched=enriched,
         email_body=body,
@@ -186,6 +191,21 @@ def test_wrong_or_missing_client_name():
         to_email="billing@acmebuilders.com",
     )
     assert _by_id(result2, "client_name")["ok"] is False
+
+
+def test_client_name_via_greeting_when_builder_not_in_job_title():
+    """Real drafts greet with contact_name; job title may omit the builder."""
+    enriched = _enriched(job={"name": "123 Main Street Renovation"})
+    body = _good_body(enriched)
+    result = qa.check_estimate_draft(
+        enriched=enriched,
+        email_body=body,
+        email_subject=_good_subject(enriched),
+        writeback=_good_writeback(),
+        to_email=enriched["client"]["email"],
+    )
+    assert _by_id(result, "client_name")["ok"] is True
+    assert result["ok"] is True
 
 
 # --------------------------------------------------------- gmail draft
@@ -310,6 +330,7 @@ def _run_all():
         test_amount_formatting_variants,
         test_missing_amount_in_body,
         test_wrong_or_missing_client_name,
+        test_client_name_via_greeting_when_builder_not_in_job_title,
         test_missing_gmail_draft,
         test_client_email_via_to_email_param,
         test_portal_estimate_url_building,
