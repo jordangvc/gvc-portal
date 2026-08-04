@@ -2528,8 +2528,6 @@ def ui_jobcheck_save(item_id: int, req: JobCheckSaveRequest, request: Request) -
         )
 
 
-
-
 class JobCheckUpdateRequest(BaseModel):
     text: str = Field(..., description="Monday update body to post on the Ops item.")
 

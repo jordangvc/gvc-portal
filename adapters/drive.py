@@ -59,28 +59,6 @@ def folder_id_from_url(url: str) -> Optional[str]:
     return None
 
 
-
-
-def pick_pictures_folder(children: list) -> Optional[dict]:
-    """
-    PURE. Among Drive child folders named exactly "Pictures" (case-insensitive),
-    return the most recently modified one: {id, name, modifiedTime?}.
-
-    Spec (docs/MORNING_BRIEF_BUILD_SPEC.md): if multiple Pictures folders exist,
-    automatically use the most recently modified. Returns None when none match.
-    """
-    pics = []
-    for child in children or []:
-        if (child.get("mimeType") or "") != "application/vnd.google-apps.folder":
-            continue
-        if (child.get("name") or "").strip().lower() != "pictures":
-            continue
-        pics.append(child)
-    if not pics:
-        return None
-    pics.sort(key=lambda c: c.get("modifiedTime") or "", reverse=True)
-    return pics[0]
-
 def slug_for_path(s: str, *, max_len: int = 80) -> str:
     """
     Sanitize a string for use in a Drive folder/file name.
@@ -357,6 +335,83 @@ class DriveUploader:
         )
         return created["id"]
 
+    def list_child_folders(self, parent_id: str) -> list[dict]:
+        """Children folders as {id, name, modifiedTime}."""
+        q = (f"'{parent_id}' in parents and trashed = false and "
+             f"mimeType = 'application/vnd.google-apps.folder'")
+        out: list[dict] = []
+        page_token = None
+        while True:
+            result = (
+                self.service.files()
+                .list(
+                    q=q,
+                    fields="nextPageToken, files(id, name, modifiedTime)",
+                    pageToken=page_token,
+                    pageSize=200,
+                    **self._list_kwargs(),
+                )
+                .execute()
+            )
+            out.extend(result.get("files") or [])
+            page_token = result.get("nextPageToken")
+            if not page_token:
+                break
+        return out
+
+    def resolve_pictures_folder(self, project_folder_id: str) -> str:
+        """
+        Spec: GVC Job Site Media → project folder → Pictures.
+        Multiple Pictures → most recently modified. None → create Pictures.
+        Never create employee- or date-named media folders.
+        """
+        from subsystems.morning.media import pick_pictures_folder
+
+        kids = self.list_child_folders(project_folder_id)
+        picked = pick_pictures_folder(kids)
+        if picked:
+            return picked["id"]
+        return self.ensure_folder("Pictures", project_folder_id)
+
+    def upload_job_site_photos(
+        self,
+        project_folder_id: str,
+        files: list,
+        *,
+        note: Optional[str] = None,
+    ) -> dict:
+        """
+        Upload photo bytes into the resolved Pictures folder.
+        `files` = [(filename, bytes, mimetype), ...]
+        """
+        pictures_id = self.resolve_pictures_folder(project_folder_id)
+        uploaded = []
+        for filename, raw, mimetype in files:
+            name = (filename or "photo.jpg").strip() or "photo.jpg"
+            meta = {"name": name, "parents": [pictures_id]}
+            from googleapiclient.http import MediaInMemoryUpload
+            media = MediaInMemoryUpload(
+                raw, mimetype=mimetype or "image/jpeg", resumable=False)
+            created = (
+                self.service.files()
+                .create(
+                    body=meta,
+                    media_body=media,
+                    fields="id, name, webViewLink",
+                    **self._mutate_kwargs(),
+                )
+                .execute()
+            )
+            uploaded.append({
+                "id": created.get("id"),
+                "name": created.get("name"),
+                "webViewLink": created.get("webViewLink"),
+            })
+        return {
+            "pictures_folder_id": pictures_id,
+            "uploaded": uploaded,
+            "note": note,
+        }
 
     def resolve_project_pictures_folder(self, project_folder_id: str) -> dict:
         """
@@ -368,9 +423,12 @@ class DriveUploader:
         recently modified. If none exist, creates one.
 
         Returns {folder_id, created, web_view_link?}.
+        Used by Job Check photo upload; Morning Brief uses resolve_pictures_folder.
         """
         if not project_folder_id:
             raise ValueError("project_folder_id is required")
+        from subsystems.morning.media import pick_pictures_folder
+
         children = self._list_children(project_folder_id, folders_only=True)
         existing = pick_pictures_folder(children)
         if existing:
