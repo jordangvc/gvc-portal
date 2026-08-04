@@ -6,7 +6,6 @@
 <title>GVC Morning Brief</title>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  /* Morning Brief — mobile-first employee control center (slice 1). */
   body {
     background:
       radial-gradient(1000px 420px at 8% -8%, rgba(35,83,57,.08), transparent 55%),
@@ -20,8 +19,6 @@
       calc(var(--gvc-space-7) + env(safe-area-inset-bottom, 0px));
     display: grid; gap: var(--gvc-space-3);
   }
-  .mb-hd { margin-bottom: 4px; }
-  .mb-hd .gvc-h1 { font-size: clamp(24px, 6vw, 30px); }
   .mb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .mb-chip {
     font-size: var(--gvc-fs-caption); font-weight: 600; color: var(--gvc-ink-soft);
@@ -30,7 +27,6 @@
   }
   .mb-chip--ok { background: var(--gvc-ok-tint); border-color: #bcd6c8; color: var(--gvc-green-dark); }
   .mb-chip--warn { background: var(--gvc-warn-tint); border-color: #E3CFA0; color: var(--gvc-gold-dark); }
-
   .mb-card {
     background: var(--gvc-surface); border: 1px solid var(--gvc-line);
     border-top: 2.5px solid var(--gvc-gold-matte); border-radius: var(--gvc-r-lg);
@@ -47,64 +43,81 @@
   .mb-card-hd .count { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); font-weight: 600; }
   .mb-card-bd { padding: 8px 10px 12px; display: grid; gap: 8px; }
   .mb-empty { padding: 14px; color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
-
+  .prep-list { list-style: none; margin: 0; padding: 4px 14px 14px; display: grid; gap: 6px; }
+  .prep-list button {
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
+    border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer;
+    color: var(--gvc-ink-soft); border-radius: var(--gvc-r); padding: 6px 4px;
+  }
+  .prep-list button.done { color: var(--gvc-green-dark); font-weight: 600; }
+  .prep-dot {
+    width: 18px; height: 18px; border-radius: 50%; flex: 0 0 18px;
+    border: 2px solid var(--gvc-line-strong); background: var(--gvc-surface);
+  }
+  .prep-list button.done .prep-dot {
+    background: var(--gvc-green); border-color: var(--gvc-green);
+    box-shadow: inset 0 0 0 3px var(--gvc-surface);
+  }
+  .seg { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 10px 12px; }
+  .seg button, .row-btn {
+    min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r);
+    border: 1px solid var(--gvc-line-strong); background: var(--gvc-surface);
+    color: var(--gvc-green-dark); font: inherit; font-weight: 700; font-size: var(--gvc-fs-small);
+    cursor: pointer;
+  }
+  .seg button.on { background: var(--gvc-tint-green); border-color: var(--gvc-green); }
+  .stop {
+    display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg); padding: 10px 12px;
+    background: var(--gvc-bg);
+  }
+  .stop.done { opacity: .55; }
+  .stop-name { font-weight: 700; font-size: var(--gvc-fs-body); }
+  .stop-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); }
   .proj {
     border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg);
     background: var(--gvc-bg); overflow: hidden;
   }
   .proj-sum {
     width: 100%; text-align: left; border: 0; background: transparent;
-    padding: 12px 12px 12px 14px; font: inherit; cursor: pointer;
-    display: grid; gap: 4px; min-height: 56px;
-    box-shadow: inset 3px 0 0 transparent;
+    padding: 12px; font: inherit; cursor: pointer; display: grid; gap: 4px; min-height: 56px;
   }
-  .proj-sum:hover { background: #fff; }
   .proj.is-blocked .proj-sum { box-shadow: inset 3px 0 0 var(--gvc-danger); }
   .proj.is-overdue .proj-sum { box-shadow: inset 3px 0 0 var(--gvc-gold-dark); }
-  .proj-name { font-weight: 700; color: var(--gvc-ink); font-size: var(--gvc-fs-body); line-height: 1.3; }
+  .proj-name { font-weight: 700; }
   .proj-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); display: flex; flex-wrap: wrap; gap: 6px 10px; }
-  .proj-meta b { color: var(--gvc-ink-soft); font-weight: 600; }
-  .proj-why { font-size: var(--gvc-fs-micro); font-weight: 700; text-transform: uppercase;
-    letter-spacing: .04em; color: var(--gvc-gold-dark); }
-  .proj-actions {
-    display: none; gap: 8px; padding: 0 12px 12px; flex-wrap: wrap;
-  }
+  .proj-meta b { color: var(--gvc-ink-soft); }
+  .proj-why { font-size: var(--gvc-fs-micro); font-weight: 700; text-transform: uppercase; color: var(--gvc-gold-dark); }
+  .proj-actions { display: none; gap: 8px; padding: 0 12px 12px; flex-wrap: wrap; }
   .proj.open .proj-actions { display: flex; }
   .proj-btn {
     flex: 1 1 auto; min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r);
     border: 1px solid var(--gvc-line-strong); background: var(--gvc-surface);
     color: var(--gvc-green-dark); font: inherit; font-weight: 700; font-size: var(--gvc-fs-small);
-    text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
+    text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
   }
-  .proj-btn:hover { background: var(--gvc-tint-green); border-color: var(--gvc-green); color: var(--gvc-green-dark); }
-  .proj-btn.is-disabled { opacity: .45; pointer-events: none; }
-
-  .prep-list { list-style: none; margin: 0; padding: 4px 14px 14px; display: grid; gap: 8px; }
-  .prep-list li {
-    display: flex; align-items: center; gap: 10px; font-size: var(--gvc-fs-small);
-    color: var(--gvc-ink-soft); min-height: 36px;
+  .proj-btn.is-disabled { opacity: .45; pointer-events: none; cursor: default; }
+  .ar { border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); padding: 10px 12px; background: var(--gvc-bg); display: grid; gap: 6px; }
+  .ar-need { font-weight: 600; }
+  .field { display: grid; gap: 4px; padding: 0 10px 10px; }
+  .field label { font-size: var(--gvc-fs-caption); font-weight: 600; color: var(--gvc-muted); }
+  .field input, .field select, .field textarea {
+    min-height: 44px; border: 1px solid var(--gvc-line-strong); border-radius: var(--gvc-r);
+    padding: 8px 10px; font: inherit; background: #fff;
   }
-  .prep-dot {
-    width: 18px; height: 18px; border-radius: 50%; flex: 0 0 18px;
-    border: 2px solid var(--gvc-line-strong); background: var(--gvc-surface);
+  .field textarea { min-height: 88px; resize: vertical; }
+  #status, #offline {
+    display: none; padding: 12px 14px; border-radius: var(--gvc-r); font-size: var(--gvc-fs-small);
   }
-  .prep-list li.done { color: var(--gvc-green-dark); font-weight: 600; }
-  .prep-list li.done .prep-dot {
-    background: var(--gvc-green); border-color: var(--gvc-green);
-    box-shadow: inset 0 0 0 3px var(--gvc-surface);
+  #status.show { display: block; background: var(--gvc-danger-tint); border: 1px solid #E2C3BA; color: var(--gvc-danger-dark); }
+  #offline.show { display: block; background: var(--gvc-warn-tint); border: 1px solid #E3CFA0; color: var(--gvc-gold-dark); }
+  .role-links { display: flex; flex-wrap: wrap; gap: 8px; }
+  .role-links a { min-height: 40px; }
+  dialog {
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg); padding: 16px;
+    max-width: 420px; width: calc(100% - 32px);
   }
-
-  #status {
-    display: none; padding: 12px 14px; border-radius: var(--gvc-r);
-    font-size: var(--gvc-fs-small); background: var(--gvc-danger-tint);
-    border: 1px solid #E2C3BA; color: var(--gvc-danger-dark);
-  }
-  #status.show { display: block; }
-
-  @media (max-width: 640px) {
-    .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
-    .gvc-wordmark { font-size: 15px; }
-  }
+  dialog::backdrop { background: rgba(26,62,43,.45); }
 </style>
 </head>
 <body>
@@ -128,44 +141,99 @@
     <p class="gvc-eyebrow" id="eyebrow">Your Morning Brief</p>
     <h1 class="gvc-h1" id="title">Loading…</h1>
     <div class="mb-chips" id="chips"></div>
+    <div class="role-links" id="rolelinks" style="margin-top:10px"></div>
   </div>
-
+  <div id="offline"></div>
   <div id="status"></div>
 
-  <section class="mb-card" id="prepcard">
-    <div class="mb-card-hd"><h2>Preparation</h2><span class="count" id="prepcount"></span></div>
-    <ul class="prep-list" id="preplist"></ul>
+  <section class="mb-card"><div class="mb-card-hd"><h2>Preparation</h2><span class="count" id="prepcount"></span></div>
+    <ul class="prep-list" id="preplist"></ul></section>
+
+  <section class="mb-card"><div class="mb-card-hd"><h2>Starting location</h2></div>
+    <div class="seg" id="origseg"></div>
+    <div class="field" id="origcustom" style="display:none">
+      <label for="origaddr">Custom address</label>
+      <input id="origaddr" placeholder="Street, city" />
+      <button type="button" class="row-btn" id="origsave">Save custom</button>
+    </div>
   </section>
 
-  <section class="mb-card" id="minecard">
-    <div class="mb-card-hd"><h2>My projects</h2><span class="count" id="minecount"></span></div>
-    <div class="mb-card-bd" id="minelist"></div>
+  <section class="mb-card"><div class="mb-card-hd"><h2>Today's stops</h2><span class="count" id="stopcount"></span></div>
+    <div class="seg">
+      <button type="button" class="row-btn" id="btnOptimize">Optimize</button>
+      <a class="proj-btn" id="btnMaps" href="#" target="_blank" rel="noopener">Google Maps</a>
+    </div>
+    <div class="mb-card-bd" id="stoplist"></div>
   </section>
 
-  <section class="mb-card" id="attncard">
-    <div class="mb-card-hd"><h2>Needs attention today</h2><span class="count" id="attncount"></span></div>
-    <div class="mb-card-bd" id="attnlist"></div>
+  <section class="mb-card"><div class="mb-card-hd"><h2>Action Requests</h2><span class="count" id="arcount"></span></div>
+    <div class="mb-card-bd">
+      <h3 class="gvc-h3" style="font-size:var(--gvc-fs-small);margin:0 0 6px;">Incoming</h3>
+      <div id="arin"></div>
+      <hr class="gvc-divider" />
+      <h3 class="gvc-h3" style="font-size:var(--gvc-fs-small);margin:0 0 6px;">Outgoing</h3>
+      <div id="arout"></div>
+    </div>
+    <div class="field"><label>Need from (email)</label><input id="arTo" type="email" /></div>
+    <div class="field"><label>Category</label><select id="arCat"></select></div>
+    <div class="field"><label>Need</label><textarea id="arNeed" placeholder="Plain-language ask"></textarea></div>
+    <div class="seg"><button type="button" class="row-btn" id="arSend">Send request</button></div>
   </section>
 
-  <section class="mb-card" id="holdcard">
-    <div class="mb-card-hd"><h2>Long-term holds</h2><span class="count" id="holdcount"></span></div>
-    <div class="mb-card-bd" id="holdlist"></div>
-  </section>
+  <section class="mb-card"><div class="mb-card-hd"><h2>My projects</h2><span class="count" id="minecount"></span></div>
+    <div class="mb-card-bd" id="minelist"></div></section>
+  <section class="mb-card"><div class="mb-card-hd"><h2>Needs attention today</h2><span class="count" id="attncount"></span></div>
+    <div class="mb-card-bd" id="attnlist"></div></section>
+  <section class="mb-card"><div class="mb-card-hd"><h2>Long-term holds</h2><span class="count" id="holdcount"></span></div>
+    <div class="mb-card-bd" id="holdlist"></div></section>
+  <section class="mb-card"><div class="mb-card-hd"><h2>Unscheduled / needs planning</h2><span class="count" id="unschcount"></span></div>
+    <div class="mb-card-bd" id="unschlist"></div></section>
+
+  <section class="mb-card"><div class="mb-card-hd"><h2>Private notes</h2></div>
+    <div class="field"><textarea id="notes" placeholder="Only you see these"></textarea></div></section>
+
+  <section class="mb-card" id="ffcard" style="display:none"><div class="mb-card-hd"><h2>From the huddle (Fireflies)</h2></div>
+    <div class="mb-card-bd" id="fflist"></div></section>
 
   <p class="gvc-sub" style="font-size:var(--gvc-fs-caption);margin:8px 0 0;">
-    Slice 1 — live Ops board, personalized to you. Routes, Action Requests, Drive updates,
-    and the 6:45 huddle come next.
+    Full brief — your private daily control center. Cached offline for field use.
   </p>
 </main>
+
+<dialog id="updDlg">
+  <form method="dialog" id="updForm" style="display:grid;gap:10px">
+    <strong>Add update</strong>
+    <input type="hidden" id="updItem" />
+    <label>Note<textarea id="updNote"></textarea></label>
+    <label>Photos<input type="file" id="updFiles" accept="image/*" multiple capture="environment" /></label>
+    <div style="display:flex;gap:8px">
+      <button type="submit" class="row-btn" id="updGo">Confirm upload</button>
+      <button type="button" class="row-btn" id="updCancel">Cancel</button>
+    </div>
+  </form>
+</dialog>
 
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
   (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const CACHE_KEY = "gvc_morning_brief_v1";
+let BRIEF = null;
+
+async function api(url, opts) {
+  const r = await fetch(url, opts);
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = body.detail || body;
+    throw new Error(d.detail || d.message || d.code || ("HTTP " + r.status));
+  }
+  return body;
+}
 
 function projectCard(p) {
   const blocked = !!(p.blocked && String(p.blocked).toLowerCase() !== "clear");
-  const overdue = !!(p.overdue && String(p.overdue).toLowerCase() !== "on time");
+  const overdue = !!(p.overdue && String(p.overdue).toLowerCase() !== "on time"
+    && String(p.overdue).toLowerCase() !== "clear");
   const cls = ["proj", blocked ? "is-blocked" : "", overdue ? "is-overdue" : ""].filter(Boolean).join(" ");
   const bits = [
     p.stage ? `<span>Stage <b>${esc(p.stage)}</b></span>` : "",
@@ -182,18 +250,17 @@ function projectCard(p) {
       ${p.relevance_reason ? `<div class="proj-why">${esc(p.relevance_reason)}</div>` : ""}
     </button>
     <div class="proj-actions">
-      <a class="proj-btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open in Monday</a>
-      <span class="proj-btn is-disabled" title="Coming next">Drive</span>
-      <span class="proj-btn is-disabled" title="Coming next">Add Update</span>
+      <a class="proj-btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open Monday</a>
+      ${(p.gfolder_url || p.drive_url)
+        ? `<a class="proj-btn" href="${esc(p.gfolder_url || p.drive_url)}" target="_blank" rel="noopener">Open Drive</a>`
+        : `<span class="proj-btn is-disabled" title="No GFolder linked">Open Drive</span>`}
+      <button type="button" class="proj-btn js-upd" data-id="${p.item_id}">Add Update</button>
     </div>
   </article>`;
 }
 
 function renderList(el, rows, empty) {
-  if (!rows || !rows.length) {
-    el.innerHTML = `<div class="mb-empty">${esc(empty)}</div>`;
-    return;
-  }
+  if (!rows || !rows.length) { el.innerHTML = `<div class="mb-empty">${esc(empty)}</div>`; return; }
   el.innerHTML = rows.map(projectCard).join("");
   el.querySelectorAll(".proj-sum").forEach((btn) => {
     btn.addEventListener("click", () => {
@@ -202,66 +269,274 @@ function renderList(el, rows, empty) {
       btn.setAttribute("aria-expanded", open ? "true" : "false");
     });
   });
+  el.querySelectorAll(".js-upd").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      $("#updItem").value = btn.dataset.id;
+      $("#updNote").value = "";
+      $("#updFiles").value = "";
+      $("#updDlg").showModal();
+    });
+  });
 }
 
-function render(brief) {
+function renderStops(stops) {
+  const el = $("#stoplist");
+  if (!stops.length) { el.innerHTML = `<div class="mb-empty">No stops yet — your Ops. Owner projects become stops.</div>`; return; }
+  el.innerHTML = stops.map((s, i) => `
+    <div class="stop ${s.completed ? "done" : ""}" data-id="${s.item_id}">
+      <input type="checkbox" ${s.completed ? "checked" : ""} data-act="done" aria-label="Complete stop" />
+      <div><div class="stop-name">${esc(s.name)}</div>
+        <div class="stop-meta">${esc(s.location || "No fixed time")}${s.hard_time ? " · " + esc(s.hard_time) : ""}</div></div>
+      <div style="display:flex;flex-direction:column;gap:4px">
+        <button type="button" class="row-btn" data-act="up" ${i===0?"disabled":""}>↑</button>
+        <button type="button" class="row-btn" data-act="down" ${i===stops.length-1?"disabled":""}>↓</button>
+      </div>
+    </div>`).join("");
+  el.querySelectorAll("[data-act]").forEach((btn) => {
+    btn.addEventListener("click", async (e) => {
+      const row = e.target.closest(".stop");
+      const id = Number(row.dataset.id);
+      const act = e.target.dataset.act;
+      let next = BRIEF.stops.slice();
+      const idx = next.findIndex((x) => Number(x.item_id) === id);
+      if (act === "up" && idx > 0) { [next[idx-1], next[idx]] = [next[idx], next[idx-1]]; await saveRoute(next, true); }
+      if (act === "down" && idx < next.length-1) { [next[idx+1], next[idx]] = [next[idx], next[idx+1]]; await saveRoute(next, true); }
+      if (act === "done") {
+        await api("/ui/api/morning/route/complete", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ item_id: id, post_monday: true })
+        });
+        await load(false);
+      }
+    });
+  });
+  el.querySelectorAll('input[type=checkbox]').forEach((cb) => {
+    cb.addEventListener("change", async () => {
+      if (!cb.checked) return;
+      const id = Number(cb.closest(".stop").dataset.id);
+      await api("/ui/api/morning/route/complete", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ item_id: id, post_monday: true })
+      });
+      await load(false);
+    });
+  });
+}
+
+async function saveRoute(stops, markOverride) {
+  const body = await api("/ui/api/morning/route", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ stops, mark_override: !!markOverride })
+  });
+  BRIEF.stops = body.route.stops;
+  BRIEF.maps_url = body.maps_url;
+  renderStops(BRIEF.stops);
+  const maps = $("#btnMaps");
+  if (BRIEF.maps_url) { maps.href = BRIEF.maps_url; maps.style.opacity = "1"; }
+}
+
+function render(brief, { offline } = {}) {
+  BRIEF = brief;
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(brief)); } catch (_) {}
+  $("#offline").className = offline ? "show" : "";
+  $("#offline").textContent = offline ? "Showing cached brief — reconnect to sync." : "";
+
   const name = (brief.employee && brief.employee.name)
-    ? brief.employee.name.split(" ")[0]
-    : "there";
+    ? brief.employee.name.split(" ")[0] : "there";
   $("#title").textContent = `Good morning, ${name}`;
   const refreshed = (brief.hub && brief.hub.refreshed_at) || "";
-  $("#eyebrow").textContent = refreshed
-    ? `Your Morning Brief · refreshed ${refreshed}`
-    : "Your Morning Brief";
+  $("#eyebrow").textContent = refreshed ? `Your Morning Brief · refreshed ${refreshed}` : "Your Morning Brief";
 
   const chips = [];
-  const mineN = (brief.my_projects || []).length;
-  const attnN = (brief.needs_attention || []).length;
-  chips.push(`<span class="mb-chip mb-chip--ok">${mineN} of yours</span>`);
-  chips.push(`<span class="mb-chip${attnN ? " mb-chip--warn" : ""}">${attnN} need attention</span>`);
-  if (brief.preparation) {
-    const done = (brief.preparation.criteria || []).filter((c) => c.done).length;
-    chips.push(`<span class="mb-chip">${done}/${brief.preparation.total || 6} prep</span>`);
-  }
+  if (brief.weather && brief.weather.summary) chips.push(`<span class="mb-chip">${esc(brief.weather.summary)}</span>`);
+  const prep = brief.preparation || {};
+  chips.push(`<span class="mb-chip mb-chip--ok">${prep.ready||0}/${prep.total||6} prep</span>`);
+  chips.push(`<span class="mb-chip">${(brief.stops||[]).length} stops</span>`);
+  const attnN = (brief.needs_attention||[]).length;
+  chips.push(`<span class="mb-chip${attnN?" mb-chip--warn":""}">${attnN} need attention</span>`);
   $("#chips").innerHTML = chips.join("");
 
-  const prep = brief.preparation || {};
+  const links = [];
+  if (brief.links && brief.links.gm) links.push(`<a class="proj-btn" href="${brief.links.gm}">GM huddle</a>`);
+  if (brief.links && brief.links.owner) links.push(`<a class="proj-btn" href="${brief.links.owner}">Owner Pulse</a>`);
+  $("#rolelinks").innerHTML = links.join("");
+
   $("#prepcount").textContent = prep.label || "";
-  $("#preplist").innerHTML = (prep.criteria || []).map((c) =>
-    `<li class="${c.done ? "done" : ""}"><span class="prep-dot" aria-hidden="true"></span>${esc(c.label)}</li>`
-  ).join("");
+  $("#preplist").innerHTML = (prep.criteria||[]).map((c) =>
+    `<li><button type="button" class="${c.done?"done":""}" data-cid="${esc(c.id)}">
+      <span class="prep-dot" aria-hidden="true"></span>${esc(c.label)}</button></li>`).join("");
+  $("#preplist").querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const done = !btn.classList.contains("done");
+      let note = null;
+      if (btn.dataset.cid === "blockers" && done) {
+        note = prompt("Blockers? Type None if clear.", "None") || "None";
+      }
+      await api("/ui/api/morning/prep", {
+        method: "POST", headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({ criterion_id: btn.dataset.cid, done, note })
+      });
+      await load(false);
+    });
+  });
 
-  $("#minecount").textContent = String(mineN);
-  $("#attncount").textContent = String(attnN);
-  $("#holdcount").textContent = String((brief.long_term_holds || []).length);
+  const origin = brief.origin || { kind: "office" };
+  const originLabels = { home: "Home", office: "Office", current: "Current location", custom: "Custom" };
+  $("#origseg").innerHTML = ["home","office","current","custom"].map((k) =>
+    `<button type="button" data-kind="${k}" class="${origin.kind===k?"on":""}">${originLabels[k]}</button>`).join("");
+  $("#origcustom").style.display = origin.kind === "custom" ? "grid" : "none";
+  $("#origaddr").value = origin.address || "";
+  $("#origseg").querySelectorAll("button").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const kind = btn.dataset.kind;
+      if (kind === "current" && navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (pos) => {
+          await api("/ui/api/morning/origin", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ kind, lat: pos.coords.latitude, lng: pos.coords.longitude, label: "Current location" })
+          });
+          await load(false);
+        }, async () => {
+          await api("/ui/api/morning/origin", {
+            method:"POST", headers:{"Content-Type":"application/json"},
+            body: JSON.stringify({ kind: "office" })
+          });
+          await load(false);
+        });
+        return;
+      }
+      if (kind === "custom") { $("#origcustom").style.display = "grid"; return; }
+      await api("/ui/api/morning/origin", {
+        method:"POST", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({ kind })
+      });
+      await load(false);
+    });
+  });
 
-  renderList($("#minelist"), brief.my_projects,
-    "Nothing assigned to you as Ops. Owner right now — company attention is below.");
-  renderList($("#attnlist"), brief.needs_attention,
-    "Nothing blocked or overdue on the active Ops board. Nice.");
-  renderList($("#holdlist"), brief.long_term_holds,
-    "Long-term hold detection ships next (quiet 7+ days).");
-}
+  $("#stopcount").textContent = String((brief.stops||[]).length);
+  renderStops(brief.stops || []);
+  const maps = $("#btnMaps");
+  if (brief.maps_url) { maps.href = brief.maps_url; maps.style.pointerEvents = "auto"; }
+  else { maps.removeAttribute("href"); maps.style.opacity = ".45"; }
 
-async function load() {
-  try {
-    const r = await fetch("/ui/api/morning/brief");
-    const body = await r.json();
-    if (!r.ok || !body.ok) {
-      const d = body.detail || body;
-      $("#status").className = "show";
-      $("#status").textContent = (d.detail || d.message || "Couldn't load the brief.") +
-        (d.advice ? " — " + d.advice : "");
-      $("#title").textContent = "Morning Brief";
-      return;
-    }
-    render(body);
-  } catch (e) {
-    $("#status").className = "show";
-    $("#status").textContent = "Network error — " + e.message;
-    $("#title").textContent = "Morning Brief";
+  const ar = brief.action_requests || {};
+  const incoming = ar.incoming || [];
+  const outgoing = ar.outgoing || [];
+  $("#arcount").textContent = `${incoming.length} in · ${outgoing.length} out`;
+  const arRow = (r, dir) => `
+    <div class="ar">
+      <div class="ar-need">${esc(r.need)}</div>
+      <div class="stop-meta">${dir==="in"?"From":"To"} ${esc(dir==="in"?r.requester_email:r.needed_from_email)}
+        · ${esc(r.category)}${r.project_name ? " · " + esc(r.project_name) : ""}${r.escalation && r.escalation!=="none" ? " · " + esc(r.escalation) : ""}</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        ${dir==="in" && r.status==="open" ? `<button type="button" class="row-btn js-ack" data-id="${esc(r.id)}">Acknowledge</button>` : ""}
+        ${r.status!=="completed" ? `<button type="button" class="row-btn js-done" data-id="${esc(r.id)}">Complete</button>` : ""}
+      </div>
+    </div>`;
+  $("#arin").innerHTML = incoming.length ? incoming.map((r) => arRow(r, "in")).join("") : `<div class="mb-empty">Nothing waiting on you.</div>`;
+  $("#arout").innerHTML = outgoing.length ? outgoing.map((r) => arRow(r, "out")).join("") : `<div class="mb-empty">No open outgoing requests.</div>`;
+  $("#arCat").innerHTML = (ar.categories||["other"]).map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  document.querySelectorAll(".js-ack").forEach((b) => b.addEventListener("click", async () => {
+    await api(`/ui/api/morning/action-requests/${b.dataset.id}/ack`, { method: "POST" });
+    await load(false);
+  }));
+  document.querySelectorAll(".js-done").forEach((b) => b.addEventListener("click", async () => {
+    await api(`/ui/api/morning/action-requests/${b.dataset.id}/complete`, { method: "POST" });
+    await load(false);
+  }));
+
+  $("#minecount").textContent = String((brief.my_projects||[]).length);
+  $("#attncount").textContent = String((brief.needs_attention||[]).length);
+  $("#holdcount").textContent = String((brief.long_term_holds||[]).length);
+  $("#unschcount").textContent = String((brief.unscheduled||[]).length);
+  renderList($("#minelist"), brief.my_projects, "Nothing assigned to you as Ops. Owner right now.");
+  renderList($("#attnlist"), brief.needs_attention, "Nothing blocked or overdue.");
+  renderList($("#holdlist"), brief.long_term_holds, "No long-term holds.");
+  renderList($("#unschlist"), brief.unscheduled, "All your work has a location/schedule.");
+
+  $("#notes").value = brief.notes || "";
+  const ff = brief.fireflies || {};
+  if ((ff.proposals||[]).length) {
+    $("#ffcard").style.display = "block";
+    $("#fflist").innerHTML = ff.proposals.map((p) =>
+      `<div class="ar"><div class="ar-need">${esc(p.summary||p.title||"Proposal")}</div></div>`).join("");
+  } else {
+    $("#ffcard").style.display = "none";
   }
 }
+
+async function load(record = true) {
+  try {
+    const body = await api("/ui/api/morning/brief");
+    $("#status").className = "";
+    render(body);
+  } catch (e) {
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch (_) {}
+    if (cached) { render(cached, { offline: true }); }
+    else {
+      $("#status").className = "show";
+      $("#status").textContent = String(e.message || e);
+      $("#title").textContent = "Morning Brief";
+    }
+  }
+}
+
+$("#btnOptimize").addEventListener("click", async () => {
+  const body = await api("/ui/api/morning/route/optimize", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ stops: BRIEF.stops || [] })
+  });
+  BRIEF.stops = body.route.stops;
+  BRIEF.maps_url = body.maps_url;
+  renderStops(BRIEF.stops);
+});
+
+$("#origsave").addEventListener("click", async () => {
+  await api("/ui/api/morning/origin", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({ kind: "custom", address: $("#origaddr").value, label: "Custom" })
+  });
+  await load(false);
+});
+
+$("#arSend").addEventListener("click", async () => {
+  await api("/ui/api/morning/action-requests", {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({
+      needed_from_email: $("#arTo").value,
+      category: $("#arCat").value,
+      need: $("#arNeed").value
+    })
+  });
+  $("#arNeed").value = "";
+  await load(false);
+});
+
+let notesTimer = null;
+$("#notes").addEventListener("input", () => {
+  clearTimeout(notesTimer);
+  notesTimer = setTimeout(async () => {
+    await api("/ui/api/morning/notes", {
+      method:"PUT", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ text: $("#notes").value })
+    });
+  }, 600);
+});
+
+$("#updCancel").addEventListener("click", () => $("#updDlg").close());
+$("#updForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const fd = new FormData();
+  fd.append("item_id", $("#updItem").value);
+  fd.append("note", $("#updNote").value);
+  for (const f of $("#updFiles").files) fd.append("files", f);
+  const r = await fetch("/ui/api/morning/update", { method: "POST", body: fd });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) alert((body.detail && body.detail.detail) || "Upload failed");
+  $("#updDlg").close();
+});
 
 load();
 </script>

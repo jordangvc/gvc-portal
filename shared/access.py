@@ -32,9 +32,13 @@ import os
 # `jobstart` = Job Start (Sales → Operations handoff gate), added 2026-07-29.
 # `fieldguide` = Field Manual (our own production procedures), added 2026-07-29.
 # `morning` = Morning Brief / Ops huddle daily control center, added 2026-08-03
-#   (docs/MORNING_BRIEF_BUILD_SPEC.md).
+#   (docs/MORNING_BRIEF_BUILD_SPEC.md). Role overlays (NOT baseline):
+#   morning_ops = Operations Team (huddle attendance), morning_gm = General
+#   Manager run sheet, morning_owner = Owner Pulse (exception-only). Keyed to
+#   portal grants — never hard-coded names (Donnie/Jordan/etc.).
 FEATURES: tuple[str, ...] = (
-    "morning", "estimate", "change_order", "invoice", "check",
+    "morning", "morning_ops", "morning_gm", "morning_owner",
+    "estimate", "change_order", "invoice", "check",
     "coi", "lien", "jobcheck", "jobstart", "takeoff", "timeoff", "fieldguide",
     "activity", "admin",
 )
@@ -54,10 +58,13 @@ WILDCARD = "*"
 #   estimate ⇒ change_order   (Change Order app, formerly under `estimate`)
 #   invoice  ⇒ check          (Paid by Check, formerly under `invoice`)
 #   admin    ⇒ activity       (Activity audit view, formerly under `admin`)
+#   morning_gm ⇒ morning_ops  (GM is on the Operations Team)
+#   morning_owner does NOT imply ops/gm — Owner Pulse is exception-only.
 IMPLIES: dict[str, frozenset] = {
     "estimate": frozenset({"change_order"}),
     "invoice": frozenset({"check"}),
     "admin": frozenset({"activity"}),
+    "morning_gm": frozenset({"morning_ops"}),
 }
 
 
@@ -120,3 +127,18 @@ def effective_features(email: str) -> set[str]:
 
 def has_feature(email: str, feature: str) -> bool:
     return feature in effective_features(email)
+
+
+def morning_role(email: str) -> dict:
+    """
+    Role flags for Morning Brief views. Never hard-code people — grants only.
+    Superadmins get owner visibility so Jordan can open Owner Pulse without a
+    separate grant until /ui/admin is updated.
+    """
+    feats = effective_features(email)
+    is_owner = "morning_owner" in feats or (email or "").strip().lower() in superadmin_emails()
+    return {
+        "is_ops": "morning_ops" in feats or "morning_gm" in feats,
+        "is_gm": "morning_gm" in feats,
+        "is_owner": is_owner,
+    }

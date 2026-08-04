@@ -150,6 +150,11 @@ MORNING_READ_COLUMN_IDS: tuple[str, ...] = (
     MORNING_COL_PROGRESS,
 )
 
+# A blocked/overdue item with no meaningful change in this many days demotes
+# from "Needs attention today" to "Long-term holds" (spec: Blocked and
+# Overdue Work). Measured against the item's own `updated_at`.
+MORNING_LONG_TERM_HOLD_DAYS = int(os.environ.get("GVC_MORNING_LONG_TERM_HOLD_DAYS", "7"))
+
 # Money / billing — never in employee Morning Brief payloads.
 # (Do NOT reuse JOBCHECK_HARD_EXCLUDED_IDS wholesale — that set also blocks
 # write-only automation columns like Overdue that the brief must READ.)
@@ -160,6 +165,16 @@ MORNING_HARD_EXCLUDED_IDS = frozenset({
     "color_mm2xd40t",     # BIllable
     "date_mm3zry96",      # Ready for Invoice Date
 })
+
+# Projects-board GFolder Link (Drive root for job-site Pictures uploads).
+MORNING_PROJECTS_GFOLDER_COL = os.environ.get(
+    "GVC_MONDAY_PROJECTS_GFOLDER_COL") or "link_mkwr6ef9"
+
+# Action Requests board — create via scripts/create_action_requests_board.py.
+# 0 = GCS-only SoT (portal/morning/action-requests.json). Spec retires the old
+# Ops-board "Needs from Jordan" column after migration.
+ACTION_REQUESTS_BOARD_ID = int(
+    os.environ.get("GVC_MONDAY_ACTION_REQUESTS_BOARD_ID") or "0")
 
 
 # ---------------------------------------------------------------------------
