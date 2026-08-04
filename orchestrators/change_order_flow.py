@@ -47,6 +47,7 @@ from subsystems.change_order.number import next_co_number, parse_co_number
 from subsystems.change_order.revision import (
     archive_version, co_pdf_filename, next_archive_name, sidecar_filename,
 )
+from shared.doc_number import core_number
 from shared.money import fmt_money
 
 HELLO_FROM_ADDR = "hello@greenvalleycontractors.com"
@@ -96,18 +97,18 @@ def validate(data: dict) -> None:
 
 def normalize_base_number(base: str) -> str:
     """
-    The base is the estimate / project number — it must NOT itself be a CO id.
-    If a CO identifier is passed in by mistake (e.g. the previous CO's number
-    autofilled or pasted into the base field), strip the `CO.{n}-` wrapper down
-    to the real base so we never emit a doubled prefix like
-    `CO.1-CO.3-2026-0616-B2`. Loops in case of nested mistakes.
+    The base is the estimate / project spine core — it must NOT itself be a
+    CO id. Strip `CO.{n}-` wrappers and EST-/PRO-/INV- prefixes so we emit
+    `CO.{n}-YYYY-MMDD-NNN` (never `CO.1-EST-…` or `CO.1-CO.3-…`).
     """
     base = (base or "").strip()
     while True:
         parsed = parse_co_number(base)
         if not parsed:
-            return base
+            break
         base = parsed[1]
+    core = core_number(base)
+    return core or base
 
 
 def _parse_date(value: Optional[str]) -> date:

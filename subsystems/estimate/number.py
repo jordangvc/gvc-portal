@@ -1,15 +1,16 @@
 """
-Estimate numbering — service-assigned `YYYY-MMDD-NNN`.
+Estimate numbering — service-assigned `EST-YYYY-MMDD-NNN`.
 =========================================================================
-Confirmed scheme (decided 2026-06-10): date of generation + a daily
-incremental counter, zero-padded to 3. No prefixes. The date component is
-the *generation* date and never changes on revision.
+Core scheme (decided 2026-06-10, prefix locked 2026-08-04): generation date
++ daily incremental counter, zero-padded to 3. The outbound document id is
+`EST-{core}`; the same core becomes `PRO-{core}` on the project and
+`INV-{core}` on the invoice (see shared/doc_number.py).
 
 Sources scanned for today's max NNN (the number is max+1 across BOTH):
-  1. The Monday Bid Board, `Estimate #` column (the audit trail) —
+  1. The Monday Bid Board, `Estimate #` column (stores bare core) —
      skipped gracefully when Monday isn't configured.
   2. The local/container output dir (catches estimates finalized while a
-     Monday write-back failed).
+     Monday write-back failed; filenames may be EST-… or bare).
 
 Concurrency note: at GVC's volume (a handful of estimates/day, 3-7 portal
 users) a read-then-assign race is theoretical; if two finalizes ever do
@@ -24,9 +25,21 @@ from datetime import date
 from pathlib import Path
 from typing import Iterable, Optional
 
-ESTIMATE_NUMBER_RE = re.compile(r"^(\d{4})-(\d{4})-(\d{3})$")
+from shared.doc_number import (
+    CORE_RE,
+    PREFIX_EST,
+    core_number,
+    for_estimate,
+    monday_estimate_cell,
+)
 
-# Bid Board + its `Estimate #` text column (see
+# Accept bare core OR EST-/PRO-/INV- prefixed (normalize to EST- at assign).
+ESTIMATE_NUMBER_RE = re.compile(
+    r"^(?:EST-|PRO-|INV-)?(\d{4})-(\d{4})-(\d{3})$",
+    re.IGNORECASE,
+)
+
+# Bid Board + its `Estimate #` column (see
 # GVC_Estimate_System_Confirmed_Design.md for the full column map).
 from shared.boards import BID_BOARD_ID
 COL_ESTIMATE_NUMBER = "numbers18"
@@ -38,16 +51,19 @@ def day_prefix(d: Optional[date] = None) -> str:
 
 
 def format_number(d: date, nnn: int) -> str:
-    return f"{day_prefix(d)}-{nnn:03d}"
+    """Outbound estimate id: EST-YYYY-MMDD-NNN."""
+    return for_estimate(f"{day_prefix(d)}-{nnn:03d}")
 
 
 def parse_counter(value: str, *, prefix: str) -> Optional[int]:
-    """Return NNN if `value` is a well-formed number for the given day prefix."""
-    value = (value or "").strip()
-    m = ESTIMATE_NUMBER_RE.match(value)
-    if not m:
+    """Return NNN if `value` is a well-formed spine number for the day prefix."""
+    core = core_number(value)
+    if not core:
         return None
-    if not value.startswith(prefix + "-"):
+    if not core.startswith(prefix + "-"):
+        return None
+    m = CORE_RE.match(core)
+    if not m:
         return None
     return int(m.group(3))
 
@@ -110,10 +126,32 @@ def _counters_from_monday(prefix: str) -> Iterable[int]:
 
 
 def next_estimate_number(*, output_dir: Path, today: Optional[date] = None) -> str:
-    """Return the next `YYYY-MMDD-NNN` for today (001 if none exist yet)."""
+    """Return the next `EST-YYYY-MMDD-NNN` for today (EST-…-001 if none yet)."""
     d = today or date.today()
     prefix = day_prefix(d)
     counters = list(_counters_from_monday(prefix))
     counters += list(_counters_from_output_dir(Path(output_dir), prefix=prefix))
     nnn = (max(counters) + 1) if counters else 1
     return format_number(d, nnn)
+
+
+def normalize_estimate_identifier(value: str) -> str:
+    """Canonical outbound form EST-{core}; empty string stays empty."""
+    v = (value or "").strip()
+    if not v:
+        return ""
+    return for_estimate(v) if core_number(v) else v
+
+
+# Re-export for callers that write Monday Estimate #.
+__all__ = [
+    "ESTIMATE_NUMBER_RE",
+    "COL_ESTIMATE_NUMBER",
+    "day_prefix",
+    "format_number",
+    "parse_counter",
+    "next_estimate_number",
+    "normalize_estimate_identifier",
+    "monday_estimate_cell",
+    "PREFIX_EST",
+]

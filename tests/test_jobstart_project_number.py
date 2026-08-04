@@ -191,6 +191,35 @@ check("adopt + filled Project # does NOT overwrite",
       proj_keep[0]["values"] if proj_keep else mc_keep.updated)
 
 
+# ---------------------------------------------------------------------------
+# 5. Portal spine: Estimate # → PRO-{core} on Projects
+# ---------------------------------------------------------------------------
+
+mc_spine = HandOffClient()
+mj.hand_off(
+    mc_spine, bid=_bid(estimate_number="2026-0804-012"),
+    job_name="Spine Number Job",
+    projects_values={}, ops_values={}, accepted_date="2026-08-04",
+)
+proj_spine = [c for c in mc_spine.created
+              if str(c["boardId"]) == str(boards.PROJECTS_BOARD_ID)]
+check("spine Estimate # stamps PRO- on Project #",
+      proj_spine and proj_spine[0]["values"].get(col) == "PRO-2026-0804-012",
+      proj_spine[0]["values"] if proj_spine else None)
+
+mc_est = HandOffClient()
+mj.hand_off(
+    mc_est, bid=_bid(estimate_number="EST-2026-0804-012"),
+    job_name="Spine EST Job",
+    projects_values={}, ops_values={}, accepted_date="2026-08-04",
+)
+proj_est = [c for c in mc_est.created
+            if str(c["boardId"]) == str(boards.PROJECTS_BOARD_ID)]
+check("EST- Estimate # also stamps PRO- (same core)",
+      proj_est and proj_est[0]["values"].get(col) == "PRO-2026-0804-012",
+      proj_est[0]["values"] if proj_est else None)
+
+
 print(f"\n{PASS} passed, {len(FAIL)} failed")
 for f in FAIL:
     print(f"  FAIL: {f}")

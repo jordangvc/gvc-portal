@@ -160,7 +160,7 @@ def validate_takeoff_payload(data: Any) -> list[str]:
         or not ESTIMATE_NUMBER_RE.fullmatch(identifier.strip())
     ):
         errors.append(
-            f"estimate.identifier {identifier!r} is not YYYY-MMDD-NNN "
+            f"estimate.identifier {identifier!r} is not EST-YYYY-MMDD-NNN "
             "(leave it blank to auto-assign)."
         )
 

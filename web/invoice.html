@@ -218,8 +218,8 @@
     <div class="card">
       <h2>Invoice details</h2>
       <div class="grid">
-        <div><label>Invoice number <span class="opt">(= the project number)</span></label><input name="identifier" required placeholder="2026-0622-001" />
-          <div class="hint">This is the <strong>project number carried over from the estimate</strong> — the same number on the estimate, the project, and any change orders. Auto-filled by “Look up &amp; fill”; edit only if you must.</div></div>
+        <div><label>Invoice number <span class="opt">(auto from project)</span></label><input name="identifier" placeholder="auto: INV-YYYY-MMDD-NNN" />
+          <div class="hint">Same core number as the estimate (<code>EST-…</code>) and project (<code>PRO-…</code>) — only the letters change. Auto-filled by “Look up &amp; fill” as <code>INV-…</code>.</div></div>
         <div><label>Issue date</label><input name="issue_date" type="date" required /></div>
         <div><label>Payment terms</label><input name="payment_terms" value="Net 30" /></div>
         <div><label>Due date <span class="opt">(blank = Net 30 auto)</span></label><input name="due_date" type="date" /></div>
@@ -641,7 +641,9 @@ function validateData(d) {
   }
   if (!d.client.billing_address) e.push("Billing address is required (it prints on the invoice “Bill To”).");
   if (!d.job.name) e.push("Job name is required.");
-  if (!d.invoice.identifier) e.push("Invoice number is required.");
+  if (!d.invoice.identifier && !(d.job && d.job.project_number)) {
+    e.push("Invoice number is required (or look up a project so INV-… can auto-fill).");
+  }
   if (!d.invoice.issue_date) e.push("Issue date is required.");
   if (!d.invoice.line_items.length) e.push("At least one line item is required.");
   d.invoice.line_items.forEach((li, i) => {
