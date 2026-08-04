@@ -222,18 +222,20 @@
   </div>
 
   <div class="card" id="gccard" style="display:none;">
-    <h2>Confirm the scope with the GC</h2>
+    <h2>Confirm the scope with the GC
+      <span style="text-transform:none;font-weight:400;">— optional</span></h2>
     <p style="margin:0 0 12px;font-size:14px;">
-      Sends the GC's PM and super our scope <b>and our exclusions</b> in writing, with a
-      3-business-day reply window. Every correction they send back is a change order we
-      don't eat.
+      Optional. Skip anytime — it does <b>not</b> block Send to Operations.
+      When you use it, drafts an email to the GC's PM (and super) with our scope
+      <b>and our exclusions</b>, with a 3-business-day reply window. Every correction
+      they send back is a change order we don't eat.
     </p>
     <button class="btn ghost" id="gcemail" type="button" style="width:100%;">
       Draft the scope confirmation
     </button>
     <div id="gcresult" class="hint"></div>
     <div class="hint">Creates a draft in hello@ — nothing sends until a person reviews it
-      and clicks send.</div>
+      and clicks send. You can hand off without drafting this.</div>
   </div>
   </div><!-- /gvc-stack -->
 </main>
@@ -672,7 +674,7 @@ async function loadBid(itemId, opts) {
 function backToList() {
   clearTimeout(saveTimer);
   detail = null;
-  ["#ctxcard", "#namecard", "#reqcard", "#optcard"].forEach((s) => { $(s).style.display = "none"; });
+  ["#ctxcard", "#namecard", "#reqcard", "#optcard", "#gccard"].forEach((s) => { $(s).style.display = "none"; });
   $("#savebar").classList.remove("show");
   $("#pickcard").style.display = "";
   hideStatus();
