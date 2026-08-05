@@ -136,6 +136,12 @@
   .btn.secondary { background: var(--gvc-surface); color: var(--gvc-ink); border: 1px solid var(--gvc-line);
     border-radius: var(--gvc-r-lg); min-height: 48px; padding: 10px 18px; font: inherit; font-weight: 600; cursor: pointer; }
   .btn.secondary:disabled { opacity: .6; cursor: default; }
+  .btn.ready { background: var(--gvc-green); color: #fff; border: 0;
+    border-radius: var(--gvc-r-lg); min-height: 52px; padding: 12px 22px;
+    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; }
+  .btn.ready:hover { filter: brightness(1.06); }
+  .btn.ready:disabled { opacity: .6; cursor: default; filter: none; }
+  #readycard .hint { margin-top: 10px; }
   .filepick { font-size: var(--gvc-fs-small); }
 
   @media (max-width: 640px) {
@@ -196,6 +202,12 @@
       <div id="tradelinkhint" class="hint" style="display:none;"></div>
       <div id="tradefields"></div>
     </div>
+  </div>
+
+  <div class="card" id="readycard" style="display:none;">
+    <h2>Ready for billing</h2>
+    <button class="btn ready" id="readybtn" type="button">Mark Ready to Invoice</button>
+    <div class="hint" id="readyhint">Moves this job into Monday’s Ready to Invoice group so it shows up on Billing Hub. Does not run on Save — only when you tap this.</div>
   </div>
 
   <div class="card" id="updatescard" style="display:none;">
@@ -392,6 +404,7 @@ function refreshDirtyUi() {
   });
   $("#dirtycount").textContent = n ? `${n} change${n === 1 ? "" : "s"}` : "No changes yet";
   $("#save").disabled = n === 0;
+  if (detail) refreshReadyHint();
 }
 
 function wireField(col) {
@@ -590,9 +603,11 @@ async function loadJob(itemId) {
     $("#pickcard").style.display = "none";
     $("#ctxcard").style.display = "";
     $("#formcard").style.display = "";
+    $("#readycard").style.display = "";
     $("#updatescard").style.display = "";
     $("#photocard").style.display = "";
     applyPhotoReady(detail.photo_ready || detail.job || {});
+    refreshReadyHint();
     $("#savebar").classList.add("show");
     loadUpdates();
     window.scrollTo({ top: 0 });
@@ -600,6 +615,25 @@ async function loadJob(itemId) {
     showStatus("err", `Network error — ${esc(e.message)}`);
     renderJobList();
   }
+}
+
+const FULL_COMPLETION_ID = "date_mm1ghszy";
+
+function fullCompletionValue() {
+  const col = (detail && detail.columns || []).find(
+    (c) => c.id === FULL_COMPLETION_ID && (c.board || "ops") !== "projects");
+  if (!col) return null;
+  const key = fieldKey(col);
+  return current[key] ?? col.value ?? null;
+}
+
+function refreshReadyHint() {
+  const hint = $("#readyhint");
+  if (!hint) return;
+  const hasFull = !!(fullCompletionValue() || "").toString().trim();
+  hint.textContent = hasFull
+    ? "Moves this job into Monday’s Ready to Invoice group so it shows up on Billing Hub. Does not run on Save — only when you tap this."
+    : "Full Completion date isn’t set yet. You can still mark ready — you’ll get a confirm first. Does not run on Save.";
 }
 
 function applyPhotoReady(pr) {
@@ -627,6 +661,7 @@ function backToList() {
   detail = null;
   $("#ctxcard").style.display = "none";
   $("#formcard").style.display = "none";
+  $("#readycard").style.display = "none";
   $("#updatescard").style.display = "none";
   $("#photocard").style.display = "none";
   $("#updtext").value = "";
@@ -643,6 +678,55 @@ function backToList() {
   $("#pickcard").style.display = "";
   hideStatus();
   renderJobList();
+}
+
+async function markReadyToInvoice() {
+  if (!detail?.job?.item_id) return;
+  const hasFull = !!(fullCompletionValue() || "").toString().trim();
+  const msg = hasFull
+    ? "Mark this job Ready to Invoice? It will leave the Job Check list and show up on Billing Hub."
+    : "Full Completion date isn’t set. Mark Ready to Invoice anyway? It will leave the Job Check list and show up on Billing Hub.";
+  if (!window.confirm(msg)) return;
+  const btn = $("#readybtn");
+  btn.disabled = true;
+  const prev = btn.textContent;
+  btn.textContent = "Marking…";
+  hideStatus();
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}/ready-to-invoice`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    const body = await r.json().catch(() => ({}));
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err",
+        `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't mark ready.")}` +
+        (d.billing_href ? `<br><a href="${esc(d.billing_href)}">Open Billing Hub</a>` : ""));
+      return;
+    }
+    const warn = (body.warnings || []).length
+      ? `<br><span class="hint">${esc(body.warnings.join(" "))}</span>` : "";
+    const bill = body.billing_href || "/ui/billing";
+    showStatus("ok",
+      `✔ Marked Ready to Invoice` +
+      (body.ready_date ? ` (${esc(body.ready_date)})` : "") +
+      `. <a href="${esc(bill)}">Open Billing Hub</a>` +
+      (body.monday_url ? ` · <a href="${esc(body.monday_url)}" target="_blank" rel="noopener">Monday</a>` : "") +
+      warn);
+    await loadJobs();
+    backToList();
+    // Keep the success toast visible after leaving the detail view.
+    showStatus("ok",
+      `✔ Marked Ready to Invoice` +
+      (body.ready_date ? ` (${esc(body.ready_date)})` : "") +
+      `. <a href="${esc(bill)}">Open Billing Hub</a>` + warn);
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+  } finally {
+    btn.textContent = prev;
+    btn.disabled = false;
+  }
 }
 
 /* ---------- save ---------- */
@@ -851,6 +935,7 @@ async function checkHealth() {
 $("#search").addEventListener("input", renderJobList);
 $("#changejob").addEventListener("click", backToList);
 $("#save").addEventListener("click", save);
+$("#readybtn").addEventListener("click", markReadyToInvoice);
 $("#updpost").addEventListener("click", postUpdate);
 $("#photoupload").addEventListener("click", uploadPhotos);
 $("#linkbtn").addEventListener("click", () => {

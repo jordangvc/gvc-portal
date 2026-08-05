@@ -3177,6 +3177,46 @@ def ui_jobcheck_save(item_id: int, req: JobCheckSaveRequest, request: Request) -
         )
 
 
+@app.post("/ui/api/jobcheck/job/{item_id}/ready-to-invoice")
+def ui_jobcheck_ready_to_invoice(item_id: int, request: Request) -> dict:
+    """
+    Explicit tap: move the Ops item into Ready to Invoice for Billing Hub.
+    Never auto-fired from Save. Gated by `jobcheck`.
+    """
+    actor = require_feature(request, "jobcheck")
+    try:
+        out = jobcheck_flow.mark_ready_to_invoice(item_id, actor)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] ready-to-invoice error: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+    if not out.get("ok"):
+        code = out.get("error") or "READY_FAILED"
+        status = 404 if code == "ITEM_NOT_FOUND" else 409 if code == "ALREADY_READY" else 502
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code,
+                    "detail": out.get("detail") or "Couldn't mark ready to invoice.",
+                    "advice": ("Open Billing Hub if it's already ready; otherwise "
+                               "retry or move the group in Monday."),
+                    "monday_url": out.get("monday_url"),
+                    "billing_href": out.get("billing_href") or "/ui/billing"},
+        )
+    return out
+
+
 class JobCheckLinkProjectRequest(BaseModel):
     projects_item_id: int = Field(
         ..., description="Projects-board item id to link via link_to_projects.",

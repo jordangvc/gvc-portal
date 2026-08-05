@@ -766,6 +766,207 @@ def test_set_ops_project_link_if_empty_stub():
     assert out_full["reason"] == "already_set"
 
 
+# ------------------------------------ Ready to Invoice (explicit tap)
+
+
+def test_move_ops_item_to_ready_to_invoice_moves_and_stamps_date():
+    calls = []
+
+    class _MC:
+        def _query(self, query, variables):
+            calls.append((query, variables))
+            if "move_item_to_group" in query:
+                return {"move_item_to_group": {"id": variables["itemId"]}}
+            return {"change_multiple_column_values": {"id": variables["itemId"]}}
+
+    invalidated = []
+    real_inv = mj.monday_cache.invalidate
+    try:
+        mj.monday_cache.invalidate = lambda *keys: invalidated.extend(keys)  # type: ignore
+        out = mj.move_ops_item_to_ready_to_invoice(
+            _MC(), 101, ready_date="2026-08-05", current_group_id="topics")
+    finally:
+        mj.monday_cache.invalidate = real_inv  # type: ignore
+
+    assert out["ok"] is True
+    assert out["group_moved"] is True
+    assert out["date_written"] is True
+    assert out["already_ready"] is False
+    assert out["ready_date"] == "2026-08-05"
+    assert any("move_item_to_group" in q for q, _ in calls)
+    date_calls = [v for q, v in calls if "change_multiple_column_values" in q]
+    assert date_calls
+    payload = json.loads(date_calls[0]["values"])
+    assert payload == {mj.OPS_COL_READY_DATE: {"date": "2026-08-05"}}
+    assert "list:jobcheck:active_jobs" in invalidated
+    assert "list:billing:ready_to_invoice" in invalidated
+
+
+def test_move_ops_item_to_ready_to_invoice_already_ready_is_noop():
+    class _MC:
+        def _query(self, query, variables):
+            raise AssertionError("should not call Monday when already ready")
+
+    out = mj.move_ops_item_to_ready_to_invoice(
+        _MC(), 101, current_group_id=mj.READY_TO_INVOICE_GROUP_ID)
+    assert out["ok"] is True
+    assert out["already_ready"] is True
+    assert out["group_moved"] is False
+    assert out["date_written"] is False
+
+
+def test_mark_ready_to_invoice_success_and_activity():
+    ops_before = {
+        "item_id": 101, "name": "4121 Witler | Steele",
+        "url": "https://monday/boards/1/pulses/101",
+        "group_id": "topics", "group_title": "In Progress",
+        "values": {jf.FULL_COMPLETION_COL: "2026-08-01"},
+    }
+    move_calls = []
+    logged = []
+
+    class _MC:
+        pass
+
+    def fake_client():
+        return _MC()
+
+    def fake_get_item_values(mc, item_id, column_ids):
+        return dict(ops_before, values=dict(ops_before["values"]))
+
+    def fake_get_linked_project_id(mc, ops_item_id):
+        return {"project_item_id": 555, "error": None}
+
+    def fake_move(mc, item_id, *, ready_date=None, current_group_id=None):
+        move_calls.append({"item_id": item_id, "current_group_id": current_group_id})
+        return {"ok": True, "group_moved": True, "date_written": True,
+                "already_ready": False, "ready_date": "2026-08-05",
+                "group_id": mj.READY_TO_INVOICE_GROUP_ID, "error": None}
+
+    import adapters.monday.client as mcmod
+    real = {
+        "client": mcmod.MondayClient,
+        "get_item_values": mj.get_item_values,
+        "get_linked": mj.get_linked_project_id,
+        "move": mj.move_ops_item_to_ready_to_invoice,
+        "log": activity.log_event,
+    }
+    try:
+        mcmod.MondayClient = fake_client  # type: ignore
+        jf.MondayClient = fake_client  # type: ignore
+        mj.get_item_values = fake_get_item_values  # type: ignore
+        mj.get_linked_project_id = fake_get_linked_project_id  # type: ignore
+        mj.move_ops_item_to_ready_to_invoice = fake_move  # type: ignore
+        activity.log_event = lambda action, **kw: logged.append((action, kw))  # type: ignore
+
+        out = jf.mark_ready_to_invoice(101, "mark@greenvalleycontractors.com")
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.get_linked_project_id = real["get_linked"]  # type: ignore
+        mj.move_ops_item_to_ready_to_invoice = real["move"]  # type: ignore
+        activity.log_event = real["log"]  # type: ignore
+
+    assert out["ok"] is True
+    assert out["billing_href"] == "/ui/billing"
+    assert out["monday_url"] == ops_before["url"]
+    assert out["group_moved"] is True
+    assert out["date_written"] is True
+    assert move_calls == [{"item_id": 101, "current_group_id": "topics"}]
+    assert any(a == "jobcheck.ready_to_invoice" and kw.get("result") == "ok"
+               for a, kw in logged)
+
+
+def test_mark_ready_to_invoice_already_ready_rejected():
+    ops_before = {
+        "item_id": 101, "name": "Job", "url": "https://monday/x",
+        "group_id": mj.READY_TO_INVOICE_GROUP_ID,
+        "group_title": "Ready to Invoice",
+        "values": {},
+    }
+
+    class _MC:
+        pass
+
+    import adapters.monday.client as mcmod
+    real = {
+        "client": mcmod.MondayClient,
+        "get_item_values": mj.get_item_values,
+        "move": mj.move_ops_item_to_ready_to_invoice,
+    }
+    try:
+        mcmod.MondayClient = lambda: _MC()  # type: ignore
+        jf.MondayClient = lambda: _MC()  # type: ignore
+        mj.get_item_values = lambda mc, item_id, cols: dict(ops_before)  # type: ignore
+        mj.move_ops_item_to_ready_to_invoice = (  # type: ignore
+            lambda *a, **k: (_ for _ in ()).throw(AssertionError("no move")))
+
+        out = jf.mark_ready_to_invoice(101, "mark@x.com")
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.move_ops_item_to_ready_to_invoice = real["move"]  # type: ignore
+
+    assert out["ok"] is False
+    assert out["error"] == "ALREADY_READY"
+
+
+def test_mark_ready_to_invoice_warns_without_project_link():
+    ops_before = {
+        "item_id": 101, "name": "Job", "url": "https://monday/x",
+        "group_id": "topics", "group_title": "In Progress",
+        "values": {},  # no Full Completion
+    }
+    logged = []
+
+    class _MC:
+        pass
+
+    import adapters.monday.client as mcmod
+    real = {
+        "client": mcmod.MondayClient,
+        "get_item_values": mj.get_item_values,
+        "get_linked": mj.get_linked_project_id,
+        "move": mj.move_ops_item_to_ready_to_invoice,
+        "log": activity.log_event,
+    }
+    try:
+        mcmod.MondayClient = lambda: _MC()  # type: ignore
+        jf.MondayClient = lambda: _MC()  # type: ignore
+        mj.get_item_values = lambda mc, item_id, cols: dict(  # type: ignore
+            ops_before, values=dict(ops_before["values"]))
+        mj.get_linked_project_id = lambda mc, oid: {  # type: ignore
+            "project_item_id": None, "error": "empty"}
+        mj.move_ops_item_to_ready_to_invoice = lambda mc, item_id, **kw: {  # type: ignore
+            "ok": True, "group_moved": True, "date_written": True,
+            "already_ready": False, "ready_date": "2026-08-05",
+            "error": None}
+        activity.log_event = lambda action, **kw: logged.append((action, kw))  # type: ignore
+
+        out = jf.mark_ready_to_invoice(101, "mark@x.com")
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.get_linked_project_id = real["get_linked"]  # type: ignore
+        mj.move_ops_item_to_ready_to_invoice = real["move"]  # type: ignore
+        activity.log_event = real["log"]  # type: ignore
+
+    assert out["ok"] is True
+    assert any("link_to_projects" in w for w in out["warnings"])
+    assert any("Full Completion" in w for w in out["warnings"])
+    assert out["project_item_id"] is None
+
+
+def test_ready_date_stays_hard_excluded_from_form_saves():
+    """Normal Job Check save must still refuse date_mm3zry96."""
+    assert mj.OPS_COL_READY_DATE in boards.JOBCHECK_HARD_EXCLUDED_IDS
+    shaped, errors, _ = jf.validate_values({mj.OPS_COL_READY_DATE: "2026-08-05"})
+    assert shaped == {}
+    assert mj.OPS_COL_READY_DATE in errors
+
 
 if __name__ == "__main__":
     failed = 0
