@@ -61,8 +61,16 @@
 
   .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--gvc-line-soft); }
   .field:last-child { border-bottom: 0; }
-  .field > label { font-size: var(--gvc-fs-small); font-weight: 700; text-transform: uppercase; letter-spacing: .03em;
-    color: var(--gvc-muted); }
+  .field-label-row { display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; flex-wrap: wrap; }
+  .field > label, .field-label-row > label { font-size: var(--gvc-fs-small); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .03em; color: var(--gvc-muted); }
+  .field .howto { font-size: var(--gvc-fs-caption); font-weight: 600; text-transform: none;
+    letter-spacing: 0; color: var(--gvc-green-dark); text-decoration: underline;
+    min-height: 40px; min-width: 40px; display: inline-flex; align-items: center;
+    justify-content: center; padding: 4px 10px; flex-shrink: 0; }
+  .field .howto:hover { color: var(--gvc-green); }
+  .field.dirty > .field-label-row > label::after,
   .field.dirty > label::after { content: " •"; color: var(--gvc-gold-dark); }
   /* Status picker — native <select> so phones open the OS picker. Closed control
      still carries the chosen label's real board color. */
@@ -101,6 +109,22 @@
   }
   #tradesection h2 { margin-top: 0; }
   #dirtycount { font-size: var(--gvc-fs-small); color: var(--gvc-muted); white-space: nowrap; }
+
+  #linkpanel { margin: 12px 0 16px; padding: 12px 14px; border-radius: var(--gvc-r);
+    background: var(--warn-bg); border: 1px solid var(--warn-line); display: none; }
+  #linkpanel.show { display: block; }
+  #linkpanel h3 { margin: 0 0 8px; font-size: var(--gvc-fs-small); color: var(--gvc-gold-dark); }
+  .suglist { display: grid; gap: 6px; margin: 8px 0 12px; }
+  .sugbtn { display: block; width: 100%; text-align: left; min-height: 44px; padding: 10px 12px;
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface);
+    font: inherit; cursor: pointer; }
+  .sugbtn:hover { border-color: var(--gvc-green); }
+  .sugbtn .sname { font-weight: 600; }
+  .sugbtn .sscore { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-left: 8px; }
+  .linkrow { display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch; }
+  .linkrow input { flex: 1; min-width: 160px; min-height: var(--gvc-ctl-h); padding: 10px 12px;
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); font-size: 16px; }
+  .linkrow .btn.secondary { min-height: var(--gvc-ctl-h); }
 
 
   .updlist { display: grid; gap: 10px; max-height: 280px; overflow-y: auto; margin-bottom: 12px; }
@@ -160,6 +184,15 @@
       edited here by design.</div>
     <div id="tradesection" style="display:none; margin-top: 22px;">
       <h2>Trade status <span class="opt" style="text-transform:none;font-weight:400;">(Projects)</span></h2>
+      <div id="linkpanel">
+        <h3>Link a Projects item</h3>
+        <div class="hint" id="linkhint">Trade status can't be edited until this Operations task is linked to a Projects row.</div>
+        <div id="suglist" class="suglist"></div>
+        <div class="linkrow">
+          <input id="linkinput" type="text" placeholder="Projects item id or Monday URL…" autocomplete="off" />
+          <button class="btn secondary" id="linkbtn" type="button">Link</button>
+        </div>
+      </div>
       <div id="tradelinkhint" class="hint" style="display:none;"></div>
       <div id="tradefields"></div>
     </div>
@@ -327,8 +360,14 @@ function fieldHtml(col) {
   } else {
     control = `<input type="text" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   }
+  const howto = col.fieldguide_anchor
+    ? `<a class="howto" href="/ui/fieldguide${esc(col.fieldguide_anchor)}" target="_self">How-to</a>`
+    : "";
+  const labelRow = howto
+    ? `<div class="field-label-row"><label>${esc(col.label)}</label>${howto}</div>`
+    : `<label>${esc(col.label)}</label>`;
   return `<div class="field${disabled ? " disabled" : ""}" data-field="${esc(key)}">
-    <label>${esc(col.label)}</label>${control}</div>`;
+    ${labelRow}${control}</div>`;
 }
 
 function isDirty(key) {
@@ -385,6 +424,107 @@ function wireField(col) {
   }
 }
 
+function parseMondayItemId(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  if (/^\d+$/.test(s)) return parseInt(s, 10);
+  const m = s.match(/(?:pulses|items)\/(\d+)/);
+  return m ? parseInt(m[1], 10) : null;
+}
+
+function renderLinkSuggestions(body) {
+  const list = $("#suglist");
+  const sug = (body && body.suggestions) || [];
+  const proj = (body && body.project) || {};
+  if (proj.ambiguous && proj.runners_up && proj.runners_up.length) {
+    list.innerHTML = `<div class="hint warnhint">Several Projects names look similar — pick the right one:</div>` +
+      proj.runners_up.map((c) => sugButton(c)).join("");
+    return;
+  }
+  const match = proj.match;
+  if (match && match.id) {
+    list.innerHTML = `<div class="hint">Best match:</div>` + sugButton(match);
+    const rest = sug.filter((c) => c.id !== match.id).slice(0, 4);
+    if (rest.length) {
+      list.innerHTML += `<div class="hint" style="margin-top:8px;">Other possibilities:</div>` +
+        rest.map(sugButton).join("");
+    }
+    return;
+  }
+  if (sug.length) {
+    list.innerHTML = `<div class="hint">No confident match — pick manually:</div>` +
+      sug.slice(0, 6).map(sugButton).join("");
+    return;
+  }
+  list.innerHTML = `<div class="hint">No Projects candidates found — paste a Projects item id or URL below.</div>`;
+}
+
+function sugButton(c) {
+  const score = c.score != null ? Math.round(c.score * 100) + "%" : "";
+  return `<button type="button" class="sugbtn" data-pid="${c.id}">
+    <span class="sname">${esc(c.name)}</span>${score ? `<span class="sscore">${esc(score)} match</span>` : ""}
+  </button>`;
+}
+
+async function loadLinkSuggestions() {
+  if (!detail?.job?.item_id || detail.job.project_item_id) return;
+  const list = $("#suglist");
+  list.innerHTML = `<div class="hint">Finding Projects matches…</div>`;
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}/suggest-links?limit=8`);
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      list.innerHTML = `<div class="hint">Couldn't load suggestions — paste a Projects item id below.</div>`;
+      return;
+    }
+    renderLinkSuggestions(body);
+    list.querySelectorAll(".sugbtn").forEach((b) =>
+      b.addEventListener("click", () => linkProject(+b.dataset.pid)));
+  } catch (e) {
+    list.innerHTML = `<div class="hint">Network error — paste a Projects item id below.</div>`;
+  }
+}
+
+async function linkProject(projectsItemId) {
+  if (!detail?.job?.item_id || !projectsItemId) return;
+  const btn = $("#linkbtn");
+  btn.disabled = true;
+  btn.textContent = "Linking…";
+  hideStatus();
+  try {
+    const r = await fetch(`/ui/api/jobcheck/job/${detail.job.item_id}/link-project`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ projects_item_id: projectsItemId }),
+    });
+    const body = await r.json();
+    if (!r.ok || !body.ok) {
+      const d = body.detail || body;
+      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || body.error || "Link failed.")}<br>${esc(d.advice || "")}`);
+      return;
+    }
+    if (body.already) {
+      showStatus("info", "Projects item was already linked — reloaded job detail.");
+    } else if (body.linked) {
+      showStatus("ok", "✔ Linked to Projects — trade status fields are now editable.");
+    }
+    if (body.detail) {
+      detail = body.detail;
+      setValuesFrom(detail.columns || [], (c) => c.value);
+      renderContext(detail.job);
+      renderForm();
+      applyPhotoReady(detail.photo_ready || detail.job || {});
+    } else {
+      await loadJob(detail.job.item_id);
+    }
+  } catch (e) {
+    showStatus("err", `Network error — ${esc(e.message)}`);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = "Link";
+  }
+}
+
 function renderForm() {
   const cols = detail.columns || [];
   const opsCols = cols.filter((c) => (c.board || "ops") !== "projects");
@@ -394,14 +534,19 @@ function renderForm() {
 
   const tradeSec = $("#tradesection");
   const tradeHint = $("#tradelinkhint");
+  const linkPanel = $("#linkpanel");
   if (tradeCols.length) {
     tradeSec.style.display = "";
     const linked = !!(detail.job && detail.job.project_item_id);
     if (!linked) {
-      tradeHint.style.display = "";
-      tradeHint.textContent = detail.job?.project_link_error
-        || "No linked Projects item (link_to_projects is empty). Trade status can't be edited until office links the project in Monday. Ops fields below still save.";
+      linkPanel.classList.add("show");
+      tradeHint.style.display = "none";
+      tradeHint.textContent = "";
+      loadLinkSuggestions();
     } else {
+      linkPanel.classList.remove("show");
+      $("#suglist").innerHTML = "";
+      $("#linkinput").value = "";
       tradeHint.style.display = "none";
       tradeHint.textContent = "";
     }
@@ -409,6 +554,7 @@ function renderForm() {
     tradeCols.forEach(wireField);
   } else {
     tradeSec.style.display = "none";
+    linkPanel.classList.remove("show");
     $("#tradefields").innerHTML = "";
   }
   refreshDirtyUi();
@@ -707,6 +853,20 @@ $("#changejob").addEventListener("click", backToList);
 $("#save").addEventListener("click", save);
 $("#updpost").addEventListener("click", postUpdate);
 $("#photoupload").addEventListener("click", uploadPhotos);
+$("#linkbtn").addEventListener("click", () => {
+  const pid = parseMondayItemId($("#linkinput").value);
+  if (!pid) {
+    showStatus("err", "Paste a Projects item id or Monday URL (…/pulses/123456).");
+    return;
+  }
+  linkProject(pid);
+});
+$("#linkinput").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    $("#linkbtn").click();
+  }
+});
 checkHealth();
 loadJobs();
 </script>

@@ -437,6 +437,12 @@ async function run(mode) {
       if (wb.monday_status) html += `<div class="result-line" style="color:#96763B">⚠️ Monday: ${wb.monday_status}</div>`;
       if (wb.monday_ops_status) html += `<div class="result-line" style="color:#96763B">⚠️ Operations task: ${wb.monday_ops_status}</div>`;
       html += `<div class="result-line">#change-orders Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
+      if (!wb.revised && wb.identifier) {
+        const billUrl = billCoInvoiceUrl(wb.identifier, (data.change_order && data.change_order.base_number) || "");
+        if (billUrl) {
+          html += `<div class="result-line">💰 <a href="${escapeHtml(billUrl)}" class="btn gold small">Bill this CO</a></div>`;
+        }
+      }
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // CO is now real (in Monday) — drop the draft
     }
@@ -451,6 +457,36 @@ function looksLikeMondayRef(s) {
   return /\/pulses\/\d+/.test(s) || /^\d{8,}$/.test(s.trim()) || s.includes("monday.com");
 }
 function looksLikeCoNumber(s) { return /^CO\.\d+-/i.test((s || "").trim()); }
+
+/** Strip trailing " Rev N" and parse CO.{n}-{base}; mirrors subsystems/change_order/number.py */
+function parseCoNumber(value) {
+  const v = String(value || "").trim().replace(/\s+Rev\s+\d+$/i, "");
+  const m = /^CO\.(\d+)-(.+)$/.exec(v);
+  return m ? { n: parseInt(m[1], 10), base: m[2].trim() } : null;
+}
+
+/** Base project / estimate # for invoice deep-link — form value wins, else strip CO.{n}- prefix. */
+function baseProjectNumberForBill(coIdentifier, fallbackBase) {
+  let base = String(fallbackBase || "").trim();
+  if (base) {
+    while (true) {
+      const parsed = parseCoNumber(base);
+      if (!parsed) break;
+      base = parsed.base;
+    }
+    return base;
+  }
+  const parsed = parseCoNumber(coIdentifier);
+  return parsed ? parsed.base : "";
+}
+
+function billCoInvoiceUrl(coIdentifier, fallbackBase) {
+  const pn = baseProjectNumberForBill(coIdentifier, fallbackBase);
+  const coId = String(coIdentifier || "").trim();
+  if (!pn || !coId) return "";
+  return "/ui/invoice?project_number=" + encodeURIComponent(pn)
+    + "&co=" + encodeURIComponent(coId);
+}
 
 async function lookupFromMonday() {
   const q = ($("#monday-url").value || "").trim();
@@ -543,12 +579,23 @@ function renderExistingCos(cos) {
   heading.style.marginBottom = "6px";
   heading.textContent = `${cos.length} existing CO(s) on this project:`;
   wrap.appendChild(heading);
+  const basePn = ($("#co-form").elements["base_number"] && $("#co-form").elements["base_number"].value || "").trim();
   cos.forEach((co) => {
     const div = document.createElement("div");
     div.className = "draft-row";
     const billed = (co.status || "").toLowerCase() === "billed";
     const badge = co.status ? `<span class="badge ${billed ? "billed" : "synced"}">${escapeHtml(co.status)}</span>` : "";
     div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(co.identifier)}${badge}</div></div>`;
+    if (!billed) {
+      const billUrl = billCoInvoiceUrl(co.identifier, basePn);
+      if (billUrl) {
+        const bill = document.createElement("a");
+        bill.href = billUrl;
+        bill.className = "btn gold small";
+        bill.textContent = "Bill this CO";
+        div.appendChild(bill);
+      }
+    }
     const btn = document.createElement("button");
     btn.type = "button"; btn.className = "btn secondary small"; btn.textContent = "Load for revision";
     btn.addEventListener("click", () => loadForRevision(co.identifier));

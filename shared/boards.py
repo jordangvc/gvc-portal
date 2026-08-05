@@ -139,6 +139,15 @@ JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
     {"id": "color_mkza855s",        "label": "Finishing Stage",  "type": "status"},
 )
 
+# Field Manual deep-links for Job Check trade status chips — column id → anchor
+# in web/fieldguide.html. Only columns with a clear matching procedure.
+JOBCHECK_FIELDGUIDE_ANCHORS: dict[str, str] = {
+    "color_mkza9z7c": "#framing",
+    "status_19": "#hang",
+    "dup__of_hung_status1": "#scrape",
+    "color_mkza855s": "#finish",
+}
+
 
 # ---------------------------------------------------------------------------
 # Morning Brief — employee daily control center (docs/MORNING_BRIEF_BUILD_SPEC.md,
