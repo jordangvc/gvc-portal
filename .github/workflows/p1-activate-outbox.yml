@@ -1,0 +1,170 @@
+name: P1 activate takeoff outbox
+
+# One-shot / repeatable activation for the takeoff→outbox→estimate bridge.
+# Uses GCP_SA_KEY (same as deploy). Never prints secret values.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check | activate | gauntlet"
+        required: true
+        default: activate
+        type: choice
+        options: [check, activate, gauntlet]
+
+permissions:
+  contents: read
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: gvc-invoice-system
+      REGION: us-central1
+      SERVICE: gvc-invoice
+      S�RTAL_URL: https://portal.greenvalleycontractors.com
+      SCHEDULER_JOB: gvc-takeoff-outbox
+      API_SECRET: gvc-service-api-key
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Check Cloud Run takeoff env bindings
+        run: |
+          set -euo pipefail
+          yaml=$(gcloud run services describe "$SERVICE" --region="$REGION" --project="$PROJECT" --format=yaml)
+          echo "$yaml" | python3 -c '
+          import sys,re
+          text=sys.stdin.read()
+          keys=[
+            "GVC_SERVICE_API_KEY","GVC_TAKEOFF_RTDB_CREDENTIALS","GVC_TAKEOFF_RTDB_URL",
+            "GVC_TAKEOFF_FIREBASE_SA","GVC_TAKEOFF_OUTBOX_SLACK","GOOGLE_APPLICATION_CREDENTIALS"
+          ]
+          print("=== Cloud Run env / secret refs (names only) ===")
+          for k in keys:
+            present = (k+":") in text or ("name: "+k) in text
+            print("%s: %s" % (k, "PRESENT" if present else "MISSING"))
+          names=re.findall(r"- name: ([A-Z0-9_]+)", text)
+          takeoff=[n for n in names if "TAKEOFF" in n or "OUTBOX" in n or n.endswith("API_KEY")]
+          print("takeoff-related env names:", ", ".join(sorted(set(takeoff))) or "(none)")
+          '
+
+      - name: List scheduler jobs
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          echo "=== Cloud Scheduler (us-central1) ==="
+          gcloud scheduler jobs list --location="$REGION" --project="$PROJECT" --format="table(name.basename(),state,schedule,httpTarget.uri)" || {
+            echo "WARN: cannot list scheduler jobs (need cloudscheduler.viewer/admin)"
+            exit 0
+          }
+
+      - name: Resolve API key from Secret Manager
+        id: apikey
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if KEY=$(gcloud secrets versions access latest --secret="$API_SECRET" --project="$PROJECT" 2>/tmp/secret.err); then
+            if [ -n "$KEY" ]; then
+              echo "api_key_ok=true" >> "$GITHUB_OUTPUT"
+              echo "::add-mask::$KEY"
+              echo "GVC_SERVICE_API_KEY=$KEY" >> "$GITHUB_ENV"
+              echo "Resolved secret $API_SECRET (masked)."
+            else
+              echo "api_key_ok=false" >> "$GITHUB_OUTPUT"
+              echo "Secret empty"
+            fi
+          else
+            echo "api_key_ok=false" >> "$GITHUB_OUTPUT"
+            echo "WARN: cannot access secret $API_SECRET"
+            cat /tmp/secret.err || true
+          fi
+
+      - name: Ensure scheduler job gvc-takeoff-outbox
+        if: ${{ github.event.inputs.mode == 'activate' || github.event.inputs.mode == 'gauntlet' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.apikey.outputs.api_key_ok }}" != "true" ]; then
+            echo "SKIP create scheduler: no API key access"
+            exit 0
+          fi
+          BODY=$(mktemp)
+          printf '%s' '{"dry_run":false,"limit":20}' > "$BODY"
+          URI="$PORTAL_URL/v1/tasks/poll-takeoff-outbox"
+          if gcloud scheduler jobs describe "$SCHEDULER_JOB" --location="$REGION" --project="$PROJECT" >/dev/null 2>&1; then
+            echo "Scheduler job exists — updating URI/headers/body/schedule"
+            gcloud scheduler jobs update http "$SCHEDULER_JOB" \
+              --location="$REGION" --project="$PROJECT" \
+              --schedule="*/10 * * * *" \
+              --time-zone="America/New_York" \
+              --uri="$URI" \
+              --http-method=POST \
+              --headers="X-API-Key=$GVC_SERVICE_API_KEY,Content-Type=application/json" \
+              --message-body-from-file="$BODY" \
+              --attempt-deadline=180s
+          else
+            echo "Creating scheduler job $SCHEDULER_JOB"
+            gcloud scheduler jobs create http "$SCHEDULER_JOB" \
+              --location="$REGION" --project="$PROJECT" \
+              --schedule="*/10 * * * *" \
+              --time-zone="America/New_York" \
+              --uri="$URI" \
+              --http-method=POST \
+              --headers="X-API-Key=$GVC_SERVICE_API_KEY,Content-Type=application/json" \
+              --message-body-from-file="$BODY" \
+              --attempt-deadline=180s
+          fi
+          gcloud scheduler jobs describe "$SCHEDULE_JOB" --location="$REGION" --project="$ROJECT" \
+            --format="yaml(name,state,schedule,timeZone,httpTarget.uri)
+
+      - name: Dry-run poll takeoff outbox
+        if: ${{ github.event.inputs.mode != 'check' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ -z "${GVC_SERVICE_API_KEY:-}" ]; then
+            echo "SKIP dry-run: no API key"
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/poll.json -w "%{http_code}" -X POST \
+            "$PORTAL_URL/v1/tasks/poll-takeoff-outbox" \
+            -H "X-API-Key: $GVC_SERVICE_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"dry_run":true,"limit":20}')
+          echo "HTTP $code"
+          python3 -c 'import json; d=json.load(open("/tmp/poll.json")); print(json.dumps(d, indent=2)[:4000])'
+          test "$code" = "200"
+
+      - name: Live poll (gauntlet mode)
+        if: ${{ github.event.inputs.mode == 'gauntlet' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ -z "${GVC_SERVICE_API_KEY:-}" ]; then
+            echo "SKIP live poll: no API key"
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/poll2.json -w "%{http_code}" -X POST \
+            "$PORTAL_URL/v1/tasks/poll-takeoff-outbox" \
+            -H "X-API-Key: $GVC_SERVICE_API_KEY" \
+            -H "Content-Type: application/json" \
+            -d '{"dry_run":false,"limit":20}')
+          echo "HTTP $code"
+          python3 -c 'import json; d=json.load(open("/tmp/poll2.json")); print(json.dumps(d, indent=2)[:4000])'
+          test "$code" = "200"
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "Mode: ${{ github.event.inputs.mode }}"
+          echo "Portal: $PORTAL_URL"
+          echo "Endpoint live check (unauth expect 401):"
+          curl -sS -o /tmp/unauth.json -w "HTTP %{http_code}\n" -X POST \
+            "$PORTAL_URL/v1/tasks/poll-takeoff-outbox" -H "Content-Type: application/json" -d "{}"
+          head -c 200 /tmp/unauth.json; echo
