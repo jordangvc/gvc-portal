@@ -1,6 +1,7 @@
 """Focused tests for the Bid Board bulk-rename script."""
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -10,8 +11,8 @@ from scripts import backfill_job_rename_bids as bids
 from shared.boards import BID_BOARD_ID
 
 
-def _column(column_id: str, text: str) -> dict:
-    return {"id": column_id, "text": text}
+def _column(column_id: str, text: str, **extra) -> dict:
+    return {"id": column_id, "text": text, **extra}
 
 
 class FakeMonday:
@@ -48,6 +49,15 @@ def test_fetch_pages_skips_dead_and_prioritizes_accepted_won():
                         "id": "3",
                         "name": "300 Main | Accepted Builder",
                         "column_values": [
+                            _column(
+                                bids.JOBSTART_BID_LOCATION_COL,
+                                "",
+                                value=json.dumps({
+                                    "address": (
+                                        "300 Main Street, Cincinnati, OH 45202"
+                                    ),
+                                }),
+                            ),
                             _column(bids.JOBSTART_BID_STAGE_COL, "Accepted"),
                         ],
                     },
@@ -76,12 +86,14 @@ def test_fetch_pages_skips_dead_and_prioritizes_accepted_won():
     assert [row["item_id"] for row in rows] == [3, 4]
     assert dead_skipped == 1
     assert len(monday.calls) == 2
+    assert "value" in monday.calls[0]["query"]
     assert monday.calls[0]["variables"] == {
         "boardId": [str(BID_BOARD_ID)],
         "cursor": None,
         "cols": list(bids.BID_READ_COLUMNS),
     }
     assert monday.calls[1]["variables"]["cursor"] == "page-2"
+    assert "45202" in rows[0]["location_value_json"]
 
 
 def test_build_plans_uses_location_and_customer_text():
@@ -98,6 +110,57 @@ def test_build_plans_uses_location_and_customer_text():
         "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
     assert plans[0]["board"] == "bid_board"
     assert plans[0]["stage"] == "Accepted"
+
+
+def test_build_plans_uses_location_json_before_geocoding():
+    plans = bids.build_plans([{
+        "item_id": 10,
+        "name": "9195 Silva | Willow Creek",
+        "location": "",
+        "location_value_json": json.dumps({
+            "lat": "39.246",
+            "lng": "-84.312",
+            "address": "9195 Silva Drive, Cincinnati, OH 45241",
+        }),
+        "customer": "Willow Creek",
+        "stage": "Accepted",
+    }])
+
+    assert plans[0]["action"] == "rename"
+    assert plans[0]["new_name"] == (
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plans[0]["lookup_sources"] == ["monday_location"]
+
+
+def test_build_plans_geocodes_incomplete_bid():
+    def fixed_cincinnati(street: str) -> dict:
+        assert street == "9195 Silva"
+        return {
+            "street": "9195 Silva Drive",
+            "city": "Cincinnati",
+            "state": "OH",
+            "zip": "45241",
+            "hint": "9195 Silva Drive, Cincinnati, OH 45241",
+            "display_name": "9195 Silva Drive, Cincinnati, Ohio",
+        }
+
+    plans = bids.build_plans(
+        [{
+            "item_id": 10,
+            "name": "9195 Silva | Willow Creek",
+            "location": "",
+            "location_value_json": "",
+            "customer": "Willow Creek",
+            "stage": "Accepted",
+        }],
+        geocode_street_fn=fixed_cincinnati,
+        reverse_geocode_fn=lambda *_args: None,
+    )
+
+    assert plans[0]["action"] == "rename"
+    assert plans[0]["new_name"] == (
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert "nominatim_tri_state" in plans[0]["lookup_sources"]
 
 
 def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
@@ -162,7 +225,19 @@ def test_main_dry_run_wins_when_both_flags_are_set(monkeypatch):
     result = bids.main(["--apply", "--dry-run", "--limit", "7"])
 
     assert result == 0
-    assert calls == [{"apply": False, "limit": 7}]
+    assert calls == [{"apply": False, "limit": 7, "geocode": True}]
+
+
+def test_main_no_geocode_disables_nominatim(monkeypatch):
+    calls: list[dict] = []
+    monkeypatch.setattr(
+        bids,
+        "run",
+        lambda **kwargs: calls.append(kwargs) or 0,
+    )
+
+    assert bids.main(["--no-geocode"]) == 0
+    assert calls == [{"apply": False, "limit": None, "geocode": False}]
 
 
 def test_limit_must_be_positive():

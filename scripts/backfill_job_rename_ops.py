@@ -2,7 +2,9 @@
 Bulk-rename Monday Operations titles to `Street, City, ST ZIP | Builder`.
 
 Dry-run is the default. `--apply` writes; when both flags are supplied,
-`--dry-run` wins. CO rows are always skipped.
+`--dry-run` wins. Linked Projects titles remain authoritative; when a linked
+Project is not standard yet, its Monday location JSON and optional Nominatim
+lookup enrich the Operations title. CO rows cascade from their parent title.
 """
 from __future__ import annotations
 
@@ -18,12 +20,12 @@ from adapters.monday.client import MondayClient  # noqa: E402
 from adapters.monday.rename import rename_item_name  # noqa: E402
 from shared.boards import (  # noqa: E402
     JOBSTART_OPS_COL_LINK_PROJECTS,
+    JOBSTART_P_COL_LOCATION,
     MORNING_COL_PROJECT_LINK,
     OPERATIONS_BOARD_ID,
     PROJECTS_BOARD_ID,
 )
-from subsystems.jobstart import naming  # noqa: E402
-from subsystems.jobstart import rename_plan  # noqa: E402
+from subsystems.jobstart import naming, rename_enrich, rename_plan  # noqa: E402
 
 
 MATCH_THRESHOLD = 0.85
@@ -42,13 +44,17 @@ def _items_page(data: dict) -> Optional[dict]:
 
 
 def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
-    """Page Projects once; return candidates plus an id-to-name index."""
+    """Page Projects once; include each row's raw location text/value."""
     query = """
-    query ($boardId: [ID!], $cursor: String) {
+    query ($boardId: [ID!], $cursor: String, $cols: [String!]) {
       boards(ids: $boardId) {
         items_page(limit: 200, cursor: $cursor) {
           cursor
-          items { id name }
+          items {
+            id
+            name
+            column_values(ids: $cols) { id text value }
+          }
         }
       }
     }
@@ -60,6 +66,7 @@ def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
         page = _items_page(mc._query(query, {
             "boardId": [str(PROJECTS_BOARD_ID)],
             "cursor": cursor,
+            "cols": [JOBSTART_P_COL_LOCATION],
         }))
         if page is None:
             break
@@ -68,7 +75,21 @@ def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
             if not name or rename_plan.is_co_item_name(name):
                 continue
             item_id = int(item["id"])
-            projects.append({"id": item_id, "name": name})
+            location_column = next(
+                (
+                    column
+                    for column in (item.get("column_values") or [])
+                    if column.get("id") == JOBSTART_P_COL_LOCATION
+                ),
+                {},
+            )
+            projects.append({
+                "id": item_id,
+                "name": name,
+                "location": (location_column.get("text") or "").strip(),
+                "location_value_json": location_column.get("value") or "",
+                "location_column": location_column,
+            })
             by_id[item_id] = name
         cursor = page.get("cursor")
         if not cursor:
@@ -137,59 +158,214 @@ def list_operations_items(mc, *, limit: Optional[int] = None) -> list[dict]:
     return rows
 
 
+def build_project_parent_index(
+    projects: list[dict],
+    *,
+    geocode: bool = True,
+    geocode_street_fn=None,
+    reverse_geocode_fn=None,
+) -> dict[str, str]:
+    """Plan Projects from their recorded locations for CO parent resolution."""
+    project_plans = [
+        rename_enrich.plan_enriched_row(
+            name=project.get("name") or "",
+            location_text=project.get("location"),
+            location_value_json=project.get("location_value_json"),
+            location_column=project.get("location_column"),
+            item_id=project.get("id"),
+            board="projects",
+            geocode=geocode,
+            geocode_street_fn=geocode_street_fn,
+            reverse_geocode_fn=reverse_geocode_fn,
+        )
+        for project in projects
+    ]
+    return rename_enrich.index_parent_titles(project_plans)
+
+
+def _enrich_from_project(
+    *,
+    row_name: str,
+    item_id: int,
+    project: dict,
+    geocode: bool,
+    geocode_street_fn,
+    reverse_geocode_fn,
+) -> dict:
+    """Plan an Ops title using its linked/matched Project's location facts."""
+    return rename_enrich.plan_enriched_row(
+        name=row_name,
+        location_text=project.get("location"),
+        location_value_json=project.get("location_value_json"),
+        location_column=project.get("location_column"),
+        item_id=item_id,
+        board="operations",
+        geocode=geocode,
+        geocode_street_fn=geocode_street_fn,
+        reverse_geocode_fn=reverse_geocode_fn,
+    )
+
+
 def plan_operation_item(
     row: dict,
     *,
     projects: list[dict],
     project_names: dict[int, str],
+    parent_index: Optional[dict[str, str]] = None,
+    geocode: bool = True,
+    geocode_street_fn=None,
+    reverse_geocode_fn=None,
 ) -> dict:
-    """Build one safe Operations rename decision."""
+    """Mirror Projects first, then enrich unresolved Ops/CO titles."""
     name = (row.get("name") or "").strip()
     item_id = int(row["item_id"])
-    base_args = {"name": name, "item_id": item_id, "board": "operations"}
-
-    if rename_plan.is_co_item_name(name):
-        return {**rename_plan.plan_row(**base_args), "source": "ops_name"}
-
     linked_ids = row.get("linked_project_ids") or []
+    projects_by_id = {int(project["id"]): project for project in projects}
+    linked_project = next(
+        (
+            projects_by_id.get(int(project_id))
+            for project_id in linked_ids
+            if projects_by_id.get(int(project_id))
+        ),
+        None,
+    )
     linked_name = next(
         (project_names.get(int(project_id)) for project_id in linked_ids
          if project_names.get(int(project_id))),
         None,
     )
-    if linked_ids:
-        plan = rename_plan.plan_row(
-            **base_args,
-            linked_project_name=linked_name,
+
+    if rename_plan.is_co_item_name(name):
+        parent_name = linked_name if naming.is_standard(linked_name or "") else None
+        if not parent_name and linked_project:
+            project_plan = rename_enrich.plan_enriched_row(
+                name=linked_project.get("name") or "",
+                location_text=linked_project.get("location"),
+                location_value_json=linked_project.get("location_value_json"),
+                location_column=linked_project.get("location_column"),
+                geocode=geocode,
+                geocode_street_fn=geocode_street_fn,
+                reverse_geocode_fn=reverse_geocode_fn,
+            )
+            if naming.is_standard(project_plan.get("new_name") or ""):
+                parent_name = project_plan["new_name"]
+        if not parent_name:
+            parent_name = rename_enrich.resolve_parent_title(
+                name, parent_index or {},
+            )
+        plan = rename_enrich.plan_enriched_row(
+            name=name,
+            parent_name=parent_name,
+            item_id=item_id,
+            board="operations",
+            geocode=False,
         )
-        if not linked_name and plan["action"] == "skip_incomplete":
+        source = (
+            "linked_project_parent"
+            if linked_name and parent_name
+            else "parent_index"
+            if parent_name
+            else "ops_name"
+        )
+        return {**plan, "source": source}
+
+    if linked_ids:
+        if linked_name and naming.is_standard(linked_name):
+            plan = rename_enrich.plan_enriched_row(
+                name=name,
+                linked_project_name=linked_name,
+                item_id=item_id,
+                board="operations",
+                geocode=False,
+            )
+            return {**plan, "source": "linked_project"}
+        if linked_project:
+            plan = _enrich_from_project(
+                row_name=name,
+                item_id=item_id,
+                project=linked_project,
+                geocode=geocode,
+                geocode_street_fn=geocode_street_fn,
+                reverse_geocode_fn=reverse_geocode_fn,
+            )
+            return {**plan, "source": "linked_project_enriched"}
+
+        plan = rename_enrich.plan_enriched_row(
+            name=name,
+            item_id=item_id,
+            board="operations",
+            geocode=geocode,
+            geocode_street_fn=geocode_street_fn,
+            reverse_geocode_fn=reverse_geocode_fn,
+        )
+        if plan["action"] == "skip_incomplete":
             plan["note"] = (
                 f"Linked Project {linked_ids[0]} missing from Projects index. "
                 f"{plan.get('note') or ''}"
             ).strip()
         return {**plan, "source": "linked_project"}
 
-    plan = rename_plan.plan_row(**base_args)
+    plan = rename_enrich.plan_enriched_row(
+        name=name,
+        item_id=item_id,
+        board="operations",
+        geocode=False,
+    )
     if plan["action"] != "skip_incomplete":
         return {**plan, "source": "ops_name"}
 
     hit = naming.best_match(name, projects, threshold=MATCH_THRESHOLD)
-    if not hit or not naming.is_standard(hit.get("name") or ""):
-        return {**plan, "source": "ops_name"}
+    if hit:
+        if naming.is_standard(hit.get("name") or ""):
+            mirrored = rename_enrich.plan_enriched_row(
+                name=name,
+                linked_project_name=hit["name"],
+                item_id=item_id,
+                board="operations",
+                geocode=False,
+            )
+            mirrored["note"] = (
+                f"Mirror unique Projects match {hit['id']} "
+                f"(score {hit['score']:.2f})."
+            )
+            return {
+                **mirrored,
+                "source": "matched_project",
+                "match_project_id": int(hit["id"]),
+                "match_score": hit["score"],
+            }
 
-    mirrored = rename_plan.plan_row(
-        **base_args,
-        linked_project_name=hit["name"],
-    )
-    mirrored["note"] = (
-        f"Mirror unique Projects match {hit['id']} "
-        f"(score {hit['score']:.2f})."
+        enriched = _enrich_from_project(
+            row_name=name,
+            item_id=item_id,
+            project=hit,
+            geocode=geocode,
+            geocode_street_fn=geocode_street_fn,
+            reverse_geocode_fn=reverse_geocode_fn,
+        )
+        if enriched["action"] != "skip_incomplete":
+            return {
+                **enriched,
+                "source": "matched_project_enriched",
+                "match_project_id": int(hit["id"]),
+                "match_score": hit["score"],
+            }
+
+    geocoded = rename_enrich.plan_enriched_row(
+        name=name,
+        item_id=item_id,
+        board="operations",
+        geocode=geocode,
+        geocode_street_fn=geocode_street_fn,
+        reverse_geocode_fn=reverse_geocode_fn,
     )
     return {
-        **mirrored,
-        "source": "matched_project",
-        "match_project_id": int(hit["id"]),
-        "match_score": hit["score"],
+        **geocoded,
+        "source": (
+            "ops_name_geocoded"
+            if "nominatim_tri_state" in geocoded.get("lookup_sources", [])
+            else "ops_name"
+        ),
     }
 
 
@@ -241,7 +417,7 @@ def print_table(plans: list[dict]) -> None:
         )
 
 
-def run(*, apply: bool, limit: Optional[int]) -> int:
+def run(*, apply: bool, limit: Optional[int], geocode: bool = True) -> int:
     """Load both boards, plan every selected Ops row, and optionally write."""
     try:
         mc = MondayClient()
@@ -252,16 +428,19 @@ def run(*, apply: bool, limit: Optional[int]) -> int:
     mode = "APPLY" if apply else "DRY-RUN"
     print(
         f"[ops-rename] mode={mode} threshold={MATCH_THRESHOLD} "
-        f"limit={limit or 'none'}",
+        f"limit={limit or 'none'} geocode={'on' if geocode else 'off'}",
         file=sys.stderr,
     )
     projects, project_names = list_project_names(mc)
+    parent_index = build_project_parent_index(projects, geocode=geocode)
     rows = list_operations_items(mc, limit=limit)
     plans = [
         plan_operation_item(
             row,
             projects=projects,
             project_names=project_names,
+            parent_index=parent_index,
+            geocode=geocode,
         )
         for row in rows
     ]
@@ -322,6 +501,11 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Process at most N Operations items.",
     )
+    parser.add_argument(
+        "--no-geocode",
+        action="store_true",
+        help="Use Monday/linked Project facts only — do not call Nominatim.",
+    )
     return parser
 
 
@@ -333,7 +517,11 @@ def main(argv: Optional[list[str]] = None) -> int:
             "[warn] both --apply and --dry-run set; staying in dry-run",
             file=sys.stderr,
         )
-    return run(apply=apply, limit=args.limit)
+    return run(
+        apply=apply,
+        limit=args.limit,
+        geocode=not args.no_geocode,
+    )
 
 
 if __name__ == "__main__":
