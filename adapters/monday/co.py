@@ -59,6 +59,9 @@ P_COL_GFOLDER = "link_mkwr6ef9"            # "GFolder Link"
 P_COL_LINKED_OPPORTUNITY = "board_relation_mm40rg52"
 P_COL_PROJECT_TYPE = "status"              # Residential / Commercial / …
 P_COL_SCOPE = "details"                    # "Define Scope of Work"
+# Same Projects-board ids Job Start writes (shared/boards.JOBSTART_FIELDS).
+P_COL_BUILDER = "text"                     # Builder / GC
+P_COL_SUPERVISOR = "text5"                 # Site supervisor / contact
 
 # Bid Board: the estimate number lives here — the CO base fallback when the
 # project's Project # is empty (it usually is).
@@ -152,12 +155,43 @@ def _estimate_number_from_bid(mc, bid_item_id: int) -> Optional[str]:
     return None
 
 
+def enrich_project_context(ctx: dict) -> dict:
+    """
+    PURE: fill gaps on a get_project_context-shaped dict using Projects-board
+    fields that often carry the same facts as the linked Customer.
+
+    - client_name empty → builder (GC/homeowner on the project)
+    - contact_name empty → supervisor when it looks useful (non-empty text)
+
+    Typed/customer values always win; this never overwrites a populated field.
+    """
+    out = dict(ctx or {})
+    builder = (out.get("builder") or "").strip() or None
+    supervisor = (out.get("supervisor") or "").strip() or None
+    if builder is not None:
+        out["builder"] = builder
+    if supervisor is not None:
+        out["supervisor"] = supervisor
+
+    client_name = (out.get("client_name") or "").strip() or None
+    contact_name = (out.get("contact_name") or "").strip() or None
+    out["client_name"] = client_name
+    out["contact_name"] = contact_name
+
+    if not client_name and builder:
+        out["client_name"] = builder
+    if not contact_name and supervisor:
+        out["contact_name"] = supervisor
+    return out
+
+
 def get_project_context(mc, item_id: int) -> dict:
     """
     Read a Projects item and assemble what the CO form needs. Returns:
       {monday_item_id, item_url, group_id, job_name, site_address,
        contact_name, project_number, gfolder_url, client_name, client_email,
-       client_phone, client_billing_address, existing_co_identifiers: [...],
+       client_phone, client_billing_address, builder, supervisor,
+       project_type, scope_summary, existing_co_identifiers: [...],
        existing_cos: [{identifier, status, item_id, url}]}
     Raises RuntimeError (via mc._query) only on a hard API error.
 
@@ -166,6 +200,9 @@ def get_project_context(mc, item_id: int) -> dict:
     back to the Linked Opportunity's Estimate # on the Bid Board. The
     estimate number is the CO base spine, so the fallback is usually the one
     that fires.
+
+    Prefill gaps (builder → client_name, supervisor → contact_name) are
+    applied via enrich_project_context so Sales/Ops only types the change.
     """
     query = """
     query ($itemId: [ID!]) {
@@ -244,7 +281,7 @@ def get_project_context(mc, item_id: int) -> dict:
         except Exception as e:  # noqa: BLE001 — numbering falls back to Drive/local
             print(f"[monday-co] CO item scan failed: {e}", file=sys.stderr)
 
-    return {
+    return enrich_project_context({
         "monday_item_id": int(item["id"]),
         "item_url": item.get("url"),
         "group_id": ((item.get("group") or {}).get("id")) or None,
@@ -257,9 +294,13 @@ def get_project_context(mc, item_id: int) -> dict:
         "client_email": client_email,
         "client_phone": client_phone,
         "client_billing_address": client_billing,
+        "builder": text(P_COL_BUILDER),
+        "supervisor": text(P_COL_SUPERVISOR),
+        "project_type": text(P_COL_PROJECT_TYPE),
+        "scope_summary": text(P_COL_SCOPE),
         "existing_co_identifiers": existing,
         "existing_cos": existing_cos,
-    }
+    })
 
 
 def search_projects(mc, q: str, *, limit: int = 15) -> list[dict]:
