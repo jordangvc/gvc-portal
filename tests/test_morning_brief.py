@@ -148,6 +148,25 @@ def test_fetch_query_requests_updated_at():
     assert re.search(r"items\s*\{[\s\S]*?updated_at[\s\S]*?column_values", text)
 
 
+def test_normalize_needs_from_jordan_column():
+    item = {
+        "id": "77",
+        "name": "Need a call",
+        "updated_at": "2026-08-01T12:00:00Z",
+        "group": {"id": "topics", "title": "Active"},
+        "column_values": [
+            {"id": boards.MORNING_COL_NEEDS_FROM_JORDAN,
+             "text": "Pricing", "type": "status"},
+            {"id": boards.MORNING_COL_BLOCKED, "text": "Clear", "type": "status"},
+        ],
+    }
+    row = mm._normalize(item)
+    assert row is not None
+    assert row["needs_from_jordan"] == "Pricing"
+    assert mm.active_needs_from_jordan(row) == "Pricing"
+    assert mm.active_needs_from_jordan({"needs_from_jordan": "Clear"}) is None
+    assert boards.MORNING_COL_NEEDS_FROM_JORDAN in boards.MORNING_READ_COLUMN_IDS
+
 
 def main():
     tests = [
@@ -161,6 +180,7 @@ def main():
         test_normalize_ops_owner_from_people_value,
         test_normalize_keeps_updated_at_for_long_term_holds,
         test_fetch_query_requests_updated_at,
+        test_normalize_needs_from_jordan_column,
     ]
     failed = 0
     for t in tests:

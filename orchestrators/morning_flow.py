@@ -23,6 +23,7 @@ from subsystems.morning import personal as personal
 from subsystems.morning import prep as prep
 from subsystems.morning import route as route
 from subsystems.morning import store as mstore
+from subsystems.morning import weather as weather
 
 _ET = ZoneInfo("America/New_York")
 
@@ -297,7 +298,7 @@ def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, A
         "timezone": "America/New_York",
         "employee": {"email": email, "name": display_name},
         "roles": roles,
-        "weather": _weather_stub(origin),
+        "weather": weather.weather_for_origin(origin),
         "leave": None,
         "preparation": preparation,
         "origin": origin,
@@ -336,31 +337,6 @@ def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, A
     }
     mm.assert_no_financial_keys(payload)
     return payload
-
-
-def _weather_stub(origin: dict) -> Optional[dict]:
-    lat, lng = origin.get("lat"), origin.get("lng")
-    if lat is None or lng is None:
-        return {"label": origin.get("label") or "Local", "summary": None}
-    try:
-        import json
-        import urllib.request
-        url = (
-            "https://api.open-meteo.com/v1/forecast?"
-            f"latitude={lat}&longitude={lng}&current_weather=true"
-            "&temperature_unit=fahrenheit"
-        )
-        with urllib.request.urlopen(url, timeout=3) as resp:
-            data = json.loads(resp.read().decode("utf-8"))
-        cw = data.get("current_weather") or {}
-        temp = cw.get("temperature")
-        return {
-            "label": origin.get("label") or "Local",
-            "temp_f": temp,
-            "summary": f"{temp}°F" if temp is not None else None,
-        }
-    except Exception:  # noqa: BLE001
-        return {"label": "Local", "summary": None}
 
 
 def hub_summary(email: str) -> dict[str, Any]:
@@ -471,6 +447,43 @@ def ack_action_request(email: str, request_id: str) -> dict:
 
 def complete_action_request(email: str, request_id: str) -> dict:
     return {"ok": True, "request": ar.complete(request_id, by_email=email)}
+
+
+def _jordan_email_for_nfj() -> Optional[str]:
+    """Best-effort: first morning_owner grant, else first superadmin email."""
+    try:
+        from shared import portal_store
+        if access.backend() == "gcs":
+            doc, _ = portal_store.load()
+            for email, rec in (doc.get("users") or {}).items():
+                feats = access._expand(rec.get("features"))
+                if "morning_owner" in feats:
+                    return (email or "").strip().lower() or None
+    except Exception:  # noqa: BLE001
+        pass
+    supers = sorted(access.superadmin_emails())
+    return supers[0] if supers else None
+
+
+def migrate_needs_from_jordan(actor_email: str) -> dict[str, Any]:
+    """
+    GM/owner-triggered import: Ops items with an active Needs from Jordan
+    label → Action Requests (needs_triage). Does NOT clear the Monday column.
+    Idempotent — skips when an open AR already exists for the same item.
+    """
+    roles = access.morning_role(actor_email)
+    if not roles.get("is_gm") and not roles.get("is_owner"):
+        return {"ok": False, "code": "FORBIDDEN",
+                "detail": "GM or Owner role required for NFJ migration."}
+    mc = MondayClient()
+    rows = mm.fetch_ops_items(mc)
+    jordan = _jordan_email_for_nfj()
+    result = ar.migrate_needs_from_jordan(
+        rows,
+        actor_email=actor_email,
+        jordan_email=jordan,
+    )
+    return {"ok": True, **result}
 
 
 def add_project_update(email: str, item_id: int, *, note: str,

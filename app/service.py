@@ -2838,6 +2838,47 @@ def ui_morning_ar_ack(request: Request, request_id: str) -> dict:
         raise HTTPException(status_code=404, detail={"ok": False, "detail": "not found"})
 
 
+@app.post("/ui/api/morning/action-requests/migrate-nfj")
+def ui_morning_ar_migrate_nfj(request: Request) -> dict:
+    """GM/owner-only: import active Ops 'Needs from Jordan' into Action Requests.
+
+    Does not clear the Monday column. Not a cron — manual button on the GM view.
+    """
+    email = require_feature(request, "morning")
+    roles = access.morning_role(email)
+    if not roles.get("is_gm") and not roles.get("is_owner"):
+        raise HTTPException(
+            status_code=403,
+            detail={"ok": False, "code": "FORBIDDEN",
+                    "detail": "GM or Owner role required for NFJ migration."},
+        )
+    try:
+        out = morning_flow.migrate_needs_from_jordan(email)
+        if not out.get("ok"):
+            raise HTTPException(
+                status_code=403,
+                detail={"ok": False, "code": out.get("code") or "FORBIDDEN",
+                        "detail": out.get("detail") or "Not allowed."},
+            )
+        activity.log_event(
+            "morning.ar_migrate_nfj", actor=email,
+            target=f"created={out.get('created', 0)},skipped={out.get('skipped', 0)}",
+            result="ok",
+        )
+        return out
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:morning] migrate-nfj error: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "MIGRATE_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Check Monday token + portal state bucket."},
+        )
+
+
 @app.post("/ui/api/morning/action-requests/{request_id}/complete")
 def ui_morning_ar_complete(request: Request, request_id: str) -> dict:
     email = require_feature(request, "morning")

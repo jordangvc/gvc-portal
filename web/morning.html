@@ -154,6 +154,25 @@
   .upd-msg.warn { background: var(--gvc-warn-tint); border: 1px solid #E3CFA0; color: var(--gvc-gold-dark); }
   .upd-msg.err { background: var(--gvc-danger-tint); border: 1px solid #E2C3BA; color: var(--gvc-danger-dark); }
   .upd-files-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-ink-soft); }
+  .mb-chip--dry {
+    font-weight: 500; color: var(--gvc-ink-soft);
+    background: var(--gvc-bg); border-style: dashed;
+  }
+  .route-sheet { display: none; }
+  .route-sheet ol { margin: 0; padding-left: 1.25rem; display: grid; gap: 6px; }
+  .route-sheet li { font-size: var(--gvc-fs-small); }
+  .route-sheet .addr { color: var(--gvc-muted); font-weight: 500; }
+  @media print {
+    body { background: #fff !important; }
+    .gvc-topbar, .role-links, #offline, #status,
+    .mb-card:not(.route-print), .upd-overlay, .seg button,
+    #btnOptimize, #btnMaps, #btnRouteSheet { display: none !important; }
+    .mb-card.route-print, .route-sheet { display: block !important; }
+    .route-sheet { display: grid !important; gap: 8px; }
+    main.mb-shell { max-width: none; padding: 0; }
+    .mb-hd { margin-bottom: 12px; }
+    a[href]::after { content: " (" attr(href) ")"; font-size: 11px; word-break: break-all; }
+  }
 </style>
 </head>
 <body>
@@ -194,12 +213,14 @@
     </div>
   </section>
 
-  <section class="mb-card"><div class="mb-card-hd"><h2>Today's stops</h2><span class="count" id="stopcount"></span></div>
+  <section class="mb-card route-print"><div class="mb-card-hd"><h2>Today's stops</h2><span class="count" id="stopcount"></span></div>
     <div class="seg">
       <button type="button" class="row-btn" id="btnOptimize">Optimize</button>
       <a class="proj-btn" id="btnMaps" href="#" target="_blank" rel="noopener">Google Maps</a>
+      <button type="button" class="row-btn" id="btnRouteSheet" title="Print-friendly stop list">Route sheet</button>
     </div>
     <div class="mb-card-bd" id="stoplist"></div>
+    <div class="route-sheet mb-card-bd" id="routesheet" aria-label="Printable route sheet"></div>
   </section>
 
   <section class="mb-card"><div class="mb-card-hd"><h2>Action Requests</h2><span class="count" id="arcount"></span></div>
@@ -445,6 +466,23 @@ function renderStops(stops) {
   });
 }
 
+function renderRouteSheet(stops, origin, mapsUrl) {
+  const el = $("#routesheet");
+  if (!el) return;
+  const originLabel = (origin && (origin.address || origin.label)) || "Starting point";
+  const lines = (stops || []).map((s, i) => {
+    const addr = s.location || s.address || "No address on file";
+    const done = s.completed ? " (done)" : "";
+    return `<li><b>${esc(s.name || ("Stop " + (i + 1)))}${done}</b>
+      <div class="addr">${esc(addr)}${s.hard_time ? " · " + esc(s.hard_time) : ""}</div></li>`;
+  });
+  el.innerHTML = `
+    <div class="stop-meta"><b>From:</b> ${esc(originLabel)}</div>
+    ${lines.length ? `<ol>${lines.join("")}</ol>` : `<div class="mb-empty">No stops on today's route.</div>`}
+    ${mapsUrl ? `<p class="stop-meta"><a href="${esc(mapsUrl)}" target="_blank" rel="noopener">Open in Google Maps</a></p>` : ""}
+  `;
+}
+
 async function saveRoute(stops, markOverride) {
   const body = await api("/ui/api/morning/route", {
     method: "POST", headers: {"Content-Type":"application/json"},
@@ -453,6 +491,7 @@ async function saveRoute(stops, markOverride) {
   BRIEF.stops = body.route.stops;
   BRIEF.maps_url = body.maps_url;
   renderStops(BRIEF.stops);
+  renderRouteSheet(BRIEF.stops, BRIEF.origin, BRIEF.maps_url);
   const maps = $("#btnMaps");
   if (BRIEF.maps_url) { maps.href = BRIEF.maps_url; maps.style.opacity = "1"; }
 }
@@ -471,6 +510,9 @@ function render(brief, { offline } = {}) {
 
   const chips = [];
   if (brief.weather && brief.weather.summary) chips.push(`<span class="mb-chip">${esc(brief.weather.summary)}</span>`);
+  if (brief.weather && brief.weather.drying_note) {
+    chips.push(`<span class="mb-chip mb-chip--dry">${esc(brief.weather.drying_note)}</span>`);
+  }
   const prep = brief.preparation || {};
   chips.push(`<span class="mb-chip mb-chip--ok">${prep.ready||0}/${prep.total||6} prep</span>`);
   chips.push(`<span class="mb-chip">${(brief.stops||[]).length} stops</span>`);
@@ -538,8 +580,9 @@ function render(brief, { offline } = {}) {
 
   $("#stopcount").textContent = String((brief.stops||[]).length);
   renderStops(brief.stops || []);
+  renderRouteSheet(brief.stops || [], brief.origin, brief.maps_url);
   const maps = $("#btnMaps");
-  if (brief.maps_url) { maps.href = brief.maps_url; maps.style.pointerEvents = "auto"; }
+  if (brief.maps_url) { maps.href = brief.maps_url; maps.style.pointerEvents = "auto"; maps.style.opacity = "1"; }
   else { maps.removeAttribute("href"); maps.style.opacity = ".45"; }
 
   const ar = brief.action_requests || {};
@@ -613,6 +656,12 @@ $("#btnOptimize").addEventListener("click", async () => {
   BRIEF.stops = body.route.stops;
   BRIEF.maps_url = body.maps_url;
   renderStops(BRIEF.stops);
+  renderRouteSheet(BRIEF.stops, BRIEF.origin, BRIEF.maps_url);
+});
+
+$("#btnRouteSheet").addEventListener("click", () => {
+  renderRouteSheet(BRIEF.stops || [], BRIEF.origin, BRIEF.maps_url);
+  window.print();
 });
 
 $("#origsave").addEventListener("click", async () => {
