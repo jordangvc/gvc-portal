@@ -1,6 +1,11 @@
 """Focused tests for the Bid Board bulk-rename script."""
 from __future__ import annotations
 
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 from scripts import backfill_job_rename_bids as bids
 from shared.boards import BID_BOARD_ID
 
