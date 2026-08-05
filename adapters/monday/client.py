@@ -601,21 +601,28 @@ class MondayClient:
         date_str: Optional[str] = None,
         board_id: Optional[int] = None,
         covers: Optional[list[str]] = None,
+        note_line: Optional[str] = None,
     ) -> dict:
         """
-        Mark an 'Invoices Sent' row Paid and append a check note. Writes the
-        Status column (by label "Paid") and appends "Paid by check #<no> on
-        <date>" to the free-text note column on the INVOICES board (not Projects).
-        When one check pays several invoices, pass `covers` (all identifiers on
-        the check) so each row's note records its siblings.
+        Mark an 'Invoices Sent' row Paid and append a note. Writes the Status
+        column (by label "Paid") and appends a note line to the free-text note
+        column on the INVOICES board (not Projects).
+
+        By default the note is "Paid by check #<no> on <date>" (the paid-by-
+        check flow). Pass `note_line` to use a DIFFERENT note instead — e.g.
+        the Stripe-paid webhook flow passes "Paid via Stripe online on
+        <date>" so the note reflects how the money actually came in. When one
+        check pays several invoices, pass `covers` (all identifiers on the
+        check) so each row's note records its siblings (ignored when
+        `note_line` is explicitly set).
 
         Idempotent: if the note line is already present it isn't duplicated, so a
         partial-failure retry is safe. Returns {item_id, status, note_appended}.
         """
         board_id = board_id or INVOICES_SENT_BOARD_ID
-        note_line = f"Paid by check #{check_no or '?'} on {date_str or 'unknown date'}"
-        if covers and len(covers) > 1:
-            note_line += f" (check covers {len(covers)} invoices: {', '.join(covers)})"
+        line = note_line or f"Paid by check #{check_no or '?'} on {date_str or 'unknown date'}"
+        if note_line is None and covers and len(covers) > 1:
+            line += f" (check covers {len(covers)} invoices: {', '.join(covers)})"
 
         existing_note = ""
         try:
@@ -624,8 +631,8 @@ class MondayClient:
         except Exception:  # noqa: BLE001 — note is best-effort; status is the truth
             existing_note = ""
 
-        appended = note_line not in existing_note
-        new_note = (existing_note + ("\n" if existing_note else "") + note_line) if appended else existing_note
+        appended = line not in existing_note
+        new_note = (existing_note + ("\n" if existing_note else "") + line) if appended else existing_note
 
         column_values: dict[str, Any] = {INV_COL_STATUS: {"label": PAID_INVOICE_STATUS_LABEL}}
         if appended:
