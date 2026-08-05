@@ -634,7 +634,8 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
     saved_name = (saved or {}).get("job_name")
     std = _naming.to_standard(
         bid["name"],
-        customer_hint=(bid.get("context") or {}).get("customer"))
+        customer_hint=(bid.get("context") or {}).get("customer"),
+        location_hint=(bid.get("context") or {}).get("location"))
     backfill_builder(
         values, sources, std=std,
         customer=(bid.get("context") or {}).get("customer"))

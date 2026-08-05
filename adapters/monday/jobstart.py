@@ -785,12 +785,13 @@ def find_item_by_name(mc, board_id: int, name: str) -> Optional[int]:
     """
     Find the existing item for this job — ACROSS naming conventions.
 
-    Jordan adopted Jake's pipe standard ("9761 Gertrude | Jent Construction") on
-    2026-07-29, but every item created before that is named some older way
-    ("9761 Gertrude Lane, Cincinnati OH 45231 - Bryant - Jent Construction - New
-    House", "…_Warwick_Commercial"). An exact-name-only lookup would miss those
-    and CREATE A DUPLICATE — the exact failure mode Joe's copy-pasted automation
-    caused and that Jordan asked to be safeguarded against.
+    Jordan adopted Jake's pipe standard on 2026-07-29 and required city/state/ZIP
+    in the title on 2026-08-05 ("9761 Gertrude Lane, Cincinnati, OH 45231 |
+    Jent Construction"). Every item created before those changes is named some
+    older way (short "Street | Builder", dash/underscore with job type, etc.).
+    An exact-name-only lookup would miss those and CREATE A DUPLICATE — the
+    exact failure mode Joe's copy-pasted automation caused and that Jordan
+    asked to be safeguarded against.
 
     So: search Monday on the most distinctive token (the street number, when
     there is one), then let subsystems/jobstart/naming.best_match pick the same

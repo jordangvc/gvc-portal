@@ -492,9 +492,12 @@ def process_estimate(
             job = enriched["job"]
             client_d = enriched["client"]
             issue_year = int(est["date"][:4])
+            from subsystems.jobstart import naming as _naming
             location = (job.get("street_address") or job.get("location")
-                        or job.get("name") or "").strip()
-            project_label = f"{location} | {client_d.get('name','')}".strip(" |")
+                        or "").strip()
+            project_label = _naming.compose_job_name(
+                location, client_d.get("name", ""),
+                raw_name=(job.get("name") or "").strip() or None)
             pdf_name = estimate_pdf_filename(identifier, project_label)
             sidecar_name = sidecar_filename(identifier)
             try:
@@ -632,9 +635,12 @@ def process_estimate(
                 from subsystems.estimate.revision import estimate_pdf_filename as _est_pdf_name
                 _job = enriched.get("job") or {}
                 _client = enriched.get("client") or {}
+                from subsystems.jobstart import naming as _naming
                 _loc = (_job.get("street_address") or _job.get("location")
-                        or _job.get("name") or "").strip()
-                _label = f"{_loc} | {_client.get('name', '')}".strip(" |")
+                        or "").strip()
+                _label = _naming.compose_job_name(
+                    _loc, _client.get("name", ""),
+                    raw_name=(_job.get("name") or "").strip() or None)
                 _pf_name = _est_pdf_name(identifier, _label)
                 try:
                     _pf_up = DriveUploader()

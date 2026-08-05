@@ -207,11 +207,12 @@
 
   <div class="card" id="namecard" style="display:none;">
     <h2>Job name</h2>
-    <input id="jobname" type="text" placeholder="Street Number Name | Builder" />
+    <input id="jobname" type="text" placeholder="Street, City, ST ZIP | Builder" />
     <div id="namenote" class="hint"></div>
-    <div class="hint"><b>GVC standard:</b> <code>Street Number Name | Builder</code> — pipe,
-      no city, state, ZIP or job type. Those live in the fields.
-      Example: <code>9195 Silva | Willow Creek</code></div>
+    <div class="hint"><b>GVC standard:</b> <code>Street Number Name, City, ST ZIP | Builder</code> —
+      pipe separator; include city, state and ZIP (we work in three states with shared road names).
+      Job type stays in the fields. Example:
+      <code>9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek</code></div>
   </div>
 
   <div class="card" id="reqcard" style="display:none;">
@@ -927,8 +928,13 @@ $("#sendback").addEventListener("click", sendBackToSales);
 $("#gcemail").addEventListener("click", draftGcEmail);
 $("#jobname").addEventListener("input", () => {
   jobName = $("#jobname").value;
-  $("#namenote").textContent = jobName.includes("|") ? ""
-    : "Missing the | separator — GVC standard is Street | Builder.";
+  let tip = "";
+  if (!jobName.includes("|")) {
+    tip = "Missing the | separator — GVC standard is Street, City, ST ZIP | Builder.";
+  } else if (!/\b\d{5}\b/.test(jobName)) {
+    tip = "Add the ZIP (and city/state) — same road names exist in OH, IN, and KY.";
+  }
+  $("#namenote").textContent = tip;
   onEdit();
 });
 function bootJobStartFromUrl() {
