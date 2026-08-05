@@ -69,11 +69,12 @@ from shared import activity as activity
 from shared import activity_detail as activity_detail
 from shared import activity_read as activity_read
 from shared import portal_store as portal_store
-from shared.doc_number import core_number, for_estimate
+from shared.doc_number import core_number, for_estimate, is_spine_number
 from subsystems.estimate import drafts as estimate_drafts
 from subsystems.estimate import scope_catalog as scope_catalog
 from subsystems.estimate import takeoff_import as takeoff_import
 from subsystems.invoice import drafts as invoice_drafts
+from subsystems.invoice import estimate_import as invoice_estimate_import
 from subsystems.change_order import drafts as co_drafts
 from subsystems.fieldguide import runs as fieldguide_runs
 from adapters import vision as vision
@@ -1348,6 +1349,35 @@ def ui_invoice_lookup(
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Confirm the project exists on the Projects board."},
         )
+    # ---- Estimate $ import shortcut (opt-in, additive to `prefill`) ----
+    # Never blocks the lookup: a Drive hiccup or a project with no linked
+    # estimate just degrades to "not available" on the import card. Mirrors
+    # ui_estimate_lookup's revision-sidecar load (same sidecar file) below.
+    bid_snapshot = prefill.pop("_bid_snapshot", {}) or {}
+    prefill_project_number = (prefill.get("job") or {}).get("project_number")
+    est_no = None
+    if prefill_project_number and is_spine_number(prefill_project_number):
+        est_no = for_estimate(prefill_project_number)
+    elif bid_snapshot.get("estimate_number"):
+        est_no = for_estimate(bid_snapshot["estimate_number"])
+    sidecar = None
+    if est_no:
+        try:
+            from subsystems.estimate.revision import sidecar_filename
+            from adapters.drive import DriveUploader
+            uploader = DriveUploader()
+            hit = uploader.find_file_anywhere(sidecar_filename(est_no))
+            if hit:
+                sidecar = uploader.download_json(hit["id"])
+        except Exception as e:  # noqa: BLE001 — the import shortcut is best-effort
+            print(f"[ui:invoice-lookup] estimate sidecar load failed (non-fatal): {e}",
+                  file=sys.stderr)
+    prefill["estimate_import"] = invoice_estimate_import.build_estimate_import(
+        estimate_number=est_no,
+        monday_total=bid_snapshot.get("monday_total_raw"),
+        sidecar=sidecar,
+    )
+
     activity.log_event(
         "invoice.lookup", actor=email,
         target=pn or str(parsed_id or ""),
