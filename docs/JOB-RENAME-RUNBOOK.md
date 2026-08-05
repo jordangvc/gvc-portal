@@ -7,16 +7,11 @@ This is the safe order for changing old job names to:
 Jordan should run every script in dry-run mode first. Dry-run only prints the
 proposed work; it does not rename anything.
 
-## 1. Merge the five slices in order
+## 1. Code is on master
 
-1. [PR #46](https://github.com/jordangvc/gvc-portal/pull/46) — shared planner
-2. Projects rename slice
-3. Operations rename slice
-4. Bid Board rename slice
-5. Drive folder rename slice
-
-Each slice depends on the code before it. Do not merge or run a later slice
-while an earlier one is still under review.
+Planner + Projects/Ops/Bids/Drive scripts are already merged. Pull latest
+`master` before running. A follow-up enrich pass looks up missing city/state/ZIP
+(Monday location JSON → linked Bid → Nominatim OH/IN/KY) and cascades `CO.` titles.
 
 ## 2. Preview every rename
 
