@@ -14,9 +14,14 @@ from adapters.monday import billing as monday_billing
 
 
 def invoice_href(*, project_number: Optional[str] = None,
-                 monday_item_id: Optional[Any] = None) -> str:
+                 monday_item_id: Optional[Any] = None,
+                 q: Optional[str] = None) -> str:
+    # Forward q — Ready-to-Invoice shaping passes the job name when Project #
+    # is missing so /ui/invoice can still search/prefill. Omitting q here is
+    # what produced the live Billing Hub TypeError
+    # ("invoice_href() got an unexpected keyword argument 'q'").
     return monday_billing.invoice_href(
-        project_number=project_number, monday_item_id=monday_item_id)
+        project_number=project_number, monday_item_id=monday_item_id, q=q)
 
 
 def estimate_href(*, estimate_number: Optional[str] = None,

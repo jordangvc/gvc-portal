@@ -155,7 +155,8 @@ def test_shape_search_hits():
         "group": "Active",
         "url": "https://monday.example/1",
     })
-    assert proj["primary_href"].endswith("project_number=C-001")
+    assert "project_number=C-001" in proj["primary_href"]
+    assert "monday_item_id=1" in proj["primary_href"]
     bid = bq.shape_search_bid({
         "item_id": 2,
         "name": "Bid B",
@@ -165,6 +166,31 @@ def test_shape_search_hits():
     })
     assert bid["primary_label"] == "Open Job Start"
     assert bid["jobstart_href"] == "/ui/jobstart?bid=2"
+
+
+def test_billing_queue_invoice_href_forwards_q():
+    """Regression: wrapper used to drop q= and TypeError the Ready queue."""
+    href = bq.invoice_href(monday_item_id=20, q="No number yet")
+    assert href == "/ui/invoice?monday_item_id=20&q=No%20number%20yet"
+    # With Project # present, free-text q stays off the URL.
+    assert bq.invoice_href(project_number="C-1", q="noise") == (
+        "/ui/invoice?project_number=C-1"
+    )
+
+
+def test_linked_ids_skips_garbage_pulse_ids():
+    cv = {
+        "linked_item_ids": ["abc", "200"],
+        "value": '{"linkedPulseIds":[{"linkedPulseId":"not-int"},'
+                 '{"linkedPulseId":201}]}',
+    }
+    assert mb._linked_ids(cv) == [200]  # typed field wins first
+    cv2 = {
+        "linked_item_ids": [],
+        "value": '{"linkedPulseIds":[{"linkedPulseId":"x"},'
+                 '{"linkedPulseId":201}]}',
+    }
+    assert mb._linked_ids(cv2) == [201]
 
 
 # ------------------------------------------------------ adapter normalize

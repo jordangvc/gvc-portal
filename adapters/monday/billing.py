@@ -116,9 +116,13 @@ def _linked_ids(cv: Optional[dict]) -> list[int]:
     except (json.JSONDecodeError, TypeError):
         return []
     for entry in parsed.get("linkedPulseIds") or []:
-        pid = entry.get("linkedPulseId")
-        if pid:
+        pid = entry.get("linkedPulseId") if isinstance(entry, dict) else None
+        if not pid:
+            continue
+        try:
             out.append(int(pid))
+        except (TypeError, ValueError):
+            continue
     return out
 
 
