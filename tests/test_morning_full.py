@@ -14,7 +14,9 @@ if str(ROOT) not in sys.path:
 
 from shared import access, boards  # noqa: E402
 from adapters.monday import morning as mm  # noqa: E402
-from subsystems.morning import prep, route, action_requests as ar, media, owner_pulse  # noqa: E402
+from subsystems.morning import (  # noqa: E402
+    prep, route, action_requests as ar, media, owner_pulse, weather,
+)
 from orchestrators import morning_flow as flow  # noqa: E402
 
 
@@ -44,11 +46,125 @@ def test_maps_and_optimize():
         origin={"kind": "office", "address": "Cincinnati, OH"},
     )
     assert url and "google.com/maps" in url
+    assert "origin=" in url
+    assert "destination=" in url
+    assert "waypoints=" in url
+    assert "100%20Main" in url or "100 Main" in url or "Main" in url
+    assert "travelmode=driving" in url
+    # Multi-stop: origin → A → B (B is destination, A is waypoint).
+    assert "waypoints=" in url
     ordered = flow._optimize_order([
         {"name": "B", "hard_time": None},
         {"name": "A", "hard_time": "09:00"},
     ])
     assert ordered[0]["name"] == "A"
+
+
+def test_maps_skips_completed_and_blank_stops():
+    url = route.maps_url(
+        [
+            {"name": "Done", "location": "1 First St", "completed": True},
+            {"name": "Live", "location": "2 Second Ave", "completed": False},
+            {"name": "No addr", "location": "", "completed": False},
+        ],
+        origin={"address": "Office HQ"},
+    )
+    assert "Second" in url
+    assert "First" not in url  # completed skipped when actives remain
+    assert "destination=" in url
+
+
+def test_weather_condition_and_drying_note():
+    assert weather.condition_from_weathercode(0) == "clear"
+    assert weather.condition_from_weathercode(61) == "rain"
+    assert weather.condition_from_weathercode(999) is None
+    rain_tip = weather.drying_note(
+        condition="rain", weathercode=61, humidity_pct=80)
+    assert rain_tip and "protect" in rain_tip.lower()
+    humid = weather.drying_note(
+        condition="cloudy", weathercode=3, humidity_pct=85)
+    assert humid and "humidity" in humid.lower()
+    good = weather.drying_note(
+        condition="clear", weathercode=0, humidity_pct=40)
+    assert good and "good drying" in good.lower()
+
+
+def test_weather_payload_shape():
+    payload = weather.build_weather_payload(
+        {"label": "Office"},
+        api_payload={
+            "current": {
+                "temperature_2m": 72.0,
+                "relative_humidity_2m": 45,
+                "precipitation": 0.0,
+                "weather_code": 0,
+                "precipitation_probability": 10,
+            },
+        },
+    )
+    assert payload["temp_f"] == 72.0
+    assert payload["condition"] == "clear"
+    assert "72" in (payload["summary"] or "")
+    assert "clear" in (payload["summary"] or "")
+    assert payload["humidity_pct"] == 45
+    assert payload.get("drying_note")
+    # Soft fail without coords.
+    empty = weather.weather_for_origin({"label": "X"})
+    assert empty["label"] == "X"
+    assert empty.get("summary") is None
+
+
+def test_nfj_migrate_plan_and_idempotency():
+    rows = [
+        {"item_id": 1, "name": "Hang A", "project_name": "100 Main | Acme",
+         "needs_from_jordan": "Decision"},
+        {"item_id": 2, "name": "Frame B", "needs_from_jordan": "Clear"},
+        {"item_id": 3, "name": "Tape C", "needs_from_jordan": "Materials"},
+    ]
+    plans = ar.plan_nfj_migrations(rows, existing_requests={})
+    assert {p["project_item_id"] for p in plans} == {1, 3}
+    need1 = plans[0]["need"] if plans[0]["project_item_id"] == 1 else plans[1]["need"]
+    assert "Needs from Jordan" in need1
+
+    existing = {
+        "abc": {
+            "id": "abc",
+            "status": ar.STATUS_NEEDS_TRIAGE,
+            "project_item_id": 1,
+            "source": ar.SOURCE_NEEDS_FROM_JORDAN,
+            "need": need1,
+        }
+    }
+    plans2 = ar.plan_nfj_migrations(rows, existing_requests=existing)
+    assert {p["project_item_id"] for p in plans2} == {3}
+    assert ar.existing_open_nfj(existing, project_item_id=1) is not None
+    assert ar.active_nfj_label({"needs_from_jordan": "Clear"}) is None
+    assert ar.active_nfj_label({"needs_from_jordan": "Help"}) == "Help"
+
+
+def test_nfj_apply_create_triage_record():
+    doc, rec = ar.apply_create(
+        {},
+        requester_email="gm@greenvalleycontractors.com",
+        needed_from_email="jordan@greenvalleycontractors.com",
+        category="decision_approval",
+        need="100 Main — Needs from Jordan: Decision",
+        trade_subtype=None,
+        project_item_id=42,
+        project_name="100 Main | Acme",
+        due_at=None,
+        status=ar.STATUS_NEEDS_TRIAGE,
+        source=ar.SOURCE_NEEDS_FROM_JORDAN,
+        allow_empty_needed_from=True,
+    )
+    assert rec["status"] == ar.STATUS_NEEDS_TRIAGE
+    assert rec["source"] == ar.SOURCE_NEEDS_FROM_JORDAN
+    assert rec["escalation"] == ar.ESCALATION_NEEDS_TRIAGE
+    assert rec["project_item_id"] == 42
+    # Second create for same item is detected as dup by existing_open_nfj.
+    assert ar.existing_open_nfj(
+        doc["requests"], project_item_id=42,
+        need=rec["need"]) is not None
 
 
 def test_action_request_categories():
@@ -184,6 +300,11 @@ if __name__ == "__main__":
         test_roles_in_features,
         test_prep_six_criteria_and_streak,
         test_maps_and_optimize,
+        test_maps_skips_completed_and_blank_stops,
+        test_weather_condition_and_drying_note,
+        test_weather_payload_shape,
+        test_nfj_migrate_plan_and_idempotency,
+        test_nfj_apply_create_triage_record,
         test_action_request_categories,
         test_pictures_folder_pick,
         test_owner_pulse_filters,

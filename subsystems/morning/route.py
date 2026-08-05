@@ -55,8 +55,9 @@ OFFICE_ORIGIN: dict = {
     "kind": "office",
     "label": "Green Valley office",
     "address": "Green Valley Contractors, Cincinnati, OH area",
-    "lat": None,
-    "lng": None,
+    # Approx Cincinnati — enough for Open-Meteo + Maps when no personal origin.
+    "lat": 39.1031,
+    "lng": -84.5120,
 }
 
 # Route overrides: "Three overrides within ten scheduled workdays" (spec).
@@ -166,19 +167,28 @@ def _waypoint_text(place: Optional[dict]) -> Optional[str]:
 def maps_url(stops: list, origin: Optional[dict] = None) -> str:
     """
     PURE. Build a Google Maps directions URL (the `?api=1` deep-link format,
-    which opens the Maps app on a phone) through `stops` in the given order.
+    which opens the Maps app on a phone) through `stops` in the given order:
+    origin → stop1 → stop2 → … → destination (last stop).
 
     Stops without a resolvable location (no lat/lng, address, or location
     text) are skipped — a stop the portal couldn't place shouldn't break
     navigation to the ones it could. When no stop resolves, returns the bare
     Maps URL so the button still does *something* sensible rather than 404.
+    No Distance Matrix / API key required — Maps resolves the addresses itself.
     """
     base = "https://www.google.com/maps/dir/?api=1"
-    stop_texts = [t for t in (_waypoint_text(s) for s in (stops or [])) if t]
+    # Incomplete stops stay on the sheet but don't break the multi-stop URL.
+    active = [s for s in (stops or []) if not s.get("completed")]
+    ordered = active or list(stops or [])
+    stop_texts = [t for t in (_waypoint_text(s) for s in ordered) if t]
     if not stop_texts:
+        origin_only = _waypoint_text(origin)
+        if origin_only:
+            return f"{base}&origin={quote(origin_only, safe=',')}&travelmode=driving"
         return base
-    parts = [("destination", stop_texts[-1])]
+    parts = [("destination", stop_texts[-1]), ("travelmode", "driving")]
     if len(stop_texts) > 1:
+        # Google Maps dir API: waypoints joined by | (URL-encoded as %7C).
         parts.append(("waypoints", "|".join(stop_texts[:-1])))
     origin_text = _waypoint_text(origin)
     if origin_text:

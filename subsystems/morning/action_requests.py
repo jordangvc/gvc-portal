@@ -32,8 +32,9 @@ Rules:
     the GM is the caller's job (later slice), same principle as this
     package's route-override signal.
   - Migration of old `Needs from Jordan` values into `needs_triage` status
-    is a separate, later step (spec: "Migrated requests begin as Needs
-    triage, not overdue") — not built in this slice.
+    is available via `migrate_needs_from_jordan` (GM/owner-triggered; does
+    NOT clear the Monday column). Spec: "Migrated requests begin as Needs
+    triage, not overdue."
 
 Storage — one object, default `portal/morning/action-requests.json`:
 
@@ -102,6 +103,10 @@ ACK_WINDOW_MINUTES = 30
 WORK_HOURS_START = 7   # 7:00 AM ET
 WORK_HOURS_END = 17    # 5:00 PM ET
 
+# Migration tag — open ARs with this source + same project_item_id skip re-import.
+SOURCE_NEEDS_FROM_JORDAN = "needs_from_jordan"
+_OPEN_STATUSES = frozenset({STATUS_OPEN, STATUS_ACKNOWLEDGED, STATUS_NEEDS_TRIAGE})
+
 
 class ActionRequestValidationError(ValueError):
     """Structurally invalid Action Request input (caller maps to HTTP 422)."""
@@ -159,19 +164,26 @@ def validate_category(category: str, trade_subtype: Optional[str]) -> None:
 def apply_create(doc: dict, *, requester_email: str, needed_from_email: str,
                   category: str, need: str, trade_subtype: Optional[str],
                   project_item_id: Optional[Any], project_name: Optional[str],
-                  due_at: Optional[str], request_id: Optional[str] = None) -> tuple[dict, dict]:
+                  due_at: Optional[str], request_id: Optional[str] = None,
+                  status: Optional[str] = None, source: Optional[str] = None,
+                  allow_empty_needed_from: bool = False) -> tuple[dict, dict]:
     """PURE. Create one Action Request. Returns (new_doc, record)."""
     validate_category(category, trade_subtype)
-    if not requester_email or not needed_from_email:
+    if not requester_email:
+        raise ActionRequestValidationError("requester_email is required.")
+    if not needed_from_email and not allow_empty_needed_from:
         raise ActionRequestValidationError("requester_email and needed_from_email are required.")
     if not (need or "").strip():
         raise ActionRequestValidationError("need is required.")
+    status_v = status or STATUS_OPEN
+    if status_v not in STATUSES:
+        raise ActionRequestValidationError(f"Unknown status {status_v!r}.")
 
     rid = request_id or new_request_id()
     record = {
         "id": rid,
         "requester_email": requester_email,
-        "needed_from_email": needed_from_email,
+        "needed_from_email": needed_from_email or "",
         "category": category,
         "trade_subtype": trade_subtype,
         "need": need.strip(),
@@ -183,12 +195,96 @@ def apply_create(doc: dict, *, requester_email: str, needed_from_email: str,
         "acknowledged_by": None,
         "completed_at": None,
         "completed_by": None,
-        "escalation": ESCALATION_NONE,
-        "status": STATUS_OPEN,
+        "escalation": (ESCALATION_NEEDS_TRIAGE if status_v == STATUS_NEEDS_TRIAGE
+                       else ESCALATION_NONE),
+        "status": status_v,
     }
+    if source:
+        record["source"] = source
     requests = dict(doc.get("requests") or {})
     requests[rid] = record
     return {**doc, "version": DOC_VERSION, "requests": requests}, record
+
+
+def nfj_need_text(*, project_name: Optional[str], item_name: Optional[str],
+                   label: str) -> str:
+    """PURE. Plain-language need line for a migrated NFJ item."""
+    title = (project_name or item_name or "Ops item").strip()
+    label_s = (label or "").strip()
+    return f"{title} — Needs from Jordan: {label_s}"
+
+
+def existing_open_nfj(requests: dict, *, project_item_id: Any,
+                      need: Optional[str] = None) -> Optional[dict]:
+    """
+    PURE. Find an open AR that already covers this Ops item's NFJ migration
+    (same project_item_id + source tag, or same project_item_id + similar need).
+    """
+    try:
+        pid = int(project_item_id) if project_item_id is not None else None
+    except (TypeError, ValueError):
+        pid = project_item_id
+    need_n = (need or "").strip().lower()
+    for rec in (requests or {}).values():
+        if rec.get("status") not in _OPEN_STATUSES:
+            continue
+        try:
+            rid_pid = int(rec["project_item_id"]) if rec.get("project_item_id") is not None else None
+        except (TypeError, ValueError):
+            rid_pid = rec.get("project_item_id")
+        if rid_pid != pid:
+            continue
+        if rec.get("source") == SOURCE_NEEDS_FROM_JORDAN:
+            return rec
+        if need_n and (rec.get("need") or "").strip().lower() == need_n:
+            return rec
+        # Same project + "Needs from Jordan" in the need text → treat as dup.
+        if "needs from jordan" in (rec.get("need") or "").lower():
+            return rec
+    return None
+
+
+_CLEAR_NFJ_LABELS = frozenset({"", "clear", "none", "n/a", "na", "-"})
+
+
+def active_nfj_label(row: dict) -> Optional[str]:
+    """PURE. Active Needs from Jordan label on a row, or None when clear."""
+    label = (row.get("needs_from_jordan") or "").strip()
+    if not label or label.lower() in _CLEAR_NFJ_LABELS:
+        return None
+    return label
+
+
+def plan_nfj_migrations(rows: list, *, existing_requests: dict) -> list[dict]:
+    """
+    PURE. From Ops rows (with needs_from_jordan), return create plans for
+    active labels that aren't already covered. Each plan:
+      {project_item_id, project_name, need, label}
+    """
+    plans: list[dict] = []
+    seen_ids: set = set()
+    for row in rows or []:
+        label = active_nfj_label(row)
+        if not label:
+            continue
+        item_id = row.get("item_id")
+        if item_id is None or item_id in seen_ids:
+            continue
+        seen_ids.add(item_id)
+        need = nfj_need_text(
+            project_name=row.get("project_name") or row.get("name"),
+            item_name=row.get("name"),
+            label=label,
+        )
+        if existing_open_nfj(existing_requests, project_item_id=item_id, need=need):
+            continue
+        plans.append({
+            "project_item_id": item_id,
+            "project_name": row.get("project_name") or row.get("name"),
+            "need": need,
+            "label": label,
+        })
+    return plans
 
 
 def apply_acknowledge(doc: dict, *, request_id: str, by_email: str,
@@ -395,3 +491,83 @@ def run_escalations(now: Optional[datetime] = None) -> list[dict]:
         return new_doc, full_records
 
     return morning_store.mutate(_object_name(), fn)
+
+
+def migrate_needs_from_jordan(rows: list, *, actor_email: str,
+                               jordan_email: Optional[str] = None) -> dict:
+    """
+    Import active Needs from Jordan Ops labels into Action Requests
+    (status=needs_triage, category=decision_approval, source=needs_from_jordan).
+
+    Idempotent: skips when an open AR already exists for the same
+    project_item_id with the migration tag or a similar need. Does NOT
+    clear or write the Monday column — that is a later ops step.
+
+    Returns {"created": n, "skipped": n, "created_ids": [...], "skipped_ids": [...]}.
+    """
+    actor_n = _norm_email(actor_email)
+    if not actor_n:
+        raise ActionRequestValidationError("actor_email is required.")
+    jordan_n = _norm_email(jordan_email) if jordan_email else ""
+
+    created_ids: list[str] = []
+    skipped_ids: list[Any] = []
+
+    # Count skips for rows that have an active label but already have an AR.
+    doc, _ = morning_store.read_doc(_object_name())
+    existing = dict(doc.get("requests") or {})
+    plans: list[dict] = []
+    for row in rows or []:
+        label = active_nfj_label(row)
+        if not label:
+            continue
+        item_id = row.get("item_id")
+        need = nfj_need_text(
+            project_name=row.get("project_name") or row.get("name"),
+            item_name=row.get("name"),
+            label=label,
+        )
+        if existing_open_nfj(existing, project_item_id=item_id, need=need):
+            skipped_ids.append(item_id)
+            continue
+        plans.append({
+            "project_item_id": item_id,
+            "project_name": row.get("project_name") or row.get("name"),
+            "need": need,
+            "label": label,
+        })
+
+    for plan in plans:
+        def fn(doc: dict, plan=plan):
+            # Re-check inside the mutate for race safety.
+            if existing_open_nfj(doc.get("requests") or {},
+                                 project_item_id=plan["project_item_id"],
+                                 need=plan["need"]):
+                return doc, None
+            return apply_create(
+                doc,
+                requester_email=actor_n,
+                needed_from_email=jordan_n,
+                category="decision_approval",
+                need=plan["need"],
+                trade_subtype=None,
+                project_item_id=plan["project_item_id"],
+                project_name=plan["project_name"],
+                due_at=None,
+                status=STATUS_NEEDS_TRIAGE,
+                source=SOURCE_NEEDS_FROM_JORDAN,
+                allow_empty_needed_from=True,
+            )
+
+        rec = morning_store.mutate(_object_name(), fn)
+        if rec is None:
+            skipped_ids.append(plan["project_item_id"])
+        else:
+            created_ids.append(rec["id"])
+
+    return {
+        "created": len(created_ids),
+        "skipped": len(skipped_ids),
+        "created_ids": created_ids,
+        "skipped_ids": skipped_ids,
+    }

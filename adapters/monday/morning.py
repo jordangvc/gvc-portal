@@ -34,6 +34,8 @@ SKIP_PROJECT_STATUSES = {"project lost/canceled"}
 # Status labels that mean "nothing wrong" — not attention-worthy.
 _CLEAR_BLOCKED = frozenset({"", "clear", "none", "n/a", "na", "-"})
 _CLEAR_OVERDUE = frozenset({"", "on time", "clear", "none", "n/a", "na", "-"})
+# Needs from Jordan — empty / Clear means no active ask (migration skips these).
+_CLEAR_NEEDS_FROM_JORDAN = frozenset({"", "clear", "none", "n/a", "na", "-"})
 
 
 def _item_url(item_id) -> str:
@@ -177,6 +179,7 @@ def _normalize(item: dict) -> Optional[dict]:
         "stage_detail": texts.get(boards.MORNING_COL_STAGE_DETAIL),
         "scheduled_day": texts.get(boards.MORNING_COL_SCHEDULED),
         "blocked": texts.get(boards.MORNING_COL_BLOCKED),
+        "needs_from_jordan": texts.get(boards.MORNING_COL_NEEDS_FROM_JORDAN),
         "overdue": texts.get(boards.MORNING_COL_OVERDUE),
         "progress": texts.get(boards.MORNING_COL_PROGRESS),
         "ops_owners": owners,
@@ -193,6 +196,14 @@ def is_attention(row: dict) -> bool:
     if overdue and overdue not in _CLEAR_OVERDUE:
         return True
     return False
+
+
+def active_needs_from_jordan(row: dict) -> Optional[str]:
+    """PURE. Active NFJ label text, or None when clear/empty."""
+    label = (row.get("needs_from_jordan") or "").strip()
+    if not label or label.lower() in _CLEAR_NEEDS_FROM_JORDAN:
+        return None
+    return label
 
 
 def is_personally_relevant(row: dict, *, email: str,

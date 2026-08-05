@@ -43,7 +43,13 @@
   </div>
   <div class="card"><h2>Sequence (routed first)</h2><div id="seq"></div></div>
   <div class="card"><h2>Unscheduled / needs planning (last)</h2><div id="unsch"></div></div>
-  <div class="card"><h2>Action Requests</h2><div id="ars"></div></div>
+  <div class="card"><h2>Action Requests</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+      <button class="btn" id="migrateNfj" type="button">Import Needs from Jordan → Action Requests</button>
+    </div>
+    <div id="migrateMsg" class="gvc-sub" style="margin-top:6px"></div>
+    <div id="ars"></div>
+  </div>
   <div class="card"><h2>Park a topic</h2>
     <input id="pTopic" placeholder="Topic" /><input id="pOwner" placeholder="Owner" style="margin-top:8px" />
     <button class="btn" id="pAdd" style="margin-top:8px">Park</button>
@@ -90,6 +96,21 @@ document.getElementById("pAdd").onclick = async () => {
 document.getElementById("aAdd").onclick = async () => {
   await api("/ui/api/morning/meeting/action",{method:"POST",headers:{"Content-Type":"application/json"},
     body:JSON.stringify({text:aText.value, owner:aOwner.value})}); aText.value=""; load(); };
+document.getElementById("migrateNfj").onclick = async () => {
+  const msg = document.getElementById("migrateMsg");
+  const btn = document.getElementById("migrateNfj");
+  btn.disabled = true;
+  msg.textContent = "Importing…";
+  try {
+    const out = await api("/ui/api/morning/action-requests/migrate-nfj", { method: "POST" });
+    msg.textContent = `Created ${out.created||0} · skipped ${out.skipped||0} (already open or clear). Monday column left unchanged.`;
+    await load();
+  } catch (e) {
+    msg.textContent = String(e.message || e);
+  } finally {
+    btn.disabled = false;
+  }
+};
 load();
 </script>
 </body>
