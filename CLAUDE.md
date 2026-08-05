@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 🔒 Morning Brief Slack — NEVER `#operations` (Jordan 2026-08-05)
+Morning Brief / field brief / huddle summary / route sheet / prep status is
+**always a side chat or DM**. Do not post it to Slack `#operations`
+(`C0B8YAV10AU`) — not for review, not temporarily, not after Jordan "signs off."
+The old HANDOFF-2026-07-30 §4.3 "show him then post" plan is cancelled.
+Authoritative: `docs/MORNING_BRIEF_BUILD_SPEC.md` §Slack + `AGENTS.md` locked #0.
+(Job Check / Job Start may still notify `#operations` — that is a different flow.)
+
 ## 🔧 JOB CHECK — trade-status slice 2: Taped/coats/sanded/skim — BUILT 2026-08-05
 PR #18 (Framing/Hanging/Scrapping/Finishing → Projects) explicitly listed "Out of scope
 (next slices): Taped / coats / sanded / skim, Completion Date, Notes." This slice ships
