@@ -499,9 +499,9 @@ def test_save_missing_project_link_fails_trade_only():
     def fake_get_linked_project_id(mc, ops_item_id):
         return {"project_item_id": None,
                 "error": "No linked Projects item on this Operations task "
-                         "(link_to_projects is empty). Link the Projects item "
-                         "in Monday before editing trade status or uploading "
-                         "photos."}
+                         "(link_to_projects is empty). Use “Link a Projects "
+                         "item” on Job Check before editing trade status or "
+                         "uploading photos."}
 
     def fake_set_item_columns(mc, item_id, values, board_id=None):
         calls["set"].append({"item_id": item_id, "values": dict(values),
