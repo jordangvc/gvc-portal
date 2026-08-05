@@ -1,26 +1,25 @@
 """
-Monday reads + the SINGLE write path for the Job Check tool.
+Monday reads + write paths for the Job Check tool.
 =========================================================================
 The portal's first write surface into Monday (docs/portal-job-check-design.md,
-2026-07-27). Three reads and ONE write, all against the Projects board
-(1918846405):
+2026-07-27). Reads + two explicit writes, all against the Operations board
+(1920364853) unless noted:
 
-  fetch_active_jobs()   — paged dropdown fetch, same pattern/filters as
-                          adapters/monday/lien.py (every group except
-                          `closed`, skip top-level "CO." rows and
-                          Lost/canceled jobs).
+  fetch_active_jobs()   — paged dropdown fetch (skips Completed / Ready to
+                          Invoice groups).
   get_board_columns()   — column metadata (title/type/status labels+colors)
                           for the allowlisted ids, so the form can render
                           tap-to-cycle chips and the validator can check
                           labels server-side.
   get_item_values()     — one item's current values for the allowlisted
                           columns + the read-only context header fields.
-  set_item_columns()    — THE write: change_multiple_column_values on ONE
-                          existing item with an already-validated dict of
-                          column values. Batch first; on failure retries
-                          per-column so the caller gets per-column errors
-                          instead of one opaque batch failure. NEVER creates
-                          or deletes items.
+  set_item_columns()    — allowlisted column write: change_multiple_column_values
+                          on ONE existing item. Batch first; on failure retries
+                          per-column. NEVER creates or deletes items.
+  move_ops_item_to_ready_to_invoice()
+                        — explicit "Mark Ready to Invoice" move into
+                          group_mm3zq4q2 (+ optional Ready for Invoice Date).
+                          Dedicated path — never auto-fired from Save.
 
 Guardrail: this module trusts its caller (orchestrators/jobcheck_flow) to
 have validated values against the shared/boards.py allowlist — but it still
@@ -29,6 +28,7 @@ refuses an empty/None item id and never carries a create/delete mutation.
 from __future__ import annotations
 
 import json
+from datetime import date as _date
 from typing import Any, Optional
 
 from adapters.drive import folder_id_from_url
@@ -41,6 +41,10 @@ from shared.boards import (
     PROJECTS_BOARD_ID,
     PROJECTS_GFOLDER_COL,
 )
+
+# Same ids as adapters/monday/billing — keep Billing Hub's Ready queue in sync.
+READY_TO_INVOICE_GROUP_ID = "group_mm3zq4q2"
+OPS_COL_READY_DATE = "date_mm3zry96"  # hard-excluded from form saves; stamped here only
 
 # Read-only context columns shown at the top of the Job Check page (never
 # editable there). OPERATIONS-board ids, verified live via get_board_info
@@ -298,6 +302,83 @@ mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
   ) { id }
 }
 """
+
+_MOVE_GROUP = """
+mutation ($itemId: ID!, $groupId: String!) {
+  move_item_to_group(item_id: $itemId, group_id: $groupId) { id }
+}
+"""
+
+
+def move_ops_item_to_ready_to_invoice(
+    mc, item_id: int, *,
+    ready_date: Optional[str] = None,
+    current_group_id: Optional[str] = None,
+) -> dict:
+    """
+    Move one Operations item into the Ready to Invoice group and stamp
+    Ready for Invoice Date (date_mm3zry96).
+
+    Dedicated path for the explicit "Mark Ready to Invoice" tap — does NOT
+    go through the Job Check allowlist (that date column stays hard-excluded
+    from normal form saves). Never creates/deletes items. Never auto-moves.
+
+    Returns {
+      ok, group_moved, date_written, already_ready,
+      group_id, ready_date, error?, date_error?
+    }
+    """
+    out: dict = {
+        "ok": False,
+        "group_moved": False,
+        "date_written": False,
+        "already_ready": False,
+        "group_id": READY_TO_INVOICE_GROUP_ID,
+        "ready_date": None,
+        "error": None,
+        "date_error": None,
+    }
+    if not item_id:
+        out["error"] = "item_id is required"
+        return out
+    item_id = int(item_id)
+    today = (ready_date or _date.today().isoformat()).strip()[:10]
+    out["ready_date"] = today
+
+    if (current_group_id or "") == READY_TO_INVOICE_GROUP_ID:
+        out["ok"] = True
+        out["already_ready"] = True
+        return out
+
+    try:
+        mc._query(_MOVE_GROUP, {
+            "itemId": str(item_id),
+            "groupId": READY_TO_INVOICE_GROUP_ID,
+        })
+        out["group_moved"] = True
+    except Exception as e:  # noqa: BLE001
+        out["error"] = f"move failed: {type(e).__name__}: {e}"
+        return out
+
+    # Stamp ready date via this dedicated mutation — not set_item_columns /
+    # not the form allowlist. Best-effort: the group move is load-bearing.
+    board_id = JOBCHECK_BOARD_ID or OPERATIONS_BOARD_ID
+    try:
+        mc._query(_MUTATION, {
+            "boardId": str(board_id),
+            "itemId": str(item_id),
+            "values": json.dumps({OPS_COL_READY_DATE: {"date": today}}),
+        })
+        out["date_written"] = True
+    except Exception as e:  # noqa: BLE001
+        out["date_error"] = f"{type(e).__name__}: {e}"
+
+    monday_cache.invalidate(
+        "list:jobcheck:active_jobs",
+        "list:billing:ready_to_invoice",
+    )
+    out["ok"] = True
+    return out
 
 
 def set_item_columns(mc, item_id: int, values: dict[str, Any],

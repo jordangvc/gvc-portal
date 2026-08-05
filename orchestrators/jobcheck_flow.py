@@ -573,6 +573,116 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
             "slack": slack_status}
 
 
+# Full Completion date on Ops — UI soft-gate for Ready to Invoice (not required
+# server-side; crew can confirm past an empty date).
+FULL_COMPLETION_COL = "date_mm1ghszy"
+
+
+def mark_ready_to_invoice(item_id: int, actor_email: str) -> dict[str, Any]:
+    """
+    Explicit tap: move this Operations item into Ready to Invoice so Billing
+    Hub's Ready queue picks it up. NEVER auto-fired from save_job_check.
+
+    Validates the Ops item exists and is not already in that group. Missing
+    link_to_projects is a warning only (Billing can still find the row by
+    name). Stamps Ready for Invoice Date via the dedicated adapter path.
+    """
+    item_id = int(item_id)
+    actor = (actor_email or "").strip() or "unknown"
+    mc = MondayClient()
+
+    before = mj.get_item_values(mc, item_id, [FULL_COMPLETION_COL])
+    if before is None:
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "ITEM_NOT_FOUND",
+            "detail": f"Monday item {item_id} not found.",
+            "monday_url": None,
+            "billing_href": "/ui/billing",
+            "warnings": [],
+        }
+
+    if (before.get("group_id") or "") == mj.READY_TO_INVOICE_GROUP_ID:
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "ALREADY_READY",
+            "detail": ("This job is already in Ready to Invoice — "
+                       "it should appear on Billing Hub."),
+            "monday_url": before.get("url"),
+            "billing_href": "/ui/billing",
+            "warnings": [],
+            "group_id": before.get("group_id"),
+            "group_title": before.get("group_title"),
+        }
+
+    warnings: list[str] = []
+    link = mj.get_linked_project_id(mc, item_id)
+    project_item_id = link.get("project_item_id")
+    if not project_item_id:
+        warnings.append(
+            "No linked Projects item (link_to_projects is empty). "
+            "Moved anyway — Billing Hub may need the link for Project #."
+        )
+
+    full_done = bool((before.get("values") or {}).get(FULL_COMPLETION_COL))
+    if not full_done:
+        warnings.append(
+            "Full Completion date is not set — marked ready anyway after confirm."
+        )
+
+    moved = mj.move_ops_item_to_ready_to_invoice(
+        mc, item_id, current_group_id=before.get("group_id"))
+    if not moved.get("ok"):
+        activity.log_event(
+            "jobcheck.ready_to_invoice",
+            actor=actor,
+            target=str(item_id),
+            result="error",
+            severity="WARNING",
+            job=before.get("name"),
+            error=moved.get("error"),
+        )
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "MOVE_FAILED",
+            "detail": moved.get("error") or "Couldn't move the item in Monday.",
+            "monday_url": before.get("url"),
+            "billing_href": "/ui/billing",
+            "warnings": warnings,
+        }
+
+    activity.log_event(
+        "jobcheck.ready_to_invoice",
+        actor=actor,
+        target=str(item_id),
+        result="ok",
+        job=before.get("name"),
+        group_moved=str(bool(moved.get("group_moved"))),
+        date_written=str(bool(moved.get("date_written"))),
+        ready_date=moved.get("ready_date"),
+        project_item_id=str(project_item_id) if project_item_id else None,
+        warnings="; ".join(warnings) or None,
+        date_error=moved.get("date_error"),
+    )
+
+    return {
+        "ok": True,
+        "item_id": item_id,
+        "job": before.get("name"),
+        "monday_url": before.get("url"),
+        "billing_href": "/ui/billing",
+        "group_moved": bool(moved.get("group_moved")),
+        "date_written": bool(moved.get("date_written")),
+        "ready_date": moved.get("ready_date"),
+        "date_error": moved.get("date_error"),
+        "project_item_id": project_item_id,
+        "warnings": warnings,
+    }
+
+
 # ---------------------------------------------------------------------------
 # Monday updates + Drive photos (Operations item; never auto-changes Stage)
 # ---------------------------------------------------------------------------
