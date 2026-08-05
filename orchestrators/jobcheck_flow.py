@@ -467,8 +467,8 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
         if not project_item_id:
             msg = (link.get("error") or
                    "No linked Projects item (link_to_projects is empty). "
-                   "Ops fields can still save; link the Projects item in "
-                   "Monday to edit trade status.")
+                   "Ops fields can still save; use “Link a Projects item” "
+                   "on this page to edit trade status.")
             for cid in proj_shaped:
                 failures[field_key(BOARD_PROJECTS, cid)] = msg
         else:

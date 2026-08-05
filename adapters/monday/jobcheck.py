@@ -683,9 +683,9 @@ def get_linked_project_id(mc, ops_item_id: int) -> dict:
         break
     if not linked_ids:
         out["error"] = ("No linked Projects item on this Operations task "
-                        "(link_to_projects is empty). Link the Projects item "
-                        "in Monday before editing trade status or uploading "
-                        "photos.")
+                        "(link_to_projects is empty). Use “Link a Projects "
+                        "item” on Job Check before editing trade status or "
+                        "uploading photos.")
         return out
     out["project_item_id"] = int(linked_ids[0])
     return out
