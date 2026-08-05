@@ -5,20 +5,26 @@ Target title:
 
     Street Number Name, City, ST ZIP | Builder
 
+Looks up city/state/ZIP from Monday location JSON, linked Bid location, and
+(when still needed) OpenStreetMap Nominatim for the OH/IN/KY area. CO rows
+cascade from their parent title — they are not skipped.
+
 Safety:
   * Dry-run by default. ``--apply`` is required for Monday writes.
   * If ``--apply`` and ``--dry-run`` are both present, dry-run wins.
-  * CO. rows and incomplete addresses/builders are skipped by rename_plan.
+  * Geocode only when recorded Monday facts are incomplete.
   * This script renames Monday item titles only. It never renames Drive folders.
 
-Examples (from the repository root):
+Examples:
 
     .venv/bin/python scripts/backfill_job_rename_projects.py --limit 20
     .venv/bin/python scripts/backfill_job_rename_projects.py --apply --limit 20
+    .venv/bin/python scripts/backfill_job_rename_projects.py --no-geocode --limit 20
 """
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -29,12 +35,15 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from adapters.monday.client import COL_BUILDER, MondayClient  # noqa: E402
 from adapters.monday.rename import rename_item_name  # noqa: E402
 from shared.boards import (  # noqa: E402
+    BID_BOARD_ID,
+    JOBSTART_BID_LOCATION_COL,
     JOBSTART_P_COL_CUSTOMER,
     JOBSTART_P_COL_LOCATION,
+    JOBSTART_P_COL_OPPORTUNITY,
     PROJECTS_BOARD_ID,
     PROJECTS_GFOLDER_COL,
 )
-from subsystems.jobstart import rename_plan  # noqa: E402
+from subsystems.jobstart import rename_enrich, rename_plan  # noqa: E402
 
 WRITE_DELAY_SECONDS = 0.2
 PROJECT_COLUMN_IDS = (
@@ -42,6 +51,7 @@ PROJECT_COLUMN_IDS = (
     COL_BUILDER,
     JOBSTART_P_COL_CUSTOMER,
     PROJECTS_GFOLDER_COL,
+    JOBSTART_P_COL_OPPORTUNITY,
 )
 
 
@@ -57,31 +67,28 @@ def build_parser() -> argparse.ArgumentParser:
         description=(
             "Plan or apply Projects-board titles as "
             "'Street Number Name, City, ST ZIP | Builder'. "
-            "Dry-run is the default."
+            "Looks up missing city/state/ZIP. Dry-run is the default."
         )
     )
     parser.add_argument(
-        "--dry-run",
-        action="store_true",
+        "--dry-run", action="store_true",
         help="Print the plan without writing (default; wins over --apply).",
     )
     parser.add_argument(
-        "--apply",
-        action="store_true",
-        help="Rename eligible Monday items.",
+        "--apply", action="store_true", help="Rename eligible Monday items.",
     )
     parser.add_argument(
-        "--limit",
-        type=_positive_int,
-        default=None,
-        metavar="N",
+        "--limit", type=_positive_int, default=None, metavar="N",
         help="Process at most N Projects items.",
+    )
+    parser.add_argument(
+        "--no-geocode", action="store_true",
+        help="Use Monday/linked facts only — do not call Nominatim.",
     )
     return parser
 
 
 def should_apply(args: argparse.Namespace) -> bool:
-    """Return whether writes are enabled; an explicit dry-run always wins."""
     return bool(args.apply) and not bool(args.dry_run)
 
 
@@ -94,35 +101,117 @@ def _column_map(item: dict) -> dict[str, dict]:
 
 
 def _column_text(columns: dict[str, dict], column_id: str) -> str:
-    return (columns.get(column_id, {}).get("text") or "").strip()
+    cv = columns.get(column_id) or {}
+    for key in ("display_value", "text"):
+        raw = cv.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return ""
 
 
 def _gfolder_url(columns: dict[str, dict]) -> Optional[str]:
     column = columns.get(PROJECTS_GFOLDER_COL) or {}
     url = (column.get("url") or "").strip()
-    return url or None
+    if url:
+        return url
+    raw = column.get("value")
+    if not raw:
+        return None
+    try:
+        return (json.loads(raw) or {}).get("url") or None
+    except (json.JSONDecodeError, TypeError):
+        return None
 
 
-def plan_project_item(item: dict) -> dict:
-    """PURE. Shape one Monday Projects item and run the shared rename planner."""
+def _linked_ids(cv: Optional[dict]) -> list[int]:
+    if not cv:
+        return []
+    try:
+        parsed = json.loads(cv.get("value") or "{}")
+    except (json.JSONDecodeError, TypeError):
+        return []
+    out = []
+    for entry in parsed.get("linkedPulseIds") or []:
+        pid = entry.get("linkedPulseId")
+        if pid:
+            out.append(int(pid))
+    return out
+
+
+def fetch_bid_location_hints(mc, bid_ids: list[int]) -> dict[int, str]:
+    """Batch-read Bid Board location5 text/value → hint strings."""
+    if not bid_ids:
+        return {}
+    query = """
+    query ($ids: [ID!], $cols: [String!]) {
+      items(ids: $ids) {
+        id
+        column_values(ids: $cols) { id text value }
+      }
+    }
+    """
+    hints: dict[int, str] = {}
+    # Monday caps ids per call — chunk.
+    for start in range(0, len(bid_ids), 50):
+        chunk = bid_ids[start:start + 50]
+        data = mc._query(query, {
+            "ids": [str(i) for i in chunk],
+            "cols": [JOBSTART_BID_LOCATION_COL],
+        })
+        for item in data.get("items") or []:
+            for cv in item.get("column_values") or []:
+                if cv.get("id") != JOBSTART_BID_LOCATION_COL:
+                    continue
+                from subsystems.jobstart.location_lookup import location_from_column_value
+                pieces = location_from_column_value(cv)
+                if pieces.get("hint"):
+                    hints[int(item["id"])] = pieces["hint"]
+    return hints
+
+
+def plan_project_item(
+    item: dict,
+    *,
+    bid_hints: Optional[dict[int, str]] = None,
+    parent_index: Optional[dict[str, str]] = None,
+    geocode: bool = True,
+    geocode_street_fn=None,
+    reverse_geocode_fn=None,
+) -> dict:
+    """Shape one Monday Projects item and run enriched rename planner."""
     columns = _column_map(item)
-    return rename_plan.plan_row(
-        name=(item.get("name") or "").strip(),
-        location=_column_text(columns, JOBSTART_P_COL_LOCATION),
+    name = (item.get("name") or "").strip()
+    loc_cv = columns.get(JOBSTART_P_COL_LOCATION) or {}
+    extras: list[Optional[str]] = []
+    for bid_id in _linked_ids(columns.get(JOBSTART_P_COL_OPPORTUNITY)):
+        hint = (bid_hints or {}).get(bid_id)
+        if hint:
+            extras.append(hint)
+
+    parent_name = None
+    if rename_plan.is_co_item_name(name) and parent_index is not None:
+        parent_name = rename_enrich.resolve_parent_title(name, parent_index)
+
+    return rename_enrich.plan_enriched_row(
+        name=name,
+        location_text=_column_text(columns, JOBSTART_P_COL_LOCATION),
+        location_value_json=loc_cv.get("value"),
+        location_column=loc_cv,
+        extra_hints=extras,
         builder=_column_text(columns, COL_BUILDER),
         customer=_column_text(columns, JOBSTART_P_COL_CUSTOMER),
+        parent_name=parent_name,
         item_id=int(item["id"]),
         board="projects",
         gfolder_url=_gfolder_url(columns),
+        geocode=geocode and not rename_plan.is_co_item_name(name),
+        geocode_street_fn=geocode_street_fn,
+        reverse_geocode_fn=reverse_geocode_fn,
     )
 
 
-def list_project_rename_plans(
-    mc,
-    *,
-    limit: Optional[int] = None,
-) -> list[dict]:
-    """Page Projects in batches of 200 and return one rename plan per item."""
+def list_project_items(mc, *, limit: Optional[int] = None) -> list[dict]:
+    """Page Projects; return raw items (with location value JSON)."""
     query = """
     query ($boardId: [ID!], $cursor: String, $cols: [String!]) {
       boards(ids: $boardId) {
@@ -134,14 +223,16 @@ def list_project_rename_plans(
             column_values(ids: $cols) {
               id
               text
+              value
               ... on LinkValue { url }
+              ... on BoardRelationValue { display_value }
             }
           }
         }
       }
     }
     """
-    plans: list[dict] = []
+    items: list[dict] = []
     cursor: Optional[str] = None
     while True:
         data = mc._query(
@@ -157,48 +248,85 @@ def list_project_rename_plans(
             break
         page = boards[0].get("items_page") or {}
         for item in page.get("items") or []:
-            plans.append(plan_project_item(item))
-            if limit is not None and len(plans) >= limit:
-                return plans
+            items.append(item)
+            if limit is not None and len(items) >= limit:
+                return items
         cursor = page.get("cursor")
         if not cursor:
             break
-    return plans
+    return items
+
+
+def list_project_rename_plans(
+    mc,
+    *,
+    limit: Optional[int] = None,
+    geocode: bool = True,
+    geocode_street_fn=None,
+    reverse_geocode_fn=None,
+) -> list[dict]:
+    """Page Projects, look up locations, plan renames, cascade CO titles."""
+    items = list_project_items(mc, limit=limit)
+
+    bid_ids: list[int] = []
+    for item in items:
+        columns = _column_map(item)
+        bid_ids.extend(_linked_ids(columns.get(JOBSTART_P_COL_OPPORTUNITY)))
+    bid_hints = fetch_bid_location_hints(mc, sorted(set(bid_ids)))
+
+    # Pass 1 — non-CO rows (may geocode).
+    non_co_plans: list[dict] = []
+    co_items: list[dict] = []
+    for item in items:
+        name = (item.get("name") or "").strip()
+        if rename_plan.is_co_item_name(name):
+            co_items.append(item)
+            continue
+        non_co_plans.append(plan_project_item(
+            item, bid_hints=bid_hints, geocode=geocode,
+            geocode_street_fn=geocode_street_fn,
+            reverse_geocode_fn=reverse_geocode_fn,
+        ))
+
+    parent_index = rename_enrich.index_parent_titles(non_co_plans)
+
+    # Pass 2 — CO cascade from looked-up / renamed parents.
+    co_plans = [
+        plan_project_item(
+            item, bid_hints=bid_hints, parent_index=parent_index, geocode=False,
+        )
+        for item in co_items
+    ]
+    return non_co_plans + co_plans
 
 
 def _table_rows(plans: list[dict]) -> list[list[str]]:
     rows = []
     for plan in plans:
-        rows.append(
-            [
-                str(plan.get("action") or ""),
-                str(plan.get("item_id") or ""),
-                str(plan.get("old_name") or ""),
-                str(plan.get("new_name") or ""),
-                str(plan.get("gfolder_url") or "—"),
-                str(plan.get("note") or ""),
-            ]
-        )
+        rows.append([
+            str(plan.get("action") or ""),
+            str(plan.get("item_id") or ""),
+            str(plan.get("old_name") or ""),
+            str(plan.get("new_name") or ""),
+            ",".join(plan.get("lookup_sources") or []) or "—",
+            str(plan.get("note") or ""),
+        ])
     return rows
 
 
 def print_plan_table(plans: list[dict]) -> None:
-    headers = ["ACTION", "ITEM ID", "CURRENT TITLE", "PROPOSED TITLE", "GFOLDER", "NOTE"]
+    headers = ["ACTION", "ITEM ID", "CURRENT TITLE", "PROPOSED TITLE", "LOOKUP", "NOTE"]
     rows = _table_rows(plans)
     widths = [
-        max(len(headers[index]), *(len(row[index]) for row in rows))
-        if rows
-        else len(headers[index])
-        for index in range(len(headers))
+        max(len(headers[i]), *(len(r[i]) for r in rows)) if rows else len(headers[i])
+        for i in range(len(headers))
     ]
 
     def format_row(row: list[str]) -> str:
-        return " | ".join(
-            value.ljust(widths[index]) for index, value in enumerate(row)
-        )
+        return " | ".join(v.ljust(widths[i]) for i, v in enumerate(row))
 
     print(format_row(headers))
-    print("-+-".join("-" * width for width in widths))
+    print("-+-".join("-" * w for w in widths))
     for row in rows:
         print(format_row(row))
 
@@ -210,7 +338,6 @@ def apply_rename_plans(
     rename_fn: Callable[[object, int, int, str], None] = rename_item_name,
     sleep_fn: Callable[[float], None] = time.sleep,
 ) -> tuple[int, list[tuple[int, str]]]:
-    """Apply only eligible rename plans, pausing between Monday writes."""
     candidates = rename_plan.rename_candidates(plans)
     errors: list[tuple[int, str]] = []
     written = 0
@@ -220,7 +347,7 @@ def apply_rename_plans(
             rename_fn(mc, PROJECTS_BOARD_ID, item_id, plan["new_name"])
             written += 1
             print(f"WROTE {item_id}: {plan['old_name']} -> {plan['new_name']}")
-        except Exception as exc:  # noqa: BLE001 — continue the bounded backfill
+        except Exception as exc:  # noqa: BLE001
             errors.append((item_id, f"{type(exc).__name__}: {exc}"))
             print(f"ERROR {item_id}: {errors[-1][1]}", file=sys.stderr)
         if index < len(candidates) - 1:
@@ -228,13 +355,7 @@ def apply_rename_plans(
     return written, errors
 
 
-def _print_summary(
-    plans: list[dict],
-    *,
-    apply: bool,
-    written: int = 0,
-    errors: int = 0,
-) -> None:
+def _print_summary(plans, *, apply: bool, written: int = 0, errors: int = 0) -> None:
     summary = rename_plan.summarize(plans)
     print(
         "\nSummary: "
@@ -242,7 +363,6 @@ def _print_summary(
         f"rename={summary['rename']} "
         f"already_standard={summary['skip_standard']} "
         f"incomplete={summary['skip_incomplete']} "
-        f"co_skipped={summary['skip_co']} "
         f"written={written} errors={errors}"
         + ("" if apply else " (dry-run — pass --apply to write)")
     )
@@ -258,14 +378,17 @@ def main(argv: Optional[list[str]] = None) -> int:
         )
     print(
         f"[projects-rename] mode={'APPLY' if apply else 'DRY-RUN'} "
-        f"limit={args.limit or 'none'}",
+        f"limit={args.limit or 'none'} "
+        f"geocode={'off' if args.no_geocode else 'on'}",
         file=sys.stderr,
     )
 
     try:
         mc = MondayClient()
-        plans = list_project_rename_plans(mc, limit=args.limit)
-    except Exception as exc:  # noqa: BLE001 — configuration/API error at CLI boundary
+        plans = list_project_rename_plans(
+            mc, limit=args.limit, geocode=not args.no_geocode,
+        )
+    except Exception as exc:  # noqa: BLE001
         print(
             f"[projects-rename] unable to read Monday: "
             f"{type(exc).__name__}: {exc}",
@@ -279,12 +402,7 @@ def main(argv: Optional[list[str]] = None) -> int:
         return 0
 
     written, write_errors = apply_rename_plans(mc, plans)
-    _print_summary(
-        plans,
-        apply=True,
-        written=written,
-        errors=len(write_errors),
-    )
+    _print_summary(plans, apply=True, written=written, errors=len(write_errors))
     return 1 if write_errors else 0
 
 

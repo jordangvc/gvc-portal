@@ -1,6 +1,7 @@
 """Focused tests for the Operations-board bulk title rename."""
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -10,6 +11,30 @@ from scripts import backfill_job_rename_ops as ops  # noqa: E402
 
 
 STANDARD = "9761 Gertrude Lane, Cincinnati, OH 45231 | Jent Construction"
+LOCATION_VALUE = json.dumps({
+    "address": "9761 Gertrude Lane, Cincinnati, OH 45231",
+})
+
+
+def _project(
+    item_id: int = 11,
+    name: str = STANDARD,
+    *,
+    location: str = "",
+    location_value: str = "",
+) -> dict:
+    location_column = {
+        "id": ops.JOBSTART_P_COL_LOCATION,
+        "text": location,
+        "value": location_value,
+    }
+    return {
+        "id": item_id,
+        "name": name,
+        "location": location,
+        "location_value_json": location_value,
+        "location_column": location_column,
+    }
 
 
 class FakeMonday:
@@ -28,15 +53,24 @@ def _page(items: list[dict], cursor=None) -> dict:
 
 def test_list_project_names_pages_once_and_builds_id_index():
     mc = FakeMonday([
-        _page([{"id": "11", "name": STANDARD}], cursor="next"),
+        _page([{
+            "id": "11",
+            "name": STANDARD,
+            "column_values": [{
+                "id": ops.JOBSTART_P_COL_LOCATION,
+                "text": "",
+                "value": LOCATION_VALUE,
+            }],
+        }], cursor="next"),
         _page([{"id": "12", "name": "CO.1 - ignored"}]),
     ])
 
     projects, by_id = ops.list_project_names(mc)
 
-    assert projects == [{"id": 11, "name": STANDARD}]
+    assert projects == [_project(location_value=LOCATION_VALUE)]
     assert by_id == {11: STANDARD}
     assert [call["cursor"] for call in mc.calls] == [None, "next"]
+    assert mc.calls[0]["cols"] == [ops.JOBSTART_P_COL_LOCATION]
 
 
 def test_list_operations_items_reads_project_relation_and_honors_limit():
@@ -76,7 +110,7 @@ def test_linked_operation_mirrors_current_standard_project_name():
 
     plan = ops.plan_operation_item(
         row,
-        projects=[{"id": 11, "name": STANDARD}],
+        projects=[_project()],
         project_names={11: STANDARD},
     )
 
@@ -94,7 +128,7 @@ def test_unlinked_incomplete_operation_can_mirror_unique_standard_match():
 
     plan = ops.plan_operation_item(
         row,
-        projects=[{"id": 11, "name": STANDARD}],
+        projects=[_project()],
         project_names={11: STANDARD},
     )
 
@@ -102,6 +136,54 @@ def test_unlinked_incomplete_operation_can_mirror_unique_standard_match():
     assert plan["new_name"] == STANDARD
     assert plan["source"] == "matched_project"
     assert plan["match_score"] == 1.0
+
+
+def test_linked_nonstandard_project_location_enriches_operation():
+    old_project_name = "9761 Gertrude | Jent Construction"
+    row = {
+        "item_id": 22,
+        "name": old_project_name,
+        "linked_project_ids": [11],
+    }
+
+    plan = ops.plan_operation_item(
+        row,
+        projects=[
+            _project(name=old_project_name, location_value=LOCATION_VALUE),
+        ],
+        project_names={11: old_project_name},
+    )
+
+    assert plan["action"] == "rename"
+    assert plan["new_name"] == STANDARD
+    assert plan["source"] == "linked_project_enriched"
+    assert plan["lookup_sources"] == ["monday_location"]
+
+
+def test_unlinked_operation_geocodes_after_no_safe_project_match():
+    row = {
+        "item_id": 23,
+        "name": "9761 Gertrude | Jent Construction",
+        "linked_project_ids": [],
+    }
+
+    plan = ops.plan_operation_item(
+        row,
+        projects=[],
+        project_names={},
+        geocode_street_fn=lambda street: {
+            "street": f"{street} Lane",
+            "city": "Cincinnati",
+            "state": "OH",
+            "zip": "45231",
+            "hint": f"{street} Lane, Cincinnati, OH 45231",
+        },
+        reverse_geocode_fn=lambda *_args: None,
+    )
+
+    assert plan["action"] == "rename"
+    assert plan["new_name"] == STANDARD
+    assert plan["source"] == "ops_name_geocoded"
 
 
 def test_unlinked_operation_skips_when_no_safe_standard_match():
@@ -113,8 +195,9 @@ def test_unlinked_operation_skips_when_no_safe_standard_match():
 
     plan = ops.plan_operation_item(
         row,
-        projects=[{"id": 11, "name": STANDARD}],
+        projects=[_project()],
         project_names={11: STANDARD},
+        geocode=False,
     )
 
     assert plan["action"] == "skip_incomplete"
@@ -141,13 +224,14 @@ def test_unlinked_operation_skips_ambiguous_project_matches():
         row,
         projects=projects,
         project_names={project["id"]: project["name"] for project in projects},
+        geocode=False,
     )
 
     assert plan["action"] == "skip_incomplete"
     assert plan["source"] == "ops_name"
 
 
-def test_co_rows_are_skipped_even_when_linked():
+def test_co_rows_cascade_from_linked_project():
     row = {
         "item_id": 24,
         "name": "CO.1 - 9761 Gertrude | Jent Construction",
@@ -156,11 +240,40 @@ def test_co_rows_are_skipped_even_when_linked():
 
     plan = ops.plan_operation_item(
         row,
-        projects=[{"id": 11, "name": STANDARD}],
+        projects=[_project()],
         project_names={11: STANDARD},
     )
 
-    assert plan["action"] == "skip_co"
+    assert plan["action"] == "rename"
+    assert plan["new_name"] == f"CO.1 - {STANDARD}"
+    assert plan["source"] == "linked_project_parent"
+
+
+def test_co_rows_resolve_parent_from_enriched_projects_index():
+    old_parent = "9761 Gertrude | Jent Construction"
+    row = {
+        "item_id": 25,
+        "name": f"CO.2 - {old_parent}",
+        "linked_project_ids": [],
+    }
+    project_plan = ops.rename_enrich.plan_enriched_row(
+        name=old_parent,
+        location_value_json=LOCATION_VALUE,
+        geocode=False,
+    )
+    parent_index = ops.rename_enrich.index_parent_titles([project_plan])
+
+    plan = ops.plan_operation_item(
+        row,
+        projects=[_project(name=old_parent, location_value=LOCATION_VALUE)],
+        project_names={11: old_parent},
+        parent_index=parent_index,
+        geocode=False,
+    )
+
+    assert plan["action"] == "rename"
+    assert plan["new_name"] == f"CO.2 - {STANDARD}"
+    assert plan["source"] == "parent_index"
 
 
 def test_apply_writes_only_rename_plans_and_sleeps(monkeypatch):
@@ -215,8 +328,22 @@ def test_dry_run_wins_when_both_flags_are_set(monkeypatch):
     monkeypatch.setattr(
         ops,
         "run",
-        lambda *, apply, limit: seen.append((apply, limit)) or 0,
+        lambda *, apply, limit, geocode:
+            seen.append((apply, limit, geocode)) or 0,
     )
 
     assert ops.main(["--apply", "--dry-run", "--limit", "7"]) == 0
-    assert seen == [(False, 7)]
+    assert seen == [(False, 7, True)]
+
+
+def test_no_geocode_flag(monkeypatch):
+    seen: list[tuple[bool, int | None, bool]] = []
+    monkeypatch.setattr(
+        ops,
+        "run",
+        lambda *, apply, limit, geocode:
+            seen.append((apply, limit, geocode)) or 0,
+    )
+
+    assert ops.main(["--no-geocode"]) == 0
+    assert seen == [(False, None, False)]

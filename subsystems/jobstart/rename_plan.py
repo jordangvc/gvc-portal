@@ -9,17 +9,18 @@ writing anything.
 
 Actions:
   skip_standard   — already `Street, City, ST ZIP | Builder`
-  skip_co         — top-level `CO.{n} - …` change-order row (cascade later)
-  skip_incomplete — to_standard ok=False (missing geo or builder) — ASK
-  rename          — old ≠ new and ok=True
+  skip_incomplete — still missing geo/builder AFTER lookup (rare)
+  rename          — old ≠ new and ok=True (includes CO cascade when parent known)
 
-Callers (scripts/backfill_job_rename_*.py) own paging, dry-run, and apply.
+Callers (scripts/backfill_job_rename_*.py) own paging, lookup, dry-run, and apply.
+CO rows: pass `parent_name` (looked-up / already-renamed parent title) so they
+rename to `CO.n - {parent}` instead of being skipped.
 """
 from __future__ import annotations
 
 from typing import Optional
 
-from subsystems.jobstart import naming
+from subsystems.jobstart import location_lookup, naming
 
 
 CO_ITEM_PREFIX = "CO."
@@ -41,12 +42,17 @@ def plan_row(
     board: Optional[str] = None,
     gfolder_url: Optional[str] = None,
     linked_project_name: Optional[str] = None,
+    parent_name: Optional[str] = None,
+    lookup_note: Optional[str] = None,
 ) -> dict:
     """
     PURE. One Monday/Drive row → rename decision.
 
     Prefer `linked_project_name` when Ops should mirror a Projects title that
     was already planned/renamed — avoids re-parsing a short Ops title.
+
+    For `CO.n - …` rows, pass `parent_name` (standard parent title). The CO
+    title becomes `CO.n - {parent_name}`.
     """
     name = (name or "").strip()
     base = {
@@ -62,6 +68,7 @@ def plan_row(
         "city": None,
         "state": None,
         "zip": None,
+        "lookup_note": (lookup_note or "").strip() or None,
     }
 
     if not name:
@@ -69,8 +76,23 @@ def plan_row(
                 "note": "Empty item name."}
 
     if is_co_item_name(name):
-        return {**base, "action": "skip_co",
-                "note": "CO item — rename parent first, cascade later."}
+        parent = (parent_name or linked_project_name or "").strip()
+        if not parent:
+            # Try to recover parent text from the CO title itself, then the
+            # caller should have enriched/renamed that parent already.
+            parent = location_lookup.co_parent_from_name(name) or ""
+        if parent and naming.is_standard(parent):
+            new_name = location_lookup.build_co_title(parent, name)
+            if new_name == name:
+                return {**base, "action": "skip_standard", "ok": True,
+                        "new_name": new_name,
+                        "note": "CO title already matches standard parent."}
+            return {**base, "action": "rename", "ok": True, "new_name": new_name,
+                    "note": (lookup_note or "Cascade CO title from parent.")}
+        return {**base, "action": "skip_incomplete",
+                "note": (lookup_note
+                         or "CO parent not yet standard — rename parent first, "
+                            "then re-run.")}
 
     # Ops (and mirrors): if a linked Projects name is already standard, use it.
     link = (linked_project_name or "").strip()

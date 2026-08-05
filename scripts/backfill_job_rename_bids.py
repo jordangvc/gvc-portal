@@ -2,18 +2,21 @@
 Bulk-rename Monday Bid Board titles to the canonical job-name standard.
 
 The planner is shared with the other rename slices; this script owns only the
-Bid Board read/apply path.
+Bid Board read/apply path. Missing city/state/ZIP is looked up from Monday's
+location JSON and, when needed, Nominatim instead of being skipped immediately.
 
 Safety:
   * Dry-run is the default.
   * --apply is required for Monday writes.
   * If --apply and --dry-run are both passed, dry-run wins.
   * Lost/cancelled bids are never planned or renamed.
+  * Geocoding is on by default; pass --no-geocode to use Monday facts only.
 
 Examples (from the repository root):
 
   .venv/bin/python scripts/backfill_job_rename_bids.py --limit 20
   .venv/bin/python scripts/backfill_job_rename_bids.py --apply --limit 20
+  .venv/bin/python scripts/backfill_job_rename_bids.py --no-geocode --limit 20
 """
 from __future__ import annotations
 
@@ -35,7 +38,8 @@ from shared.boards import (  # noqa: E402
     JOBSTART_BID_STAGE_COL,
     JOBSTART_DEAD_STAGE_WORDS,
 )
-from subsystems.jobstart.rename_plan import plan_row, rename_candidates, summarize  # noqa: E402
+from subsystems.jobstart import rename_enrich  # noqa: E402
+from subsystems.jobstart.rename_plan import rename_candidates, summarize  # noqa: E402
 
 
 BID_READ_COLUMNS = (
@@ -52,6 +56,14 @@ def _column_text(column_values: list[dict], column_id: str) -> str:
         if value.get("id") == column_id:
             return (value.get("text") or "").strip()
     return ""
+
+
+def _column(column_values: list[dict], column_id: str) -> dict:
+    """Return one raw Monday column value, including its value JSON."""
+    return next(
+        (value for value in column_values if value.get("id") == column_id),
+        {},
+    )
 
 
 def is_dead_stage(stage: Optional[str]) -> bool:
@@ -84,6 +96,7 @@ def fetch_bid_rows(mc, *, limit: Optional[int] = None) -> tuple[list[dict], int]
             column_values(ids: $cols) {
               id
               text
+              value
             }
           }
         }
@@ -109,10 +122,13 @@ def fetch_bid_rows(mc, *, limit: Optional[int] = None) -> tuple[list[dict], int]
             if is_dead_stage(stage):
                 dead_skipped += 1
                 continue
+            location_column = _column(values, JOBSTART_BID_LOCATION_COL)
             rows.append({
                 "item_id": int(item["id"]),
                 "name": (item.get("name") or "").strip(),
                 "location": _column_text(values, JOBSTART_BID_LOCATION_COL),
+                "location_value_json": location_column.get("value") or "",
+                "location_column": location_column,
                 "customer": _column_text(values, JOBSTART_BID_CUSTOMER_COL),
                 "stage": stage,
             })
@@ -126,16 +142,27 @@ def fetch_bid_rows(mc, *, limit: Optional[int] = None) -> tuple[list[dict], int]
     return rows, dead_skipped
 
 
-def build_plans(rows: list[dict]) -> list[dict]:
-    """Run the pure planner for each eligible Bid Board row."""
+def build_plans(
+    rows: list[dict],
+    *,
+    geocode: bool = True,
+    geocode_street_fn=None,
+    reverse_geocode_fn=None,
+) -> list[dict]:
+    """Look up missing location facts, then plan each eligible Bid row."""
     plans: list[dict] = []
     for row in rows:
-        plan = plan_row(
+        plan = rename_enrich.plan_enriched_row(
             name=row["name"],
-            location=row.get("location"),
+            location_text=row.get("location"),
+            location_value_json=row.get("location_value_json"),
+            location_column=row.get("location_column"),
             customer=row.get("customer"),
             item_id=row["item_id"],
             board="bid_board",
+            geocode=geocode,
+            geocode_street_fn=geocode_street_fn,
+            reverse_geocode_fn=reverse_geocode_fn,
         )
         plan["stage"] = row.get("stage") or ""
         plans.append(plan)
@@ -171,10 +198,20 @@ def print_table(plans: list[dict]) -> None:
                         for value, width in zip(values, widths)))
 
 
-def run(*, apply: bool, limit: Optional[int], mc=None) -> int:
+def run(
+    *,
+    apply: bool,
+    limit: Optional[int],
+    geocode: bool = True,
+    mc=None,
+) -> int:
     """Plan the Bid Board rename and optionally apply safe candidates."""
     mode = "APPLY" if apply else "DRY-RUN"
-    print(f"[bid-rename] mode={mode} limit={limit or 'none'}", file=sys.stderr)
+    print(
+        f"[bid-rename] mode={mode} limit={limit or 'none'} "
+        f"geocode={'on' if geocode else 'off'}",
+        file=sys.stderr,
+    )
     if mc is None:
         try:
             mc = MondayClient()
@@ -189,7 +226,7 @@ def run(*, apply: bool, limit: Optional[int], mc=None) -> int:
               file=sys.stderr)
         return 2
 
-    plans = build_plans(rows)
+    plans = build_plans(rows, geocode=geocode)
     candidates = rename_candidates(plans)
     written = 0
     write_errors = 0
@@ -261,6 +298,11 @@ def _build_parser() -> argparse.ArgumentParser:
         metavar="N",
         help="Process at most N non-dead bids after priority sorting.",
     )
+    parser.add_argument(
+        "--no-geocode",
+        action="store_true",
+        help="Use Monday location facts only — do not call Nominatim.",
+    )
     return parser
 
 
@@ -270,7 +312,11 @@ def main(argv: Optional[list[str]] = None) -> int:
     if args.apply and args.dry_run:
         print("[warn] both --apply and --dry-run set; staying in dry-run",
               file=sys.stderr)
-    return run(apply=apply, limit=args.limit)
+    return run(
+        apply=apply,
+        limit=args.limit,
+        geocode=not args.no_geocode,
+    )
 
 
 if __name__ == "__main__":
