@@ -130,7 +130,8 @@ def check_estimate_draft(
     checks: list[dict[str, Any]] = []
 
     # 1) Customer name — real hello@ bodies greet with contact_name and often
-    # put the builder only in the job title ("Street | Builder"). Pass if the
+    # put the builder only in the job title ("Street, City, ST ZIP | Builder").
+    # Pass if the
     # full client.name appears in subject/body, OR a distinctive token (≥4
     # chars) from the name does, OR the contact greeting is present while
     # client.name is filled (form completeness + human-visible greeting).

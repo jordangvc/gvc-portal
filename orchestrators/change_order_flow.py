@@ -356,9 +356,12 @@ def process_change_order(
                     # estimate_flow so it resolves to the existing project folder.
                     client_d = data.get("client") or {}
                     job_d = data.get("job") or {}
+                    from subsystems.jobstart import naming as _naming
                     location = (job_d.get("street_address") or job_d.get("location")
-                                or job_d.get("name") or "").strip()
-                    project_label = f"{location} | {client_d.get('name', '')}".strip(" |")
+                                or "").strip()
+                    project_label = _naming.compose_job_name(
+                        location, client_d.get("name", ""),
+                        raw_name=(job_d.get("name") or "").strip() or None)
                     _ptype = (job_d.get("project_type") or "").lower()
                     if not _ptype:
                         _mjt = (job_d.get("monday_job_type") or "").lower()

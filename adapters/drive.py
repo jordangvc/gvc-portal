@@ -1208,7 +1208,8 @@ class DriveUploader:
                 <project_label>/Estimate/
 
         `project_label` is the naming-convention folder name, e.g.
-        "9195 Silva | Willow Creek" (residential) or "Cintas | 3368 Turfway"
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek" (residential)
+        or "Cintas | 3368 Turfway"
         (commercial) — built by the caller, slugged here. `project_type` is
         "residential" or "commercial". The root folder name defaults to
         "Projects" (override: GVC_PROJECTS_ROOT_FOLDER).
