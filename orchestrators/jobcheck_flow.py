@@ -30,9 +30,11 @@ from typing import Any, Optional
 from adapters import slack_notify
 from adapters.drive import DriveUploader
 from adapters.monday import jobcheck as mj
+from adapters.monday import lien as ml
 from adapters.monday.client import MondayClient
 from shared import activity
 from shared import boards
+from subsystems.morning import link_suggest as ls
 
 # Longest value the form may write to a text/long_text column. Generous for
 # field notes, small enough that a runaway client can't stuff megabytes in.
@@ -465,8 +467,8 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
         if not project_item_id:
             msg = (link.get("error") or
                    "No linked Projects item (link_to_projects is empty). "
-                   "Ops fields can still save; link the Projects item in "
-                   "Monday to edit trade status.")
+                   "Ops fields can still save; use “Link a Projects item” "
+                   "on this page to edit trade status.")
             for cid in proj_shaped:
                 failures[field_key(BOARD_PROJECTS, cid)] = msg
         else:
@@ -574,6 +576,101 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
 # ---------------------------------------------------------------------------
 # Monday updates + Drive photos (Operations item; never auto-changes Stage)
 # ---------------------------------------------------------------------------
+
+def suggest_project_links(ops_item_id: int, *, limit: int = 8) -> dict[str, Any]:
+    """
+    Read-only heuristic Ops→Projects link suggestions for Job Check.
+    Reuses the same name-matching scorer as the Morning Brief (link_suggest +
+    fetch_active_projects). NEVER writes Monday.
+    """
+    item_id = int(ops_item_id)
+    limit = max(1, min(int(limit or 8), 100))
+    mc = MondayClient()
+
+    item = mj.get_item_values(mc, item_id, [])
+    if item is None:
+        return {
+            "ok": False,
+            "item_id": item_id,
+            "error": "ITEM_NOT_FOUND",
+            "detail": f"Monday item {item_id} not found.",
+        }
+
+    ops_name = item.get("name") or ""
+    link = mj.get_linked_project_id(mc, item_id)
+    projects = ml.fetch_active_projects(mc)[:limit]
+    project_candidates = [
+        {"id": p["item_id"], "name": p["name"], "url": p.get("url")}
+        for p in projects
+    ]
+    project_sug = ls.suggest_project_for_ops(ops_name, project_candidates)
+    ranked = sorted(
+        ({**c, "score": round(ls.score_name_match(ops_name, c.get("name") or ""), 3)}
+         for c in project_candidates),
+        key=lambda c: c["score"], reverse=True,
+    )[:limit]
+
+    return {
+        "ok": True,
+        "item_id": item_id,
+        "ops_name": ops_name,
+        "already_linked": link.get("project_item_id"),
+        "project": project_sug,
+        "suggestions": ranked,
+        "candidates_scanned": len(project_candidates),
+    }
+
+
+def link_project(ops_item_id: int, projects_item_id: int,
+                 actor: str) -> dict[str, Any]:
+    """
+    Fill-if-empty link from Operations link_to_projects → one Projects item.
+    Reuses set_ops_project_link_if_empty (never overwrites). Re-fetches job
+    detail on success so trade statuses become editable immediately.
+    """
+    ops_item_id = int(ops_item_id)
+    projects_item_id = int(projects_item_id)
+    mc = MondayClient()
+
+    before = mj.get_item_values(mc, ops_item_id, [])
+    if before is None:
+        return {
+            "ok": False,
+            "linked": False,
+            "already": False,
+            "detail": None,
+            "error": f"Operations item {ops_item_id} not found.",
+        }
+
+    result = mj.set_ops_project_link_if_empty(
+        mc, ops_item_id, projects_item_id)
+    linked = bool(result.get("written"))
+    already = bool(result.get("skipped") and result.get("reason") == "already_set")
+
+    activity.log_event(
+        "jobcheck.link_project",
+        actor=actor,
+        target=str(ops_item_id),
+        result="ok" if result.get("ok") else "error",
+        severity="INFO" if result.get("ok") else "WARNING",
+        job=before["name"],
+        projects_item_id=str(projects_item_id),
+        written=str(linked),
+        already=str(already),
+        reason=result.get("reason") or result.get("error"),
+    )
+
+    detail = get_job_detail(ops_item_id) if result.get("ok") else None
+    return {
+        "ok": bool(result.get("ok")),
+        "linked": linked,
+        "already": already,
+        "detail": detail,
+        "project_item_id": result.get("project_item_id"),
+        "error": result.get("error"),
+        "reason": result.get("reason"),
+    }
+
 
 def list_updates(item_id: int, *, limit: int = 25) -> dict:
     """Recent Monday updates on the Ops item for the Job Check Updates card."""
