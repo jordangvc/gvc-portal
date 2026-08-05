@@ -136,19 +136,20 @@
   </div>
 </header>
 
-<main class="gvc-shell">
+<main class="gvc-shell gvc-moneyform">
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Estimating</p>
     <h1 class="gvc-h1">Estimate Generator</h1>
     <p class="gvc-sub">Build a bid from a Monday Bid Board link or from scratch — preview the PDF, then Accept to draft it in hello@.</p>
   </div>
 
-  <div class="gvc-stack">
+  <div class="gvc-stack gvc-stack--tight">
 
   <div class="gvc-banner" id="status"></div>
 
   <div class="card" id="monday-prefill-card">
-    <h2>Find the Bid <span class="opt" style="text-transform:none;font-weight:400;">(paste a Monday Bid Board link — or search by client, builder, address, city, or estimate # — fills the form and links the estimate to that bid; bids with a sent estimate load for revision)</span></h2>
+    <h2>Find the Bid</h2>
+    <p class="sec-help">Paste a Monday Bid Board link, or search by client, builder, address, city, or estimate #.</p>
     <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
       <div><label>Monday Bid URL — or search</label>
         <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “Greg Gavin”, “Cincinnati”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
@@ -166,34 +167,38 @@
     <div id="prefill-note" class="hint" style="margin-top:8px;"></div>
   </div>
 
-  <div class="card" id="takeoff-import-card">
-    <h2>Import from Takeoff <span class="opt" style="text-transform:none;font-weight:400;">(upload or paste “Export for Portal” JSON — saves a shared draft only)</span></h2>
-    <div class="grid">
-      <div>
-        <label for="takeoff-file">Takeoff JSON file <span class="opt">(optional)</span></label>
-        <input id="takeoff-file" type="file" accept=".json,application/json" />
+  <details class="soft-fold" id="takeoff-import-card">
+    <summary>Import from Takeoff</summary>
+    <div class="fold-body">
+      <div class="grid">
+        <div>
+          <label for="takeoff-file">Takeoff JSON file <span class="opt">(optional)</span></label>
+          <input id="takeoff-file" type="file" accept=".json,application/json" />
+        </div>
+        <div class="full">
+          <label for="takeoff-json">Or paste Takeoff JSON</label>
+          <textarea id="takeoff-json" rows="5" placeholder='{"prepared_by":{…},"client":{…},"job":{…},"estimate":{…}}'></textarea>
+        </div>
       </div>
-      <div class="full">
-        <label for="takeoff-json">Or paste Takeoff JSON</label>
-        <textarea id="takeoff-json" rows="5" placeholder='{"prepared_by":{…},"client":{…},"job":{…},"estimate":{…}}'></textarea>
+      <div class="actions">
+        <button type="button" class="btn secondary" id="btn-takeoff-import">Import &amp; save draft</button>
+        <span class="spinner" id="takeoff-spinner">⏳ Importing…</span>
       </div>
+      <div id="takeoff-import-result" class="hint" role="status" aria-live="polite"></div>
     </div>
-    <div class="actions">
-      <button type="button" class="btn secondary" id="btn-takeoff-import">Import &amp; save draft</button>
-      <span class="spinner" id="takeoff-spinner">⏳ Importing…</span>
-    </div>
-    <div id="takeoff-import-result" class="hint" role="status" aria-live="polite"></div>
-  </div>
+  </details>
 
   <div class="card" id="drafts-card" style="display:none;">
-    <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress estimates — yours and your teammates')</span></h2>
+    <h2>Resume a draft</h2>
+    <p class="sec-help">Autosaved in-progress estimates — yours and your teammates'.</p>
     <div id="drafts-list" class="gvc-results"></div>
   </div>
 
   <form id="estimate-form" autocomplete="off">
     <input type="hidden" name="job_monday_item_id" />
     <div class="card">
-      <h2>Your Bid Contact <span class="opt" style="text-transform:none;font-weight:400;">(salesperson shown on the estimate as “Your Bid Contact”)</span></h2>
+      <h2>Your Bid Contact</h2>
+      <p class="sec-help">Shown on the estimate as “Your Bid Contact”.</p>
       <div style="margin-bottom:12px;"><label>Choose salesperson <span class="opt">(autofills the fields below — or type manually)</span></label>
         <select id="salesperson-select"><option value="">— select a salesperson —</option></select></div>
       <div class="grid">
@@ -256,8 +261,12 @@
         <div><label>Plan Folder # <span class="opt">(optional — Jake's numbered Drive folder)</span></label>
           <input name="plan_folder_number" inputmode="numeric" placeholder="341" />
           <div class="hint">Leading number of Jake's plan folder (e.g. <code>341</code>). Prefills from the Bid Board; saved back on Accept, and the PDF is also filed there.</div></div>
-        <div><label>Date</label><input name="date" type="date" required /></div>
-        <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input name="expiry_date" type="date" /></div>
+        <div class="full">
+          <div class="grid grid-pair">
+            <div><label>Date</label><input name="date" type="date" required /></div>
+            <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input name="expiry_date" type="date" /></div>
+          </div>
+        </div>
         <div class="full" id="revise-row" style="display:none;">
           <label class="opt-row" style="font-weight:600;">
             <input type="checkbox" id="revise-flag" />
@@ -272,7 +281,8 @@
     </div>
 
     <div class="card" id="scope-card">
-      <h2>Scope Selection <span class="opt" style="text-transform:none;font-weight:400;">(check a standard scope, edit its text &amp; price, then Save — it becomes a “Trade - Scope” line item and a Scope Details block)</span></h2>
+      <h2>Scope Selection</h2>
+      <p class="sec-help">Check a scope, edit text &amp; price, Save — adds a line item + Scope Details.</p>
       <div id="scope-groups" class="hint">Loading standard scopes…</div>
       <div id="scope-admin-wrap" style="display:none;margin-top:14px;border-top:1px dashed var(--line);padding-top:12px;">
         <button type="button" class="btn secondary small" id="scope-admin-toggle">⚙︎ Manage standard scopes (admin)</button>
@@ -281,38 +291,41 @@
     </div>
 
     <div class="card">
-      <h2>Line items <span class="opt" style="text-transform:none;font-weight:400;">(scopes you saved above appear here; add any extra lines manually — check “Optional add-on” to move a line to the optional section)</span></h2>
+      <h2>Line items</h2>
+      <p class="sec-help">Saved scopes appear here; add extras manually. Optional add-on moves a line to options.</p>
       <div id="line-items"></div>
       <button type="button" class="btn secondary small" id="add-line">+ Add line item</button>
     </div>
 
-    <div class="card">
-      <h2>Special notes <span class="opt" style="text-transform:none;font-weight:400;">(per-job overrides — one per line; these supersede standard deliverables)</span></h2>
-      <textarea name="special_notes" placeholder="Use 5/8&quot; drywall throughout (supersedes our standard 1/2&quot;).&#10;All fire-rated assemblies per the life safety plan."></textarea>
-    </div>
-
-    <div class="card">
-      <h2>Notes <span class="opt" style="text-transform:none;font-weight:400;">(optional — printed near the bottom of the estimate)</span></h2>
-      <textarea name="notes" placeholder="Lead time on ACT grid is approximately 3 weeks from approved submittals."></textarea>
-    </div>
-
-    <div class="card">
-      <div class="actions">
-        <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
-        <button type="button" class="btn secondary small" id="btn-new-estimate">Start new</button>
-        <span class="spinner" id="spinner">⏳ Working…</span>
-        <span id="save-state" class="save-state"></span>
-        <div class="totals">
-          Main scope <span id="t-main">$0.00</span> &nbsp;·&nbsp; Options <span id="t-options">$0.00</span><br />
-          <strong>With options <span id="t-withopt">$0.00</span></strong>
-        </div>
+    <details class="soft-fold">
+      <summary>Special notes</summary>
+      <div class="fold-body">
+        <textarea name="special_notes" placeholder="Use 5/8&quot; drywall throughout (supersedes our standard 1/2&quot;).&#10;All fire-rated assemblies per the life safety plan."></textarea>
       </div>
-      <div class="hint" style="margin-top:10px;">
-        <strong>Generate Preview</strong> renders the estimate PDF only.
-        <strong>Accept</strong> creates a draft in <code>hello@</code> with the PDF attached (and posts to #estimates). Nothing is emailed until someone reviews the draft and clicks Send.
+    </details>
+
+    <details class="soft-fold">
+      <summary>Notes</summary>
+      <div class="fold-body">
+        <textarea name="notes" placeholder="Lead time on ACT grid is approximately 3 weeks from approved submittals."></textarea>
+      </div>
+    </details>
+
+    <div class="gvc-savebar" id="actions-bar">
+      <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
+      <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
+      <button type="button" class="btn secondary small" id="btn-new-estimate">Start new</button>
+      <span class="spinner" id="spinner">⏳ Working…</span>
+      <span id="save-state" class="save-state"></span>
+      <div class="totals">
+        Main scope <span id="t-main">$0.00</span> &nbsp;·&nbsp; Options <span id="t-options">$0.00</span><br />
+        <strong>With options <span id="t-withopt">$0.00</span></strong>
       </div>
     </div>
+    <p class="hint" style="margin-top:8px;">
+      <strong>Generate Preview</strong> renders the PDF only.
+      <strong>Accept</strong> drafts in <code>hello@</code> (posts to #bids). Nothing emails until someone clicks Send.
+    </p>
   </form>
 
   <div class="card" id="preview-card">

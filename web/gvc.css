@@ -373,9 +373,77 @@ a:hover{ color:var(--gvc-green-dark); }
   position:sticky; bottom:0; z-index:5; background:var(--gvc-surface);
   border-top:var(--gvc-rule) solid var(--gvc-gold); box-shadow:0 -6px 18px rgba(28,25,23,.1);
   padding:var(--gvc-space-3) var(--gvc-space-4); display:flex; align-items:center; gap:var(--gvc-space-3);
+  flex-wrap:wrap;
 }
 .gvc-savebar-count{ font-size:var(--gvc-fs-small); color:var(--gvc-ink-soft); }
 .gvc-savebar-count b{ font-variant-numeric:tabular-nums; }
+
+/* ---------- money-form density (Estimate / Invoice / Change Order) ----------
+   Opt-in: put class "gvc-moneyform" on <main class="gvc-shell">. Keeps legacy
+   .card/.btn markup (JS depends on those) but tightens mobile rhythm and
+   gives a sticky commitment bar. */
+.gvc-moneyform .gvc-stack{ gap:var(--gvc-space-3); }
+.gvc-moneyform .card > h2{
+  background:var(--gvc-tint-green);
+  color:var(--gvc-green-dark);
+  border-bottom-color:var(--gvc-line);
+}
+.gvc-moneyform .card > h2 .opt{ color:var(--gvc-muted); font-size:var(--gvc-fs-caption); }
+.gvc-moneyform .sec-help{
+  margin:0 18px 12px; font-size:var(--gvc-fs-caption); color:var(--gvc-muted); line-height:1.4;
+}
+.gvc-moneyform details.soft-fold{
+  border:1px solid var(--gvc-line); border-radius:var(--gvc-r-lg);
+  background:var(--gvc-surface); overflow:hidden;
+}
+.gvc-moneyform details.soft-fold > summary{
+  list-style:none; cursor:pointer; padding:12px 14px; font-size:var(--gvc-fs-small);
+  font-weight:700; color:var(--gvc-green-dark); background:var(--gvc-bg);
+  border-bottom:1px solid transparent;
+}
+.gvc-moneyform details.soft-fold[open] > summary{ border-bottom-color:var(--gvc-line-soft); }
+.gvc-moneyform details.soft-fold > summary::-webkit-details-marker{ display:none; }
+.gvc-moneyform details.soft-fold > summary::after{
+  content:"▸"; float:right; color:var(--gvc-muted); font-weight:400;
+}
+.gvc-moneyform details.soft-fold[open] > summary::after{ content:"▾"; }
+.gvc-moneyform details.soft-fold > .fold-body{ padding:12px 14px 14px; }
+.gvc-moneyform .gvc-savebar .btn.gold{
+  flex:1 1 160px; min-height:var(--gvc-ctl-h-lg); font-size:var(--gvc-fs-small);
+}
+.gvc-moneyform .gvc-savebar .totals{
+  width:100%; margin:0; text-align:left; order:9;
+  padding-top:4px; border-top:1px dashed var(--gvc-line-soft);
+}
+@media (min-width:721px){
+  .gvc-moneyform .gvc-savebar .totals{
+    width:auto; margin-left:auto; text-align:right; order:0;
+    padding-top:0; border-top:0;
+  }
+  .gvc-moneyform .gvc-savebar .btn.gold{ flex:0 0 auto; }
+}
+@media (max-width:640px){
+  .gvc-shell.gvc-moneyform{ padding:16px 14px 120px; }
+  .gvc-moneyform .gvc-page-hd{ margin-bottom:var(--gvc-space-3); }
+  .gvc-moneyform .gvc-sub{ font-size:var(--gvc-fs-small); }
+  .gvc-moneyform .card > h2{ padding:10px 12px; }
+  .gvc-moneyform .card > :not(h2){ margin-left:12px; margin-right:12px; }
+  .gvc-moneyform .card > :not(h2):first-of-type{ margin-top:12px; }
+  .gvc-moneyform .card > :last-child{ margin-bottom:12px; }
+  .gvc-moneyform .card .actions,
+  .gvc-moneyform .card .grid{ margin:12px; }
+  .gvc-moneyform .card .hint,
+  .gvc-moneyform .sec-help{ margin-left:12px; margin-right:12px; }
+  .gvc-moneyform .grid{ gap:var(--gvc-space-3); }
+  /* Short pairs stay 2-up on phones when marked. */
+  .gvc-moneyform .grid.grid-pair{ grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .gvc-moneyform .line-item{
+    border:0; border-bottom:1px solid var(--gvc-line); border-radius:0;
+    padding:10px 0; margin-bottom:0; background:transparent;
+  }
+  .gvc-moneyform .line-item:last-child{ border-bottom:0; }
+  .gvc-moneyform iframe{ height:520px; }
+}
 .gvc-empty{ border:1px dashed var(--gvc-line-strong); border-radius:var(--gvc-r-lg); background:var(--gvc-surface); padding:var(--gvc-space-7) var(--gvc-space-5); text-align:center; }
 .gvc-empty p{ color:var(--gvc-muted); margin:var(--gvc-space-2) auto var(--gvc-space-4); font-size:var(--gvc-fs-small); max-width:44ch; }
 .gvc-skel{ background:linear-gradient(90deg,var(--gvc-line-soft) 25%,#F7F3EA 37%,var(--gvc-line-soft) 63%); background-size:400% 100%; animation:gvc-shimmer 1.4s ease infinite; border-radius:var(--gvc-r-sm); height:12px; }
