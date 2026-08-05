@@ -71,6 +71,10 @@ And note: `load_dotenv()` with no args fails on Python 3.14 from heredocs (frame
 
 These rules are deliberate, not accidental:
 
+0. **Morning Brief never posts to Slack `#operations`.** Field brief, huddle
+   summary, route sheet, prep status — always a private side chat / DM, never a
+   channel broadcast. Jordan 2026-08-05. Do not "temporarily" post there for
+   review. See `docs/MORNING_BRIEF_BUILD_SPEC.md` §Slack.
 1. **Never call `stripe.Invoice.send_invoice()`**. Stripe never emails the customer. The Gmail draft is the only customer-facing send, and Andrea triggers it manually.
 2. **Never auto-send Gmail**. `gmail.py` creates drafts only. The locked architecture lives or dies by Andrea's review step.
 3. **Never modify the `gvc_inv_v3_` idempotency prefix** without bumping it (`v3_` → `v4_`) and documenting the reason in [docs/payment-terms.md](docs/payment-terms.md). The bump exists to make corrected invoices not collide with voided ones.
@@ -169,4 +173,6 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   minutes** in production or cold opens will eventually miss after
   `GVC_MONDAY_SNAPSHOT_MAX_AGE` (default 2h). Hub also fires
   `POST /ui/api/monday/warm` on load.
+- **Morning Brief Slack:** never post Morning Brief / field brief / huddle
+  content to `#operations`. Side chat / DM only (Jordan 2026-08-05).
 

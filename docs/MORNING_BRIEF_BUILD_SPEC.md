@@ -159,6 +159,12 @@ Important Projects-board fields include:
 
 ### Slack
 
+- Use direct messages / private side chats only for Morning Brief delivery.
+- **HARD RULE (Jordan 2026-08-05): never post Morning Brief, field brief, huddle
+  summary, route sheet, or prep status into Slack `#operations` (or any other
+  public/shared channel).** That content is always a side chat / DM — never a
+  channel broadcast. Older handoff notes that floated `#operations` posting are
+  obsolete; do not implement them.
 - Use direct messages, never public employee-performance warnings.
 - Notify the employee when the brief is ready, an Action Request is assigned, acknowledgment is due, or a request becomes overdue.
 - Notify the General Manager of operational escalations.

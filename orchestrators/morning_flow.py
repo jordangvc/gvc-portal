@@ -2,6 +2,11 @@
 Morning Brief flow — employee brief + GM huddle + Owner Pulse.
 =========================================================================
 docs/MORNING_BRIEF_BUILD_SPEC.md
+
+HARD RULE (Jordan 2026-08-05): never post Morning Brief / field brief /
+huddle / route / prep content to Slack ``#operations``. Delivery is always
+a private side chat or DM — never a channel broadcast. Do not add a
+channel-post path here "for review" or "temporarily."
 """
 from __future__ import annotations
 
