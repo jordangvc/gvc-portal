@@ -15,7 +15,12 @@ from subsystems.estimate.plan_folder import (  # noqa: E402
     normalize_plan_folder_number,
     upload_pdf_to_jake_plan_folder,
 )
-from adapters.monday.estimate import build_prefill, COL_PLAN_FOLDER  # noqa: E402
+from adapters.monday.estimate import (  # noqa: E402
+    build_prefill,
+    COL_PLAN_FOLDER,
+    COL_ESTIMATE_DATE,
+    COL_EXPIRY_DATE,
+)
 
 
 # ---------------------------------------------------------------- normalize
@@ -43,6 +48,27 @@ def test_build_prefill_skips_blank_plan_folder():
     cols = {COL_PLAN_FOLDER: {"text": "", "display": "", "linked": []}}
     pf = build_prefill(1, "Job", cols)
     assert "plan_folder_number" not in pf["job"]
+
+
+def test_build_prefill_includes_estimate_and_expiry_dates():
+    cols = {
+        COL_ESTIMATE_DATE: {"text": "2026-07-15", "display": "", "linked": []},
+        COL_EXPIRY_DATE: {"text": "2026-08-14T00:00:00Z", "display": "", "linked": []},
+    }
+    pf = build_prefill(42, "9761 Gertrude | Acme", cols)
+    assert pf["estimate"]["date"] == "2026-07-15"
+    assert pf["estimate"]["expiry_date"] == "2026-08-14"
+
+
+def test_build_prefill_omits_blank_dates():
+    cols = {
+        COL_ESTIMATE_DATE: {"text": "", "display": "", "linked": []},
+        COL_EXPIRY_DATE: {"text": "  ", "display": "", "linked": []},
+    }
+    pf = build_prefill(1, "Job", cols)
+    assert pf["estimate"] == {}
+    assert "date" not in pf["estimate"]
+    assert "expiry_date" not in pf["estimate"]
 
 
 # ---------------------------------------------------------------- upload helper

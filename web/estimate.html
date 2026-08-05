@@ -211,6 +211,9 @@
     <div class="card">
       <h2>Prepared For (Client)</h2>
       <div class="grid">
+        <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports name, contact, email, phone)</span></label>
+          <input name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
+          <div id="customer-results" class="gvc-results" style="display:none;"></div></div>
         <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
         <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
@@ -1195,6 +1198,9 @@ async function loadBid(ref) {
   lastPreviewOk = false; $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
   applyData(pf);
+  // Bid Board only stores the salesperson's name — fill email/phone from the
+  // already-loaded salespeople roster when they match (case-insensitive).
+  fillSalespersonContactFromRoster();
   const m = pf._matched || {};
   $("#dup-guard").style.display = "none";
   if (rev) {
@@ -1333,6 +1339,18 @@ $("#btn-new-estimate").addEventListener("click", () => {
 });
 // ----- Salesperson (Bid contact) dropdown -----
 let SALESPEOPLE = [];
+function fillSalespersonContactFromRoster() {
+  const name = (($("#estimate-form").elements["pb_name"] || {}).value || "").trim();
+  if (!name) return;
+  const needEmail = !(($("#estimate-form").elements["pb_email"] || {}).value || "").trim();
+  const needPhone = !(($("#estimate-form").elements["pb_phone"] || {}).value || "").trim();
+  if (!needEmail && !needPhone) return;
+  const low = name.toLowerCase();
+  const match = SALESPEOPLE.find((p) => (p.name || "").trim().toLowerCase() === low);
+  if (!match) return;
+  if (needEmail && match.email) setField("pb_email", match.email);
+  if (needPhone && match.phone) setField("pb_phone", match.phone);
+}
 async function loadSalespeople() {
   const sel = $("#salesperson-select");
   let r;
@@ -1347,6 +1365,8 @@ async function loadSalespeople() {
     o.textContent = p.name ? `${p.name}${p.email ? " (" + p.email + ")" : ""}` : p.email;
     sel.appendChild(o);
   });
+  // Cover the race where a bid deep-link filled pb_name before the roster arrived.
+  fillSalespersonContactFromRoster();
 }
 $("#salesperson-select").addEventListener("change", (e) => {
   const p = SALESPEOPLE[Number(e.target.value)];
@@ -1355,6 +1375,49 @@ $("#salesperson-select").addEventListener("change", (e) => {
   lastPreviewOk = false; $("#btn-accept").disabled = true;
   scheduleAutosave();
 });
+
+/* ---- Customer search (Customer & Vendor Directory) ---- */
+let custTimer = null;
+function customerSearch() {
+  const q = ($("#estimate-form").elements["customer_search"].value || "").trim();
+  const box = $("#customer-results");
+  clearTimeout(custTimer);
+  if (q.length < 2) { box.style.display = "none"; box.innerHTML = ""; return; }
+  custTimer = setTimeout(async () => {
+    try {
+      const r = await fetch("/ui/api/estimate/customer-search?q=" + encodeURIComponent(q));
+      const body = await r.json();
+      if (!r.ok || !body.ok) { box.style.display = "none"; box.innerHTML = ""; return; }
+      const items = body.customers || [];
+      box.innerHTML = "";
+      if (!items.length) {
+        box.innerHTML = "<div style='padding:8px;color:#777;'>No matches</div>";
+        box.style.display = "block"; return;
+      }
+      items.forEach((c) => {
+        const d = document.createElement("div");
+        d.style.cssText = "padding:8px 10px;cursor:pointer;border-bottom:1px solid #eee;";
+        d.textContent = c.name + (c.email ? "  ·  " + c.email : "") + (c.type ? "  ·  " + c.type : "");
+        d.addEventListener("mouseenter", () => d.style.background = "#f3f3f3");
+        d.addEventListener("mouseleave", () => d.style.background = "");
+        d.addEventListener("click", () => {
+          setField("client_name", c.name || "");
+          if (c.contact_name) setField("contact_name", c.contact_name);
+          if (c.email) setField("client_emails", c.email);
+          if (c.phone) setField("client_phone", c.phone);
+          if ($("#client_no_email")) { $("#client_no_email").checked = false; syncNoEmailUi(); }
+          setField("customer_search", c.name || "");
+          box.style.display = "none"; box.innerHTML = "";
+          lastPreviewOk = false; $("#btn-accept").disabled = true;
+          scheduleAutosave();
+        });
+        box.appendChild(d);
+      });
+      box.style.display = "block";
+    } catch (e) { box.style.display = "none"; box.innerHTML = ""; }
+  }, 350);
+}
+$("[name=customer_search]").addEventListener("input", customerSearch);
 
 $("#scope-admin-toggle").addEventListener("click", openScopeAdmin);
 

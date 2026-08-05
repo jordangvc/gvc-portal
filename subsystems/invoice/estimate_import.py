@@ -4,8 +4,8 @@ Estimate -> Invoice dollar import — pure helpers.
 Confirmed gap (see adapters.monday.client.build_invoice_prefill): the invoice
 lookup prefills WHO/WHERE/Project # from the Projects board on purpose — the
 office keys dollars from the actual billing materials, not the project
-record. This module gives the invoice form an OPT-IN shortcut back to the
-dollars that were already quoted for the SAME project:
+record. This module maps the dollars that were already quoted for the SAME
+project so the invoice form can use them:
 
   * the rounded total Monday shows on the linked Bid Board item (coarse,
     always available when the project has a linked opportunity); and
@@ -13,7 +13,8 @@ dollars that were already quoted for the SAME project:
     by subsystems.estimate.revision at finalize) is reachable on Drive, the
     FULL line items — the same data an estimate revision would prefill.
 
-Everything here is pure (no I/O) so it unit-tests without Drive/Monday. The
+The invoice lookup MAY auto-apply these dollars when the form has no lines
+yet (UI-side); the helpers here stay pure and never decide to apply. The
 service layer (app.service.ui_invoice_lookup) does the Monday read + Drive
 lookup and hands the raw values to build_estimate_import().
 """
@@ -77,13 +78,19 @@ def map_line_items(
         except (TypeError, ValueError):
             quantity = 1.0
         description = (li.get("description") or li.get("name") or "").strip()
-        out.append({
+        row = {
             "description": description,
             "amount": round(unit_price * quantity, 2),
             "quantity": quantity,
             "unit_price": unit_price,
             "optional": bool(li.get("optional")),
-        })
+        }
+        detail = li.get("detail")
+        if detail is not None:
+            detail_s = str(detail).strip()
+            if detail_s:
+                row["detail"] = detail_s
+        out.append(row)
     return out
 
 

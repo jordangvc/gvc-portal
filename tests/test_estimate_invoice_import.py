@@ -88,6 +88,19 @@ def test_map_line_items_uses_name_fallback_for_description():
     assert out[0]["description"] == "Fallback name"
 
 
+def test_map_line_items_includes_detail_when_present():
+    out = ei.map_line_items([_est_line(detail="Kitchen, dining nook")])
+    assert out[0]["detail"] == "Kitchen, dining nook"
+    assert out[0]["description"] == "Drywall"
+    assert out[0]["amount"] == 200.0
+
+
+def test_map_line_items_omits_blank_detail():
+    out = ei.map_line_items([_est_line(detail="  "), _est_line()])
+    assert "detail" not in out[0]
+    assert "detail" not in out[1]
+
+
 # ---------------------------------------------------------------------------
 # build_estimate_import
 # ---------------------------------------------------------------------------

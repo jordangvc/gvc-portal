@@ -185,12 +185,21 @@ def _first(*vals: Optional[str]) -> str:
     return ""
 
 
+def _date_yyyy_mm_dd(raw: str) -> str:
+    """Normalize Monday date-column text to YYYY-MM-DD when possible."""
+    t = (raw or "").strip()
+    if len(t) >= 10 and t[4] == "-" and t[7] == "-":
+        return t[:10]
+    return t
+
+
 def build_prefill(item_id: int, item_name: str, cols: dict) -> dict:
     """
     PURE: map Bid Board column values -> the estimate-form prefill shape
     (the same {prepared_by, client, job, estimate} applyData() consumes).
-    Only fields stored on the bid are filled; line items + estimate
-    dates are intentionally left for the estimator (not stored on the deal).
+    Fields stored on the bid are filled, including Estimate Date (date5) and
+    Expiry (date1) when present. Line items / pricing are not on the bid —
+    those stay for the estimator (or a revision sidecar load).
 
     `cols` is the {col_id: {"text","display","linked"}} map from _read_columns_full.
     """
@@ -242,7 +251,15 @@ def build_prefill(item_id: int, item_name: str, cols: dict) -> dict:
         # people column text can be "First Last, Other Name" — take the first.
         prepared_by["name"] = sales.split(",")[0].strip()
 
-    prefill = {"client": client, "job": job, "estimate": {}}
+    estimate: dict = {}
+    est_date = _date_yyyy_mm_dd(_first(c(COL_ESTIMATE_DATE).get("text")))
+    if est_date:
+        estimate["date"] = est_date
+    expiry = _date_yyyy_mm_dd(_first(c(COL_EXPIRY_DATE).get("text")))
+    if expiry:
+        estimate["expiry_date"] = expiry
+
+    prefill = {"client": client, "job": job, "estimate": estimate}
     if prepared_by:
         prefill["prepared_by"] = prepared_by
     return prefill
@@ -267,7 +284,8 @@ def lookup_bid(mc, item_id: int) -> dict:
     """
     col_ids = [COL_CUSTOMER_REL, COL_EMAIL_MIRROR, COL_CONTACT_MIRROR, COL_PHONE_MIRROR,
                COL_LOCATION, COL_SCOPE, COL_PROJECT_TYPE, COL_SALES_LEAD,
-               COL_ESTIMATE_NUMBER, COL_PLAN_FOLDER]
+               COL_ESTIMATE_NUMBER, COL_PLAN_FOLDER,
+               COL_ESTIMATE_DATE, COL_EXPIRY_DATE]
     item_name, cols = _read_columns_full(mc, item_id, col_ids)
     if not item_name and not cols:
         raise ValueError(f"No Bid Board item found for id {item_id}.")
