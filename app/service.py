@@ -3136,6 +3136,72 @@ def ui_jobcheck_save(item_id: int, req: JobCheckSaveRequest, request: Request) -
         )
 
 
+class JobCheckLinkProjectRequest(BaseModel):
+    projects_item_id: int = Field(
+        ..., description="Projects-board item id to link via link_to_projects.",
+    )
+
+
+@app.get("/ui/api/jobcheck/job/{item_id}/suggest-links")
+def ui_jobcheck_suggest_links(item_id: int, request: Request,
+                              limit: int = 8) -> dict:
+    """Heuristic Ops→Projects link suggestions (read-only — never writes)."""
+    require_feature(request, "jobcheck")
+    try:
+        out = jobcheck_flow.suggest_project_links(item_id, limit=limit)
+        if not out.get("ok") and out.get("error") == "ITEM_NOT_FOUND":
+            raise HTTPException(status_code=404, detail=out)
+        return out
+    except HTTPException:
+        raise
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] suggest-links error: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
+@app.post("/ui/api/jobcheck/job/{item_id}/link-project")
+def ui_jobcheck_link_project(item_id: int, req: JobCheckLinkProjectRequest,
+                             request: Request) -> dict:
+    """Fill-if-empty link Operations link_to_projects → one Projects item."""
+    actor = require_feature(request, "jobcheck")
+    if not req.projects_item_id:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "INVALID_INPUT",
+                    "detail": "projects_item_id is required.",
+                    "advice": "Pick a suggested match or paste a Projects item id."},
+        )
+    try:
+        return jobcheck_flow.link_project(item_id, req.projects_item_id, actor)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin — MONDAY_API_TOKEN isn't set on the service."},
+        )
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobcheck] link-project error: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+
+
 class JobCheckUpdateRequest(BaseModel):
     text: str = Field(..., description="Monday update body to post on the Ops item.")
 
