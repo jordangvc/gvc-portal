@@ -83,7 +83,7 @@ of writing it has uncommitted changes in `app/service.py` and `web/fieldguide.ht
 | The gate | **Two-party.** Field completeness gates the *send*; **ops acceptance gates the job**. Monday items are created ONLY in `accept()`. |
 | Self-acceptance | Refused — the sender can't accept their own packet (admins excepted, and logged) |
 | "Silence is acceptance" | **Deleted.** It contradicted "no signature, no crew". |
-| Job naming | **Pipe:** `[Street Number Name] | [Builder]`. Not dashes. |
+| Job naming | **Pipe:** `[Street Number Name], [City], [ST] [ZIP] | [Builder]`. City/state/ZIP required (Jordan 2026-08-05). Not dashes. |
 | Output | Generated PDF filed to Drive. **No handwriting anywhere** — this is a hard requirement from Jordan. |
 | History | Not backfilled. "Leave history alone." |
 
@@ -147,7 +147,8 @@ board sweep found ~22 of the first 30 accepted bids with a Projects link).
 
 Two things already confirmed by unit check, so don't re-verify them:
 - `naming.to_standard()` converts that bid name to
-  **`9761 Gertrude | Jent Construction | Bryant Residence`** (3 parts, valid).
+  **`9761 Gertrude Lane, Cincinnati, OH 45231 | Jent Construction | Bryant Residence`**
+  (city/state/ZIP required — Jordan 2026-08-05).
 - `naming.folder_match_score()` against Jake's real folder
   `331 - Jent - Bryant Res - Sent` = **1.00**, well over the 0.6 threshold — so the
   scope review *should* be found, provided the service account can read the folder.

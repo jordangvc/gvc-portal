@@ -279,33 +279,22 @@ input job for you. We don't want an input job for you."
   • templates/job_handoff.html.j2 += "Open questions — answer before the crew mobilizes" (gold-ruled,
     its own visual weight) + Allowances section. web/jobstart.html += per-field source tags and a
     "Prefilled from {doc} — {trades} · N open questions · N exclusions" banner.
-✅ NAMING — DECIDED 2026-07-29. Jordan: "We prefer the -Pipe- | it looks so much better." The standard
-is Jake's, from his Estimating Pipelines Reference: **`[Street Name/Number] | [Builder/Client]`**,
-pipe not dash, no city/state/ZIP/job-type in the title (those live in fields), prefixes CO_/STU-/PL-/
-WAR- preserved. 2 or 3 parts both valid (his own worked example keeps a client AND a builder).
-BUILT: **subsystems/jobstart/naming.py** — `to_standard()` converts a legacy bid name to the standard
-and, per Jake's own rule, **never invents a missing builder** — it returns ok=False + a note and the
-UI asks (a linked Customer from the bid may supply it, since that's a recorded fact not a guess).
-`simplify_street()` drops street suffix / city / state / ZIP ("9761 Gertrude Lane, Cincinnati OH 45231"
-→ "9761 Gertrude"); peels a trailing comma-less city ("937 Madison Ridge Lawrenceburg" → "937 Madison
-Ridge") and a descriptor stuck on without a clean separator ("Steele Properties -New House" →
-"Steele Properties"). web/jobstart.html shows the standard, what it renamed, and warns on a missing `|`.
-🛡 **THE DUPLICATE SAFEGUARD — the load-bearing part of this change.** Adopt-or-create finds existing
-Projects/Ops items BY NAME, and every item predating today uses an older convention. Exact-match-only
-would have missed them and created duplicates — exactly the failure Jordan asked to be guarded against
-in the 10:43 meeting. So `adapters/monday/jobstart.find_item_by_name` now probes Monday on the single
-most distinctive token (the street number) and scores candidates via `naming.best_match`: exact always
-wins, else highest Jaccard-over-distinctive-tokens above MATCH_THRESHOLD 0.5 (+0.35 boost when both
-names share a street number), and an AMBIGUOUS top-2 returns None — adopting the wrong job is worse
-than creating a new item. Asserted: legacy↔pipe pairs score 1.00 and match; different jobs for the
-same builder (21435 Abbys/Greg Gavin vs 23946 Grubbs/Greg Cross; 12333 vs 12445 Pollard) score 0.20–0.33
-and correctly do NOT match.
-⏸ DEFERRED BY JORDAN (2026-07-29, "Dont spend those tokens to fix the pipe. DO it one day we have extra
-before a reset"): the three boards' own `item_terminology` strings still describe the OLD conventions —
-Bid Board "Location_opportunity name -builder_type", Projects "Location_project name -builder_type",
-Operations "Address - customer name - project type". Cosmetic only, because matching is token-based and
-nothing reads those strings — but they teach a new hire the wrong format. Low-priority cleanup, do it
-on a spare-budget day. DO NOT re-open the decision itself: pipe won.
+✅ NAMING — DECIDED 2026-07-29 (pipe), **UPDATED 2026-08-05 (city/state/ZIP required)**.
+Jordan: pipe stays; city/state/ZIP MUST be in the title ("we work in three different states, and
+many of them have the same fucking road names"). Job type still stays out of the title.
+Standard: **`[Street Number Name], [City], [ST] [ZIP] | [Builder/Client]`**
+Example: `9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek`. Prefixes CO_/STU-/PL-/WAR-
+preserved. 2 or 3 parts both valid (client AND builder).
+BUILT: **subsystems/jobstart/naming.py** — `to_standard()` / `compose_job_name()` convert a legacy
+bid name (or estimate location+client) to the standard and **never invent a missing builder or
+city** — ok=False + note, UI asks. `location_hint` (Monday `location5`) may supply city/state/ZIP
+as a recorded fact. Matching tokens still IGNORE geography so short legacy names
+(`9195 Silva | Willow Creek`) adopt the same Monday item as the new city-bearing form.
+Write paths routed through naming: Job Start suggest, Bid Board `_item_label`, estimate + CO
+Drive `project_label`. web/jobstart.html + JOB-START-MANUAL show the new example.
+🛡 **THE DUPLICATE SAFEGUARD** still stands — `best_match` / street-number boost / ambiguous→None.
+⏸ DEFERRED: Monday boards' own `item_terminology` strings still describe OLD conventions — cosmetic
+only. Pipe + city/state/ZIP is the decided standard going forward.
 VERIFIED (part 2): py_compile clean; `import app.service` OK (72 routes, 8 jobstart); jobstart.html JS
 `node --check` clean; parser asserted against the real KPMG doc (contractor/contact/project-type/
 trades/3 questions/6 exclusions, FRP+Cement Board correctly excluded, clarifications never leaking

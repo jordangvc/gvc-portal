@@ -85,17 +85,20 @@
 
   <div class="card">
     <h2>Job names — the standard</h2>
-    <p>One format, everywhere — Monday, Drive, estimates, invoices, photos:</p>
-    <p><code>Street Number Name | Builder</code></p>
+    <p>One format, everywhere — Monday, Drive, estimates, invoices, CRM, photos:</p>
+    <p><code>Street Number Name, City, ST ZIP | Builder</code></p>
     <table>
       <tr><th>Right</th><th>Wrong</th></tr>
-      <tr><td><code>9195 Silva | Willow Creek</code></td>
+      <tr><td><code>9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek</code></td>
+          <td><code>9195 Silva | Willow Creek</code> (missing city/state/ZIP)</td></tr>
+      <tr><td><code>3776 Susanna, Lawrenceburg, IN 47025 | Martin</code></td>
+          <td><code>3776 Susanna – Martin</code> (dash, no city)</td></tr>
+      <tr><td><code>CO_9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek</code></td>
           <td><code>9195 Silva Drive, Cincinnati OH 45241 - Willow Creek - New House</code></td></tr>
-      <tr><td><code>3776 Susanna | Martin</code></td><td><code>3776 Susanna – Martin</code></td></tr>
-      <tr><td><code>CO_9195 Silva | Willow Creek</code></td><td><code>Change Order 9195 Silva</code></td></tr>
     </table>
-    <p style="margin-top:12px;">Pipe character, not a dash. No city, state, ZIP or job type in
-      the name — those all live in fields on the record. Prefixes we already use stay:
+    <p style="margin-top:12px;">Pipe character, not a dash. <b>City, state and ZIP belong in the
+      name</b> — we work in three states and many share the same road names. Job type
+      ("New House", "Remodel") still stays in fields on the record. Prefixes we already use stay:
       <code>CO_</code>, <code>STU-</code>, <code>PL-</code>, <code>WAR-</code>.</p>
     <div class="note"><b>Job Start renames it for you.</b> It converts the bid's messy name to
       the standard and shows you what it changed. If it can't work out the builder it will
