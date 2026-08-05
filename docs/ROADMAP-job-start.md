@@ -31,15 +31,10 @@ degrades to manual entry — which Jordan has explicitly rejected. That's why it
 this high despite being a two-minute click.
 
 ### 3. Open bids + accept the bid in place
-**Jordan's top feature request. ~half a session.**
-
-Spec in §6 of the handoff doc. Job Start currently can't see a job until someone has
-gone to Monday and flipped the stage, which is backwards for the tool Sales is meant
-to live in.
-
-⚠ Before writing `deal_stage`, check which automations key off it. The estimate flow
-deliberately does NOT auto-advance stage for exactly this reason. Decide with Jordan
-whether marking-accepted is an explicit tap or implicit on send.
+**✅ SHIPPED on master.** Picker uses `fetch_bids()` (open + accepted; dead stages
+filtered). Sending to Ops calls `mark_bid_accepted()` — Stage → Accepted, group →
+Won Deals, `date6` fill-if-empty. Implicit-on-send was the locked choice. UI shows
+`will_mark_accepted` and renames the send button for open bids.
 
 ### 4. Make the GC confirmation date truthful
 **✅ SHIPPED on master.** `email_scope_to_gc` no longer stamps `gc_confirmed_on` at
@@ -48,9 +43,8 @@ sweeps Job Start GC confirmations the same way it does invoices/estimates: searc
 Gmail `in:sent` for the drafted subject, then `stamp_gc_confirmed()` writes the real
 send date (fill-if-empty). Cloud Scheduler `gvc-sent-watch` already runs every 10 min.
 
-Related follow-up in the same spirit (truthful Bid Board dates): stamp Bid Board
-`date6` Accepted Date when Sales marks a bid Accepted from Job Start — the legacy
-automation never wrote it, and ops-accept day is the wrong moment.
+Related: Bid Board `date6` Accepted Date is also stamped on Sales mark-accepted
+(fill-if-empty) — historical blanks left alone.
 
 ### 5. Settle which Bid Board column links Operations
 **~2 min decision, then one env var.**

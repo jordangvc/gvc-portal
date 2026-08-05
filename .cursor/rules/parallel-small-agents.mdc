@@ -1,0 +1,18 @@
+---
+description: Prefer parallel small agents for multi-part work
+alwaysApply: true
+---
+
+# Parallel small agents (standing preference)
+
+When the user says continue / what's next / fix several things / or the work
+naturally splits:
+
+1. **Break the work into small independent pieces** before coding.
+2. **Run multiple background/subagents in parallel** for research and
+   implementation when it saves wall-clock time or tokens.
+3. Keep coordination in the foreground; each worker gets a concrete acceptance
+   criteria and file list — do not over-split tiny one-file edits.
+4. Do **not** wait for the user to restate this preference in every repo or chat.
+
+This matches the user's standing Multitask Mode rule.
