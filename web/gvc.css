@@ -101,12 +101,21 @@
 
   /* --- shape --- */
   --gvc-r-sm:3px; --gvc-r:5px; --gvc-r-lg:8px; --gvc-r-pill:999px; --gvc-rule:2.5px;
+  --gvc-r-md: var(--gvc-r); /* alias used by money pages */
 
   /* --- elevation --- */
   --gvc-shadow-1:0 1px 2px rgba(28,25,23,.06);
   --gvc-shadow-2:0 2px 4px rgba(28,25,23,.07), 0 8px 20px rgba(28,25,23,.07);
   --gvc-shadow-3:0 12px 32px rgba(28,25,23,.16);
-  --gvc-focus:0 0 0 3px rgba(150,118,59,.32);
+  --gvc-shadow-sm: var(--gvc-shadow-1);
+  /* Stronger ring so focused fields read clearly on phones (was too subtle). */
+  --gvc-focus:0 0 0 3px rgba(35,83,57,.38);
+  --gvc-focus-gold:0 0 0 3px rgba(150,118,59,.40);
+
+  /* --- scrollable result lists (~5 rows for dropdowns; panel for pickers) --- */
+  --gvc-list-row-h: 44px;
+  --gvc-list-max-h: calc(var(--gvc-list-row-h) * 5 + 4px);
+  --gvc-list-panel-max-h: min(46vh, calc(var(--gvc-list-row-h) * 8 + 4px));
 
   /* --- controls --- */
   --gvc-ctl-h:40px; --gvc-ctl-h-lg:48px; --gvc-ctl-px:12px; --gvc-row-py:9px;
@@ -388,6 +397,48 @@ a:hover{ color:var(--gvc-green-dark); }
   background:var(--gvc-surface); text-decoration:none; color:var(--gvc-green-dark); font-size:var(--gvc-fs-small); font-weight:600;
 }
 .gvc-linkrow:hover{ background:var(--gvc-tint-green); border-color:var(--gvc-green); color:var(--gvc-green-dark); }
+.gvc-results{
+  max-height: var(--gvc-list-max-h);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  border: 1px solid var(--gvc-line-strong);
+  border-radius: var(--gvc-r);
+  background: var(--gvc-surface);
+  margin-top: 8px;
+}
+/* Main pickers (Job Start bid list, etc.) — taller than a search dropdown. */
+.gvc-results--panel{ max-height: var(--gvc-list-panel-max-h); }
+.gvc-results:empty{ display:none; border:0; margin:0; max-height:none; }
+.gvc-results > .draft-row,
+.gvc-results > .queue-row,
+.gvc-results > .inv-row,
+.gvc-results > .bid-row,
+.gvc-results > .bidbtn,
+.gvc-results > a.gvc-linkrow{
+  margin-bottom: 0;
+  border-radius: 0;
+  border-left: none;
+  border-right: none;
+  border-top: none;
+  min-height: var(--gvc-list-row-h);
+}
+.gvc-results > .listhead{
+  margin: 0;
+  padding: 8px 12px 4px;
+  font-size: var(--gvc-fs-caption);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+  color: var(--gvc-ink-soft);
+  background: var(--gvc-bg);
+  border-bottom: 1px solid var(--gvc-line);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+.gvc-results > :first-child{ border-top: none; }
+.gvc-results > :last-child{ border-bottom: none; }
 .gvc-arrow{ margin-left:auto; color:var(--gvc-muted); }
 .gvc-money{ font-variant-numeric:tabular-nums; font-weight:700; }
 .gvc-total{ display:flex; justify-content:space-between; align-items:baseline; padding:var(--gvc-space-2) 0; font-size:var(--gvc-fs-small); }

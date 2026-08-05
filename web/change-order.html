@@ -39,11 +39,16 @@
   label .opt { font-weight:400; color:var(--gvc-muted); }
   input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
   textarea, select {
-    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line-strong); border-radius:var(--gvc-r-md);
     font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
     min-height:var(--gvc-ctl-h); }
   textarea { resize:vertical; min-height:64px; height:auto; }
-  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):focus,
+  textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--gvc-green);
+    box-shadow: var(--gvc-focus);
+  }
   .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
 
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -146,7 +151,7 @@
         <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
       <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
     </div>
-    <div id="search-results" style="margin-top:10px;"></div>
+    <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
     <div class="full" style="margin-top:12px;"><label>Drive folder URL <span class="opt">(backup — also where the CO PDF is filed)</span></label>
       <input name="drive_folder_url" placeholder="https://drive.google.com/drive/folders/…" />
       <div class="hint">If the Monday lookup fills everything, you can leave this blank — we'll file the CO into the project's Drive folder automatically.</div></div>
@@ -156,7 +161,7 @@
 
   <div class="card" id="drafts-card" style="display:none;">
     <h2>Resume a draft <span class="opt">(autosaved in-progress change orders — yours and your teammates')</span></h2>
-    <div id="drafts-list"></div>
+    <div id="drafts-list" class="gvc-results"></div>
   </div>
 
   <form id="co-form" autocomplete="off">

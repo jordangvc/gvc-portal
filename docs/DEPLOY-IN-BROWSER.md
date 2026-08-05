@@ -49,6 +49,47 @@ Then re-run the paste block above.
 
 ---
 
+## One-time — Stripe `invoice.paid` webhook (online payments → Monday Paid)
+
+Online Stripe pay (customer clicks the hosted-invoice "Pay Now" link) needs
+a webhook pointed at the portal so the Invoices Sent board flips to Paid
+automatically. Get the Cloud Run URL first (Cloud Run console → the
+`gvc-invoice` service → URL at the top), then paste this into **Cloud
+Shell** (same place as the deploy block above):
+
+```bash
+set -euo pipefail
+PROJECT=gvc-invoice-system
+REGION=us-central1
+SERVICE=gvc-invoice
+RUN_URL=$(gcloud run services describe "$SERVICE" --region "$REGION" --project "$PROJECT" --format='value(status.url)')
+
+# 1) Create the Stripe webhook endpoint for invoice.paid only (requires the
+#    Stripe CLI to be logged in — `stripe login` once if this fails).
+stripe webhook_endpoints create \
+  --url "$RUN_URL/v1/webhooks/stripe" \
+  --enabled-events invoice.paid
+
+# 2) Paste the "Signing secret" (whsec_...) printed above:
+read -p "Stripe signing secret (whsec_...): " WHSEC
+
+# 3) Set it on Cloud Run — existing env vars/secrets are untouched.
+gcloud run services update "$SERVICE" \
+  --region "$REGION" \
+  --project "$PROJECT" \
+  --update-env-vars STRIPE_WEBHOOK_SECRET="$WHSEC"
+
+echo "DONE. Send a test invoice.paid event from the Stripe dashboard's webhook page to confirm."
+```
+
+No Stripe CLI in Cloud Shell? Create the endpoint by hand instead:
+Stripe Dashboard → Developers → Webhooks → **Add endpoint** → URL
+`<RUN_URL>/v1/webhooks/stripe` → event `invoice.paid` → copy the signing
+secret it shows you, then just run step 3 (`gcloud run services update ...
+--update-env-vars STRIPE_WEBHOOK_SECRET=whsec_...`) with that value.
+
+---
+
 ## Forever — one button on GitHub (optional)
 
 After the workflow in `.github/workflows/deploy-cloud-run.yml` is merged and

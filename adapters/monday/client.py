@@ -115,6 +115,16 @@ COL_GFOLDER_LINK = "link_mkwr6ef9"          # "GFolder Link" — project Drive f
 # Canonical Project # (text), created 2026-06-19 (text_mm4fvj91). Keys the invoice
 # identifier GVC-<year>-<Project #> and is the portal lookup search key.
 COL_PROJECT_NUMBER = os.environ.get("GVC_MONDAY_COL_PROJECT_NUMBER", "text_mm4fvj91")
+# "Linked Opportunity" -> Bid Board (board_relation, same column monday/co.py
+# reads as P_COL_LINKED_OPPORTUNITY). Used ONLY for the invoice's estimate-$
+# import shortcut (the Bid Board's rounded total) — never for identity/prefill.
+COL_LINKED_OPPORTUNITY = "board_relation_mm40rg52"
+# Bid Board (Opportunity) columns read through the linked-opportunity hop above.
+# Same ids as adapters/monday/co.py's BID_COL_ESTIMATE_NUMBER and
+# adapters/monday/estimate.py's COL_TOTAL_ROUNDED — kept local here so this
+# module doesn't need a cross-adapter import for two column ids.
+BID_COL_ESTIMATE_NUMBER = "numbers18"
+BID_COL_TOTAL_ROUNDED = "number"
 
 # Customers board (1919766765) column IDs (verified 2026-06-19).
 CUST_COL_EMAIL = "contact_email"
@@ -601,21 +611,28 @@ class MondayClient:
         date_str: Optional[str] = None,
         board_id: Optional[int] = None,
         covers: Optional[list[str]] = None,
+        note_line: Optional[str] = None,
     ) -> dict:
         """
-        Mark an 'Invoices Sent' row Paid and append a check note. Writes the
-        Status column (by label "Paid") and appends "Paid by check #<no> on
-        <date>" to the free-text note column on the INVOICES board (not Projects).
-        When one check pays several invoices, pass `covers` (all identifiers on
-        the check) so each row's note records its siblings.
+        Mark an 'Invoices Sent' row Paid and append a note. Writes the Status
+        column (by label "Paid") and appends a note line to the free-text note
+        column on the INVOICES board (not Projects).
+
+        By default the note is "Paid by check #<no> on <date>" (the paid-by-
+        check flow). Pass `note_line` to use a DIFFERENT note instead — e.g.
+        the Stripe-paid webhook flow passes "Paid via Stripe online on
+        <date>" so the note reflects how the money actually came in. When one
+        check pays several invoices, pass `covers` (all identifiers on the
+        check) so each row's note records its siblings (ignored when
+        `note_line` is explicitly set).
 
         Idempotent: if the note line is already present it isn't duplicated, so a
         partial-failure retry is safe. Returns {item_id, status, note_appended}.
         """
         board_id = board_id or INVOICES_SENT_BOARD_ID
-        note_line = f"Paid by check #{check_no or '?'} on {date_str or 'unknown date'}"
-        if covers and len(covers) > 1:
-            note_line += f" (check covers {len(covers)} invoices: {', '.join(covers)})"
+        line = note_line or f"Paid by check #{check_no or '?'} on {date_str or 'unknown date'}"
+        if note_line is None and covers and len(covers) > 1:
+            line += f" (check covers {len(covers)} invoices: {', '.join(covers)})"
 
         existing_note = ""
         try:
@@ -624,8 +641,8 @@ class MondayClient:
         except Exception:  # noqa: BLE001 — note is best-effort; status is the truth
             existing_note = ""
 
-        appended = note_line not in existing_note
-        new_note = (existing_note + ("\n" if existing_note else "") + note_line) if appended else existing_note
+        appended = line not in existing_note
+        new_note = (existing_note + ("\n" if existing_note else "") + line) if appended else existing_note
 
         column_values: dict[str, Any] = {INV_COL_STATUS: {"label": PAID_INVOICE_STATUS_LABEL}}
         if appended:
@@ -830,6 +847,33 @@ class MondayClient:
                 return {"item_id": int(it["id"]), "name": it.get("name") or ""}
         return {"item_id": int(items[0]["id"]), "name": items[0].get("name") or ""}
 
+    def _read_bid_snapshot(self, bid_item_id: int) -> dict:
+        """
+        Read the Estimate # + rounded total off a Bid Board item — the coarse,
+        always-quick half of the invoice's estimate-$ import shortcut (the full
+        line items come from the Drive JSON sidecar instead; see
+        subsystems.invoice.estimate_import + app.service.ui_invoice_lookup).
+        Raises on a hard API error; callers treat this as best-effort.
+        """
+        query = """
+        query ($itemId: [ID!], $cols: [String!]) {
+          items(ids: $itemId) { column_values(ids: $cols) { id text } }
+        }
+        """
+        data = self._query(query, {
+            "itemId": [str(bid_item_id)],
+            "cols": [BID_COL_ESTIMATE_NUMBER, BID_COL_TOTAL_ROUNDED],
+        })
+        items = data.get("items") or []
+        texts = {
+            cv["id"]: (cv.get("text") or "").strip()
+            for cv in (items[0].get("column_values") or [])
+        } if items else {}
+        return {
+            "estimate_number": texts.get(BID_COL_ESTIMATE_NUMBER) or None,
+            "total_rounded_text": texts.get(BID_COL_TOTAL_ROUNDED) or None,
+        }
+
     def build_invoice_prefill(self, item_id: int) -> dict:
         """
         Read a Projects-board item and assemble an EDITABLE invoice-form prefill:
@@ -939,6 +983,24 @@ class MondayClient:
             invoice["identifier"] = suggested_identifier
         scope = col_text(COL_SCOPE_DETAILS)
 
+        # ---- Estimate $ import shortcut (Bid Board rounded total) ----
+        # Best-effort only: dollars still come from the office below unless
+        # they opt into this on the invoice form (see estimate_import). A
+        # missing link or a Monday hiccup here must never break the lookup.
+        bid_estimate_number = None
+        bid_total_text = None
+        bid_ids = (cols.get(COL_LINKED_OPPORTUNITY, {}) or {}).get("linked_item_ids") or []
+        if bid_ids:
+            try:
+                snap = self._read_bid_snapshot(int(bid_ids[0]))
+                bid_estimate_number = snap.get("estimate_number")
+                bid_total_text = snap.get("total_rounded_text")
+            except Exception:  # noqa: BLE001 — the import shortcut is best-effort
+                notes.append(
+                    "Could not read the linked estimate's Monday total — "
+                    "enter dollars manually or try the import card again."
+                )
+
         notes.append("Line items and amounts aren't stored on the project — add them below.")
         return {
             "client": client,
@@ -954,6 +1016,10 @@ class MondayClient:
                 "scope_summary": scope,
             },
             "_notes": notes,
+            "_bid_snapshot": {
+                "estimate_number": bid_estimate_number,
+                "monday_total_raw": bid_total_text,
+            },
         }
 
     # ---- Read: customer search (Customers board) ----

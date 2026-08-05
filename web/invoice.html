@@ -39,11 +39,19 @@
   label .opt { font-weight:400; color:var(--gvc-muted); }
   input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
   textarea, select {
-    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+    width:100%; padding:9px 12px; border:1px solid var(--gvc-line-strong, var(--gvc-line)); border-radius:var(--gvc-r-md);
     font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink); background:var(--gvc-surface);
-    min-height:var(--gvc-ctl-h); }
+    min-height:var(--gvc-ctl-h);
+    transition: border-color .12s ease, box-shadow .12s ease; }
   textarea { resize:vertical; min-height:64px; height:auto; }
-  input:focus, textarea:focus, select:focus { outline:2px solid var(--gvc-focus); border-color:var(--gvc-green); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):hover,
+  textarea:hover, select:hover { border-color: var(--gvc-muted); }
+  input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):focus,
+  textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--gvc-green);
+    box-shadow: var(--gvc-focus);
+  }
   .hint { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
 
   .btn { display:inline-flex; align-items:center; justify-content:center; gap:8px;
@@ -110,10 +118,10 @@
   .modal-ft { padding:var(--gvc-space-4) var(--gvc-space-5); border-top:1px solid var(--gvc-line); display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; justify-content:flex-end; }
 
 
-    #billable-cos .co-pick { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eee; }
-    #billable-cos .co-pick:last-child { border-bottom:0; }
-    #billable-cos .co-pick-meta { font-size:13px; color:#555; }
-    #billable-cos .co-pick-meta strong { color:#222; }
+    #billable-cos .co-pick, #estimate-import .co-pick { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eee; }
+    #billable-cos .co-pick:last-child, #estimate-import .co-pick:last-child { border-bottom:0; }
+    #billable-cos .co-pick-meta, #estimate-import .co-pick-meta { font-size:13px; color:#555; }
+    #billable-cos .co-pick-meta strong, #estimate-import .co-pick-meta strong { color:#222; }
 </style>
 </head>
 <body>
@@ -153,7 +161,7 @@
             placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, C-005…" /></div>
         <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
       </div>
-      <div id="search-results" style="margin-top:10px;"></div>
+      <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
       <div id="prefill-note" class="hint"></div>
       <details id="advanced-pn" style="margin-top:12px;">
         <summary style="cursor:pointer;font-size:var(--gvc-fs-caption);color:var(--gvc-muted);font-weight:600;">Advanced: Project # only</summary>
@@ -172,7 +180,7 @@
 
     <div class="card" id="drafts-card" style="display:none;">
       <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress invoices — yours and your teammates')</span></h2>
-      <div id="drafts-list"></div>
+      <div id="drafts-list" class="gvc-results"></div>
     </div>
 
     <div class="card">
@@ -180,7 +188,7 @@
       <div class="grid">
         <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports billing identity)</span></label>
           <input name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
-          <div id="customer-results" style="display:none;border:1px solid var(--border,#ccc);border-radius:6px;margin-top:4px;max-height:220px;overflow:auto;"></div></div>
+          <div id="customer-results" class="gvc-results" style="display:none;"></div></div>
         <div><label>Client / company name</label><input name="client_name" required placeholder="Henderson Residence" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Mark Henderson" /></div>
         <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
@@ -232,6 +240,13 @@
       <h2>Line items</h2>
       <div id="line-items"></div>
       <button type="button" class="btn secondary small" id="add-line">+ Add line item</button>
+
+      <div class="sub" style="margin-top:16px;">
+        <h3>Estimate import <span class="opt">(optional — from the estimate sent for this project)</span></h3>
+        <div class="hint">Pull dollars from the estimate already quoted for this project (Bid Board total, or the full as-sent line items when Drive has them). Opt-in only — never overwrites what's already on the invoice; add what you need, then edit like any other line.</div>
+        <div id="estimate-import-note" class="hint" style="margin-top:8px;">Look up a Project # to check for an estimate to import.</div>
+        <div id="estimate-import" style="margin-top:8px;"></div>
+      </div>
     </div>
 
     <div class="card">
@@ -498,6 +513,67 @@ function tryAutoAddBillableCo(coIdentifier) {
     return true;
   }
   return false;
+}
+
+/* ---- Estimate import ----
+ * Opt-in shortcut back to the estimate that was already quoted for this
+ * project: the Monday Bid Board's rounded total (always fast when a bid is
+ * linked) and/or the full as-sent line items when the Drive JSON sidecar is
+ * reachable (see /ui/api/invoice/lookup's `estimate_import`). Mirrors the
+ * billable-COs picker above — never auto-adds, each button disables once
+ * clicked so a double-click can't double-bill. */
+let lastEstimateImport = null;
+
+function renderEstimateImport(info) {
+  lastEstimateImport = info || null;
+  const wrap = $("#estimate-import");
+  const note = $("#estimate-import-note");
+  if (!wrap || !note) return;
+  wrap.innerHTML = "";
+  if (!info || !info.available) {
+    note.textContent = (info && info.notes && info.notes[0])
+      || "No estimate found to import for this project.";
+    return;
+  }
+  const bits = [];
+  if (info.estimate_number) bits.push(info.estimate_number);
+  note.textContent = "Found an estimate" + (bits.length ? " (" + bits.join(" · ") + ")" : "")
+    + " for this project — add what you need:";
+
+  if (info.line_items && info.line_items.length) {
+    const row = document.createElement("div");
+    row.className = "co-pick";
+    const n = info.line_items.length;
+    row.innerHTML = `<div class="co-pick-meta"><strong>Add estimate lines</strong>`
+      + `<div>${n} line item${n === 1 ? "" : "s"} · ${money(info.line_items_total || 0)}</div></div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small";
+    btn.textContent = "Add estimate lines";
+    btn.addEventListener("click", () => {
+      info.line_items.forEach((li) => addLineItem({ description: li.description, amount: li.amount }));
+      btn.textContent = "Added"; btn.disabled = true;
+      scheduleAutosave();
+    });
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  }
+  if (info.monday_total != null) {
+    const row = document.createElement("div");
+    row.className = "co-pick";
+    row.innerHTML = `<div class="co-pick-meta"><strong>Add estimate total</strong>`
+      + `<div>${money(info.monday_total)} · Monday bid total</div></div>`;
+    const btn = document.createElement("button");
+    btn.type = "button"; btn.className = "btn secondary small";
+    btn.textContent = "Add estimate total";
+    btn.addEventListener("click", () => {
+      const desc = "Estimate total" + (info.estimate_number ? " (" + info.estimate_number + ")" : "");
+      addLineItem({ description: desc, amount: info.monday_total });
+      btn.textContent = "Added"; btn.disabled = true;
+      scheduleAutosave();
+    });
+    row.appendChild(btn);
+    wrap.appendChild(row);
+  }
 }
 
 async function loadBillableCos(projectNumber) {
@@ -1053,6 +1129,7 @@ async function applyLookupResponse(r, label) {
       }
     }
   }
+  renderEstimateImport(prefill.estimate_import);
   $("#invoice-form").scrollIntoView({ behavior: "smooth" });
 }
 
