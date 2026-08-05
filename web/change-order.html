@@ -133,40 +133,47 @@
   </div>
 </header>
 
-<main class="gvc-shell">
+<main class="gvc-shell gvc-moneyform">
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Projects</p>
     <h1 class="gvc-h1">Change Order</h1>
     <p class="gvc-sub">Create or revise a change order for a Monday project — preview the PDF, then Accept to file it and draft hello@.</p>
   </div>
 
-  <div class="gvc-stack">
+  <div class="gvc-stack gvc-stack--tight">
 
   <div class="gvc-banner" id="status"></div>
 
   <div class="card" id="find-project-card">
-    <h2>Find the Project <span class="opt">(paste a Monday Project link — or search by client, address, or project #/CO number — fills the form; projects with an existing CO load it for revision)</span></h2>
+    <h2>Find the Project</h2>
+    <p class="sec-help">Paste a Monday Project link — or search by client, address, or project #/CO number. Existing COs can load for revision.</p>
     <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
       <div><label>Monday Project URL — or search</label>
         <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
       <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
     </div>
     <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
-    <div class="full" style="margin-top:12px;"><label>Drive folder URL <span class="opt">(backup — also where the CO PDF is filed)</span></label>
-      <input name="drive_folder_url" placeholder="https://drive.google.com/drive/folders/…" />
-      <div class="hint">If the Monday lookup fills everything, you can leave this blank — we'll file the CO into the project's Drive folder automatically.</div></div>
+    <details class="soft-fold" id="drive-backup-fold" style="margin-top:12px;">
+      <summary>Drive folder backup <span class="opt">(optional)</span></summary>
+      <div class="fold-body">
+        <label>Drive folder URL <span class="opt">(backup — also where the CO PDF is filed)</span></label>
+        <input name="drive_folder_url" placeholder="https://drive.google.com/drive/folders/…" />
+        <div class="hint">If the Monday lookup fills everything, you can leave this blank — we'll file the CO into the project's Drive folder automatically.</div>
+      </div>
+    </details>
     <div id="link-state"></div>
     <div id="existing-cos" style="margin-top:10px;"></div>
   </div>
 
   <div class="card" id="drafts-card" style="display:none;">
-    <h2>Resume a draft <span class="opt">(autosaved in-progress change orders — yours and your teammates')</span></h2>
+    <h2>Resume a draft</h2>
+    <p class="sec-help">Autosaved in-progress change orders — yours and your teammates'.</p>
     <div id="drafts-list" class="gvc-results"></div>
   </div>
 
   <form id="co-form" autocomplete="off">
     <div class="card">
-      <h2>Prepared For (Client)</h2>
+      <h2>Client</h2>
       <div class="grid">
         <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
         <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
@@ -210,30 +217,29 @@
     </div>
 
     <div class="card">
-      <h2>Breakdown <span class="opt">— labor / materials lines</span></h2>
+      <h2>Breakdown</h2>
+      <p class="sec-help">Labor / materials lines.</p>
       <div id="line-items"></div>
       <button type="button" class="btn secondary small" id="add-line">+ Add line</button>
     </div>
 
-    <div class="card">
-      <h2>Approval note <span class="opt">(optional — printed in the sign-off block)</span></h2>
-      <textarea name="approval_note" placeholder="Rate and scope discussed on site 2026-06-12. Approval by reply authorizes GVC to proceed."></textarea>
-    </div>
+    <details class="soft-fold" id="approval-note-fold">
+      <summary>Approval note <span class="opt">(optional)</span></summary>
+      <div class="fold-body">
+        <p class="sec-help" style="margin:0 0 10px;">Printed in the sign-off block.</p>
+        <textarea name="approval_note" placeholder="Rate and scope discussed on site 2026-06-12. Approval by reply authorizes GVC to proceed."></textarea>
+      </div>
+    </details>
 
-    <div class="card">
-      <div class="actions">
-        <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
-        <button type="button" class="btn secondary small" id="btn-new-co">Start new</button>
-        <span class="spinner" id="spinner">⏳ Working…</span>
-        <span id="save-state" class="save-state"></span>
-        <div class="totals">CO total<br /><strong id="t-total">$0.00</strong></div>
-      </div>
-      <div class="hint" style="margin-top:10px;">
-        <strong>Generate Preview</strong> renders the CO PDF only.
-        <strong>Accept</strong> files it to the job's Drive folder, drafts it in <code>hello@</code> (PDF attached), posts to #change-orders, and creates/updates the Monday CO item + Operations task. Nothing is emailed until someone reviews the draft and clicks Send.
-      </div>
+    <div class="gvc-savebar" id="actions-bar">
+      <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
+      <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
+      <button type="button" class="btn secondary small" id="btn-new-co">Start new</button>
+      <span class="spinner" id="spinner">⏳ Working…</span>
+      <span id="save-state" class="save-state"></span>
+      <div class="totals">CO total<br /><strong id="t-total">$0.00</strong></div>
     </div>
+    <p class="hint">Preview = PDF only. Accept = Drive file + hello@ draft + Monday CO item.</p>
   </form>
 
   <div class="card" id="preview-card">

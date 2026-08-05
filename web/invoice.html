@@ -141,20 +141,21 @@
   </div>
 </header>
 
-<main class="gvc-shell">
+<main class="gvc-shell gvc-moneyform">
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Billing</p>
     <h1 class="gvc-h1">Invoice Generator</h1>
     <p class="gvc-sub">Create a customer invoice — preview the PDF, then Accept to open it in Stripe and draft the email in hello@.</p>
   </div>
 
-  <div class="gvc-stack">
+  <div class="gvc-stack gvc-stack--tight">
 
   <div class="gvc-banner" id="status"></div>
 
   <form id="invoice-form" autocomplete="off">
     <div class="card" id="prefill-card">
-      <h2>Find the Project <span class="opt">(search by client, builder, address, city, or project # — or paste a Monday Project link)</span></h2>
+      <h2>Find the Project</h2>
+      <p class="sec-help">Search by client, builder, address, city, or project # — or paste a Monday Project link.</p>
       <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
         <div><label>Search — or Monday Project URL</label>
           <input id="project-search" name="project_search" autocomplete="off"
@@ -179,7 +180,8 @@
     </div>
 
     <div class="card" id="drafts-card" style="display:none;">
-      <h2>Resume a draft <span class="opt" style="text-transform:none;font-weight:400;">(autosaved in-progress invoices — yours and your teammates')</span></h2>
+      <h2>Resume a draft</h2>
+      <p class="sec-help">Autosaved in-progress invoices — yours and your teammates'.</p>
       <div id="drafts-list" class="gvc-results"></div>
     </div>
 
@@ -249,13 +251,16 @@
       </div>
     </div>
 
-    <div class="card">
-      <h2>Discount <span class="opt" style="text-transform:none;font-weight:400;">(optional — transparent line)</span></h2>
-      <div class="grid">
-        <div><label>Description</label><input name="discount_desc" placeholder="Repeat client courtesy" /></div>
-        <div><label>Amount ($) <span class="opt">(positive; rendered as −$)</span></label><input name="discount_amount" type="number" step="0.01" min="0" placeholder="185.00" /></div>
+    <details class="soft-fold" id="discount-fold">
+      <summary>Discount <span class="opt">(optional)</span></summary>
+      <div class="fold-body">
+        <p class="sec-help" style="margin:0 0 10px;">Optional transparent line — amount is rendered as −$.</p>
+        <div class="grid">
+          <div><label>Description</label><input name="discount_desc" placeholder="Repeat client courtesy" /></div>
+          <div><label>Amount ($) <span class="opt">(positive; rendered as −$)</span></label><input name="discount_amount" type="number" step="0.01" min="0" placeholder="185.00" /></div>
+        </div>
       </div>
-    </div>
+    </details>
 
     <!-- ---- Commercial / progress billing ---- -->
     <div class="card">
@@ -321,23 +326,19 @@
       </div>
     </div>
 
-    <div class="card">
-      <div class="actions">
-        <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Invoice</button>
-        <button type="button" class="btn secondary small" id="btn-new-invoice">Start new</button>
-        <button type="button" class="btn secondary small" id="btn-correct">Correct / reissue…</button>
-        <span class="spinner" id="spinner">⏳ Working…</span>
-        <span id="save-state" class="save-state"></span>
-        <div class="totals">
-          Line items <span id="t-subtotal">$0.00</span> &nbsp;·&nbsp; Discount <span id="t-discount">$0.00</span><br />
-          <strong>Before retainage <span id="t-total">$0.00</span></strong>
-        </div>
-      </div>
-      <div class="hint" style="margin-top:10px;">
-        <strong>Generate Preview</strong> renders the PDF(s) only — no Stripe, no email. <strong>Accept</strong> creates the finalized Stripe invoice + the billing@ Gmail draft. For commercial, exact retainage totals appear in the preview PDF.
+    <div class="gvc-savebar" id="actions-bar">
+      <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
+      <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Invoice</button>
+      <button type="button" class="btn secondary small" id="btn-new-invoice">Start new</button>
+      <button type="button" class="btn secondary small" id="btn-correct">Correct / reissue…</button>
+      <span class="spinner" id="spinner">⏳ Working…</span>
+      <span id="save-state" class="save-state"></span>
+      <div class="totals">
+        Line items <span id="t-subtotal">$0.00</span> &nbsp;·&nbsp; Discount <span id="t-discount">$0.00</span><br />
+        <strong>Before retainage <span id="t-total">$0.00</span></strong>
       </div>
     </div>
+    <p class="hint">Preview = PDF only. Accept = Stripe invoice + billing@ draft.</p>
   </form>
 
   <div class="card" id="preview-card">
