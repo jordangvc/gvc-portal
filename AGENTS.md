@@ -2,6 +2,18 @@
 
 This is the **GVC internal portal** (invoicing started it; it now also does estimates, change orders, and paid-by-check, with more apps coming). An admin runs it; office staff use the web UI; Andrea reviews the resulting Gmail draft and clicks send. The big picture is in [README.md](README.md); the structure rationale is in [docs/portal-modularization-2026-06.md](docs/portal-modularization-2026-06.md) — this file is the agent-specific orientation.
 
+## Standing agent workflow (Jordan — do not wait to be told again)
+
+When work is multi-part or the user says "continue" / "what's next" / "fix X and
+anything else obvious":
+
+1. **Break it into small independent pieces** with clear acceptance criteria.
+2. **Use multiple background/subagents in parallel** for research and
+   implementation when that saves wall-clock time or tokens.
+3. Coordinate in the foreground; merge, verify, commit, and open the PR yourself.
+4. Prefer shipping several small high-value "portal owns this instead of Monday"
+   gaps over one oversized redesign.
+
 ## Repository layout (package structure, 2026-06)
 
 Code is layered. Imports flow **one direction**: `app → orchestrators → subsystems/adapters → shared`.

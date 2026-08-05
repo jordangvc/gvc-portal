@@ -13,7 +13,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from adapters.monday import jobcheck as mj  # noqa: E402
+from adapters.monday import lien as ml  # noqa: E402
 from orchestrators import jobcheck_flow as jf  # noqa: E402
+from shared import activity  # noqa: E402
 from shared import boards  # noqa: E402
 
 
@@ -400,6 +402,17 @@ def test_projects_trade_config_well_formed_and_gated():
         boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved
 
 
+def test_fieldguide_anchors_map_trade_columns():
+    trade_ids = {c["id"] for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS, "fieldguide anchor map is empty"
+    for col_id, anchor in boards.JOBCHECK_FIELDGUIDE_ANCHORS.items():
+        assert col_id in trade_ids, f"{col_id} not in trade columns"
+        assert isinstance(anchor, str) and anchor.startswith("#") and len(anchor) > 1
+    # status_19 on Ops is Scheduled Day — no Hanging how-to there.
+    assert jf.fieldguide_anchor("status_19", "ops") is None
+    assert jf.fieldguide_anchor("status_19", "projects") == "#hang"
+
+
 def test_status_19_collision_is_board_scoped():
     # Ops status_19 = Scheduled Day; Projects status_19 = Hanging Status.
     ops = next(c for c in jf.allowlisted_columns() if c["id"] == "status_19")
@@ -486,9 +499,9 @@ def test_save_missing_project_link_fails_trade_only():
     def fake_get_linked_project_id(mc, ops_item_id):
         return {"project_item_id": None,
                 "error": "No linked Projects item on this Operations task "
-                         "(link_to_projects is empty). Link the Projects item "
-                         "in Monday before editing trade status or uploading "
-                         "photos."}
+                         "(link_to_projects is empty). Use “Link a Projects "
+                         "item” on Job Check before editing trade status or "
+                         "uploading photos."}
 
     def fake_set_item_columns(mc, item_id, values, board_id=None):
         calls["set"].append({"item_id": item_id, "values": dict(values),
@@ -508,6 +521,7 @@ def test_save_missing_project_link_fails_trade_only():
     }
     try:
         mcmod.MondayClient = fake_client  # type: ignore
+        jf.MondayClient = fake_client  # type: ignore
         mj.get_item_values = fake_get_item_values  # type: ignore
         mj.get_board_columns = fake_get_board_columns  # type: ignore
         mj.get_linked_project_id = fake_get_linked_project_id  # type: ignore
@@ -524,6 +538,7 @@ def test_save_missing_project_link_fails_trade_only():
         }, "mark@greenvalleycontractors.com")
     finally:
         mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
         mj.get_item_values = real["get_item_values"]  # type: ignore
         mj.get_board_columns = real["get_board_columns"]  # type: ignore
         mj.get_linked_project_id = real["get_linked_project_id"]  # type: ignore
@@ -542,6 +557,174 @@ def test_save_missing_project_link_fails_trade_only():
     assert "link_to_projects" in out["failures"]["projects:status_19"]
     assert "link_to_projects" in out["failures"]["projects:color_mkza9z7c"]
     assert "not a label" not in out["failures"]["projects:color_mkza9z7c"]
+
+
+# ------------------------------------ Ops→Projects link (in-app)
+
+def test_suggest_project_links_scores_candidates():
+    ops_item = {
+        "item_id": 101, "name": "9761 Gertrude | Steele Properties",
+        "url": "https://monday/x", "values": {},
+    }
+    projects = [
+        {"item_id": 201, "name": "9761 Gertrude | Steele Properties",
+         "url": "https://monday/p/201"},
+        {"item_id": 202, "name": "937 Madison Ridge | Other Builder",
+         "url": "https://monday/p/202"},
+    ]
+
+    class _MC:
+        pass
+
+    real = {
+        "client": None,
+        "get_item_values": mj.get_item_values,
+        "get_linked_project_id": mj.get_linked_project_id,
+        "fetch_active_projects": ml.fetch_active_projects,
+    }
+    import adapters.monday.client as mcmod
+    real["client"] = mcmod.MondayClient
+
+    def fake_client():
+        return _MC()
+
+    def fake_get_item_values(mc, item_id, column_ids):
+        return dict(ops_item) if item_id == 101 else None
+
+    def fake_get_linked_project_id(mc, ops_item_id):
+        return {"project_item_id": None, "error": "empty"}
+
+    def fake_fetch_active_projects(mc):
+        return list(projects)
+
+    try:
+        mcmod.MondayClient = fake_client  # type: ignore
+        jf.MondayClient = fake_client  # type: ignore
+        mj.get_item_values = fake_get_item_values  # type: ignore
+        mj.get_linked_project_id = fake_get_linked_project_id  # type: ignore
+        ml.fetch_active_projects = fake_fetch_active_projects  # type: ignore
+
+        out = jf.suggest_project_links(101, limit=8)
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.get_linked_project_id = real["get_linked_project_id"]  # type: ignore
+        ml.fetch_active_projects = real["fetch_active_projects"]  # type: ignore
+
+    assert out["ok"] is True
+    assert out["ops_name"] == ops_item["name"]
+    assert out["already_linked"] is None
+    assert out["project"]["match"]["id"] == 201
+    assert out["project"]["score"] == 1.0
+    assert out["suggestions"][0]["id"] == 201
+    assert out["suggestions"][0]["score"] == 1.0
+
+
+def test_link_project_fill_if_empty_success_and_already():
+    ops_before = {
+        "item_id": 101, "name": "Job A", "url": "https://monday/x",
+        "values": {"link_to_projects": None},
+    }
+    link_calls = []
+
+    class _MC:
+        pass
+
+    def fake_client():
+        return _MC()
+
+    def fake_get_item_values(mc, item_id, column_ids):
+        if item_id == 101:
+            return dict(ops_before, values=dict(ops_before["values"]))
+        if item_id == 555 and column_ids:
+            return {"item_id": 555, "name": "Proj", "values": {}}
+        if item_id == 555 and not column_ids:
+            return dict(ops_before)
+        return None
+
+    def fake_set_ops_project_link_if_empty(mc, ops_id, proj_id):
+        link_calls.append((ops_id, proj_id))
+        if len(link_calls) == 1:
+            return {"ok": True, "written": True, "skipped": False,
+                    "project_item_id": proj_id}
+        return {"ok": True, "written": False, "skipped": True,
+                "project_item_id": 999, "reason": "already_set"}
+
+    def fake_get_linked_project_gfolder(mc, ops_item_id):
+        if len(link_calls) == 0:
+            return {"project_item_id": None, "error": "empty"}
+        return {"project_item_id": 555, "folder_id": "fld1",
+                "gfolder_url": "https://drive/f/fld1"}
+
+    detail_payload = {"ok": True, "job": {"item_id": 101, "project_item_id": 555}}
+
+    import adapters.monday.client as mcmod
+    real = {
+        "client": mcmod.MondayClient,
+        "get_item_values": mj.get_item_values,
+        "set_link": mj.set_ops_project_link_if_empty,
+        "get_gf": mj.get_linked_project_gfolder,
+        "get_board_columns": mj.get_board_columns,
+        "get_detail": jf.get_job_detail,
+        "log": activity.log_event,
+    }
+    logged = []
+
+    try:
+        mcmod.MondayClient = fake_client  # type: ignore
+        jf.MondayClient = fake_client  # type: ignore
+        mj.get_item_values = fake_get_item_values  # type: ignore
+        mj.set_ops_project_link_if_empty = fake_set_ops_project_link_if_empty  # type: ignore
+        mj.get_linked_project_gfolder = fake_get_linked_project_gfolder  # type: ignore
+        mj.get_board_columns = lambda mc, ids, board_id=None: {  # type: ignore
+            i: {"id": i, "type": "status", "labels": [{"label": "Done"}]}
+            for i in ids
+        }
+        jf.get_job_detail = lambda item_id: detail_payload if item_id == 101 else None  # type: ignore
+        activity.log_event = lambda action, **kw: logged.append((action, kw))  # type: ignore
+
+        out1 = jf.link_project(101, 555, "mark@greenvalleycontractors.com")
+        out2 = jf.link_project(101, 777, "mark@greenvalleycontractors.com")
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.set_ops_project_link_if_empty = real["set_link"]  # type: ignore
+        mj.get_linked_project_gfolder = real["get_gf"]  # type: ignore
+        mj.get_board_columns = real["get_board_columns"]  # type: ignore
+        jf.get_job_detail = real["get_detail"]  # type: ignore
+        activity.log_event = real["log"]  # type: ignore
+
+    assert out1["ok"] is True and out1["linked"] is True and out1["already"] is False
+    assert out1["detail"] == detail_payload
+    assert out2["ok"] is True and out2["linked"] is False and out2["already"] is True
+    assert link_calls == [(101, 555), (101, 777)]
+    assert any(a == "jobcheck.link_project" for a, _ in logged)
+
+
+def test_set_ops_project_link_if_empty_stub():
+    """Adapter fill-if-empty: skip when linked, write when empty."""
+    reads = [{"linked_item_ids": []}, {"linked_item_ids": [888]}]
+    writes = []
+
+    class _MC:
+        def _query(self, query, variables):
+            if "linked_item_ids" in query or "linked_items" in query:
+                row = reads.pop(0)
+                return {"items": [{"id": "101", "column_values": [
+                    {"id": "link_to_projects", **row}]}]}
+            writes.append(variables)
+            return {"change_multiple_column_values": {"id": "101"}}
+
+    out_empty = mj.set_ops_project_link_if_empty(_MC(), 101, 555)
+    assert out_empty["ok"] is True and out_empty["written"] is True
+    assert writes
+
+    out_full = mj.set_ops_project_link_if_empty(_MC(), 101, 777)
+    assert out_full["ok"] is True and out_full["skipped"] is True
+    assert out_full["project_item_id"] == 888
+    assert out_full["reason"] == "already_set"
 
 
 

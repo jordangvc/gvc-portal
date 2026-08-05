@@ -165,38 +165,20 @@ the tool degrades to manual entry, which Jordan has explicitly rejected.
 
 ---
 
-## 6. NEXT BUILD — open bids + accept in place (Jordan's request, 2026-07-29)
+## 6. Open bids + accept in place (Jordan's request, 2026-07-29) — ✅ SHIPPED
+
+**Shipped on master.** `fetch_bids()` returns open + accepted; send-to-ops calls
+`mark_bid_accepted()` (Stage=Accepted, Won Deals group, `date6` fill-if-empty).
+Implicit-on-send was the locked design. Do not rebuild from the older gap notes.
 
 > *"this should have access to the open bids, not just the accepted bids. He should be
 > able to accept the bid in here as well."*
 
-**The gap.** `adapters/monday/jobstart.fetch_accepted_bids()` hard-filters to
-`deal_stage == JOBSTART_ACCEPTED_STAGE`. So a bid is invisible to Job Start until
-someone has gone to Monday and flipped the stage — backwards for a tool meant to be
-where Sales works.
+**Was the gap** (kept for provenance): `fetch_accepted_bids()` hard-filtered to
+Accepted while stage/group drifted apart by hand. Fixed by `fetch_bids`, stage
+badges + sort ranks, and accepting on send.
 
-**Evidence it's a real problem, not a preference:** bid `2776470967` is stage
-`Accepted` while still in the **"Open Deals"** group. Stage and group have already
-drifted apart because both are maintained by hand, in two places.
-
-**Shape of the change:**
-1. `fetch_accepted_bids()` → return open **and** accepted bids, each carrying its
-   stage; rename it (`fetch_bids`) since the name will otherwise lie.
-2. Picker shows a stage badge and sorts: waiting-on-Ops → accepted-not-handed-off →
-   open. Don't hide open bids behind a filter toggle Jake has to find.
-3. Write `deal_stage` (and move the group) from inside Job Start.
-4. `JOBSTART_ACCEPTED_STAGE` already exists in `shared/boards.py`; the group id will
-   need adding alongside it.
-
-**Open design decision — put it to Jordan.** Should marking-accepted be its own
-explicit tap, or implicit when Sales sends the packet to Ops? My recommendation was
-**implicit**: if Jake is sending a job-start packet, the bid is won, and one less tap
-is one less thing to forget. The counter-argument is that an implicit write to
-`deal_stage` is a silent side effect on a board other people watch — and the estimate
-flow deliberately does NOT auto-advance stage for exactly that reason (see the
-"Stage 'Sent to Client' at draft time is UNCHANGED — other automations key off it"
-note in `CLAUDE.md`). **Check which automations trigger on `deal_stage` before
-writing it.**
+~~**Open design decision**~~ — locked: **implicit on send**.
 
 ---
 
