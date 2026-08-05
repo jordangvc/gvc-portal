@@ -119,11 +119,24 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
 # Crew edits these from Job Check; writes go to the linked Projects item via
 # `link_to_projects`. status_19 here is Hanging Status on Projects — the Ops
 # board's status_19 is Scheduled Day (in JOBCHECK_COLUMNS). Keep board-scoped.
+#
+# Slice 2 (2026-08-05) adds the tape/coat/sand/skim sequence that PR #18
+# deliberately left out ("Out of scope (next slices): Taped / coats / sanded
+# / skim, Completion Date, Notes"). These 5 ids are the SAME dup__of_* chain
+# already verified live against Projects board 1918846405 — documented in
+# CLAUDE.md's 2026-07-27 Job Check v1 build note alongside the 4 columns
+# above (Framing/Hanging/Scrapping/Finishing came from the identical
+# verified list). Completion Date + Notes stay out of scope for this slice.
 JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
-    {"id": "color_mkza9z7c",       "label": "Framing Status",   "type": "status"},
-    {"id": "status_19",            "label": "Hanging Status",   "type": "status"},
-    {"id": "dup__of_hung_status1", "label": "Scrapping Status", "type": "status"},
-    {"id": "color_mkza855s",       "label": "Finishing Stage",  "type": "status"},
+    {"id": "color_mkza9z7c",        "label": "Framing Status",   "type": "status"},
+    {"id": "status_19",             "label": "Hanging Status",   "type": "status"},
+    {"id": "dup__of_hung_status1",  "label": "Scrapping Status", "type": "status"},
+    {"id": "dup__of_scrapped_status", "label": "Taped Status",   "type": "status"},
+    {"id": "dup__of_taped_status",  "label": "2nd Bed Coat",     "type": "status"},
+    {"id": "dup__of_2nd_bed_coat",  "label": "3rd Coat",         "type": "status"},
+    {"id": "dup__of_3rd_coat",      "label": "Sanded",           "type": "status"},
+    {"id": "dup__of_sanded",        "label": "Text/Skim",        "type": "status"},
+    {"id": "color_mkza855s",        "label": "Finishing Stage",  "type": "status"},
 )
 
 

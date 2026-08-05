@@ -377,6 +377,11 @@ def test_projects_trade_config_well_formed_and_gated():
         "color_mkza9z7c": "Framing Status",
         "status_19": "Hanging Status",
         "dup__of_hung_status1": "Scrapping Status",
+        "dup__of_scrapped_status": "Taped Status",
+        "dup__of_taped_status": "2nd Bed Coat",
+        "dup__of_2nd_bed_coat": "3rd Coat",
+        "dup__of_3rd_coat": "Sanded",
+        "dup__of_sanded": "Text/Skim",
         "color_mkza855s": "Finishing Stage",
     }
     got = {c["id"]: c["label"] for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
@@ -386,6 +391,10 @@ def test_projects_trade_config_well_formed_and_gated():
     effective = jf.allowlisted_projects_trade_columns()
     assert [c["id"] for c in effective] == list(expected)
     assert all(c["board"] == "projects" for c in effective)
+    # Display order walks the trade sequence the crew actually walks:
+    # Framing -> Hang -> Scrap -> Tape -> 2nd coat -> 3rd coat -> Sand -> Skim
+    # -> Finishing. Finishing Stage stays last (unchanged from slice 1).
+    assert [c["id"] for c in effective][-1] == "color_mkza855s"
     # Hard exclusions still apply if someone tries to sneak a mirror in.
     saved = boards.JOBCHECK_PROJECTS_TRADE_COLUMNS
     boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved + (
@@ -398,6 +407,30 @@ def test_projects_trade_config_well_formed_and_gated():
         assert "link_to_projects" not in ids
     finally:
         boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved
+
+
+def test_coat_sand_skim_slice_is_writable_and_board_scoped():
+    """Slice 2 (2026-08-05): Taped/2nd Bed Coat/3rd Coat/Sanded/Text-Skim
+    write to the linked Projects item exactly like the slice-1 four did."""
+    new_ids = {"dup__of_scrapped_status", "dup__of_taped_status",
+               "dup__of_2nd_bed_coat", "dup__of_3rd_coat", "dup__of_sanded"}
+    effective = {c["id"]: c for c in jf.allowlisted_projects_trade_columns()}
+    assert new_ids <= set(effective)
+    for cid in new_ids:
+        assert effective[cid]["board"] == "projects"
+        assert effective[cid]["type"] == "status"
+    # None of the new ids leak into the Ops allowlist.
+    assert not new_ids & {c["id"] for c in jf.allowlisted_columns()}
+
+    labels = {jf.field_key("projects", "dup__of_taped_status"):
+              ["Coat Not Started", "2nd Coat Complete"]}
+    shaped, errors, accepted = jf.validate_values(
+        {"projects:dup__of_taped_status": "2nd Coat Complete"},
+        status_labels=labels)
+    assert shaped == {"projects:dup__of_taped_status":
+                      {"label": "2nd Coat Complete"}}
+    assert not errors
+    assert accepted["projects:dup__of_taped_status"]["label"] == "2nd Bed Coat"
 
 
 def test_status_19_collision_is_board_scoped():

@@ -11,6 +11,30 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 🔧 JOB CHECK — trade-status slice 2: Taped/coats/sanded/skim — BUILT 2026-08-05
+PR #18 (Framing/Hanging/Scrapping/Finishing → Projects) explicitly listed "Out of scope
+(next slices): Taped / coats / sanded / skim, Completion Date, Notes." This slice ships
+the coat sequence. `shared/boards.py` `JOBCHECK_PROJECTS_TRADE_COLUMNS` gains 5 entries
+between Scrapping Status and Finishing Stage: Taped Status (`dup__of_scrapped_status`),
+2nd Bed Coat (`dup__of_taped_status`), 3rd Coat (`dup__of_2nd_bed_coat`), Sanded
+(`dup__of_3rd_coat`), Text/Skim (`dup__of_sanded`) — the same `dup__of_*` chain already
+verified live against Projects board 1918846405 in the 2026-07-27 Job Check v1 note
+above (all `status` type). Config-only change: `orchestrators/jobcheck_flow.py` and
+`web/jobcheck.html` already iterate the trade-column list generically (board-scoped
+`field_key`s, `board="projects"` tag), so no code/UI edits were needed — the new fields
+just appear on the page and dual-write to the linked Projects item like the first four.
+Completion Date + Notes stay OUT of scope for this slice (still queued next).
+TESTS: `tests/test_jobcheck.py` updated (`test_projects_trade_config_well_formed_and_gated`
+now expects all 9 trade columns) + new `test_coat_sand_skim_slice_is_writable_and_board_scoped`.
+31/31 jobcheck tests green (`MONDAY_API_TOKEN=dummy` needed for one pre-existing test that
+constructs a live `MondayClient()` before its monkeypatch lands — unrelated pre-existing
+quirk, not touched here). `python -m compileall` clean; `import app.service` OK.
+NOT DEPLOYED. DEPLOY (admin): `--source .` → smoke: open `/ui/jobcheck`, pick a job with a
+linked Projects item, confirm Taped/2nd Bed Coat/3rd Coat/Sanded/Text-Skim chips appear
+under "Trade status (Projects)" between Scrapping and Finishing Stage, tap through a couple,
+Save → Monday's Projects item shows the new statuses; a job missing `link_to_projects`
+still saves its Ops fields with the trade section showing the "link missing" hint.
+
 ## ✨ MULTI-EMAIL + NO-EMAIL DELIVERY (estimate + invoice) — BUILT 2026-08-04 (same branch as Billing Hub)
 Office ask: draft to several people at once; support elderly / no-inbox customers.
 BUILT: `shared/recipients.py` parses multi To/Cc (comma/semicolon/newline), validates, and for `no_email` + `delivery_method` (print|mail|hand_deliver) routes the Gmail draft TO hello@ with a `[NO EMAIL — PRINT]` subject + body banner (never invents a customer inbox). Stripe upsert uses a synthetic `no-email.{slug}@noemail.gvc.invalid` address (reserved TLD — not mailed). Estimate + invoice forms: emails textarea, CC, “Customer has no email” checkbox. QA understands multi-To and no-email. Tests: `tests/test_recipients.py` + estimate QA cases.
