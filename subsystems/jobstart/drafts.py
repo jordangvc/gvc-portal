@@ -47,6 +47,7 @@ from datetime import datetime, timezone
 from typing import Any, Optional
 
 from shared import portal_store as portal_store
+from subsystems.jobstart.ingest import HISTORY_SOFT_FIELDS
 
 PortalStoreNotConfigured = portal_store.PortalStoreNotConfigured
 
@@ -306,6 +307,46 @@ def get_draft(bid_id: Any) -> Optional[dict]:
     key = draft_key(bid_id)
     doc, _ = _read()
     return (doc.get("drafts") or {}).get(key)
+
+
+def builder_hints(builder_name: str, *, limit: int = 5) -> dict:
+    """
+    Soft-field defaults from recent accepted packets for the same builder.
+
+    Scans the shared draft store (no Monday round-trip). Newest accepted
+    packets win per field. Best-effort — returns {} when the store is empty or
+    unreachable.
+    """
+    needle = (builder_name or "").strip().casefold()
+    if not needle:
+        return {}
+
+    doc, _ = _read()
+    candidates: list[dict] = []
+    for rec in (doc.get("drafts") or {}).values():
+        if rec.get("status") != STATUS_ACCEPTED:
+            continue
+        vals = rec.get("values") or {}
+        b = str(vals.get("builder") or "").strip()
+        if not b or b.casefold() != needle:
+            continue
+        candidates.append(rec)
+
+    candidates.sort(
+        key=lambda r: str(r.get("accepted_at") or r.get("updated_at") or ""),
+        reverse=True,
+    )
+
+    merged: dict[str, str] = {}
+    for rec in candidates[: max(1, int(limit))]:
+        vals = rec.get("values") or {}
+        for key in HISTORY_SOFT_FIELDS:
+            if key in merged:
+                continue
+            raw = vals.get(key)
+            if raw is not None and str(raw).strip():
+                merged[key] = str(raw).strip()
+    return merged
 
 
 def save_draft(bid_id: Any, *, values: dict, label: Optional[str] = None,

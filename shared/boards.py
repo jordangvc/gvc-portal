@@ -311,10 +311,12 @@ JOBSTART_FIELDS: tuple[dict, ...] = (
 
     {"key": "builder", "label": "Who is the builder?", "type": "text",
      "targets": (("projects", "text"),), "required": True, "prefill": None,
-     "help": "The GC, builder or homeowner we're working for on site."},
+     "help": "The GC, builder or homeowner we're working for on site. "
+             "Auto-fills from the bid's linked Customer when present."},
 
     {"key": "supervisor", "label": "Site supervisor / contact", "type": "text",
      "targets": (("projects", "text5"),), "required": True, "prefill": None,
+     # Composed in adapters/monday/jobstart.py from customer contact + phone mirrors.
      "help": "Who the crew calls from the driveway. Name and number."},
 
     # Packet-only, optional: used when Sales drafts the GC scope-confirmation
@@ -339,8 +341,8 @@ JOBSTART_FIELDS: tuple[dict, ...] = (
     {"key": "scope", "label": "Scope of work", "type": "long_text",
      "targets": (("projects", "details"),), "required": True,
      "prefill": "details",
-     "help": "What we sold, in the crew's language. Prefilled from the bid — "
-             "edit it for the field."},
+     "help": "What we sold, in the crew's language. From the bid/estimate when "
+             "available — edit for the field."},
 
     # The single highest-value field in the packet. Ops finding out mid-job what
     # was NOT sold is breakage #1 in the handoff standard — this is the line
@@ -374,13 +376,13 @@ JOBSTART_FIELDS: tuple[dict, ...] = (
     {"key": "open_questions", "label": "Open questions for Ops",
      "type": "long_text", "targets": (("operations", "long_text_mkpzf3je"),),
      "required": False, "prefill": None,
-     "help": "Pulled from the [NEEDS CLARIFICATION] lines in the scope review. "
-             "Answer what you can before handing off."},
+     "help": "From the scope review's [NEEDS CLARIFICATION] lines, or "
+             "question-shaped notes on the estimate. Answer what you can."},
 
     {"key": "allowances", "label": "Allowances & walkthrough notes",
      "type": "long_text", "targets": (), "required": False, "prefill": None,
-     "help": "Pulled from the scope review's walkthrough notes — allowance "
-             "line items, decisions, anything agreed on site."},
+     "help": "From the scope review walkthrough or the estimate's special "
+             "notes — anything already agreed that Ops shouldn't retype."},
 
     # ---- Prompted but optional -------------------------------------------
     {"key": "expected_finish", "label": "Expected finish", "type": "date",

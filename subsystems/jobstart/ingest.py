@@ -10,13 +10,15 @@ His spec for the order of sources, same meeting:
    operations task already created, it will check the updates there and then
    keep the handoff up to date essentially."
 
-So there are four sources, and they have a strict precedence. Anything a human
+So there are six sources, and they have a strict precedence. Anything a human
 typed wins; below that, the most specific source wins:
 
     1. the saved packet          — what Jake actually typed, never overwritten
     2. the scope review (Drive)  — the richest source, and his own words say primary
-    3. Monday board updates      — Project/Ops item updates, so the packet stays current
-    4. the Bid Board columns     — the thin fallback
+    3. the estimate sidecar      — as-sent estimate JSON from Drive
+    4. Monday board updates      — Project/Ops item updates, so the packet stays current
+    5. prior builder packets     — soft finish/spec defaults from accepted handoffs
+    6. the Bid Board columns     — the thin fallback
 
 This module is the PURE merge layer. Drive reading lives in adapters/drive.py,
 Monday reading in adapters/monday/jobstart.py, and the orchestration that calls
@@ -31,10 +33,33 @@ from typing import Any, Optional
 # from — a value he can't trace is a value he'll retype.
 SOURCE_PACKET = "packet"
 SOURCE_SCOPE_REVIEW = "scope_review"
+SOURCE_ESTIMATE = "estimate"
 SOURCE_UPDATES = "updates"
+SOURCE_HISTORY = "history"
 SOURCE_BID = "bid"
 
-PRECEDENCE = (SOURCE_PACKET, SOURCE_SCOPE_REVIEW, SOURCE_UPDATES, SOURCE_BID)
+PRECEDENCE = (
+    SOURCE_PACKET,
+    SOURCE_SCOPE_REVIEW,
+    SOURCE_ESTIMATE,
+    SOURCE_UPDATES,
+    SOURCE_HISTORY,
+    SOURCE_BID,
+)
+
+# Finish/spec fields that may repeat per builder — safe to inherit from a prior
+# accepted packet. Never scope, exclusions, board count, dates, or access codes
+# that are job-specific.
+HISTORY_SOFT_FIELDS = frozenset({
+    "ceiling_finish",
+    "garage_finish",
+    "window_type",
+    "window_returns",
+    "scaffold",
+    "heater_cans",
+    "shower",
+    "lock_box",
+})
 
 
 def _has(value: Any) -> bool:
@@ -135,9 +160,188 @@ def from_updates(update_texts: list) -> dict:
     return out
 
 
+def _format_contact(name: str, phone: str) -> str:
+    """Name plus phone when the phone isn't already embedded in the name."""
+    name = (name or "").strip()
+    phone = (phone or "").strip()
+    if not name:
+        return phone
+    if not phone:
+        return name
+    if phone.replace("(", "").replace(")", "").replace("-", "").replace(" ", "") in (
+            name.replace("(", "").replace(")", "").replace("-", "").replace(" ", "")):
+        return name
+    if "(" in name and ")" in name:
+        return name
+    return f"{name} ({phone})"
+
+
+def _flatten_scope(data: dict) -> str:
+    """
+    Build scope prose from scope_details hierarchy or line-item detail fields
+    when no scope_summary exists on the estimate sidecar.
+    """
+    est = data.get("estimate") or {}
+    parts: list[str] = []
+
+    scope_details = est.get("scope_details") or data.get("scope_details")
+    if scope_details:
+        for trade_grp in scope_details:
+            trade = (trade_grp.get("trade") or "").strip()
+            for scope in trade_grp.get("scopes") or []:
+                title = (scope.get("title") or "").strip()
+                bullets = scope.get("bullets") or []
+                if title:
+                    parts.append(f"{trade} — {title}" if trade else title)
+                for bullet in bullets:
+                    text = str(bullet or "").strip()
+                    if text:
+                        parts.append(f"• {text}")
+
+    if not parts:
+        for li in est.get("line_items") or []:
+            detail = (li.get("scope_detail") or li.get("detail") or "").strip()
+            desc = (li.get("description") or "").strip()
+            if detail:
+                parts.append(f"{desc}: {detail}" if desc else detail)
+            elif desc:
+                parts.append(f"• {desc}")
+
+    return "\n".join(parts).strip()
+
+
+def _notes_to_packet_fields(est: dict) -> dict:
+    """
+    Map estimate notes into open_questions vs allowances.
+
+    Lines that look like questions/clarifications → open_questions; everything
+    else from special_notes lands in allowances (Jordan: don't make Sales retype
+    what Jake already wrote on the estimate).
+    """
+    out: dict[str, str] = {}
+    special = est.get("special_notes")
+    if isinstance(special, str):
+        special = [special] if special.strip() else []
+    special = list(special or [])
+
+    notes = (est.get("notes") or "").strip()
+    questions: list[str] = []
+    allowances: list[str] = []
+
+    def _classify(text: str) -> None:
+        text = text.strip()
+        if not text:
+            return
+        lower = text.lower()
+        if ("?" in text or "clarif" in lower or "question" in lower
+                or lower.startswith("open:") or lower.startswith("tbd")):
+            questions.append(text)
+        else:
+            allowances.append(text)
+
+    for note in special:
+        _classify(str(note))
+
+    if notes:
+        _classify(notes)
+
+    if questions:
+        out["open_questions"] = "\n".join(questions)
+    if allowances:
+        out["allowances"] = "\n".join(allowances)
+    elif special and not questions:
+        out["allowances"] = "\n".join(str(s).strip() for s in special if str(s).strip())
+
+    return out
+
+
+def from_estimate(data: dict) -> dict:
+    """
+    PURE. As-sent estimate JSON (example_estimate.json / sidecar shape) → packet
+    field values. Only fields the estimate genuinely carries — never invent
+    exclusions or customer emails that aren't in the data.
+    """
+    if not data:
+        return {}
+
+    out: dict[str, str] = {}
+    job = data.get("job") or {}
+    est = data.get("estimate") or {}
+    client = data.get("client") or {}
+
+    scope = (job.get("scope_summary") or est.get("scope_summary") or "").strip()
+    if not scope:
+        scope = _flatten_scope(data)
+    if scope:
+        out["scope"] = scope
+
+    builder = (client.get("name") or "").strip()
+    if builder:
+        out["builder"] = builder
+
+    contact = (client.get("contact_name") or "").strip()
+    phone = (client.get("phone") or "").strip()
+    if contact:
+        out["supervisor"] = _format_contact(contact, phone)
+        out["gc_pm"] = contact
+
+    email = (client.get("email") or "").strip()
+    if email:
+        out["gc_email"] = email
+
+    lot = (job.get("lot") or est.get("lot") or "").strip()
+    if lot:
+        out["lot"] = lot
+
+    # Only map dates when the sidecar names them as start/finish — estimate issue
+    # date is NOT a mobilization date.
+    for container, key, target in (
+        (job, "start_date", "start_date"),
+        (job, "expected_finish", "expected_finish"),
+        (est, "start_date", "start_date"),
+        (est, "expected_finish", "expected_finish"),
+    ):
+        val = (container.get(key) or "").strip()
+        if val and target not in out:
+            out[target] = val
+
+    expiry = (est.get("expiry_date") or "").strip()
+    if expiry and "expected_finish" not in out:
+        out["expected_finish"] = expiry
+
+    for container in (est, job, data):
+        excl = (container.get("exclusions") or "").strip()
+        if excl:
+            out["exclusions"] = excl
+            break
+
+    out.update(_notes_to_packet_fields(est))
+
+    return out
+
+
+def from_history(prior: dict) -> dict:
+    """
+    PURE. Soft defaults from a prior accepted packet for the same builder.
+
+    Only finish/spec fields that tend to repeat per GC — never scope, exclusions,
+    board count, start date, or other job-unique required fields.
+    """
+    if not prior:
+        return {}
+    out: dict[str, str] = {}
+    for key in HISTORY_SOFT_FIELDS:
+        val = prior.get(key)
+        if _has(val):
+            out[key] = str(val).strip()
+    return out
+
+
 def merge(*, packet: Optional[dict] = None,
           scope_review: Optional[dict] = None,
+          estimate: Optional[dict] = None,
           updates: Optional[dict] = None,
+          history: Optional[dict] = None,
           bid: Optional[dict] = None) -> tuple[dict, dict]:
     """
     PURE. Apply the precedence and return (values, sources).
@@ -150,7 +354,9 @@ def merge(*, packet: Optional[dict] = None,
     layers = (
         (SOURCE_PACKET, packet or {}),
         (SOURCE_SCOPE_REVIEW, scope_review or {}),
+        (SOURCE_ESTIMATE, estimate or {}),
         (SOURCE_UPDATES, updates or {}),
+        (SOURCE_HISTORY, history or {}),
         (SOURCE_BID, bid or {}),
     )
     values: dict[str, Any] = {}

@@ -385,6 +385,87 @@ def _collect_photos(bid: dict) -> list:
         return []
 
 
+def _estimate_values(bid: dict) -> tuple[dict, dict]:
+    """
+    Load the as-sent estimate sidecar when the bid carries an estimate number.
+    Best-effort — never blocks the handoff page.
+    """
+    ctx = bid.get("context") or {}
+    estimate_number = (ctx.get("estimate_number") or "").strip()
+    if not estimate_number:
+        return {}, {"found": False, "detail": "No estimate number on this bid."}
+
+    try:
+        from adapters.drive import DriveUploader
+        from subsystems.estimate.revision import sidecar_filename
+
+        uploader = DriveUploader()
+        fname = sidecar_filename(estimate_number)
+        found = uploader.find_file_anywhere(fname)
+        if not found:
+            return {}, {
+                "found": False,
+                "estimate_number": estimate_number,
+                "detail": f"No sidecar {fname!r} found in Drive.",
+            }
+        data = uploader.download_json(found["id"])
+        values = ingest.from_estimate(data)
+        return values, {
+            "found": True,
+            "estimate_number": estimate_number,
+            "source": "sidecar",
+            "name": found.get("name") or fname,
+            "url": found.get("webViewLink"),
+        }
+    except Exception as e:  # noqa: BLE001 — never block the page on Drive
+        print(f"[jobstart] estimate sidecar ingest failed: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        return {}, {
+            "found": False,
+            "estimate_number": estimate_number,
+            "detail": f"Couldn't load estimate sidecar ({type(e).__name__}).",
+        }
+
+
+def _history_values(bid: dict, values: dict) -> dict:
+    """
+    Soft finish/spec defaults from prior accepted packets for the same builder.
+    Draft-store scan only — no extra Monday load.
+    """
+    builder = (values.get("builder") or "").strip()
+    if not builder:
+        builder = ((bid.get("context") or {}).get("customer") or "").strip()
+    if not builder:
+        return {}
+    try:
+        from subsystems.jobstart import drafts
+
+        prior = drafts.builder_hints(builder)
+        return ingest.from_history(prior)
+    except Exception as e:  # noqa: BLE001
+        print(f"[jobstart] builder history ingest failed: {type(e).__name__}: {e}",
+              file=sys.stderr)
+        return {}
+
+
+def backfill_builder(values: dict, sources: dict, *,
+                     std: dict, customer: Optional[str]) -> None:
+    """
+    PURE. Fill a missing builder from the pipe-standard suggestion or the bid's
+    linked customer. Mutates values/sources in place.
+    """
+    if (values.get("builder") or "").strip():
+        return
+    builder = (std.get("builder") or "").strip()
+    source = "naming"
+    if not builder:
+        builder = (customer or "").strip()
+        source = ingest.SOURCE_BID
+    if builder:
+        values["builder"] = builder
+        sources["builder"] = source
+
+
 def _update_values(bid: dict) -> dict:
     """
     Pull Project- and Ops-board item updates so the packet reflects what's been
@@ -519,16 +600,19 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
               file=sys.stderr)
 
     # ---- Ingest, in Jordan's stated precedence (subsystems/jobstart/ingest) --
-    # packet (typed) > scope review (Drive) > board updates > Bid Board columns.
+    # packet (typed) > scope review (Drive) > estimate sidecar > board updates >
+    # prior builder packets > Bid Board columns.
     # Every automatic source is best-effort: the page must still open when Drive
     # or Monday is unreachable, just with less prefilled.
     scope_values, scope_info = _scope_review_values(bid)
+    estimate_values, estimate_info = _estimate_values(bid)
     update_values = _update_values(bid)
 
     values, sources = ingest.merge(
         packet={k: v for k, v in (saved or {}).get("values", {}).items()
                 if str(v or "").strip()},
         scope_review=scope_values,
+        estimate=estimate_values,
         updates=update_values,
         bid=bid.get("prefill") or {},
     )
@@ -551,6 +635,15 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
     std = _naming.to_standard(
         bid["name"],
         customer_hint=(bid.get("context") or {}).get("customer"))
+    backfill_builder(
+        values, sources, std=std,
+        customer=(bid.get("context") or {}).get("customer"))
+    # Soft finish/spec defaults need a known builder — run AFTER backfill so a
+    # customer/pipe-derived builder still unlocks prior-job ceiling/garage/etc.
+    for key, val in _history_values(bid, values).items():
+        if not str(values.get(key) or "").strip():
+            values[key] = val
+            sources[key] = ingest.SOURCE_HISTORY
     if saved_name:
         suggested_name = saved_name
         naming_info = {"standard": _naming.is_standard(saved_name),
@@ -600,6 +693,7 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
         "missing": missing,
         "sources": sources,
         "scope_review": scope_info,
+        "estimate": estimate_info,
         "status": status,
         "editable": status in drafts.EDITABLE_STATUSES,
         "can_send": not missing and status in drafts.EDITABLE_STATUSES,

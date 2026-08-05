@@ -445,8 +445,15 @@ function fieldHtml(f) {
     .filter(Boolean).join(" ");
   // Show where a prefilled value came from. A value Jake can't trace is a value
   // he'll retype, which defeats the point of ingesting it.
-  const SRC = { scope_review: "from the scope review", updates: "from a board update",
-                bid: "from the bid" };
+  const SRC = {
+    packet: "you typed",
+    scope_review: "from the scope review",
+    estimate: "from the estimate",
+    updates: "from a board update",
+    history: "from this builder's prior jobs",
+    naming: "from the job name",
+    bid: "from the bid",
+  };
   const src = !empty && SRC[(detail?.sources || {})[f.key]]
     ? `<span class="srctag">${SRC[(detail.sources)[f.key]]}</span>` : "";
   return `<div class="${cls}" data-field="${esc(f.key)}">
@@ -493,7 +500,10 @@ function renderNameNote() {
 
 function renderSourceNote() {
   const sr = detail?.scope_review || {};
+  const est = detail?.estimate || {};
   const el = $("#srcnote");
+  const parts = [];
+
   if (sr.found) {
     const bits = [];
     if ((sr.trades || []).length) bits.push(`${sr.trades.join(", ")}`);
@@ -501,15 +511,39 @@ function renderSourceNote() {
     if (sr.exclusions) bits.push(`${sr.exclusions} exclusion${sr.exclusions === 1 ? "" : "s"}`);
     const link = sr.url
       ? ` <a href="${esc(sr.url)}" target="_blank" rel="noopener">Open it</a>` : "";
-    el.className = "srcnote";
-    el.innerHTML = `✔ Prefilled from <b>${esc(sr.name || "the scope review")}</b>${
-      bits.length ? ` — ${esc(bits.join(" · "))}` : ""}.${link}
-      <br>Check it over and fix anything the document got wrong.`;
-  } else {
-    el.className = "srcnote none";
-    el.innerHTML = `No scope review found for this job, so these are prefilled from
-      the bid only. ${esc(sr.detail || "")}`;
+    parts.push(`✔ Scope review: <b>${esc(sr.name || "matched")}</b>${
+      bits.length ? ` — ${esc(bits.join(" · "))}` : ""}.${link}`);
+  } else if (sr.folder) {
+    parts.push(`No Scope Review file in folder <b>${esc(sr.folder)}</b>`
+      + (sr.detail ? ` — ${esc(sr.detail)}` : "."));
+  } else if (sr.detail) {
+    parts.push(esc(sr.detail));
   }
+
+  if (est.found) {
+    const elink = est.url
+      ? ` <a href="${esc(est.url)}" target="_blank" rel="noopener">Open sidecar</a>` : "";
+    parts.push(`✔ Estimate <b>${esc(est.estimate_number || est.name || "sidecar")}</b> prefilled scope / GC contact.${elink}`);
+  } else if (est.estimate_number && est.detail) {
+    parts.push(`Estimate # ${esc(est.estimate_number)} on the bid, but ${esc(est.detail)}`);
+  }
+
+  const srcVals = Object.values(detail?.sources || {});
+  const fromHist = srcVals.includes("history");
+  const fromBid = srcVals.includes("bid") || srcVals.includes("naming");
+  if (fromHist) parts.push("Finish/spec defaults from this builder's prior accepted handoffs.");
+  if (!sr.found && !est.found && fromBid) {
+    parts.push("Filled from the Bid Board / linked Customer where we had it.");
+  }
+
+  if (!parts.length) {
+    el.className = "srcnote none";
+    el.textContent = "Nothing auto-filled yet — fill what Ops needs to start.";
+    return;
+  }
+  el.className = sr.found || est.found ? "srcnote" : "srcnote none";
+  el.innerHTML = parts.join("<br>")
+    + "<br>Check it over — typed values always win over anything we guessed.";
 }
 
 function renderForm() {
