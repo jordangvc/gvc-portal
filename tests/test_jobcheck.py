@@ -376,27 +376,33 @@ def test_create_item_update_requires_body():
 def test_projects_trade_config_well_formed_and_gated():
     assert boards.JOBCHECK_PROJECTS_TRADE_COLUMNS, "trade allowlist is empty"
     expected = {
-        "color_mkza9z7c": "Framing Status",
-        "status_19": "Hanging Status",
-        "dup__of_hung_status1": "Scrapping Status",
-        "dup__of_scrapped_status": "Taped Status",
-        "dup__of_taped_status": "2nd Bed Coat",
-        "dup__of_2nd_bed_coat": "3rd Coat",
-        "dup__of_3rd_coat": "Sanded",
-        "dup__of_sanded": "Text/Skim",
-        "color_mkza855s": "Finishing Stage",
+        "color_mkza9z7c": ("Framing Status", "status"),
+        "status_19": ("Hanging Status", "status"),
+        "dup__of_hung_status1": ("Scrapping Status", "status"),
+        "dup__of_scrapped_status": ("Taped Status", "status"),
+        "dup__of_taped_status": ("2nd Bed Coat", "status"),
+        "dup__of_2nd_bed_coat": ("3rd Coat", "status"),
+        "dup__of_3rd_coat": ("Sanded", "status"),
+        "dup__of_sanded": ("Text/Skim", "status"),
+        "color_mkza855s": ("Finishing Stage", "status"),
+        "color8": ("Cleaned Out", "status"),
+        "date1": ("Completion Date", "date"),
+        "notes7": ("Notes", "long_text"),
     }
-    got = {c["id"]: c["label"] for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
+    got = {c["id"]: (c["label"], c["type"])
+           for c in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS}
     assert got == expected
     for entry in boards.JOBCHECK_PROJECTS_TRADE_COLUMNS:
-        assert entry["type"] == "status", entry
+        assert entry["type"] in boards.JOBCHECK_RENDER_TYPES, entry
+        assert entry["type"] == expected[entry["id"]][1], entry
     effective = jf.allowlisted_projects_trade_columns()
     assert [c["id"] for c in effective] == list(expected)
     assert all(c["board"] == "projects" for c in effective)
-    # Display order walks the trade sequence the crew actually walks:
-    # Framing -> Hang -> Scrap -> Tape -> 2nd coat -> 3rd coat -> Sand -> Skim
-    # -> Finishing. Finishing Stage stays last (unchanged from slice 1).
-    assert [c["id"] for c in effective][-1] == "color_mkza855s"
+    # Display order: trade statuses through Finishing Stage, then the
+    # driveway/end-of-job trio — Cleaned Out, Completion Date, Notes last.
+    ids = [c["id"] for c in effective]
+    assert ids.index("color_mkza855s") < ids.index("color8")
+    assert ids[-3:] == ["color8", "date1", "notes7"]
     # Hard exclusions still apply if someone tries to sneak a mirror in.
     saved = boards.JOBCHECK_PROJECTS_TRADE_COLUMNS
     boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved + (
@@ -404,9 +410,9 @@ def test_projects_trade_config_well_formed_and_gated():
         {"id": "link_to_projects", "label": "Link", "type": "board_relation"},
     )
     try:
-        ids = {c["id"] for c in jf.allowlisted_projects_trade_columns()}
-        assert "mirror3" not in ids
-        assert "link_to_projects" not in ids
+        gated_ids = {c["id"] for c in jf.allowlisted_projects_trade_columns()}
+        assert "mirror3" not in gated_ids
+        assert "link_to_projects" not in gated_ids
     finally:
         boards.JOBCHECK_PROJECTS_TRADE_COLUMNS = saved
 
