@@ -1,6 +1,6 @@
 name: P1 activate takeoff outbox
 
-# One-shot / repeatable activation for the takeoff→outbox→estimate bridge.
+# One-shot / repeatable activation for the takeoff->outbox->estimate bridge.
 # Uses GCP_SA_KEY (same as deploy). Never prints secret values.
 on:
   workflow_dispatch:
@@ -22,7 +22,7 @@ jobs:
       PROJECT: gvc-invoice-system
       REGION: us-central1
       SERVICE: gvc-invoice
-      S�RTAL_URL: https://portal.greenvalleycontractors.com
+      SITE_BASE: https://portal.greenvalleycontractors.com
       SCHEDULER_JOB: gvc-takeoff-outbox
       API_SECRET: gvc-service-api-key
     steps:
@@ -96,9 +96,9 @@ jobs:
           fi
           BODY=$(mktemp)
           printf '%s' '{"dry_run":false,"limit":20}' > "$BODY"
-          URI="$PORTAL_URL/v1/tasks/poll-takeoff-outbox"
+          URI="$SITE_BASE/v1/tasks/poll-takeoff-outbox"
           if gcloud scheduler jobs describe "$SCHEDULER_JOB" --location="$REGION" --project="$PROJECT" >/dev/null 2>&1; then
-            echo "Scheduler job exists — updating URI/headers/body/schedule"
+            echo "Scheduler job exists - updating URI/headers/body/schedule"
             gcloud scheduler jobs update http "$SCHEDULER_JOB" \
               --location="$REGION" --project="$PROJECT" \
               --schedule="*/10 * * * *" \
@@ -120,8 +120,8 @@ jobs:
               --message-body-from-file="$BODY" \
               --attempt-deadline=180s
           fi
-          gcloud scheduler jobs describe "$SCHEDULE_JOB" --location="$REGION" --project="$ROJECT" \
-            --format="yaml(name,state,schedule,timeZone,httpTarget.uri)
+          gcloud scheduler jobs describe "$SCHEDULER_JOB" --location="$REGION" --project="$PROJECT" \
+            --format="yaml(name,state,schedule,timeZone,httpTarget.uri)"
 
       - name: Dry-run poll takeoff outbox
         if: ${{ github.event.inputs.mode != 'check' }}
@@ -133,7 +133,7 @@ jobs:
             exit 0
           fi
           code=$(curl -sS -o /tmp/poll.json -w "%{http_code}" -X POST \
-            "$PORTAL_URL/v1/tasks/poll-takeoff-outbox" \
+            "$SITE_BASE/v1/tasks/poll-takeoff-outbox" \
             -H "X-API-Key: $GVC_SERVICE_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{"dry_run":true,"limit":20}')
@@ -151,7 +151,7 @@ jobs:
             exit 0
           fi
           code=$(curl -sS -o /tmp/poll2.json -w "%{http_code}" -X POST \
-            "$PORTAL_URL/v1/tasks/poll-takeoff-outbox" \
+            "$SITE_BASE/v1/tasks/poll-takeoff-outbox" \
             -H "X-API-Key: $GVC_SERVICE_API_KEY" \
             -H "Content-Type: application/json" \
             -d '{"dry_run":false,"limit":20}')
@@ -161,10 +161,12 @@ jobs:
 
       - name: Summary
         if: always()
+        continue-on-error: true
         run: |
           echo "Mode: ${{ github.event.inputs.mode }}"
-          echo "Portal: $PORTAL_URL"
+          echo "Portal: $SITE_BASE"
           echo "Endpoint live check (unauth expect 401):"
-          curl -sS -o /tmp/unauth.json -w "HTTP %{http_code}\n" -X POST \
-            "$PORTAL_URL/v1/tasks/poll-takeoff-outbox" -H "Content-Type: application/json" -d "{}"
-          head -c 200 /tmp/unauth.json; echo
+          code=$(curl -sS -o /tmp/unauth.json -w "%{http_code}" -X POST \
+            "$SITE_BASE/v1/tasks/poll-takeoff-outbox" -H "Content-Type: application/json" -d "{}" || true)
+          echo "HTTP $code"
+          head -c 200 /tmp/unauth.json || true; echo
