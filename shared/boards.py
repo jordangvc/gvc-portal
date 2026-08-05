@@ -122,11 +122,15 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
 #
 # Slice 2 (2026-08-05) adds the tape/coat/sand/skim sequence that PR #18
 # deliberately left out ("Out of scope (next slices): Taped / coats / sanded
-# / skim, Completion Date, Notes"). These 5 ids are the SAME dup__of_* chain
+# / skim, Completion Date, Notes"). Those 5 ids are the SAME dup__of_* chain
 # already verified live against Projects board 1918846405 — documented in
-# CLAUDE.md's 2026-07-27 Job Check v1 build note alongside the 4 columns
-# above (Framing/Hanging/Scrapping/Finishing came from the identical
-# verified list). Completion Date + Notes stay out of scope for this slice.
+# CLAUDE.md's 2026-07-27 Job Check v1 build note alongside Framing/Hanging/
+# Scrapping/Finishing.
+#
+# Slice 3 (this PR) closes the driveway pass: Cleaned Out + Completion Date
+# + Notes — the three end-of-job fields that followed Finishing Stage in the
+# original v1 allowlist. notes7 is long_text (Job Start exclusions writes the
+# same column as {"text": ...}).
 JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
     {"id": "color_mkza9z7c",        "label": "Framing Status",   "type": "status"},
     {"id": "status_19",             "label": "Hanging Status",   "type": "status"},
@@ -137,6 +141,9 @@ JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
     {"id": "dup__of_3rd_coat",      "label": "Sanded",           "type": "status"},
     {"id": "dup__of_sanded",        "label": "Text/Skim",        "type": "status"},
     {"id": "color_mkza855s",        "label": "Finishing Stage",  "type": "status"},
+    {"id": "color8",                "label": "Cleaned Out",      "type": "status"},
+    {"id": "date1",                 "label": "Completion Date",  "type": "date"},
+    {"id": "notes7",                "label": "Notes",            "type": "long_text"},
 )
 
 # Field Manual deep-links for Job Check trade status chips — column id → anchor
