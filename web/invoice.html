@@ -245,7 +245,7 @@
 
       <div class="sub" style="margin-top:16px;">
         <h3>Estimate import <span class="opt">(optional — from the estimate sent for this project)</span></h3>
-        <div class="hint">Pull dollars from the estimate already quoted for this project (Bid Board total, or the full as-sent line items when Drive has them). Opt-in only — never overwrites what's already on the invoice; add what you need, then edit like any other line.</div>
+        <div class="hint">Pull dollars from the estimate already quoted for this project (Bid Board total, or the full as-sent line items when Drive has them). Auto-added on lookup when the form has no lines yet — still editable; add a change order separately if needed.</div>
         <div id="estimate-import-note" class="hint" style="margin-top:8px;">Look up a Project # to check for an estimate to import.</div>
         <div id="estimate-import" style="margin-top:8px;"></div>
       </div>
@@ -517,13 +517,49 @@ function tryAutoAddBillableCo(coIdentifier) {
 }
 
 /* ---- Estimate import ----
- * Opt-in shortcut back to the estimate that was already quoted for this
+ * Shortcut back to the estimate that was already quoted for this
  * project: the Monday Bid Board's rounded total (always fast when a bid is
  * linked) and/or the full as-sent line items when the Drive JSON sidecar is
- * reachable (see /ui/api/invoice/lookup's `estimate_import`). Mirrors the
- * billable-COs picker above — never auto-adds, each button disables once
- * clicked so a double-click can't double-bill. */
+ * reachable (see /ui/api/invoice/lookup's `estimate_import`). On lookup,
+ * when the form has no filled lines yet, dollars are auto-applied (Jordan:
+ * shouldn't type anything unless a CO). Manual Add buttons remain for
+ * drafts that already have lines; each button disables once clicked so a
+ * double-click can't double-bill. */
 let lastEstimateImport = null;
+
+function formHasFilledLineItems() {
+  let has = false;
+  lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
+    const desc = (row.querySelector(".li-desc")?.value || "").trim();
+    const amtRaw = row.querySelector(".li-amount")?.value;
+    const amt = amtRaw === "" || amtRaw == null ? NaN : parseFloat(amtRaw);
+    if (desc || !isNaN(amt)) has = true;
+  });
+  return has;
+}
+
+function applyEstimateImportLines(info, { markAdded } = {}) {
+  if (!info) return false;
+  if (info.line_items && info.line_items.length) {
+    // Drop the empty placeholder row so auto-apply doesn't leave a blank line.
+    lineItemsEl.innerHTML = "";
+    info.line_items.forEach((li) => addLineItem({
+      description: li.description,
+      amount: li.amount,
+      detail: li.detail || "",
+    }));
+    if (markAdded) info._auto_applied = "lines";
+    return true;
+  }
+  if (info.monday_total != null) {
+    lineItemsEl.innerHTML = "";
+    const desc = "Estimate total" + (info.estimate_number ? " (" + info.estimate_number + ")" : "");
+    addLineItem({ description: desc, amount: info.monday_total });
+    if (markAdded) info._auto_applied = "total";
+    return true;
+  }
+  return false;
+}
 
 function renderEstimateImport(info) {
   lastEstimateImport = info || null;
@@ -538,8 +574,15 @@ function renderEstimateImport(info) {
   }
   const bits = [];
   if (info.estimate_number) bits.push(info.estimate_number);
-  note.textContent = "Found an estimate" + (bits.length ? " (" + bits.join(" · ") + ")" : "")
-    + " for this project — add what you need:";
+  const auto = info._auto_applied;
+  if (auto) {
+    note.textContent = "Estimate lines auto-added"
+      + (bits.length ? " from " + bits.join(" · ") : "")
+      + " — edit below if needed, or add a change order.";
+  } else {
+    note.textContent = "Found an estimate" + (bits.length ? " (" + bits.join(" · ") + ")" : "")
+      + " for this project — add what you need:";
+  }
 
   if (info.line_items && info.line_items.length) {
     const row = document.createElement("div");
@@ -549,12 +592,18 @@ function renderEstimateImport(info) {
       + `<div>${n} line item${n === 1 ? "" : "s"} · ${money(info.line_items_total || 0)}</div></div>`;
     const btn = document.createElement("button");
     btn.type = "button"; btn.className = "btn secondary small";
-    btn.textContent = "Add estimate lines";
-    btn.addEventListener("click", () => {
-      info.line_items.forEach((li) => addLineItem({ description: li.description, amount: li.amount }));
+    if (auto === "lines") {
       btn.textContent = "Added"; btn.disabled = true;
-      scheduleAutosave();
-    });
+    } else {
+      btn.textContent = "Add estimate lines";
+      btn.addEventListener("click", () => {
+        info.line_items.forEach((li) => addLineItem({
+          description: li.description, amount: li.amount, detail: li.detail || "",
+        }));
+        btn.textContent = "Added"; btn.disabled = true;
+        scheduleAutosave();
+      });
+    }
     row.appendChild(btn);
     wrap.appendChild(row);
   }
@@ -565,13 +614,18 @@ function renderEstimateImport(info) {
       + `<div>${money(info.monday_total)} · Monday bid total</div></div>`;
     const btn = document.createElement("button");
     btn.type = "button"; btn.className = "btn secondary small";
-    btn.textContent = "Add estimate total";
-    btn.addEventListener("click", () => {
-      const desc = "Estimate total" + (info.estimate_number ? " (" + info.estimate_number + ")" : "");
-      addLineItem({ description: desc, amount: info.monday_total });
+    if (auto === "total" || auto === "lines") {
+      // Lines already cover the dollars (or total was auto-applied).
       btn.textContent = "Added"; btn.disabled = true;
-      scheduleAutosave();
-    });
+    } else {
+      btn.textContent = "Add estimate total";
+      btn.addEventListener("click", () => {
+        const desc = "Estimate total" + (info.estimate_number ? " (" + info.estimate_number + ")" : "");
+        addLineItem({ description: desc, amount: info.monday_total });
+        btn.textContent = "Added"; btn.disabled = true;
+        scheduleAutosave();
+      });
+    }
     row.appendChild(btn);
     wrap.appendChild(row);
   }
@@ -957,6 +1011,18 @@ function setVal(name, value) {
   const el = $("#invoice-form").elements[name];
   if (el && value !== undefined && value !== null) el.value = value;
 }
+function applyPhoneToContactName(phone) {
+  // Invoice form has no dedicated phone field — fold into contact_name as
+  // "Name (phone)" when the contact doesn't already carry digits.
+  const p = (phone || "").trim();
+  if (!p) return;
+  const el = $("#invoice-form").elements["contact_name"];
+  if (!el) return;
+  const cur = (el.value || "").trim();
+  if (/\d/.test(cur)) return;
+  el.value = cur ? `${cur} (${p})` : p;
+}
+
 function applyPrefill(p) {
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   if (c.name) setVal("client_name", c.name);
@@ -966,6 +1032,7 @@ function applyPrefill(p) {
     setVal("client_emails", emails.filter(Boolean).join("\n"));
   }
   if (c.billing_address) setVal("billing_address", c.billing_address);
+  if (c.phone) applyPhoneToContactName(c.phone);
   if ($("#client_no_email") && (c.no_email || c.delivery_method)) {
     $("#client_no_email").checked = !!(c.no_email || (c.delivery_method && c.delivery_method !== "email"));
     if (c.delivery_method) setVal("delivery_method", c.delivery_method);
@@ -1131,6 +1198,16 @@ async function applyLookupResponse(r, label) {
     }
   }
   renderEstimateImport(prefill.estimate_import);
+  // Auto-apply estimate dollars when the form has no filled lines yet
+  // (placeholder empty row doesn't count). Prefer sidecar line items;
+  // else fall back to Monday bid total as one line.
+  const estInfo = prefill.estimate_import;
+  if (estInfo && estInfo.available && !formHasFilledLineItems()) {
+    if (applyEstimateImportLines(estInfo, { markAdded: true })) {
+      renderEstimateImport(estInfo);  // refresh note + disabled "Added" buttons
+      scheduleAutosave();
+    }
+  }
   $("#invoice-form").scrollIntoView({ behavior: "smooth" });
 }
 
@@ -1205,6 +1282,7 @@ function customerSearch() {
           if (c.contact_name) setVal("contact_name", c.contact_name);
           if (c.email) setVal("client_emails", c.email);
           if (c.billing_address) setVal("billing_address", c.billing_address);
+          if (c.phone) applyPhoneToContactName(c.phone);
           if ($("#client_no_email")) { $("#client_no_email").checked = false; syncNoEmailUi(); }
           setVal("customer_search", c.name || "");
           box.style.display = "none"; box.innerHTML = "";

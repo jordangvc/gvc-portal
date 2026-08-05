@@ -1378,6 +1378,35 @@ def ui_invoice_lookup(
         sidecar=sidecar,
     )
 
+    # Soft-fill missing client/job identity from the estimate sidecar when
+    # Monday left those slots empty. Never overwrite an existing Monday value.
+    if sidecar and isinstance(sidecar, dict):
+        sc_client = sidecar.get("client") or {}
+        sc_job = sidecar.get("job") or {}
+        pref_client = prefill.setdefault("client", {})
+        pref_job = prefill.setdefault("job", {})
+        if isinstance(sc_client, dict):
+            if not (pref_client.get("name") or "").strip() and sc_client.get("name"):
+                pref_client["name"] = sc_client["name"]
+            if not (pref_client.get("contact_name") or "").strip() and sc_client.get("contact_name"):
+                pref_client["contact_name"] = sc_client["contact_name"]
+            if not (pref_client.get("email") or "").strip() and not pref_client.get("emails"):
+                if sc_client.get("email"):
+                    pref_client["email"] = sc_client["email"]
+                elif isinstance(sc_client.get("emails"), list) and sc_client["emails"]:
+                    pref_client["emails"] = list(sc_client["emails"])
+            if not (pref_client.get("billing_address") or "").strip() and sc_client.get("billing_address"):
+                pref_client["billing_address"] = sc_client["billing_address"]
+            if not (pref_client.get("phone") or "").strip() and sc_client.get("phone"):
+                pref_client["phone"] = sc_client["phone"]
+        if isinstance(sc_job, dict):
+            if not (pref_job.get("name") or "").strip() and sc_job.get("name"):
+                pref_job["name"] = sc_job["name"]
+            if not (pref_job.get("site_address") or "").strip():
+                site = sc_job.get("site_address") or sc_job.get("location")
+                if site:
+                    pref_job["site_address"] = site
+
     activity.log_event(
         "invoice.lookup", actor=email,
         target=pn or str(parsed_id or ""),
@@ -1805,6 +1834,35 @@ def ui_estimate_search(request: Request, q: str = "") -> dict:
                         "advice": "Try again, or paste the Monday item URL directly."},
             )
     return {"ok": True, "results": results}
+
+
+@app.get("/ui/api/estimate/customer-search")
+def ui_estimate_customer_search(request: Request, q: str = "") -> dict:
+    """
+    Search the Customer & Vendor Directory by name to import client identity
+    (name, email, contact, phone) into the estimate form without hand-keying.
+    Same Directory + filter as the invoice customer-search. Vendors dropped.
+    """
+    require_feature(request, "estimate")
+    term = (q or "").strip()
+    if len(term) < 2:
+        return {"ok": True, "customers": []}
+    try:
+        customers = MondayClient().search_customers(term, limit=10)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "CUSTOMER_SEARCH_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Try again, or check Monday connectivity."},
+        )
+    return {"ok": True, "customers": customers}
 
 
 @app.get("/ui/api/estimate/salespeople")

@@ -255,7 +255,7 @@ const lineItemsEl = $("#line-items");
 
 // Holds what the Monday lookup resolved, so finalize can write to the right
 // parent + number correctly. Cleared if the user edits the link fields.
-let linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [] };
+let linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [], project_type: null };
 
 function lineItemRow(v = {}) {
   const div = document.createElement("div");
@@ -285,8 +285,23 @@ function recalc() {
   $("#t-total").textContent = money(total);
 }
 
-function val(n) { const e = $("#co-form").elements[n]; return e ? (e.value || "").trim() : ""; }
-function setField(name, value) { const el = $("#co-form").elements[name]; if (el) el.value = value == null ? "" : value; }
+function val(n) {
+  const e = ($("#co-form").elements[n]) || document.querySelector(`[name="${n}"]`);
+  return e ? (e.value || "").trim() : "";
+}
+function setField(name, value) {
+  const el = ($("#co-form").elements[name]) || document.querySelector(`[name="${name}"]`);
+  if (el) el.value = value == null ? "" : value;
+}
+
+/** Map Monday Projects "Project Type" label → estimate/CO job.project_type. */
+function mapProjectType(label) {
+  const s = String(label || "").trim().toLowerCase();
+  if (!s) return null;
+  if (s.indexOf("residential") >= 0) return "residential";
+  if (s.indexOf("commercial") >= 0) return "commercial";
+  return null;
+}
 
 function collectData() {
   const client = { name: val("client_name"), email: val("client_email") };
@@ -296,6 +311,7 @@ function collectData() {
 
   const job = { name: val("job_name") };
   if (val("site_address")) job.site_address = val("site_address");
+  if (linked.project_type) job.project_type = linked.project_type;
 
   const breakdown = [];
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
@@ -393,6 +409,7 @@ function applyData(p) {
     monday_item_id: link.monday_item_id || null,
     gfolder_url: link.gfolder_url || null,
     existing_co_identifiers: co.existing_co_identifiers || [],
+    project_type: j.project_type || null,
   };
   if (link.drive_folder_url) setField("drive_folder_url", link.drive_folder_url);
   updateReviseUI();
@@ -562,14 +579,20 @@ async function loadProject(ref) {
   if (c.job_name) setField("job_name", c.job_name);
   if (c.site_address) setField("site_address", c.site_address);
   if (c.project_number) setField("base_number", c.project_number);
+  // Belt+suspenders with backend enrich_project_context: builder fills client
+  // when the linked Customer was empty.
+  if (c.builder && !val("client_name")) setField("client_name", c.builder);
+  if (c.gfolder_url) setField("drive_folder_url", c.gfolder_url);
   linked = {
     monday_item_id: c.monday_item_id || null,
     gfolder_url: c.gfolder_url || null,
     existing_co_identifiers: (c.existing_co_identifiers || []).filter((x) => /^CO\./.test(x)),
+    project_type: mapProjectType(c.project_type),
   };
   let msg = `✅ Linked to Monday project <strong>${escapeHtml(c.job_name || c.monday_item_id)}</strong>.`;
   if (c.gfolder_url) msg += " Drive folder found — the CO PDF will be filed there.";
   else msg += " ⚠️ No Drive folder on this project — paste a Drive folder URL above so the PDF gets filed.";
+  if (c.scope_summary) msg += " Project scope on file — write the CHANGE only in description.";
   setLinkState("ok", msg);
   renderExistingCos(c.existing_cos || []);
   scheduleAutosave();
@@ -827,7 +850,7 @@ function clearForm() {
   $("#co-form").reset();
   lineItemsEl.innerHTML = ""; addLineItem();
   $("[name=date]").value = new Date().toISOString().slice(0, 10);
-  linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [] };
+  linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [], project_type: null };
   $("#existing-cos").innerHTML = ""; $("#search-results").innerHTML = "";
   lastPreviewOk = false; $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");

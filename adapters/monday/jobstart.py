@@ -37,6 +37,7 @@ the caller didn't hand it.
 from __future__ import annotations
 
 import json
+import re
 import sys
 from typing import Any, Optional
 
@@ -88,8 +89,21 @@ _VALUE_FRAGMENT = """
           text
           value
           ... on MirrorValue { display_value }
-          ... on BoardRelationValue { display_value }
+          ... on BoardRelationValue { display_value linked_items { id name } }
 """
+
+# Customer mirror columns on the Bid Board — same ids as estimate prefill
+# (adapters/monday/estimate.py COL_CONTACT_MIRROR / COL_PHONE_MIRROR).
+COL_CONTACT_MIRROR = "mirror6"
+COL_PHONE_MIRROR = "dup__of_mirror"
+
+# Company-ish tokens — a mirror "contact" carrying these is not a person name.
+_COMPANY_MARKERS = re.compile(
+    r"\b(llc|l\.l\.c\.|inc|incorporated|corp|corporation|ltd|limited|"
+    r"co\.|company|construction|contractors|contracting|builders|builder|"
+    r"development|developers|properties|homes|group|enterprises|services)\b",
+    re.I,
+)
 
 
 def _item_url(board_id: int, item_id) -> str:
@@ -108,18 +122,87 @@ def _column_text(cv: dict) -> Optional[str]:
 
 
 def _linked_ids(cv: Optional[dict]) -> list[int]:
-    """Item ids out of a board_relation column's raw JSON value."""
+    """Item ids out of a board_relation column's raw JSON value or linked_items."""
     if not cv:
         return []
+    out: list[int] = []
+    seen: set[int] = set()
     try:
         parsed = json.loads(cv.get("value") or "{}")
     except (json.JSONDecodeError, TypeError):
-        return []
-    out = []
+        parsed = {}
     for entry in parsed.get("linkedPulseIds") or []:
         pid = entry.get("linkedPulseId")
         if pid:
-            out.append(int(pid))
+            iid = int(pid)
+            if iid not in seen:
+                seen.add(iid)
+                out.append(iid)
+    for li in cv.get("linked_items") or []:
+        pid = li.get("id")
+        if pid:
+            iid = int(pid)
+            if iid not in seen:
+                seen.add(iid)
+                out.append(iid)
+    return out
+
+
+def looks_like_person_name(name: str) -> bool:
+    """
+    PURE. True when a Customers-board contact mirror looks like a person, not
+    a company name — used to prefill gc_pm without stamping "Danis Builders LLC".
+    """
+    s = (name or "").strip()
+    if not s or len(s) < 2:
+        return False
+    if "@" in s or "http" in s.lower():
+        return False
+    if _COMPANY_MARKERS.search(s):
+        return False
+    if sum(c.isdigit() for c in s) > len(s) // 2:
+        return False
+    return True
+
+
+def compose_supervisor(contact: Optional[str], phone: Optional[str]) -> Optional[str]:
+    """PURE. Site-supervisor line from customer contact mirror + phone mirror."""
+    contact = (contact or "").strip()
+    phone = (phone or "").strip()
+    if contact and phone:
+        if phone in contact:
+            return contact
+        return f"{contact} ({phone})"
+    return contact or phone or None
+
+
+def apply_customer_prefill(
+    prefill: dict,
+    *,
+    customer: Optional[str],
+    contact: Optional[str],
+    phone: Optional[str],
+) -> dict:
+    """
+    PURE. Back-fill packet fields from the bid's linked Customer mirrors.
+    Never invents a Customers record — only uses values already on the bid row.
+    """
+    out = dict(prefill or {})
+    customer = (customer or "").strip()
+    contact = (contact or "").strip()
+    phone = (phone or "").strip()
+
+    if not out.get("builder") and customer:
+        out["builder"] = customer
+
+    if not out.get("supervisor"):
+        composed = compose_supervisor(contact, phone)
+        if composed:
+            out["supervisor"] = composed
+
+    if not out.get("gc_pm") and contact and looks_like_person_name(contact):
+        out["gc_pm"] = contact
+
     return out
 
 
@@ -147,6 +230,8 @@ def _bid_read_columns() -> list[str]:
         boards.JOBSTART_BID_CUSTOMER_COL,
         boards.JOBSTART_BID_SERVICES_COL,
         boards.JOBSTART_BID_ESTIMATE_PDF_COL,
+        COL_CONTACT_MIRROR,
+        COL_PHONE_MIRROR,
     ]
     ids += [f["prefill"] for f in boards.JOBSTART_FIELDS if f.get("prefill")]
     return list(dict.fromkeys([i for i in ids if i]))
@@ -305,6 +390,12 @@ def get_bid_detail(mc, item_id: int) -> Optional[dict]:
         if text:
             prefill[field["key"]] = text
 
+    customer = _column_text(cvs.get(boards.JOBSTART_BID_CUSTOMER_COL) or {})
+    contact = _column_text(cvs.get(COL_CONTACT_MIRROR) or {})
+    phone = _column_text(cvs.get(COL_PHONE_MIRROR) or {})
+    prefill = apply_customer_prefill(
+        prefill, customer=customer, contact=contact, phone=phone)
+
     stage = _column_text(cvs.get(boards.JOBSTART_BID_STAGE_COL) or {})
     return {
         "item_id": int(item["id"]),
@@ -319,7 +410,9 @@ def get_bid_detail(mc, item_id: int) -> Optional[dict]:
         "context": {
             "estimate_number": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_NUM_COL) or {}),
             "estimate_total": _column_text(cvs.get(boards.JOBSTART_BID_ESTIMATE_TOTAL_COL) or {}),
-            "customer": _column_text(cvs.get(boards.JOBSTART_BID_CUSTOMER_COL) or {}),
+            "customer": customer,
+            "contact": contact,
+            "phone": phone,
             "location": _column_text(cvs.get(boards.JOBSTART_BID_LOCATION_COL) or {}),
             "services": _column_text(cvs.get(boards.JOBSTART_BID_SERVICES_COL) or {}),
             "accepted_date": _column_text(cvs.get(boards.JOBSTART_BID_ACCEPTED_DATE_COL) or {}),
