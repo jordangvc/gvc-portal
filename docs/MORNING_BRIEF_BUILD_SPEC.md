@@ -171,6 +171,18 @@ Important Projects-board fields include:
 - Jordan receives only owner-level exceptions and the approved high-level preparation alerts.
 - Native phone push notifications are a future enhancement; portal and Slack are required now.
 
+### Cloud Scheduler — Action Request daytime acks
+
+The 30-minute acknowledgment window only works if something evaluates escalations
+during the workday. Prep-cutoff (`POST /v1/tasks/morning-prep-cutoff`, ~6:50 AM)
+also runs AR escalations once, but that is too early for daytime 30-min acks.
+
+Wire a second job that POSTs `POST /v1/tasks/morning-ar-escalations` every
+10–15 minutes, Monday–Friday, 7:00–17:00 America/New_York, with `X-API-Key`.
+That endpoint DMs the recipient (ack-due / overdue) and DMs the owner email on
+overdue — never posts to `#operations` or any channel. Idempotent: only newly
+transitioned escalations notify.
+
 ## Brief Generation and Preparation
 
 - Generate the brief at 4:30 AM America/New_York on scheduled workdays.

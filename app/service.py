@@ -3038,6 +3038,23 @@ def v1_morning_prep_cutoff(
     return morning_flow.run_prep_cutoff_sweep()
 
 
+@app.post("/v1/tasks/morning-ar-escalations")
+def v1_morning_ar_escalations(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """
+    Daytime Action Request escalation sweep: 30-min ack-due reminders and
+    overdue DMs. Slack DMs only — never posts to #operations or any channel.
+
+    Wire Cloud Scheduler every 10–15 min Mon–Fri 7:00–17:00 America/New_York
+    (job name suggestion: gvc-morning-ar-escalations). Idempotent — only
+    newly-transitioned escalations notify. X-API-Key protected like the
+    other /v1/tasks/* endpoints.
+    """
+    require_api_key(x_api_key)
+    return morning_flow.run_ar_escalation_sweep()
+
+
 # ---------------------------------------------------------------------------
 
 @app.post("/ui/api/monday/warm")

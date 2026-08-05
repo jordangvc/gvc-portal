@@ -295,6 +295,61 @@ def test_normalize_updated_at_feeds_hold_in_card():
     assert card["updated_at"] == "2026-07-01T00:00:00Z"
 
 
+def test_ar_escalation_sweep_dms_ack_and_overdue():
+    """Daytime sweep DMs recipient; overdue also DMs owner — never a channel."""
+    from adapters import slack_notify
+    from zoneinfo import ZoneInfo
+
+    now = datetime(2026, 8, 5, 10, 0, tzinfo=ZoneInfo("America/New_York"))
+    ack_rec = {
+        "id": "ar-ack",
+        "needed_from_email": "mark@greenvalleycontractors.com",
+        "need": "Need more screws at site",
+        "escalation": ar.ESCALATION_ACK_REMINDER,
+    }
+    overdue_rec = {
+        "id": "ar-ovd",
+        "needed_from_email": "robert@greenvalleycontractors.com",
+        "need": "GC waiting on schedule",
+        "escalation": ar.ESCALATION_OVERDUE,
+    }
+    calls = {"ack": [], "esc": [], "dm": []}
+    orig_run = ar.run_escalations
+    orig_ack = slack_notify.notify_action_request_ack_due
+    orig_esc = slack_notify.notify_action_request_escalation
+    orig_dm = slack_notify.post_dm
+    ar.run_escalations = lambda _now: [ack_rec, overdue_rec]
+    slack_notify.notify_action_request_ack_due = (
+        lambda req: calls["ack"].append(req) or {"ok": True}
+    )
+    slack_notify.notify_action_request_escalation = (
+        lambda req: calls["esc"].append(req) or {"ok": True}
+    )
+    slack_notify.post_dm = (
+        lambda email, text: calls["dm"].append((email, text)) or {"ok": True}
+    )
+    try:
+        out = flow.run_ar_escalation_sweep(now=now)
+    finally:
+        ar.run_escalations = orig_run
+        slack_notify.notify_action_request_ack_due = orig_ack
+        slack_notify.notify_action_request_escalation = orig_esc
+        slack_notify.post_dm = orig_dm
+    assert out["ok"] is True
+    assert out["ar_escalated"] == 2
+    assert [r["id"] for r in calls["ack"]] == ["ar-ack"]
+    assert [r["id"] for r in calls["esc"]] == ["ar-ovd"]
+    assert len(calls["dm"]) == 1
+    assert "jordan@" in calls["dm"][0][0]
+    assert "overdue" in calls["dm"][0][1].lower()
+
+
+def test_ar_escalation_task_route_registered():
+    src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
+    assert '@app.post("/v1/tasks/morning-ar-escalations")' in src
+    assert "run_ar_escalation_sweep" in src
+
+
 if __name__ == "__main__":
     tests = [
         test_roles_in_features,
@@ -315,6 +370,8 @@ if __name__ == "__main__":
         test_attach_gfolder_urls_soft_fails,
         test_hub_morning_route_aliases_registered,
         test_normalize_updated_at_feeds_hold_in_card,
+        test_ar_escalation_sweep_dms_ack_and_overdue,
+        test_ar_escalation_task_route_registered,
     ]
     failed = 0
     for fn in tests:

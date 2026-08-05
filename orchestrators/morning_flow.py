@@ -10,6 +10,7 @@ channel-post path here "for review" or "temporarily."
 """
 from __future__ import annotations
 
+import os
 import sys
 from datetime import datetime
 from typing import Any, Optional
@@ -747,6 +748,67 @@ def build_owner_pulse(email: str) -> dict[str, Any]:
     }
 
 
+def run_ar_escalation_sweep(*, now: Optional[datetime] = None) -> dict:
+    """
+    Evaluate Action Request escalations and DM the recipient (ack-due or
+    overdue). Also DMs the owner/GM on overdue via the existing owner-alert
+    helper. NEVER posts to a Slack channel — DMs only (Jordan 2026-08-05).
+
+    Safe to call every 10–15 minutes during the workday; ``run_escalations``
+    only returns newly-transitioned rows, so retries are idempotent.
+    """
+    from adapters import slack_notify
+    now = now or datetime.now(_ET)
+    newly: list = []
+    try:
+        newly = ar.run_escalations(now)
+    except Exception as e:  # noqa: BLE001
+        print(f"[morning] AR escalate: {e}", file=sys.stderr)
+        return {"ok": False, "error": str(e), "ar_escalated": 0, "notified": []}
+
+    notified: list[dict] = []
+    for req in newly or []:
+        try:
+            payload = (
+                req.get("request")
+                if isinstance(req, dict) and "request" in req
+                else req
+            )
+            if not isinstance(payload, dict):
+                continue
+            esc = payload.get("escalation") or ""
+            if esc == ar.ESCALATION_ACK_REMINDER:
+                slack_notify.notify_action_request_ack_due(payload)
+            else:
+                slack_notify.notify_action_request_escalation(payload)
+            # Spec: overdue gets GM visibility (DM only — never a channel).
+            # Ack-reminder stays with the recipient; Jordan gets owner-level
+            # exceptions, not every 30-minute nudge.
+            if esc == ar.ESCALATION_OVERDUE:
+                owner_email = (
+                    os.environ.get("GVC_OWNER_SLACK_EMAIL")
+                    or "jordan@greenvalleycontractors.com"
+                )
+                who = (payload.get("needed_from_email") or "?").split("@")[0]
+                need = (payload.get("need") or "")[:160]
+                slack_notify.post_dm(
+                    owner_email,
+                    f"Action Request overdue for {who}: {need}",
+                )
+            notified.append({
+                "id": payload.get("id"),
+                "escalation": esc,
+                "needed_from_email": payload.get("needed_from_email"),
+            })
+        except Exception as e:  # noqa: BLE001
+            print(f"[morning] AR escalate notify: {e}", file=sys.stderr)
+    return {
+        "ok": True,
+        "ar_escalated": len(notified),
+        "notified": notified,
+    }
+
+
 def run_prep_cutoff_sweep() -> dict:
     from adapters import slack_notify
     now = datetime.now(_ET)
@@ -770,24 +832,10 @@ def run_prep_cutoff_sweep() -> dict:
                     owner_alerts.append(email)
         except Exception as e:  # noqa: BLE001
             print(f"[morning] prep sweep {email}: {e}", file=sys.stderr)
-    newly = []
-    try:
-        newly = ar.run_escalations(now)
-    except Exception as e:  # noqa: BLE001
-        print(f"[morning] AR escalate: {e}", file=sys.stderr)
-    for req in newly or []:
-        try:
-            payload = req.get("request") if isinstance(req, dict) and "request" in req else req
-            esc = (payload.get("escalation") if isinstance(payload, dict) else None) or ""
-            if esc == "ack_reminder":
-                slack_notify.notify_action_request_ack_due(payload)
-            else:
-                slack_notify.notify_action_request_escalation(payload)
-        except Exception:  # noqa: BLE001
-            pass
+    ar_result = run_ar_escalation_sweep(now=now)
     return {
         "ok": True,
         "prep_notified": notified,
         "owner_alerts": owner_alerts,
-        "ar_escalated": len(newly or []),
+        "ar_escalated": int(ar_result.get("ar_escalated") or 0),
     }
