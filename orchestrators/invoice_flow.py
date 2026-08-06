@@ -29,6 +29,8 @@ from subsystems.invoice import correct as invoice_correct
 from subsystems.invoice.aia import AIANotConfigured, export_aia_pdfs
 from adapters.stripe_invoice import (
     create_stripe_invoice,
+    finalize_draft_invoice,
+    is_reusable_stripe_status,
     preflight_stripe,
     upsert_stripe_customer,
     void_stripe_invoice,
@@ -221,14 +223,33 @@ def process_one(
         # issued" rather than thinking she just created a new one.
         existing_check = preflight_stripe(enriched)
         existing = existing_check.get("existing_invoice_with_identifier")
-        if existing and existing.get("status") in ("open", "paid"):
+        if existing and is_reusable_stripe_status(existing.get("status")):
+            status = (existing.get("status") or "").strip().lower()
             print(f"[live {identifier}] Stripe invoice already exists "
-                  f"(status={existing['status']}); reusing — no new create call.")
-            hosted_url = existing.get("hosted_invoice_url") or "(no hosted URL)"
+                  f"(status={status}); reusing — no new create call.")
             writeback["already_existed"] = True
-            writeback["stripe_customer_id"] = existing_check["customer"]["id"]
-            writeback["stripe_invoice_id"] = existing["id"]
-            writeback["hosted_invoice_url"] = existing.get("hosted_invoice_url")
+            writeback["stripe_customer_id"] = (
+                existing_check.get("customer", {}).get("id")
+                or existing.get("customer")
+            )
+            # Orphan draft left by a prior create that failed mid-finalize:
+            # finalize it in place instead of creating a duplicate (which
+            # would also collide on the identifier-scoped idempotency key).
+            if status == "draft" and finalize:
+                finalized = finalize_draft_invoice(existing["id"])
+                writeback["finalized_orphan_draft"] = True
+                writeback["stripe_invoice_id"] = finalized["id"]
+                writeback["hosted_invoice_url"] = finalized.get("hosted_invoice_url")
+                hosted_url = finalized.get("hosted_invoice_url") or "(no hosted URL)"
+                print(f"[live {identifier}] finalized orphan draft "
+                      f"{finalized['id']} → status={finalized.get('status')}")
+            else:
+                writeback["stripe_invoice_id"] = existing["id"]
+                writeback["hosted_invoice_url"] = existing.get("hosted_invoice_url")
+                hosted_url = existing.get("hosted_invoice_url") or (
+                    "(draft — no hosted URL until finalized)" if status == "draft"
+                    else "(no hosted URL)"
+                )
             # If this invoice number already exists but under a DIFFERENT email
             # than the one just entered, the office is almost certainly trying to
             # correct a mistake by re-running. Re-running only reuses the old

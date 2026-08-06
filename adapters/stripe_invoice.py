@@ -274,6 +274,37 @@ def create_stripe_invoice(
     return invoice
 
 
+# Statuses that mean "do not create another Stripe invoice for this
+# identifier". `draft` is included so a create that failed mid-finalize
+# (orphan draft) is finalized-and-reused instead of duplicated — see
+# CLAUDE.md "INVOICE FINALIZE FINDING (2026-06-18)".
+REUSABLE_INVOICE_STATUSES = frozenset({"open", "paid", "draft"})
+
+
+def is_reusable_stripe_status(status: Optional[str]) -> bool:
+    """True when live create should short-circuit to the existing invoice."""
+    return (status or "").strip().lower() in REUSABLE_INVOICE_STATUSES
+
+
+def finalize_draft_invoice(invoice_id: str) -> dict:
+    """
+    Finalize an orphan Stripe draft so it gets a hosted_invoice_url.
+
+    Returns the same dict shape preflight reports for an existing invoice.
+    Raises Stripe errors to the caller (live path maps them via _friendly_error).
+    """
+    if not invoice_id:
+        raise ValueError("finalize_draft_invoice requires invoice_id")
+    inv = stripe.Invoice.finalize_invoice(invoice_id)
+    return {
+        "id": inv.id,
+        "status": inv.status,
+        "hosted_invoice_url": inv.hosted_invoice_url,
+        "amount_due": inv.amount_due,
+        "customer": getattr(inv, "customer", None),
+    }
+
+
 def preflight_stripe(enriched: dict) -> dict:
     """
     Read-only Stripe check. Reports what would happen on a live run without
