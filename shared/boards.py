@@ -146,13 +146,30 @@ JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
     {"id": "notes7",                "label": "Notes",            "type": "long_text"},
 )
 
-# Field Manual deep-links for Job Check trade status chips — column id → anchor
-# in web/fieldguide.html. Only columns with a clear matching procedure.
+# Field Manual deep-links for Job Check trade status chips — Projects column id
+# → anchor in web/fieldguide.html. Only columns with a clear matching procedure
+# we will stand behind (no orphan Completeness/Notes links).
 JOBCHECK_FIELDGUIDE_ANCHORS: dict[str, str] = {
     "color_mkza9z7c": "#framing",
-    "status_19": "#hang",
+    "status_19": "#hang",  # Projects only — Ops status_19 is Scheduled Day
     "dup__of_hung_status1": "#scrape",
+    "dup__of_scrapped_status": "#finish",   # Taped Status
+    "dup__of_taped_status": "#finish",      # 2nd Bed Coat
+    "dup__of_2nd_bed_coat": "#finish",      # 3rd Coat
+    "dup__of_3rd_coat": "#finish",          # Sanded
+    "dup__of_sanded": "#level5-skim",       # Text/Skim — not a free Level 5
     "color_mkza855s": "#finish",
+    "color8": "#cleanout",
+}
+
+# Ops logistics columns → Field Manual (separate map so Scheduled Day never
+# inherits the Projects Hanging how-to via the shared status_19 id).
+JOBCHECK_OPS_FIELDGUIDE_ANCHORS: dict[str, str] = {
+    "text_mkz4p9tk": "#scaffold-lifts",      # Scaffolding
+    "text_mkz4q570": "#job-conditions",      # Heater/Cans
+    "text_mkz49r0m": "#jobstart-firstday",   # Lock Box
+    "color_mm02xmc0": "#window-returns",     # Window type
+    "long_text_mkpzf3je": "#jobstart-firstday",  # Open questions for Ops
 }
 
 

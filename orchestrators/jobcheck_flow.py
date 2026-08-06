@@ -112,15 +112,14 @@ def field_key(entry_or_board, col_id: Optional[str] = None) -> str:
 def fieldguide_anchor(column_id: str, board: str) -> Optional[str]:
     """
     Field Manual deep-link for a Job Check column, if one exists.
-    status_19 on Ops is Scheduled Day — not Hanging — so the shared id
-    only maps on the Projects board.
+    Projects and Ops use separate maps so shared column ids (status_19)
+    cannot leak the wrong how-to (Hanging vs Scheduled Day).
     """
-    anchor = boards.JOBCHECK_FIELDGUIDE_ANCHORS.get(column_id)
-    if not anchor:
-        return None
-    if column_id == "status_19" and board != BOARD_PROJECTS:
-        return None
-    return anchor
+    if board == BOARD_PROJECTS:
+        return boards.JOBCHECK_FIELDGUIDE_ANCHORS.get(column_id)
+    if board == BOARD_OPS:
+        return boards.JOBCHECK_OPS_FIELDGUIDE_ANCHORS.get(column_id)
+    return None
 
 
 def parse_value_key(key: str) -> tuple[str, str]:

@@ -447,9 +447,25 @@ def test_fieldguide_anchors_map_trade_columns():
     for col_id, anchor in boards.JOBCHECK_FIELDGUIDE_ANCHORS.items():
         assert col_id in trade_ids, f"{col_id} not in trade columns"
         assert isinstance(anchor, str) and anchor.startswith("#") and len(anchor) > 1
+    # Coat sequence + skim + clean-out all deep-link now.
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["dup__of_scrapped_status"] == "#finish"
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["dup__of_sanded"] == "#level5-skim"
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["color8"] == "#cleanout"
     # status_19 on Ops is Scheduled Day — no Hanging how-to there.
     assert jf.fieldguide_anchor("status_19", "ops") is None
     assert jf.fieldguide_anchor("status_19", "projects") == "#hang"
+
+
+def test_fieldguide_ops_logistics_anchors():
+    ops_ids = {c["id"] for c in boards.JOBCHECK_COLUMNS}
+    for col_id, anchor in boards.JOBCHECK_OPS_FIELDGUIDE_ANCHORS.items():
+        assert col_id in ops_ids, f"{col_id} not in Ops Job Check columns"
+        assert isinstance(anchor, str) and anchor.startswith("#") and len(anchor) > 1
+        assert jf.fieldguide_anchor(col_id, "ops") == anchor
+        # Ops anchors must not accidentally apply on Projects.
+        assert jf.fieldguide_anchor(col_id, "projects") is None
+    assert jf.fieldguide_anchor("text_mkz4p9tk", "ops") == "#scaffold-lifts"
+    assert jf.fieldguide_anchor("color_mm02xmc0", "ops") == "#window-returns"
 
 
 def test_status_19_collision_is_board_scoped():
