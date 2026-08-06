@@ -259,8 +259,8 @@
     <div class="card">
       <h2>Estimate details</h2>
       <div class="grid">
-        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned)</span></label><input name="identifier" placeholder="auto: EST-YYYY-MMDD-NNN" />
-          <div class="hint">Assigned by the service as <code>{year}-{monthday}-{NNN}</code> (e.g. <code>2026-0611-001</code>). Only fill this to re-issue a specific number.</div></div>
+        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned on Preview)</span></label><input name="identifier" placeholder="auto: EST-YYYY-MMDD-NNN" />
+          <div class="hint">Assigned on Preview as <code>EST-YYYY-MMDD-NNN</code> (e.g. <code>EST-2026-0611-001</code>). Leave blank for a new estimate; only fill to revise an existing number.</div></div>
         <div><label>Plan Folder # <span class="opt">(optional — Jake's numbered Drive folder)</span></label>
           <input name="plan_folder_number" inputmode="numeric" placeholder="341" />
           <div class="hint">Leading number of Jake's plan folder (e.g. <code>341</code>). Prefills from the Bid Board; saved back on Accept, and the PDF is also filed there.</div></div>
@@ -543,7 +543,14 @@ async function run(mode) {
       $("#preview-frame").src = url;
       $("#preview-card").classList.add("show");
       lastPreviewOk = true; $("#btn-accept").disabled = false;
-      setStatus("info", `✅ Preview ready below (estimate <strong>${wb.identifier}</strong> — final number assigned at Accept). Review it, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
+      // Surface the service-assigned EST-… in the field (it was blank on purpose
+      // until Preview). Accept keeps this number; leave blank on a fresh form
+      // for the next new estimate.
+      if (wb.identifier) {
+        setField("identifier", wb.identifier);
+        updateReviseUI();
+      }
+      setStatus("info", `✅ Preview ready below (estimate <strong>${wb.identifier}</strong>). Number is filled in above — review the PDF, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
       $("#preview-card").scrollIntoView({ behavior: "smooth" });
     } else {
       lastPreviewOk = false; $("#btn-accept").disabled = true;

@@ -313,6 +313,13 @@ def test_portal_estimate_url_building():
     assert qa.portal_estimate_url("2026-0804-001") == (
         "https://portal.greenvalleycontractors.com/ui/estimate?q=2026-0804-001"
     )
+    # Prefixed spine → bare core in q= (Monday Estimate # is bare).
+    assert qa.portal_estimate_url("EST-2026-0804-001") == (
+        "https://portal.greenvalleycontractors.com/ui/estimate?q=2026-0804-001"
+    )
+    assert qa.portal_estimate_url("PRO-2026-0804-001") == (
+        "https://portal.greenvalleycontractors.com/ui/estimate?q=2026-0804-001"
+    )
     old = os.environ.get("GVC_PORTAL_PUBLIC_URL")
     try:
         os.environ["GVC_PORTAL_PUBLIC_URL"] = "https://example.test/"
