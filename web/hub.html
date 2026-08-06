@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -8,7 +8,8 @@
      own <style> block; see docs/CLAUDE-DESIGN-BRIEF.md. -->
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
-  /* Hub-only: tile icons, footer, and phone density. Everything else is gvc.css. */
+  /* Hub-only: tile icons, footer, and phone density. Brand = gvc.css Command
+     (data-palette=emerald). Contract: docs/GVC-COMMAND-STYLE.md */
   .hub-ico { font-size: 26px; line-height: 1; }
   .hub-ft { display: flex; justify-content: space-between; gap: var(--gvc-space-3);
     flex-wrap: wrap; max-width: 1240px; margin: 0 auto;
@@ -194,7 +195,7 @@
 <footer class="hub-ft">
   <span>Signed in via your @greenvalleycontractors.com account. Need access to a tool? Ask an admin.</span>
   <!-- Version count: bump rN on every user-visible portal change (rule in CLAUDE.md) -->
-  <span style="white-space:nowrap;">Portal <b style="color:var(--gvc-gold-dark);">r39</b> · Aug 6, 2026</span>
+  <span style="white-space:nowrap;">Portal <b style="color:var(--gvc-gold-dark);">r40</b> · Aug 6, 2026</span>
 </footer>
 
 <script>
