@@ -3,218 +3,448 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>GVC Portal</title>
-<!-- Shared design system. Every portal page links this instead of carrying its
-     own <style> block; see docs/CLAUDE-DESIGN-BRIEF.md. -->
+<title>GVC · Your hub</title>
 <link rel="stylesheet" href="/ui/gvc.css" />
-<style>
-  /* Hub-only: tile icons, footer, and phone density. Brand = gvc.css Command
-     (data-palette=emerald). Contract: docs/GVC-COMMAND-STYLE.md */
-  .hub-ico { font-size: 26px; line-height: 1; }
-  .hub-ft { display: flex; justify-content: space-between; gap: var(--gvc-space-3);
-    flex-wrap: wrap; max-width: 1240px; margin: 0 auto;
-    padding: var(--gvc-space-5) var(--gvc-space-5) var(--gvc-space-7);
-    color: var(--gvc-muted); font-size: var(--gvc-fs-caption);
-    border-top: 1px solid var(--gvc-line); }
-  .hub-empty { display: none; }
-  /* External takeoff app — same front door, separate codebase. */
-  .gvc-tile--external .gvc-tile-ft {
-    display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  }
-  .hub-ext {
-    font-size: var(--gvc-fs-micro); font-weight: 700; letter-spacing: .04em;
-    text-transform: uppercase; color: var(--gvc-muted);
-  }
-  @media (max-width: 640px) {
-    .gvc-tiles { grid-template-columns: 1fr; gap: var(--gvc-space-3); }
-    .gvc-tile { min-height: 120px; padding: var(--gvc-space-4); }
-    .gvc-topbar-in { padding: 12px 16px; }
-    .gvc-wordmark { font-size: 15px; }
-    .gvc-shell { padding: var(--gvc-space-5) var(--gvc-space-4) var(--gvc-space-7); }
-    .hub-ft {
-      padding: var(--gvc-space-4);
-      padding-bottom: calc(var(--gvc-space-5) + env(safe-area-inset-bottom, 0px));
-    }
-  }
-</style>
 </head>
 <body>
 
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Portal</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user" id="email">{{EMAIL}}</span>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+<div class="hub-app" id="app">
+  <!-- Desktop left rail -->
+  <aside class="hub-rail" id="rail" aria-label="Tools">
+    <div class="hub-rail__search">
+      <input type="search" id="railsearch" placeholder="Find a tool" autocomplete="off" />
+    </div>
+    <nav class="hub-rail__nav" id="railnav"></nav>
+    <div class="hub-rail__user">
+      <span class="hub-avatar" id="railavatar">?</span>
+      <div class="hub-rail__user-meta">
+        <div class="hub-rail__user-name" id="railname">…</div>
+        <div class="hub-rail__user-role" id="railrole"></div>
+      </div>
+      <a class="hub-rail__signout" href="/auth/logout">Sign out</a>
+    </div>
+  </aside>
+
+  <div class="hub-main">
+    <header class="hub-top">
+      <button type="button" class="hub-top__menu" id="menubtn" aria-label="Open tools">☰</button>
+      <div class="hub-top__title">Your hub</div>
+      <span class="hub-avatar" id="topavatar">?</span>
+    </header>
+
+    <div class="hub-body" id="home">
+      <div class="hub-search-panel" id="searchpanel">
+        <input type="search" id="mobilesearch" placeholder="Find a tool" autocomplete="off" />
+        <div class="hub-search-hits" id="searchhits"></div>
+      </div>
+
+      <p class="hub-greet" id="greeting">Loading…</p>
+      <p class="hub-summary" id="summary"></p>
+
+      <section aria-labelledby="needs-kicker">
+        <p class="hub-kicker" id="needs-kicker">Needs you today</p>
+        <div id="needs"></div>
+      </section>
+
+      <section aria-labelledby="metrics-kicker">
+        <p class="hub-kicker" id="metrics-kicker">Today</p>
+        <div class="hub-metrics" id="metrics"></div>
+      </section>
+
+      <div class="hub-cols">
+        <section class="hub-panel" aria-labelledby="queue-title">
+          <div class="hub-panel__hd">
+            <h2 class="hub-panel__title" id="queue-title">Queue</h2>
+            <a class="hub-panel__link" id="queuelink" href="#">Open</a>
+          </div>
+          <div class="hub-queue-scroll" id="queue"></div>
+        </section>
+
+        <div class="hub-stack-side">
+          <section class="hub-panel" aria-labelledby="pinned-title">
+            <div class="hub-panel__hd">
+              <h2 class="hub-panel__title" id="pinned-title">Pinned</h2>
+            </div>
+            <div id="pinned"></div>
+          </section>
+          <section class="hub-panel" style="margin-top:12px;" aria-labelledby="activity-title">
+            <div class="hub-panel__hd">
+              <h2 class="hub-panel__title" id="activity-title">Activity</h2>
+              <a class="hub-panel__link" href="/ui/activity">All</a>
+            </div>
+            <div id="activity"></div>
+          </section>
+        </div>
+      </div>
+
+      <section aria-labelledby="recent-kicker">
+        <p class="hub-kicker" id="recent-kicker">Jump back in</p>
+        <div class="hub-recent" id="recent"></div>
+      </section>
+
+      <div class="hub-ft-note">
+        <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
+        <span style="white-space:nowrap;">Portal <b style="color:var(--color-accent-ink, var(--gvc-gold-dark));">r44</b> · Aug 6, 2026</span>
+      </div>
     </div>
   </div>
-</header>
 
-<main class="gvc-shell">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Internal tools</p>
-    <h1 class="gvc-h1">Pick a tool to get started</h1>
-    <p class="gvc-sub">Start with your Morning Brief — then estimating, billing,
-       job tracking, takeoff, and the paperwork in between.</p>
+  <nav class="hub-dock" aria-label="Phone navigation">
+    <button type="button" class="hub-dock__btn is-active" data-dock="home">
+      <span class="hub-dock__ico">⌂</span>Home
+    </button>
+    <button type="button" class="hub-dock__btn" data-dock="search">
+      <span class="hub-dock__ico">⌕</span>Search
+    </button>
+    <button type="button" class="hub-dock__btn" data-dock="alerts" id="dockalerts">
+      <span class="hub-dock__ico">◉</span>Alerts
+      <span class="hub-dock__badge" id="alertbadge" hidden>0</span>
+    </button>
+    <button type="button" class="hub-dock__btn" data-dock="tools">
+      <span class="hub-dock__ico">☰</span>Tools
+    </button>
+  </nav>
+</div>
+
+<div class="hub-drawer-backdrop" id="drawerbk" hidden></div>
+<aside class="hub-drawer" id="drawer" aria-label="Tools drawer" hidden>
+  <div class="hub-rail__search">
+    <input type="search" id="drawersearch" placeholder="Find a tool" autocomplete="off" />
   </div>
-
-  <div class="gvc-tiles" id="tiles">
-    <a class="gvc-tile" data-feature="morning" href="/ui/morning">
-      <div class="hub-ico">☀️</div>
-      <div class="gvc-tile-name">Your Morning Brief</div>
-      <div class="gvc-tile-desc">Your stops, blockers, and what needs attention today — private to you, ready before the 6:45 huddle.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-      <a class="gvc-tile" data-feature="morning_gm" href="/ui/morning-gm">
-        <div class="hub-ico">📋</div>
-        <div class="gvc-tile-name">GM Morning Huddle</div>
-        <div class="gvc-tile-desc">Operations run sheet — who's where, blockers, and what needs a call before the 6:45 huddle.</div>
-        <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-      </a>
-      <a class="gvc-tile" data-feature="morning_owner" href="/ui/morning-owner">
-        <div class="hub-ico">👑</div>
-        <div class="gvc-tile-name">Owner Pulse</div>
-        <div class="gvc-tile-desc">Exception-only owner view — money, stuck jobs, and what needs Jordan today.</div>
-        <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-      </a>
-
-    <a class="gvc-tile gvc-tile--external" data-feature="takeoff"
-       href="https://gvctakeoff.netlify.app/v2.html" target="_blank" rel="noopener noreferrer">
-      <div class="hub-ico">📏</div>
-      <div class="gvc-tile-name">Takeoff</div>
-      <div class="gvc-tile-desc">Measure and price in the field, then use Export for Portal to stage an Estimate Generator draft.</div>
-      <div class="gvc-tile-ft">
-        <span class="gvc-pill gvc-pill--live">Live</span>
-        <span class="hub-ext">Opens app ↗</span>
-      </div>
-    </a>
-
-    <a class="gvc-tile" data-feature="estimate" href="/ui/estimate">
-      <div class="hub-ico">📐</div>
-      <div class="gvc-tile-name">Estimate Generator</div>
-      <div class="gvc-tile-desc">Build a priced estimate, preview the PDF, and draft it to the client from hello@.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="change_order" href="/ui/change-order">
-      <div class="hub-ico">🧾</div>
-      <div class="gvc-tile-name">Change Order</div>
-      <div class="gvc-tile-desc">Link a job, price the change, preview the PDF, and draft it to the client from hello@.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="invoice" href="/ui/billing">
-      <div class="hub-ico">🏗️</div>
-      <div class="gvc-tile-name">Billing Hub</div>
-      <div class="gvc-tile-desc">Jobs ready to invoice, accepted estimates, and search by builder, supervisor, or address — no Project # memorized.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="invoice" href="/ui/invoice">
-      <div class="hub-ico">💵</div>
-      <div class="gvc-tile-name">Invoice Generator</div>
-      <div class="gvc-tile-desc">Build a Stripe invoice + billing@ draft from a project — open from the Billing Hub when you can.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="jobstart" href="/ui/jobstart">
-      <div class="hub-ico">🤝</div>
-      <div class="gvc-tile-name">Job Start</div>
-      <div class="gvc-tile-desc">Hand a won bid to Operations — fill the job start packet, and the project and ops task get created together.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="jobcheck" href="/ui/jobcheck">
-      <div class="hub-ico">✅</div>
-      <div class="gvc-tile-name">Job Check</div>
-      <div class="gvc-tile-desc">Pick an active job, set where it stands, one save updates Monday — built for a phone on site.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="fieldguide" href="/ui/fieldguide">
-      <div class="hub-ico">📖</div>
-      <div class="gvc-tile-name">Field Manual</div>
-      <div class="gvc-tile-desc">How we frame, hang, scrape, finish, and set ceilings — in plain English, with the expert detail one tap behind it.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="check" href="/ui/check">
-      <div class="hub-ico">💵</div>
-      <div class="gvc-tile-name">Paid by Check</div>
-      <div class="gvc-tile-desc">Photograph a check, match it to the open invoices it pays, and record the payment.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="coi" href="/ui/coi">
-      <div class="hub-ico">📜</div>
-      <div class="gvc-tile-name">COI Generator</div>
-      <div class="gvc-tile-desc">Stamp a Certificate of Insurance for a builder or project and draft it from hello@.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="lien" href="/ui/lien">
-      <div class="hub-ico">⏳</div>
-      <div class="gvc-tile-name">Lien Watch</div>
-      <div class="gvc-tile-desc">Notice-of-furnishing and lien deadlines per job.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--warn">Data being caught up</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="activity" href="/ui/activity">
-      <div class="hub-ico">📊</div>
-      <div class="gvc-tile-name">Activity</div>
-      <div class="gvc-tile-desc">Every document the portal produced — who, which customer, how much, and where it went.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="timeoff" href="/ui/timeoff">
-      <div class="hub-ico">🌴</div>
-      <div class="gvc-tile-name">Time Off</div>
-      <div class="gvc-tile-desc">Submit a time-off request.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
-
-    <a class="gvc-tile" data-feature="admin" href="/ui/admin">
-      <div class="hub-ico">🔐</div>
-      <div class="gvc-tile-name">Admin</div>
-      <div class="gvc-tile-desc">Manage company users and which tools each person can reach.</div>
-      <div class="gvc-tile-ft"><span class="gvc-pill gvc-pill--live">Live</span></div>
-    </a>
+  <nav class="hub-rail__nav" id="drawernav"></nav>
+  <div class="hub-rail__user">
+    <span class="hub-avatar" id="draweravatar">?</span>
+    <div class="hub-rail__user-meta">
+      <div class="hub-rail__user-name" id="drawername">…</div>
+      <div class="hub-rail__user-role" id="drawerrole"></div>
+    </div>
+    <a class="hub-rail__signout" href="/auth/logout">Sign out</a>
   </div>
-
-  <div class="gvc-empty hub-empty" id="empty">
-    <h2 class="gvc-h3">No tools enabled yet</h2>
-    <p>Your account is signed in, but nothing has been granted to it. Ask an admin to turn on the tools you need.</p>
-  </div>
-</main>
-
-<footer class="hub-ft">
-  <span>Signed in via your @greenvalleycontractors.com account. Need access to a tool? Ask an admin.</span>
-  <!-- Version count: bump rN on every user-visible portal change (rule in CLAUDE.md) -->
-  <span style="white-space:nowrap;">Portal <b style="color:var(--gvc-gold-dark);">r43</b> · Aug 6, 2026</span>
-</footer>
+</aside>
 
 <script>
-  // The / route injects the signed-in user's granted features. Tiles whose
-  // data-feature isn't granted are removed. (The real enforcement is server-side
-  // on each route; this just keeps the hub honest.)
-  const granted = new Set({{FEATURES_JSON}});
-  let shown = 0;
-  document.querySelectorAll('#tiles [data-feature]').forEach(el => {
-    if (granted.has(el.getAttribute('data-feature'))) { shown++; }
-    else { el.remove(); }
-  });
-  if (shown === 0) {
-    document.getElementById('tiles').style.display = 'none';
-    document.getElementById('empty').style.display = 'block';
+(function () {
+  "use strict";
+  const FEATURES = new Set({{FEATURES_JSON}});
+  const EMAIL = {{EMAIL_JSON}};
+  const RECENT_KEY = "gvc_hub_recent_v1";
+  const BADGE_MS = 60 * 1000;
+
+  let payload = null;
+  let drawerOpen = false;
+
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
-  // Warm Monday list caches in the background so Job Start / Morning /
-  // Job Check open on last-known data instead of a cold board walk.
-  fetch('/ui/api/monday/warm', { method: 'POST', credentials: 'same-origin', keepalive: true }).catch(()=>{});
+
+  function $(id) { return document.getElementById(id); }
+
+  function loadRecent() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+      return Array.isArray(raw) ? raw.filter((x) => x && x.href && x.name).slice(0, 5) : [];
+    } catch (_) { return []; }
+  }
+
+  function pushRecent(tool) {
+    if (!tool || !tool.granted) return;
+    const cur = loadRecent().filter((t) => t.href !== tool.href);
+    cur.unshift({ name: tool.name, href: tool.href, external: !!tool.external });
+    try { localStorage.setItem(RECENT_KEY, JSON.stringify(cur.slice(0, 5))); } catch (_) {}
+  }
+
+  function flatTools() {
+    const groups = (payload && payload.nav && payload.nav.groups) || [];
+    return groups.flatMap((g) => g.tools || []);
+  }
+
+  function badgeFor(feature) {
+    const b = (payload && payload.badges) || {};
+    const n = b[feature];
+    return typeof n === "number" && n > 0 ? n : 0;
+  }
+
+  function renderNav(into, filter) {
+    const groups = (payload && payload.nav && payload.nav.groups) || [];
+    const q = (filter || "").trim().toLowerCase();
+    const html = [];
+    groups.forEach((g) => {
+      const tools = (g.tools || []).filter((t) =>
+        !q || t.name.toLowerCase().includes(q) || t.feature.toLowerCase().includes(q)
+      );
+      if (!tools.length) return;
+      html.push(`<div class="hub-rail__group"><span class="hub-rail__ghead">${esc(g.name)}</span>`);
+      tools.forEach((t) => {
+        const granted = !!t.granted;
+        const n = badgeFor(t.feature);
+        const badge = granted
+          ? (n ? `<span class="hub-rail__badge">${n}</span>` : "")
+          : `<span class="hub-rail__badge is-dash">—</span>`;
+        const cls = "hub-rail__item" + (granted ? "" : " is-dim") +
+          (t.feature === "home" ? " is-active" : "");
+        if (granted) {
+          const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
+          html.push(
+            `<a class="${cls}" href="${esc(t.href)}" data-feature="${esc(t.feature)}"${ext}>` +
+            `<span class="hub-rail__item-name">${esc(t.name)}</span>${badge}</a>`
+          );
+        } else {
+          html.push(
+            `<span class="${cls}" title="Ask an admin for access" data-feature="${esc(t.feature)}">` +
+            `<span class="hub-rail__item-name">${esc(t.name)}</span>${badge}</span>`
+          );
+        }
+      });
+      html.push("</div>");
+    });
+    into.innerHTML = html.join("") || `<div class="hub-empty-soft">No tools match.</div>`;
+    into.querySelectorAll("a.hub-rail__item").forEach((a) => {
+      a.addEventListener("click", () => {
+        const feat = a.getAttribute("data-feature");
+        const tool = flatTools().find((t) => t.feature === feat && t.href === a.getAttribute("href"));
+        if (tool) pushRecent(tool);
+      });
+    });
+  }
+
+  function renderNeeds() {
+    const box = $("needs");
+    if (!payload) return;
+    if (payload.needs_clear || !(payload.needs || []).length) {
+      box.innerHTML = `<div class="hub-clear">${esc(payload.summary || "You're clear.")}</div>`;
+      return;
+    }
+    box.innerHTML = `<div class="hub-needs">` + (payload.needs || []).map((n) => {
+      const sec = n.secondary_href
+        ? `<a class="btn btn--ghost" href="${esc(n.secondary_href)}">Open job</a>`
+        : "";
+      return (
+        `<article class="hub-need">` +
+        `<div class="hub-need__top"><span class="hub-need__kind">${esc(n.kind)}</span>` +
+        `<span class="hub-need__amount">${esc(n.amount)}</span></div>` +
+        `<h3 class="hub-need__title">${esc(n.title)}</h3>` +
+        `<p class="hub-need__detail">${esc(n.detail)}</p>` +
+        `<div class="hub-need__actions">` +
+        `<a class="btn btn--primary" href="${esc(n.href)}">${esc(n.action || "Open")}</a>` +
+        sec + `</div></article>`
+      );
+    }).join("") + `</div>`;
+  }
+
+  function renderMetrics() {
+    $("metrics").innerHTML = (payload.metrics || []).map((m) => (
+      `<div class="hub-metric">` +
+      `<div class="hub-metric__label">${esc(m.label)}</div>` +
+      `<div class="hub-metric__value">${esc(m.value)}</div>` +
+      `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
+    )).join("");
+  }
+
+  function renderQueue() {
+    const q = payload.queue || {};
+    $("queue-title").textContent = q.title || "Queue";
+    const link = $("queuelink");
+    link.href = q.href || "#";
+    link.textContent = q.link || "Open";
+    const rows = q.rows || [];
+    if (!rows.length) {
+      $("queue").innerHTML = `<div class="hub-empty-soft">Nothing in this queue right now.</div>`;
+      return;
+    }
+    $("queue").innerHTML = rows.map((r) => (
+      `<a class="hub-qrow" href="${esc(r.href || "#")}">` +
+      `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(r.name)}</div>` +
+      `<div class="hub-qrow__sub">${esc(r.sub)}</div></div>` +
+      (r.tag
+        ? `<span class="hub-qrow__tag${r.flagged ? " is-flag" : ""}">${esc(r.tag)}</span>`
+        : "") +
+      `</a>`
+    )).join("");
+  }
+
+  function renderPinned() {
+    const rows = payload.pinned || [];
+    if (!rows.length) {
+      $("pinned").innerHTML =
+        `<div class="hub-empty-soft">Pin jobs from a queue row — coming next.</div>`;
+      return;
+    }
+    $("pinned").innerHTML = rows.map((r) => (
+      `<a class="hub-qrow" href="${esc(r.href || "#")}">` +
+      `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(r.name)}</div>` +
+      `<div class="hub-qrow__sub">${esc(r.sub || "")}</div></div></a>`
+    )).join("");
+  }
+
+  function renderActivity() {
+    const rows = payload.activity || [];
+    if (!rows.length) {
+      $("activity").innerHTML =
+        `<div class="hub-empty-soft">Sends and approvals will show up here.</div>`;
+      return;
+    }
+    $("activity").innerHTML = rows.map((r) => (
+      `<a class="hub-act" href="${esc(r.href || "/ui/activity")}">` +
+      `<div class="hub-act__text">${esc(r.text)}</div>` +
+      `<div class="hub-act__when">${esc(r.when)}</div></a>`
+    )).join("");
+  }
+
+  function renderRecent() {
+    const recent = loadRecent();
+    const home = payload && payload.user
+      ? { name: "Start with " + (payload.user.homeTool || "home"),
+          href: payload.user.homeHref || "/ui/morning", granted: true }
+      : null;
+    const items = recent.length ? recent : (home ? [home] : []);
+    if (!items.length) {
+      $("recent").innerHTML = `<div class="hub-empty-soft">Tools you open will land here.</div>`;
+      return;
+    }
+    $("recent").innerHTML = items.map((t) => {
+      const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
+      return `<a href="${esc(t.href)}"${ext}>${esc(t.name)}</a>`;
+    }).join("");
+  }
+
+  function renderUserChrome() {
+    const u = payload.user || {};
+    ["rail", "drawer", "top"].forEach((prefix) => {
+      const av = $(prefix === "top" ? "topavatar" : prefix + "avatar");
+      if (av) av.textContent = u.initials || "?";
+    });
+    ["rail", "drawer"].forEach((prefix) => {
+      const nm = $(prefix + "name");
+      const rl = $(prefix + "role");
+      if (nm) nm.textContent = u.name || EMAIL;
+      if (rl) rl.textContent = u.title || u.role || "";
+    });
+    const nNeeds = (payload.needs || []).length;
+    const badge = $("alertbadge");
+    if (badge) {
+      if (nNeeds > 0 && !payload.needs_clear) {
+        badge.hidden = false;
+        badge.textContent = String(nNeeds);
+      } else {
+        badge.hidden = true;
+      }
+    }
+  }
+
+  function renderAll() {
+    $("greeting").textContent = payload.greeting || "Hello.";
+    $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
+    renderUserChrome();
+    renderNav($("railnav"));
+    renderNav($("drawernav"));
+    renderNeeds();
+    renderMetrics();
+    renderQueue();
+    renderPinned();
+    renderActivity();
+    renderRecent();
+  }
+
+  function setDrawer(open) {
+    drawerOpen = !!open;
+    const d = $("drawer");
+    const bk = $("drawerbk");
+    d.hidden = false;
+    bk.hidden = false;
+    d.classList.toggle("is-open", drawerOpen);
+    bk.classList.toggle("is-open", drawerOpen);
+    if (!drawerOpen) {
+      setTimeout(() => { d.hidden = true; bk.hidden = true; }, 180);
+    }
+  }
+
+  function wireChrome() {
+    $("menubtn").addEventListener("click", () => setDrawer(true));
+    $("drawerbk").addEventListener("click", () => setDrawer(false));
+    $("railsearch").addEventListener("input", (e) => renderNav($("railnav"), e.target.value));
+    $("drawersearch").addEventListener("input", (e) => renderNav($("drawernav"), e.target.value));
+    $("mobilesearch").addEventListener("input", (e) => {
+      const q = e.target.value.trim().toLowerCase();
+      const hits = flatTools().filter((t) =>
+        t.granted && (!q || t.name.toLowerCase().includes(q))
+      ).slice(0, 12);
+      $("searchhits").innerHTML = hits.map((t) => {
+        const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
+        return `<a class="hub-qrow" href="${esc(t.href)}"${ext}><div class="hub-qrow__meta">` +
+          `<div class="hub-qrow__name">${esc(t.name)}</div></div></a>`;
+      }).join("") || `<div class="hub-empty-soft">No matches.</div>`;
+    });
+
+    document.querySelectorAll("[data-dock]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll("[data-dock]").forEach((b) => b.classList.remove("is-active"));
+        btn.classList.add("is-active");
+        const mode = btn.getAttribute("data-dock");
+        if (mode === "tools") { setDrawer(true); return; }
+        if (mode === "search") {
+          $("searchpanel").classList.add("is-open");
+          $("mobilesearch").focus();
+          window.scrollTo({ top: 0, behavior: "smooth" });
+          return;
+        }
+        if (mode === "alerts") {
+          $("searchpanel").classList.remove("is-open");
+          $("needs-kicker").scrollIntoView({ behavior: "smooth", block: "start" });
+          return;
+        }
+        $("searchpanel").classList.remove("is-open");
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      });
+    });
+  }
+
+  async function fetchPayload() {
+    const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
+    if (!res.ok) throw new Error("hub " + res.status);
+    payload = await res.json();
+    // Prefer server features, fall back to injected set.
+    if (payload.nav && Array.isArray(payload.nav.features)) {
+      payload.nav.features.forEach((f) => FEATURES.add(f));
+    }
+    renderAll();
+  }
+
+  async function refreshBadges() {
+    try {
+      const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
+      if (!res.ok) return;
+      const next = await res.json();
+      payload.badges = next.badges || {};
+      payload.needs = next.needs || payload.needs;
+      payload.needs_clear = next.needs_clear;
+      payload.summary = next.summary || payload.summary;
+      payload.metrics = next.metrics || payload.metrics;
+      payload.queue = next.queue || payload.queue;
+      renderUserChrome();
+      renderNav($("railnav"), $("railsearch").value);
+      renderNav($("drawernav"), $("drawersearch").value);
+      renderNeeds();
+      renderMetrics();
+      renderQueue();
+    } catch (_) {}
+  }
+
+  wireChrome();
+  fetchPayload().catch((err) => {
+    $("greeting").textContent = "Couldn't load your hub";
+    $("summary").textContent = String(err.message || err);
+  });
+
+  setInterval(refreshBadges, BADGE_MS);
+  window.addEventListener("focus", refreshBadges);
+
+  // Warm Monday caches for Job Start / Morning / Job Check.
+  fetch("/ui/api/monday/warm", {
+    method: "POST", credentials: "same-origin", keepalive: true
+  }).catch(() => {});
+})();
 </script>
 </body>
 </html>

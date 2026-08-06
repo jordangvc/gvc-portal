@@ -1065,9 +1065,62 @@ def _portal_home_impl(request: Request) -> HTMLResponse:
     html = (
         path.read_text(encoding="utf-8")
         .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{EMAIL_JSON}}", json.dumps(email))
         .replace("{{FEATURES_JSON}}", json.dumps(feats))
     )
     return HTMLResponse(html)
+
+
+@app.get("/ui/api/hub")
+def ui_hub_payload(request: Request) -> dict:
+    """Personal hub home payload — one document renders the whole screen."""
+    email = require_ui_access(request)
+    from orchestrators import hub_flow
+    try:
+        return hub_flow.build_hub_payload(email)
+    except Exception as e:  # noqa: BLE001 — never blank the home screen
+        print(f"[hub] payload error: {type(e).__name__}: {e}", file=sys.stderr)
+        # Minimal degradable shell so the rail still works from FEATURES_JSON.
+        feats = access.effective_features(email)
+        from shared import hub_nav
+        role = hub_nav.resolve_role(feats)
+        name = hub_nav.display_name(email, {})
+        return {
+            "ok": False,
+            "user": {
+                "email": email,
+                "name": name,
+                "initials": hub_nav.initials_for(name, email),
+                "title": hub_nav.ROLE_TITLE.get(role, ""),
+                "role": role,
+                "homeTool": hub_nav.ROLE_HOME_TOOL.get(role, "morning"),
+                "homeHref": hub_nav.ROLE_HOME_HREF.get(role, "/ui/morning"),
+            },
+            "greeting": hub_nav.greeting_for(name),
+            "summary": "Couldn't refresh live numbers — tools still work from the rail.",
+            "needs": [],
+            "needs_clear": True,
+            "metrics": [
+                {"label": "Status", "value": "—", "foot": "refresh failed"},
+                {"label": "Queue", "value": "—", "foot": "try a tool directly"},
+                {"label": "Alerts", "value": "—", "foot": ""},
+                {"label": "Live data", "value": "—", "foot": type(e).__name__},
+            ],
+            "queue": {
+                "title": hub_nav.ROLE_QUEUE_TITLE.get(role, "Queue"),
+                "link": "Open",
+                "href": hub_nav.ROLE_HOME_HREF.get(role, "/ui/morning"),
+                "rows": [],
+            },
+            "pinned": [],
+            "activity": [],
+            "recent": [],
+            "badges": {},
+            "nav": {
+                "groups": hub_nav.groups_for_client(feats),
+                "features": sorted(feats),
+            },
+        }
 
 
 @app.get("/ui/gvc-command.js")
