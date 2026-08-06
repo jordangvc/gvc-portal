@@ -687,6 +687,29 @@ def tasks_poll_takeoff_outbox(
     return poll_outbox(dry_run=req.dry_run, limit=req.limit)
 
 
+class CheckReadyToInvoiceRequest(BaseModel):
+    dry_run: bool = Field(
+        True,
+        description=(
+            "Read Monday + compute worksheets only (default True until gauntlet). "
+            "Never auto-sends."
+        ),
+    )
+    limit: int = Field(20, ge=1, le=100, description="Max Ready-to-Invoice items per sweep")
+
+
+@app.post("/v1/tasks/check-ready-to-invoice")
+def tasks_check_ready_to_invoice(
+    req: CheckReadyToInvoiceRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """P5 — Ready-to-Invoice consumer. Company rates $1.17 / +$0.70. Never auto-sends."""
+    require_api_key(x_api_key)
+    from orchestrators.invoice_ready_flow import check_ready_to_invoice
+
+    return check_ready_to_invoice(dry_run=req.dry_run, limit=req.limit)
+
+
 @app.post("/v1/tasks/warm-monday")
 def tasks_warm_monday(
     x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
