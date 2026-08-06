@@ -223,12 +223,12 @@ and aborts without writing if it isn't).
 
 ## 7. Queued build work
 
-### Done 2026-08-06 — ops / onboarding / leadership slice
-Added home groups + 14 procedures: First Week, Safety Orientation, Don't Do This,
-Laborer + Lead tracks, Portal Tools (incl. Job Check + Morning Brief `#operations`
-rule), Morning Prep, Lead Day, Escalation, QC Walk, AI field rules + roadmap,
-Job Start → First Day, Pre-Board Walk, Clean-Out. Hub footer **r35**. Gap backlog
-still open below.
+### Done 2026-08-06 — ops / onboarding / leadership slice (r36)
+**21 procedures** added: First Week, Safety Orientation, Don't Do This, role
+tracks (laborer/hanger/finisher/ACT/lead), Portal Tools (Job Check + Morning Brief
+`#operations` rule), Morning Prep, Lead Day, Escalation, QC Walk, AI field
+rules/roadmap, Job Start → First Day, Pre-Board Walk, Clean-Out, Cold & Wet
+Conditions, Cement Board, Punch Cadence, Inspection Photos. Hub **r36**.
 
 ### Still queued
 - The remaining 9–12 diagrams (list in §4).
@@ -241,11 +241,10 @@ still open below.
   matching doc is the highest-value small feature left on this track.
 - Photos. Several sections would land harder with a photograph than a diagram —
   crushed Tectum corners, a blistered tape, a bowed cabinet back.
-- **Next Field Manual content (prioritized gap backlog):** job-conditions (cold/wet),
-  cement-board, inspection-hold photos, window-returns, sound-walls / RC,
-  level5-skim, punch-walk cadence, scaffold-lifts, receiving freight,
-  tracks for hanger/finisher/ACT/super, skill-ladder, ops-lead multi-job playbook,
-  gc-talk, rfi-field (promote drawings expert), residential-field habits.
+- **Next Field Manual content (prioritized gap backlog):** window-returns,
+  sound-walls / RC, level5-skim, scaffold-lifts, receiving freight, skill-ladder,
+  ops-lead multi-job playbook, gc-talk, rfi-field (promote drawings expert),
+  residential-field habits, track-super.
 - **AI roadmap (document only until prioritized):** checklist coach, photo QC coach,
   morning prep agent (DM only), CO spotter, handoff open-questions coach, punch
   drafter — all under `#ai-field-rules` / `#ai-roadmap` hard rules.

@@ -15,22 +15,17 @@ See also: `AGENTS.md` (agent quickstart + how to add a module) and
 Gap analysis (3 parallel agents: trades/ops, onboarding/training, leadership/AI)
 against live `/ui/fieldguide`. Manual was trade-strong and almost empty as a
 company operating / ramp book.
-BUILT in `web/fieldguide.html` (+ hub **r35**): new home groups **Onboarding &
-training** and **How we run the day**, plus 14 procedures — `#onboard-week1`,
-`#safety-orient` (+ silica expert), `#dont`, `#track-laborer`, `#track-lead`,
-`#portal-field-tools` (Job Check how-to + Morning Brief never `#operations`),
-`#morning-rhythm`, `#lead-day`, `#escalate`, `#qc-walk`, `#ai-field-rules`
-(+ `#ai-roadmap` future agents, not built), `#jobstart-firstday`,
-`#preboard-walk`, `#cleanout`. Component Index + Glossary ops terms updated;
-Sources notes onboarding pages = GVC practice not OSHA/HR. Totals ~39 sections,
-416 checkboxes, 37 expert blocks; JS `node --check` clean; all tile/`data-jump`
-targets resolve.
-NOT DEPLOYED. DEPLOY (admin): `--source .` → smoke `/ui/fieldguide` as baseline
-user → Onboarding tiles → Safety → Portal Tools shows `#operations` rule → Lead
-Day checklist run against a job.
-NEXT (backlog in `docs/HANDOFF-field-manual.md` §7): Job Check deep-links;
-cement-board / window-returns / sound-walls / job-conditions; hanger/finisher/ACT
-tracks; skill ladder; diagrams/photos.
+BUILT in `web/fieldguide.html` (+ hub **r36**): new home groups **Onboarding &
+training** and **How we run the day**, plus **21 procedures** across two commits —
+`#onboard-week1`, `#safety-orient`, `#dont`, role tracks (laborer/hanger/finisher/
+ACT/lead), `#portal-field-tools` (Job Check + Morning Brief never `#operations`),
+`#morning-rhythm`, `#lead-day`, `#escalate`, `#qc-walk`, `#ai-field-rules` (+
+roadmap), `#jobstart-firstday`, `#preboard-walk`, `#cleanout`, `#job-conditions`,
+`#cement-board`, `#punch-cadence`, `#inspection-hold`. Index/Glossary/Sources
+updated. ~46 sections, 457 checkboxes; JS clean; all tile jumps resolve.
+NOT DEPLOYED. DEPLOY (admin): `--source .` → smoke `/ui/fieldguide` baseline user.
+NEXT: Job Check deep-links; window-returns / sound-walls / level5-skim;
+skill-ladder; ops-lead / gc-talk / rfi-field; diagrams/photos.
 
 ## 🔒 Morning Brief Slack — NEVER `#operations` (Jordan 2026-08-05)
 Morning Brief / field brief / huddle summary / route sheet / prep status is
