@@ -105,6 +105,9 @@ def test_hub_files_and_route() -> None:
     check("solid skel no shimmer",
           ".hub-skel" in css and "gvc-shimmer" not in css.split("Hub shell")[-1].split("END COMPONENTS")[0])
     check("rise motion", "@keyframes hub-rise" in css)
+    check("hidden overrides display",
+          ".hub-skel[hidden]" in css and "#hublive[hidden]" in css
+          and ".hub-kicker__count[hidden]" in css)
 
     from app.service import app
     paths = {getattr(r, "path", None) for r in app.routes}

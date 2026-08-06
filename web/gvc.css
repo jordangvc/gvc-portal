@@ -1180,6 +1180,7 @@ a:hover{ color:var(--gvc-green-dark); }
   font-size: 10px; font-weight: 700; letter-spacing: 0;
   text-transform: none;
 }
+.hub-kicker__count[hidden] { display: none !important; }
 .hub-needs { display: grid; gap: 12px; margin-bottom: 22px; }
 .hub-need {
   background: var(--color-surface, var(--gvc-surface));
@@ -1405,6 +1406,7 @@ a:hover{ color:var(--gvc-green-dark); }
   font-family: var(--font-mono, var(--gvc-mono));
   font-size: 10px; line-height: 16px; text-align: center; font-weight: 700;
 }
+.hub-dock__badge[hidden] { display: none !important; }
 .hub-drawer-backdrop {
   display: none; position: fixed; inset: 0; z-index: 8;
   background: rgba(16, 17, 17, 0.45);
@@ -1469,6 +1471,9 @@ a:hover{ color:var(--gvc-green-dark); }
   margin: 8px 0 12px;
   padding: 4px 0;
 }
+.hub-skel[hidden] { display: none !important; }
+#hublive[hidden] { display: none !important; }
+#homectawrap[hidden] { display: none !important; }
 .hub-skel__line,
 .hub-skel__title,
 .hub-skel__card,
