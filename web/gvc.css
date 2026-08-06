@@ -852,9 +852,14 @@ a:hover{ color:var(--gvc-green-dark); }
 }
 .sp__row {
   display: flex; align-items: center; gap: var(--space-3, 0.75rem);
+  flex-wrap: nowrap;
   padding: var(--space-3, 0.75rem) var(--space-5, 1.25rem);
 }
-.sp__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+/* flex: 1 1 auto + min-width: 0 → leftover width so Change stays hard-right */
+.sp__meta {
+  flex: 1 1 auto; min-width: 0;
+  display: flex; flex-direction: column; gap: 5px;
+}
 .sp__label {
   font-family: var(--font-mono, var(--gvc-mono));
   font-size: var(--text-xs, 0.75rem);
@@ -868,7 +873,23 @@ a:hover{ color:var(--gvc-green-dark); }
   color: var(--color-text-faint, var(--gvc-muted));
   font-style: italic;
 }
-.sp__toggle { flex: 0 0 auto; min-height: 44px; }
+.sp__toggle { flex: 0 0 auto; min-height: 44px; white-space: nowrap; }
+
+/* Date fields share the same mono-kicker → control rhythm as status rows */
+.sp__date {
+  width: 100%; min-height: 44px; padding: 10px 14px; box-sizing: border-box;
+  border: 1px solid var(--color-border, var(--gvc-line-strong));
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-surface-2, var(--gvc-bg));
+  font: inherit; font-size: var(--text-sm, 0.875rem);
+  color: var(--color-text, var(--gvc-ink));
+}
+.sp__date:focus {
+  outline: none;
+  border-color: var(--color-accent, var(--gvc-gold));
+  box-shadow: 0 0 0 3px var(--color-primary-ring, rgba(21,66,48,.33));
+}
+.sp__date:disabled { opacity: 0.7; cursor: not-allowed; }
 
 .sp__panel {
   border-top: 1px solid var(--color-divider, var(--gvc-line));

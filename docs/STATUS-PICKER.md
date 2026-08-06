@@ -27,6 +27,19 @@ Other status columns (trade statuses, Scheduled Day, Window type, …) get a sin
 **All statuses** group from live Monday labels. Any live label missing from config
 lands in **Other** (and warns in the console).
 
+## Row rhythm (r43)
+
+Closed rows are a three-part flex line so every `Change` button shares the same
+x-position:
+
+1. `.sp__meta` is `flex: 1 1 auto` with `min-width: 0` (takes leftover width)
+2. `.sp__toggle` is `flex: 0 0 auto` (never grows / never wraps)
+3. Labels use the mono uppercase `.sp__label` kicker
+
+Date fields (Stage Completion / Full Completion / Start Date / trade Completion
+Date) use the same shell: mono kicker over a pill `.sp__date` input — not
+square-cornered controls next to rounded chips.
+
 ## Monday hygiene (human)
 
 Still worth cleaning on the board itself (duplicates, Detail values in Stage,
