@@ -1,15 +1,19 @@
 """
 Bulk job-rename planner — pure, no Monday / Drive I/O.
 =========================================================================
-Jordan 2026-08-05: city/state/ZIP required in titles. This module decides
-what each existing item SHOULD be named under the new standard, without
-writing anything.
+Jordan 2026-08-05: city/state/ZIP required in titles.
+Jordan 2026-08-06: Job Title is the required third pipe segment.
 
-    plan_row({name, location?, builder?, customer?, ...}) → decision dict
+This module decides what each existing item SHOULD be named under the
+3-part standard, without writing anything:
+
+    [Street], [City], [ST] [ZIP] | [Builder] | [Job Title]
+
+    plan_row({name, location?, builder?, job_title?, ...}) → decision dict
 
 Actions:
-  skip_standard   — already `Street, City, ST ZIP | Builder`
-  skip_incomplete — still missing geo/builder AFTER lookup (rare)
+  skip_standard   — already 3-part with complete geo + builder + job title
+  skip_incomplete — still missing geo/builder/job title AFTER lookup
   rename          — old ≠ new and ok=True (includes CO cascade when parent known)
 
 Callers (scripts/backfill_job_rename_*.py) own paging, lookup, dry-run, and apply.
@@ -38,6 +42,10 @@ def plan_row(
     location: Optional[str] = None,
     builder: Optional[str] = None,
     customer: Optional[str] = None,
+    job_title: Optional[str] = None,
+    project_type: Optional[str] = None,
+    homeowner_last: Optional[str] = None,
+    business_name: Optional[str] = None,
     item_id: Optional[int] = None,
     board: Optional[str] = None,
     gfolder_url: Optional[str] = None,
@@ -53,6 +61,9 @@ def plan_row(
 
     For `CO.n - …` rows, pass `parent_name` (standard parent title). The CO
     title becomes `CO.n - {parent_name}`.
+
+    Optional `job_title` / `project_type` / `homeowner_last` / `business_name`
+    feed `naming.to_standard` so a 2-part geo+builder row can become 3-part.
     """
     name = (name or "").strip()
     base = {
@@ -65,6 +76,7 @@ def plan_row(
         "note": "",
         "street": None,
         "builder": None,
+        "job_title": None,
         "city": None,
         "state": None,
         "zip": None,
@@ -104,13 +116,16 @@ def plan_row(
                 "note": "Mirror linked Projects title."}
 
     if naming.is_standard(name):
-        loc = naming.parse_location(name.split("|", 1)[0])
+        parts = [p.strip() for p in name.split("|")]
+        loc = naming.parse_location(parts[0])
         return {
             **base,
             "action": "skip_standard",
             "ok": True,
             "new_name": name,
             "street": loc.get("street"),
+            "builder": parts[1] if len(parts) > 1 else None,
+            "job_title": parts[2] if len(parts) > 2 else None,
             "city": loc.get("city"),
             "state": loc.get("state"),
             "zip": loc.get("zip"),
@@ -122,6 +137,10 @@ def plan_row(
         builder_hint=(builder or "").strip() or None,
         customer_hint=(customer or "").strip() or None,
         location_hint=(location or "").strip() or None,
+        job_title_hint=(job_title or "").strip() or None,
+        project_type=(project_type or "").strip() or None,
+        homeowner_last=(homeowner_last or "").strip() or None,
+        business_name=(business_name or "").strip() or None,
     )
     new_name = (std.get("name") or "").strip()
     out = {
@@ -131,6 +150,7 @@ def plan_row(
         "note": std.get("note") or "",
         "street": std.get("street"),
         "builder": std.get("builder"),
+        "job_title": std.get("job_title"),
         "city": std.get("city"),
         "state": std.get("state"),
         "zip": std.get("zip"),

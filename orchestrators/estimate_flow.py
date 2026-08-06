@@ -497,7 +497,9 @@ def process_estimate(
                         or "").strip()
             project_label = _naming.compose_job_name(
                 location, client_d.get("name", ""),
-                raw_name=(job.get("name") or "").strip() or None)
+                raw_name=(job.get("name") or "").strip() or None,
+                project_type=(job.get("project_type") or "").strip() or None,
+                job_title=(job.get("job_title") or "").strip() or None)
             pdf_name = estimate_pdf_filename(identifier, project_label)
             sidecar_name = sidecar_filename(identifier)
             try:
@@ -640,7 +642,9 @@ def process_estimate(
                         or "").strip()
                 _label = _naming.compose_job_name(
                     _loc, _client.get("name", ""),
-                    raw_name=(_job.get("name") or "").strip() or None)
+                    raw_name=(_job.get("name") or "").strip() or None,
+                    project_type=(_job.get("project_type") or "").strip() or None,
+                    job_title=(_job.get("job_title") or "").strip() or None)
                 _pf_name = _est_pdf_name(identifier, _label)
                 try:
                     _pf_up = DriveUploader()

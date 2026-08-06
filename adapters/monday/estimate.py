@@ -67,11 +67,15 @@ PROJECT_TYPE_LABELS = {"residential": "Residential", "commercial": "Commercial"}
 
 
 def _item_label(client_name: str, job: dict) -> str:
-    """Item-name convention: `Street, City, ST ZIP | Client` (shared naming)."""
+    """Item-name convention: `Street, City, ST ZIP | Builder | Job Title`."""
     from subsystems.jobstart import naming as _naming
     location = (job.get("street_address") or job.get("location") or "").strip()
     return _naming.compose_job_name(
-        location, client_name, raw_name=(job.get("name") or "").strip() or None)
+        location, client_name,
+        raw_name=(job.get("name") or "").strip() or None,
+        project_type=(job.get("project_type") or "").strip() or None,
+        job_title=(job.get("job_title") or "").strip() or None,
+    )
 
 
 def _find_item(mc, label: str, job: dict) -> Optional[int]:
