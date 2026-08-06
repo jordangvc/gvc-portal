@@ -473,6 +473,21 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Track: Lead</span>
       <span class="desc">Daily loop, portal habits, CO discipline, and teaching in Plain mode.</span>
     </button>
+    <button class="tile" data-go="track-hanger">
+      <span class="icon">🔩</span><span class="stage">Role track</span>
+      <span class="name">Track: Hanger</span>
+      <span class="desc">Pre-board walk → hang → scrape handoff. Graduation without forced board.</span>
+    </button>
+    <button class="tile" data-go="track-finisher">
+      <span class="icon">🪣</span><span class="stage">Role track</span>
+      <span class="name">Track: Finisher</span>
+      <span class="desc">Coat sequence matching Job Check chips, scrape-before-sand, punch path.</span>
+    </button>
+    <button class="tile" data-go="track-act">
+      <span class="icon">▦</span><span class="stage">Role track</span>
+      <span class="name">Track: ACT</span>
+      <span class="desc">Layout, structure-only wire, border art, clean tile habits.</span>
+    </button>
   </div>
 
   <p class="sect-label">How we run the day</p>
@@ -506,6 +521,16 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="icon">🤖</span><span class="stage">AI assists</span>
       <span class="name">How We Work With AI</span>
       <span class="desc">Hard rules today plus a roadmap for checklist/photo/prep coaches that never authorize work.</span>
+    </button>
+    <button class="tile" data-go="job-conditions">
+      <span class="icon">🌡️</span><span class="stage">Conditions</span>
+      <span class="name">Cold &amp; Wet Conditions</span>
+      <span class="desc">When to heat, wait, or document delay — mud and paint do not forgive a cold shell.</span>
+    </button>
+    <button class="tile" data-go="inspection-hold">
+      <span class="icon">📷</span><span class="stage">Hold points</span>
+      <span class="name">Inspection Photos</span>
+      <span class="desc">What to photo before you cover rated layers, firestop, and insulation.</span>
     </button>
   </div>
 
@@ -624,6 +649,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Painting</span>
       <span class="desc">Paint reveals, it doesn't hide. Prep, primer selection, wet edge, and how sheen decides what the wall can get away with.</span>
     </button>
+    <button class="tile" data-go="cement-board">
+      <span class="icon">🧱</span><span class="stage">Wet areas</span>
+      <span class="name">Cement Board / Tile Backer</span>
+      <span class="desc">Fastening, joints, deflection, and who owns waterproofing — not drywall with a different face.</span>
+    </button>
     <button class="tile" data-go="frp">
       <span class="icon">🧴</span><span class="stage">Wall panel</span>
       <span class="name">FRP Panels</span>
@@ -666,6 +696,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="icon">🖌️</span><span class="stage">Punch · step 2</span>
       <span class="name">Paint Touch-Up</span>
       <span class="desc">Why touch-ups flash, and the rules that make them disappear. Sheen decides everything.</span>
+    </button>
+    <button class="tile" data-go="punch-cadence">
+      <span class="icon">✅</span><span class="stage">Punch · process</span>
+      <span class="name">Punch List Cadence</span>
+      <span class="desc">Drywall first, paint second, photo + written list. Other-trade damage is a CO path.</span>
     </button>
   </div>
 
@@ -755,6 +790,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <div class="idx-item"><button data-jump="preboard-walk">Pre-board walk</button><span>Gate before hang: backing, ROs, MEP, rated photo plan.</span></div>
       <div class="idx-item"><button data-jump="qc-walk">QC walk / raking light</button><span>Pass/fix before Job Check advances. Light at a low angle tells the truth.</span></div>
       <div class="idx-item"><button data-jump="safety-orient|safety-silica">Silica (everyday)</button><span>Cut, grind, and sand controls — not only demolition.</span></div>
+
+      <div class="idx-item"><button data-jump="cement-board">Cement board / tile backer</button><span>Not gypsum. Fasten per manufacturer; confirm who owns waterproofing.</span></div>
+      <div class="idx-item"><button data-jump="job-conditions">Cold / wet conditions</button><span>Product temperature floors; heat or wait; document delay.</span></div>
+      <div class="idx-item"><button data-jump="inspection-hold">Hold points / inspection photos</button><span>Photo before cover on rated layers, firestop, insulation, RC.</span></div>
+      <div class="idx-item"><button data-jump="punch-cadence">Punch list cadence</button><span>Drywall punch before paint; written list same day.</span></div>
     </div>
   </div>
 
@@ -1460,6 +1500,227 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>GVC practice. Superintendent / multi-job routing stays with ops leads; this track is the crew lead layer.</p>
+  </div>
+</section>
+
+<!-- ==================== JOB CONDITIONS ==================== -->
+<section class="doc" id="job-conditions">
+  <div class="doc-head">
+    <span class="stage-line">How we run jobs · weather &amp; temp</span>
+    <h2>Cold &amp; Wet Job Conditions</h2>
+    <p class="lede">Mud, paint, and adhesives have temperature floors. Tri-state winters and damp slabs do not care about the schedule — pushing coats into the wrong conditions buys remobilization.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>If it is too cold or too wet for the product, <b>stop and heat, ventilate, or wait</b>. Heater/cans exist on Job Start for a reason. Hero coats in a cold shell look fine at 4pm and fail when the GC walks it under raking light.</p>
+  </div>
+
+  <div class="block">
+    <h3>Field rules</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Read the can / bag</b> for min application temperature and humidity. When in doubt, treat 50°F air and surface as a hard floor for compound and most paints unless the product says otherwise.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Surface temperature matters</b> — a cold exterior wall can be below the air temp. Touch the steel; if it feels like a cooler, mud will not dry right.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Heat and ventilate on purpose.</b> Closed-up heat without airflow makes condensation; airflow without heat just moves cold air. Match the Job Start heater/cans note or call the lead.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Protect stocked board from moisture</b> — see Stocking Drywall. Wet board is not "dry enough by morning."</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>FRP and adhesives</b> are especially unforgiving in cold — do not install to save a day if the adhesive will not cure.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Document delay</b> when conditions stop you — date, hours, reason. Standing-by / weather delay is a record, not a shrug (see Spotting a Change Order).</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Do not push coats</span>
+    <p>Green mud under the next coat, paint over a cold damp wall, and adhesive that never kicks are all the same mistake: the expensive work done twice. QC Walk will catch some of it; the GC's light catches the rest.</p>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC practice + manufacturer temperature ranges (product-specific — the can wins). Complements Finishing, Painting, FRP, and Job Start heater/cans fields. Not a building-science treatise.</p>
+  </div>
+</section>
+
+<!-- ==================== CEMENT BOARD ==================== -->
+<section class="doc" id="cement-board">
+  <div class="doc-head">
+    <span class="stage-line">Specialty · wet areas</span>
+    <h2>Cement Board / Tile Backer</h2>
+    <p class="lede">When Jake's scope says cement board, this is the install gate — fastening, joints, deflection, and the waterproofing line we usually do not own.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Cement board is not drywall with a different color. You do not mud it like gypsum, you do not hang it on a bounce-y wall, and you do not guess who owns the waterproofing membrane. Wrong here is tear-out behind tile.</p>
+  </div>
+
+  <div class="block">
+    <h3>Install checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Confirm the product</b> — cement board / glass-mat tile backer vs moisture-resistant gypsum. Tile usually wants backer; paint often wants MR gypsum. The finish schedule decides.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Check framing deflection</b> for tile (often L/360). If the wall is soft, stop — tiling over flex is a callback.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Fasten per the manufacturer</b> — pattern, screw type, and edge distances. Do not "drywall screw it wherever."</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Joints:</b> treat with the listed alkali-resistant mesh / base as required — not ordinary paper tape and all-purpose mud as if it were a bedroom wall.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Transitions</b> to drywall are deliberate — height, bead, and who finishes what.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Waterproofing membrane</b> is often another trade. If ownership is unclear, stop and get it in writing before you cover the substrate.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Manufacturer tile-backer instructions + GVC scope-review reality (CEMENT BOARD sections in Jake's reviews). Confirm every fastener pattern against the approved submittal. If GVC is furnish-only or install-only on a job, the packet should say so.</p>
+  </div>
+</section>
+
+<!-- ==================== PUNCH CADENCE ==================== -->
+<section class="doc" id="punch-cadence">
+  <div class="doc-head">
+    <span class="stage-line">Repair &amp; punch · process</span>
+    <h2>Punch List Cadence</h2>
+    <p class="lede">How we walk punch with a GC or owner: drywall first, paint second, photos always, and a clear line between our punch and other-trade damage.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Punch is a process, not a mood. Prep the room, walk with light, fix the wall before you touch paint, and write everything down. Verbal-only punch on commercial work is how items come back a month later as "you never fixed that."</p>
+  </div>
+
+  <div class="block">
+    <h3>Walk order</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Prep:</b> clean enough to see, tools ready, raking light in hand (see QC Walk + Drywall Touch-Up).</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Drywall punch first</b> — defects, ridges, voids, screw issues. Mark outside the defect.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Prime repairs</b>, then <b>Paint Touch-Up</b> on a ready wall — not paint over dust.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photo + written list</b> the same day. Commercial: never leave it verbal-only.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Other-trade damage:</b> photo before you touch it; then CO / T&amp;M path if we are asked to repair (Spotting a Change Order).</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Close Job Check / Completion only when the list is truly closed</b> — not when everyone is tired of looking at it.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC practice wrapping Drywall Touch-Up and Paint Touch-Up. Completes the punch tiles with a supervision cadence.</p>
+  </div>
+</section>
+
+<!-- ==================== INSPECTION HOLD ==================== -->
+<section class="doc" id="inspection-hold">
+  <div class="doc-head">
+    <span class="stage-line">Rated work · hold points</span>
+    <h2>Inspection Photos &amp; Hold Points</h2>
+    <p class="lede">What to photograph before you cover it, how to tag it, and when covering without a clear is how you buy tear-out.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>If an inspector or GC needs to see a layer, and you covered it, you own the reopen. Photo first. Rated walls, shaftliner, firestop, insulation before the second side, and resilient channel are the usual hold points.</p>
+  </div>
+
+  <div class="block">
+    <h3>Hold-point checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Know the hold points</b> on this assembly before you start covering — ask the lead if unsure.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photo:</b> wide (where you are) + close (the detail). Include a room or grid label in the frame or filename habit the lead uses.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Typical set:</b> base layer / shaftliner, firestop at head-of-wall and penetrations, insulation before 2nd side, RC/hat channel before board.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Do not cover</b> until the lead (and GC/inspector when required) clears — Job Check "ready" is not a substitute for a failed inspection.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Failed inspection:</b> stop, photo the red tag / note, call the lead. Tear-out vs repair is their call with the office.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC practice reinforcing Fire Walls &amp; Shaftwall and Firestopping photo discipline into one crew ritual.</p>
+  </div>
+</section>
+
+<!-- ==================== TRACK HANGER ==================== -->
+<section class="doc" id="track-hanger">
+  <div class="doc-head">
+    <span class="stage-line">Training · role track</span>
+    <h2>Track: Hanger</h2>
+    <p class="lede">From helper to independent hang: drawings, pre-board walk, sheet layout, scrape handoff, and when to stop on rated work.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Good hanging is mostly layout decisions you cannot sand away. Learn the Pre-Board Walk, then Hanging in Plain, then why Scraping is the next stage — not optional cleanup.</p>
+  </div>
+
+  <div class="block">
+    <h3>Hanger track</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Reading Drawings + Pre-Board Walk</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Hanging Drywall (Plain, then Full: board types, rated, control joints)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Scraping — own the handoff to finish</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Insulation awareness (first side / sound walls)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Don't Do This — quality + rated bullets</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Graduation: lead trusts you on a room without forced board or missed backing</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC training path wrapping existing procedures.</p>
+  </div>
+</section>
+
+<!-- ==================== TRACK FINISHER ==================== -->
+<section class="doc" id="track-finisher">
+  <div class="doc-head">
+    <span class="stage-line">Training · role track</span>
+    <h2>Track: Finisher</h2>
+    <p class="lede">Coat sequence that matches Job Check chips, scrape-before-sand discipline, dust control, and the punch path before paint.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Job Check now has Taped → 2nd Bed → 3rd Coat → Sanded → Text/Skim for a reason. Your track is honesty about which coat you are actually on, and never sanding what you should have scraped.</p>
+  </div>
+
+  <div class="block">
+    <h3>Finisher track</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Scraping + Finishing Drywall (levels + mud choice in Full detail)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Safety Orientation silica / vacuum sanding</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">QC Walk + Drywall Touch-Up</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Painting handoff (primer / sheen traps)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Punch List Cadence</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Graduation: coats match Job Check; no skip-scrape habit; Level 5 only when specified</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC training path aligned to Job Check coat columns (2026-08-05 slice).</p>
+  </div>
+</section>
+
+<!-- ==================== TRACK ACT ==================== -->
+<section class="doc" id="track-act">
+  <div class="doc-head">
+    <span class="stage-line">Training · role track</span>
+    <h2>Track: ACT Installer</h2>
+    <p class="lede">Layout, level, wire on structure, border art, and the coordination that happens before tile drops.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Ceilings fail in public. Equal borders and structure-only hangers are the whole game. Read Acoustical Ceilings in Plain first; Full detail when the grid face or seismic note is unfamiliar.</p>
+  </div>
+
+  <div class="block">
+    <h3>ACT track</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt">Reading Drawings (RCP + reflected notes)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Acoustical Ceilings — layout, wire, tile edges</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Tectum when the job has direct-attach panels</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Clean-Out after grid/tile</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Don't Do This — wires on duct, dirty borders</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Graduation: level grid, equal borders, no duct hangers, clean gloves on tile</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC training path wrapping existing ceiling procedures.</p>
   </div>
 </section>
 
