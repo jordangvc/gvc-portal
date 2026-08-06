@@ -1,43 +1,40 @@
 """
-GVC job-naming standard — the pipe format (with city / state / ZIP).
+GVC job-naming standard — 3-part pipe with Job Title (Jordan 2026-08-06).
 =========================================================================
 Jordan, 2026-07-29: "We prefer the -Pipe- | it looks so much better."
 Jordan, 2026-08-05: city / state / ZIP MUST be in the title — GVC works in
 three states and many share the same road names. Job type still stays out.
+Jordan, 2026-08-06: Job Title is a REQUIRED third pipe segment.
 
 Applies everywhere: Monday.com, Drive, estimates, invoices, CRM, photos,
 internal docs:
 
-    [Street Number Name], [City], [ST] [ZIP] | [Builder/Client]
+    [Street Number Name], [City], [ST] [ZIP] | [Builder] | [Job Title]
 
-    9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek
-    3776 Susanna, Lawrenceburg, IN 47025 | Martin
-    CO_9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek
+    9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence
+    100 Main Street, Cincinnati, OH 45202 | ABC Builders | First Financial Bank
+    CO_9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence
 
 Rules:
-  • Pipe (|) separator between location and builder — not — or -.
-  • Street number + name + city + state + ZIP on the left; builder/client
-    on the right. Job-type descriptors ("New House", "Remodel") stay in
-    record fields — never in the title.
-  • Missing builder or missing city/state/ZIP → ASK, don't guess.
+  • Pipe (|) separators — not — or -. Exactly three non-empty parts.
+  • Left: street + city + state + ZIP. Middle: builder. Right: job title.
+  • Commercial job title = business name. Residential = "{Last} residence".
+  • Job-type descriptors ("New House", "Remodel") stay in record fields —
+    never in the title.
+  • Missing builder, city/state/ZIP, or job title → ASK, don't guess.
 
-That last rule is why `to_standard()` never invents a builder (or a city).
-When a piece is missing it returns what it has and says so, and the UI asks
-— a guessed builder/address propagates into Monday, Drive, CRM and invoices.
-
-⚠ A client AND a builder may both appear (three parts):
-    1254 Main Street, Cincinnati, OH 45202 | ABC Apartments | Premier Builders LLC
-Two or three parts are both valid; what's never valid is a job-type
-descriptor in the title, or a dash separator.
+That last rule is why `to_standard()` never invents a builder, city, or job
+title. When a piece is missing it returns what it has and says so, and the
+UI asks — a guessed piece propagates into Monday, Drive, CRM and invoices.
 
 WHY THIS MODULE ALSO OWNS MATCHING: adopt-or-create finds existing Projects
 and Operations items BY NAME. Every item created before today is named in
-one of the older conventions (short "Street | Builder", underscore, dashes
-with city glued on). Renaming the standard without token-based matching
+one of the older conventions (short "Street | Builder", 2-part with geo,
+underscore, dashes). Renaming the standard without token-based matching
 would fail to find those items and create duplicates. `match_score()` is
 the bridge across the convention change — tokens intentionally IGNORE city
-/ state / ZIP so a short legacy name and its new city-bearing form still
-score as the same job.
+/ state / ZIP and the word "residence" so a 2-part legacy name and its
+3-part form still score as the same job.
 """
 from __future__ import annotations
 
@@ -347,13 +344,62 @@ def _merge_location(primary: dict, hint: dict) -> dict:
     return out
 
 
+def format_job_title(*, project_type: Optional[str] = None,
+                     homeowner_last: Optional[str] = None,
+                     business_name: Optional[str] = None) -> Optional[str]:
+    """
+    PURE. Build the required third pipe segment from recorded facts.
+
+    Residential → "{Last} residence" (last token of a full name; never doubles
+    an existing trailing "residence"). Commercial → business_name as-is.
+    Unknown type prefers business_name, else residential form. Never invents
+    from empty inputs — returns None so the caller asks.
+    """
+    pt = (project_type or "").strip().lower()
+    biz = (business_name or "").strip() or None
+    home = (homeowner_last or "").strip() or None
+
+    def _residence(raw: str) -> str:
+        s = raw.strip()
+        if s.lower().endswith("residence"):
+            return s
+        last = s.split()[-1]
+        return f"{last} residence"
+
+    if "res" in pt:
+        return _residence(home) if home else None
+    if "comm" in pt:
+        return biz
+    if biz:
+        return biz
+    if home:
+        return _residence(home)
+    return None
+
+
+def _resolve_job_title(*, parsed: Optional[str] = None,
+                       job_title_hint: Optional[str] = None,
+                       project_type: Optional[str] = None,
+                       homeowner_last: Optional[str] = None,
+                       business_name: Optional[str] = None) -> Optional[str]:
+    """Prefer an already-parsed third part, then an explicit hint, then format."""
+    if parsed and parsed.strip():
+        return parsed.strip()
+    hint = (job_title_hint or "").strip()
+    if hint:
+        return hint
+    return format_job_title(project_type=project_type,
+                            homeowner_last=homeowner_last,
+                            business_name=business_name)
+
+
 def is_standard(name: str) -> bool:
-    """True when `name` already follows the pipe + city/state/ZIP standard."""
+    """True when `name` is the 3-part pipe + city/state/ZIP + job-title standard."""
     if not name or "|" not in name:
         return False
     body = PREFIX_RE.sub("", name)
     parts = [p.strip() for p in body.split("|")]
-    if not (2 <= len(parts) <= 3) or any(not p for p in parts):
+    if len(parts) != 3 or any(not p for p in parts):
         return False
     if any(_is_descriptor(p) for p in parts):
         return False
@@ -364,46 +410,76 @@ def is_standard(name: str) -> bool:
 
 def to_standard(raw: str, *, builder_hint: Optional[str] = None,
                 customer_hint: Optional[str] = None,
-                location_hint: Optional[str] = None) -> dict:
+                location_hint: Optional[str] = None,
+                job_title_hint: Optional[str] = None,
+                project_type: Optional[str] = None,
+                homeowner_last: Optional[str] = None,
+                business_name: Optional[str] = None) -> dict:
     """
-    PURE. Messy job name → the pipe + city/state/ZIP standard.
+    PURE. Messy job name → the 3-part pipe + city/state/ZIP + job-title standard.
 
-    Returns {name, ok, street, builder, city, state, zip, note}. `ok` is False
-    when a required piece is missing — per Jake/Jordan the caller ASKS rather
-    than guessing, and `note` says what's missing.
+    Returns {name, ok, street, builder, job_title, city, state, zip, note}.
+    `ok` is False when a required piece is missing — per Jake/Jordan the caller
+    ASKS rather than guessing, and `note` says what's missing.
 
     `location_hint` is typically Monday Job Location (`location5`) text — a
     recorded fact, so it's allowed to supply city/state/ZIP when the title
     doesn't. Same for `builder_hint` / `customer_hint` from the bid's Customer
-    link.
+    link, and `job_title_hint` / format_job_title inputs for the third part.
     """
     raw = (raw or "").strip()
     hint_loc = parse_location(location_hint or "")
+    title_kwargs = dict(
+        job_title_hint=job_title_hint, project_type=project_type,
+        homeowner_last=homeowner_last, business_name=business_name)
+
+    def _result(*, name: str, ok: bool, street, builder, job_title,
+                city, state, zip_code, note: str) -> dict:
+        return {
+            "name": name, "ok": ok,
+            "street": street, "builder": builder, "job_title": job_title,
+            "city": city, "state": state, "zip": zip_code, "note": note,
+        }
+
+    def _missing_note(missing: list[str]) -> str:
+        return ("Missing " + " and ".join(dict.fromkeys(missing))
+                + " — add them, don't let it guess.")
+
+    def _collect_missing(loc: dict, builder, job_title) -> list[str]:
+        missing: list[str] = []
+        if not loc.get("street"):
+            missing.append("street/number")
+        if any(not loc.get(k) for k in ("city", "state", "zip")):
+            missing.append("city/state/ZIP")
+        if not builder:
+            missing.append("builder/client")
+        if not job_title:
+            missing.append("job title")
+        return missing
 
     if not raw:
-        # Still try to say something useful from the location hint alone.
+        # Still try to say something useful from hints alone.
         if hint_loc.get("street"):
             left = format_location(
                 street=hint_loc.get("street"), city=hint_loc.get("city"),
                 state=hint_loc.get("state"), zip_code=hint_loc.get("zip"))
             builder = (builder_hint or customer_hint or "").strip() or None
-            name = SEPARATOR.join(p for p in (left, builder) if p)
-            missing = []
-            if not location_complete(hint_loc):
-                missing.append("city/state/ZIP")
-            if not builder:
-                missing.append("builder/client")
-            return {
-                "name": name, "ok": not missing,
-                "street": hint_loc.get("street"), "builder": builder,
-                "city": hint_loc.get("city"), "state": hint_loc.get("state"),
-                "zip": hint_loc.get("zip"),
-                "note": ("Missing " + " and ".join(missing) + " — add them, "
-                         "don't let it guess.") if missing else "",
-            }
-        return {"name": "", "ok": False, "street": None, "builder": None,
-                "city": None, "state": None, "zip": None,
-                "note": "No job name to work from."}
+            job_title = _resolve_job_title(parsed=None, **title_kwargs)
+            name = SEPARATOR.join(p for p in (left, builder, job_title) if p)
+            missing = _collect_missing(hint_loc, builder, job_title)
+            return _result(
+                name=name, ok=not missing,
+                street=hint_loc.get("street"), builder=builder,
+                job_title=job_title,
+                city=hint_loc.get("city"), state=hint_loc.get("state"),
+                zip_code=hint_loc.get("zip"),
+                note=_missing_note(missing) if missing else "",
+            )
+        job_title = _resolve_job_title(parsed=None, **title_kwargs)
+        return _result(
+            name="", ok=False, street=None, builder=None, job_title=job_title,
+            city=None, state=None, zip_code=None,
+            note="No job name to work from.")
 
     prefix_m = PREFIX_RE.match(raw)
     prefix = ""
@@ -414,10 +490,11 @@ def to_standard(raw: str, *, builder_hint: Optional[str] = None,
     if is_standard(raw):
         parts = [p.strip() for p in PREFIX_RE.sub("", raw).split("|")]
         loc = parse_location(parts[0])
-        return {"name": raw.strip(), "ok": True,
-                "street": loc.get("street"), "builder": parts[1] if len(parts) > 1 else None,
-                "city": loc.get("city"), "state": loc.get("state"),
-                "zip": loc.get("zip"), "note": ""}
+        return _result(
+            name=raw.strip(), ok=True,
+            street=loc.get("street"), builder=parts[1], job_title=parts[2],
+            city=loc.get("city"), state=loc.get("state"),
+            zip_code=loc.get("zip"), note="")
 
     parts = parse_parts(raw)
 
@@ -425,7 +502,7 @@ def to_standard(raw: str, *, builder_hint: Optional[str] = None,
     rest = [p for p in parts if p is not street_part]
 
     builder = rest[0] if rest else None
-    extra = rest[1] if len(rest) > 1 else None
+    parsed_title = rest[1] if len(rest) > 1 else None
     if not builder:
         builder = (builder_hint or customer_hint or "").strip() or None
 
@@ -440,7 +517,7 @@ def to_standard(raw: str, *, builder_hint: Optional[str] = None,
         rest2 = parts[1:]
         builder = (rest2[0] if rest2 else
                    (builder_hint or customer_hint or "").strip() or None)
-        extra = rest2[1] if len(rest2) > 1 else None
+        parsed_title = rest2[1] if len(rest2) > 1 else None
     else:
         loc = dict(hint_loc)
 
@@ -448,55 +525,65 @@ def to_standard(raw: str, *, builder_hint: Optional[str] = None,
     if not loc.get("street") and hint_loc.get("street"):
         loc = _merge_location(hint_loc, loc)
 
+    # 2-part names only supply builder; job title must come from hints/format.
+    # 3-part names use parts[2] as job title.
+    job_title = _resolve_job_title(parsed=parsed_title, **title_kwargs)
+
     left = format_location(
         street=loc.get("street"), city=loc.get("city"),
         state=loc.get("state"), zip_code=loc.get("zip"))
-    pieces = [p for p in (left, builder, extra) if p]
+    pieces = [p for p in (left, builder, job_title) if p]
     name = prefix + SEPARATOR.join(pieces)
 
-    missing = []
-    if not loc.get("street"):
-        missing.append("street/number")
-    geo_missing = [k for k in ("city", "state", "zip") if not loc.get(k)]
-    if geo_missing:
-        missing.append("city/state/ZIP")
-    if not builder:
-        missing.append("builder/client")
-
+    missing = _collect_missing(loc, builder, job_title)
     if missing:
-        note = ("Missing " + " and ".join(dict.fromkeys(missing))
-                + " — add them, don't let it guess.")
-        return {"name": name, "ok": False, "street": loc.get("street"),
-                "builder": builder, "city": loc.get("city"),
-                "state": loc.get("state"), "zip": loc.get("zip"),
-                "note": note}
-    return {"name": name, "ok": True, "street": loc.get("street"),
-            "builder": builder, "city": loc.get("city"),
-            "state": loc.get("state"), "zip": loc.get("zip"), "note": ""}
+        return _result(
+            name=name, ok=False,
+            street=loc.get("street"), builder=builder, job_title=job_title,
+            city=loc.get("city"), state=loc.get("state"),
+            zip_code=loc.get("zip"), note=_missing_note(missing))
+    return _result(
+        name=name, ok=True,
+        street=loc.get("street"), builder=builder, job_title=job_title,
+        city=loc.get("city"), state=loc.get("state"),
+        zip_code=loc.get("zip"), note="")
 
 
 def compose_job_name(location: str, builder: str, *,
-                     raw_name: Optional[str] = None) -> str:
+                     raw_name: Optional[str] = None,
+                     job_title: Optional[str] = None,
+                     project_type: Optional[str] = None,
+                     homeowner_last: Optional[str] = None,
+                     business_name: Optional[str] = None) -> str:
     """
     PURE. Build a standard job title for estimate / CO / Drive write paths.
 
-    Prefer `raw_name` when present (may already carry builder); otherwise
-    compose from location + builder. Always routes through `to_standard` so
-    every write path shares one formatter.
+    Prefer `raw_name` when present (may already carry builder / job title);
+    otherwise compose from location + builder + job_title. Always routes
+    through `to_standard` so every write path shares one formatter.
     """
     builder = (builder or "").strip()
     location = (location or "").strip()
     raw = (raw_name or "").strip()
+    title_kw = dict(
+        job_title_hint=job_title, project_type=project_type,
+        homeowner_last=homeowner_last, business_name=business_name)
     if raw:
-        std = to_standard(raw, builder_hint=builder, location_hint=location)
+        std = to_standard(raw, builder_hint=builder, location_hint=location,
+                          **title_kw)
     elif location and builder:
         std = to_standard(f"{location}{SEPARATOR}{builder}",
-                          builder_hint=builder, location_hint=location)
+                          builder_hint=builder, location_hint=location,
+                          **title_kw)
     elif location:
-        std = to_standard(location, builder_hint=builder, location_hint=location)
+        std = to_standard(location, builder_hint=builder, location_hint=location,
+                          **title_kw)
     else:
         return builder
-    return std["name"] or (f"{location}{SEPARATOR}{builder}".strip(" |") if location or builder else "")
+    if std["name"]:
+        return std["name"]
+    bits = [p for p in (location, builder, (job_title or "").strip() or None) if p]
+    return SEPARATOR.join(bits)
 
 
 # ---------------------------------------------------------------------------
