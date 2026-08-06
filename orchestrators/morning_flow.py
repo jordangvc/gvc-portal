@@ -329,8 +329,8 @@ def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, A
                      else "Fireflies ingest when GVC_FIREFLIES_API_KEY is set."),
         },
         "links": {
-            "gm": "/ui/morning/gm" if roles.get("is_gm") else None,
-            "owner": "/ui/morning/owner" if roles.get("is_owner") else None,
+            "gm": "/ui/morning-gm" if roles.get("is_gm") else None,
+            "owner": "/ui/morning-owner" if roles.get("is_owner") else None,
         },
         "hub": {
             "ready": preparation.get("ready"),
