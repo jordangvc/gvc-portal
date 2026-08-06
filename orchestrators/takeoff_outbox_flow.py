@@ -105,20 +105,40 @@ def _bearer_token() -> str:
 
 
 def _fetch_queued(token: str, limit: int) -> dict:
-    """GET the queued outbox entries.  The server-side status filter keeps the
-    sweep bounded (requires ``".indexOn": "status"`` in the RTDB rules)."""
+    """GET queued outbox entries.
+
+    Prefer server-side ``orderBy=status`` (needs ``".indexOn": "status"``).
+    If Firebase returns 400 (index missing), fall back to a shallow read and
+    filter ``status == "queued"`` client-side so activation is not blocked.
+    """
     import requests
 
+    headers = {"Authorization": f"Bearer {token}"}
+    url = f"{_rtdb_url()}/gvc_portal_outbox.json"
     response = requests.get(
-        f"{_rtdb_url()}/gvc_portal_outbox.json",
+        url,
         params={
             "orderBy": '"status"',
             "equalTo": '"queued"',
             "limitToFirst": str(int(limit)),
         },
-        headers={"Authorization": f"Bearer {token}"},
+        headers=headers,
         timeout=30,
     )
+    if response.status_code == 400:
+        # Index not deployed yet — pull what we can and filter locally.
+        response = requests.get(url, headers=headers, timeout=60)
+        response.raise_for_status()
+        raw = response.json()
+        if not isinstance(raw, dict):
+            return {}
+        queued = {
+            k: v for k, v in raw.items()
+            if isinstance(v, dict) and v.get("status") == "queued"
+        }
+        # Deterministic cap
+        keys = sorted(queued)[: max(0, int(limit))]
+        return {k: queued[k] for k in keys}
     response.raise_for_status()
     entries = response.json()
     return entries if isinstance(entries, dict) else {}
