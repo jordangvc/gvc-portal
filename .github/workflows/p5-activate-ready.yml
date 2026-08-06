@@ -1,0 +1,93 @@
+name: P5 activate ready-to-invoice
+
+# One-shot / repeatable activation for the Ready-to-Invoice consumer.
+# Uses GCP_SA_KEY (same as deploy). Never prints secret values.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "check | activate | gauntlet"
+        required: true
+        default: check
+        type: choice
+        options: [check, activate, gauntlet]
+
+permissions:
+  contents: read
+
+jobs:
+  activate:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT: gvc-invoice-system
+      REGION: us-central1
+      SERVICE: gvc-invoice
+      SITE_BASE: https://portal.greenvalleycontractors.com
+      SCHEDULER_JOB: gvc-ready-to-invoice
+      API_SECRET: gvc-service-api-key
+    steps:
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Resolve API key from Secret Manager
+        id: apikey
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if KEY=$(gcloud secrets versions access latest --secret="$API_SECRET" --project="$PROJECT" 2>/tmp/secret.err); then
+            if [ -n "$KEY" ]; then
+              echo "api_key_ok=true" >> "$GITHUB_OUTPUT"
+              echo "::add-mask::$KEY"
+              echo "GVC_SERVICE_API_KEY=$KEY" >> "$GITHUB_ENV"
+            else
+              echo "api_key_ok=false" >> "$GITHUB_OUTPUT"
+            fi
+          else
+            echo "api_key_ok=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Ensure scheduler job (dry_run true)
+        if: ${{ github.event.inputs.mode == 'activate' || github.event.inputs.mode == 'gauntlet' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.apikey.outputs.api_key_ok }}" != "true" ]; then
+            echo "SKIP create scheduler: no API key access"
+            exit 0
+          fi
+          BODY=$(mktemp)
+          printf '%s' '{"dry_run":true,"limit":20}' > "$BODY"
+          URI="$SITE_BASE/v1/tasks/check-ready-to-invoice"
+          if gcloud scheduler jobs describe "$SCHEDULER_JOB" --location="$REGION" --project="$PROJECT" >/dev/null 2>&1; then
+            gcloud scheduler jobs update http "$SCHEDULER_JOB"               --location="$REGION" --project="$PROJECT"               --schedule="*/15 * * * *"               --time-zone="America/New_York"               --uri="$URI"               --http-method=POST               --headers="X-API-Key=$GVC_SERVICE_API_KEY,Content-Type=application/json"               --message-body-from-file="$BODY"               --attempt-deadline=180s
+          else
+            gcloud scheduler jobs create http "$SCHEDULER_JOB"               --location="$REGION" --project="$PROJECT"               --schedule="*/15 * * * *"               --time-zone="America/New_York"               --uri="$URI"               --http-method=POST               --headers="X-API-Key=$GVC_SERVICE_API_KEY,Content-Type=application/json"               --message-body-from-file="$BODY"               --attempt-deadline=180s
+          fi
+
+      - name: Dry-run check-ready-to-invoice
+        if: ${{ github.event.inputs.mode != 'check' }}
+        continue-on-error: true
+        run: |
+          set -euo pipefail
+          if [ -z "${GVC_SERVICE_API_KEY:-}" ]; then
+            echo "SKIP dry-run: no API key"
+            exit 0
+          fi
+          code=$(curl -sS -o /tmp/p5.json -w "%{http_code}" -X POST             "$SITE_BASE/v1/tasks/check-ready-to-invoice"             -H "X-API-Key: $GVC_SERVICE_API_KEY"             -H "Content-Type: application/json"             -d '{"dry_run":true,"limit":20}')
+          echo "HTTP $code"
+          python3 -c 'import json; d=json.load(open("/tmp/p5.json")); print(json.dumps(d, indent=2)[:4000])'
+          test "$code" = "200"
+
+      - name: Summary
+        if: always()
+        continue-on-error: true
+        run: |
+          echo "Mode: ${{ github.event.inputs.mode }}"
+          echo "Endpoint: $SITE_BASE/v1/tasks/check-ready-to-invoice"
+          code=$(curl -sS -o /tmp/unauth.json -w "%{http_code}" -X POST             "$SITE_BASE/v1/tasks/check-ready-to-invoice" -H "Content-Type: application/json" -d "{}" || true)
+          echo "Unauth expect 401: HTTP $code"
