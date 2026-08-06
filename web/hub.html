@@ -97,7 +97,7 @@
             <section class="hub-panel" aria-labelledby="activity-title">
               <div class="hub-panel__hd">
                 <h2 class="hub-panel__title" id="activity-title">Activity</h2>
-                <a class="hub-panel__link" href="/ui/activity">All</a>
+                <a class="hub-panel__link" id="activityall" href="/ui/activity">All</a>
               </div>
               <div class="hub-act-scroll" id="activity"></div>
             </section>
@@ -111,7 +111,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r49</b> · Aug 6, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r50</b> · Aug 6, 2026</span>
         </div>
       </div>
     </div>
@@ -301,7 +301,8 @@
     const countEl = $("needscount");
     if (!payload) return;
     const list = payload.needs || [];
-    const clear = payload.needs_clear || !list.length;
+    // Only trust the server clear flag — empty + not-clear means data is down.
+    const clear = !!payload.needs_clear;
     if (countEl) {
       if (!clear && list.length) {
         countEl.hidden = false;
@@ -324,6 +325,14 @@
       box.innerHTML =
         `<div class="hub-clear"><strong>You're clear.</strong>` +
         (rest ? esc(rest) : "") + `</div>`;
+      return;
+    }
+    if (!list.length) {
+      const line = (payload.summary ||
+        "Live numbers aren't available yet — tools still work from the rail.").trim();
+      box.innerHTML =
+        `<div class="hub-empty-soft"><strong>Waiting on live data</strong>` +
+        esc(line) + `</div>`;
       return;
     }
     box.innerHTML = `<div class="hub-needs">` + list.map((n) => {
@@ -459,7 +468,11 @@
       payload.pinned = body.items || next;
       renderPinned();
       renderQueue();
-      toast(idx >= 0 ? "Unpinned" : "Pinned");
+      if (body.persisted === false) {
+        toast(idx >= 0 ? "Unpinned for now — not saved yet" : "Pinned for now — not saved yet");
+      } else {
+        toast(idx >= 0 ? "Unpinned" : "Pinned");
+      }
     } catch (_) {
       toast("Couldn't save pin — try again");
       fetchPayload().catch(() => {});
@@ -469,15 +482,37 @@
   }
 
   function renderActivity() {
+    const allLink = $("activityall");
+    const hasActivity = FEATURES.has("activity") || FEATURES.has("*");
+    if (allLink) {
+      if (hasActivity) {
+        allLink.hidden = false;
+        allLink.href = "/ui/activity";
+        allLink.removeAttribute("aria-disabled");
+        allLink.title = "";
+      } else {
+        allLink.hidden = false;
+        allLink.href = "#";
+        allLink.setAttribute("aria-disabled", "true");
+        allLink.title = "Ask an admin for Activity access";
+        allLink.onclick = (e) => {
+          e.preventDefault();
+          toast("Ask an admin for Activity access");
+        };
+      }
+    }
     const rows = payload.activity || [];
     if (!rows.length) {
       $("activity").innerHTML =
         `<div class="hub-empty-soft"><strong>Quiet so far</strong>` +
-        `Sends, approvals, and status changes show up here.</div>`;
+        (hasActivity
+          ? `Sends, approvals, and status changes show up here.`
+          : `Your recent work shows here when available. Ask an admin for the full Activity log.`) +
+        `</div>`;
       return;
     }
     $("activity").innerHTML = rows.map((r) => (
-      `<a class="hub-act" href="${esc(r.href || "/ui/activity")}">` +
+      `<a class="hub-act" href="${esc(r.href || (hasActivity ? "/ui/activity" : "#"))}">` +
       `<div class="hub-act__text">${esc(r.text)}</div>` +
       `<div class="hub-act__when">${esc(formatWhen(r.when))}</div></a>`
     )).join("");

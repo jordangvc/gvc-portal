@@ -169,8 +169,12 @@ def _ready_amount(row: dict) -> str:
 def _queue_link_for(role: str, home_href: str, home_name: str) -> tuple[str, str]:
     if role == "owner":
         return ("Open Owner Pulse", home_href or "/ui/morning-owner")
-    if role in ("office", "gm"):
+    if role == "gm":
+        return ("Open GM Huddle", home_href or "/ui/morning-gm")
+    if role == "office":
         return ("Open Billing", "/ui/billing")
+    if role == "sales":
+        return ("Open Estimate", home_href or "/ui/estimate")
     return (f"Open {home_name}" if home_name else "Open", home_href or "#")
 
 
@@ -203,6 +207,19 @@ def _try_owner_pulse(email: str) -> Optional[dict]:
         return out
     except Exception as exc:  # noqa: BLE001
         print(f"[hub] owner pulse skipped: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
+        return None
+
+
+def _try_gm_view(email: str) -> Optional[dict]:
+    try:
+        from orchestrators import morning_flow
+        out = morning_flow.build_gm_view(email)
+        if out.get("ok") is False:
+            return None
+        return out
+    except Exception as exc:  # noqa: BLE001
+        print(f"[hub] gm view skipped: {type(exc).__name__}: {exc}",
               file=sys.stderr)
         return None
 
@@ -243,6 +260,14 @@ def _build_field(email: str, brief: Optional[dict]) -> dict[str, Any]:
         badges["jobcheck"] = len(attention)
     if incoming:
         badges["morning"] = len(incoming)
+    # Incomplete prep → badge on Morning even when the route looks quiet.
+    try:
+        ready_n = int(prep.get("ready") or 0)
+        total_n = int(prep.get("total") or 6)
+        if total_n and ready_n < total_n:
+            badges["morning"] = max(int(badges.get("morning") or 0), 1)
+    except (TypeError, ValueError):
+        pass
 
     for row in attention[:4]:
         name = row.get("name") or "Job"
@@ -254,7 +279,7 @@ def _build_field(email: str, brief: Optional[dict]) -> dict[str, Any]:
             amount=blocked[:40],
             title=name,
             detail="Flagged on Operations — update Job Check or clear the block.",
-            action="Open Job Check",
+            action="Update Job Check",
             href=href,
             secondary_href=href,
         ))
@@ -414,11 +439,10 @@ def _build_office(email: str, billing: Optional[dict],
 
     if not billing:
         summary = (
-            "You're clear. "
-            "Billing numbers will fill in when Monday is reachable — "
-            "tools still work from the rail."
+            "Live billing numbers aren't available yet — Monday may be "
+            "unreachable. Tools still work from the rail."
         )
-        clear = True
+        clear = False
     elif not needs:
         summary = (
             f"You're clear. {ready_n} ready to invoice, "
@@ -438,11 +462,256 @@ def _build_office(email: str, billing: Optional[dict],
                 amount=(row.get("blocked") or "Attention")[:40],
                 title=row.get("name") or "Job",
                 detail="Flagged on Operations.",
-                action="Open Job Check",
+                action="Update Job Check",
                 href=(f"/ui/jobcheck?item={sid}" if sid else "/ui/jobcheck"),
                 urgent=True,
                 sort_key="",
             ))
+            clear = False
+
+    return {
+        "needs": _sort_needs(needs)[:4],
+        "metrics": metrics,
+        "queue_rows": queue_rows,
+        "summary": summary,
+        "badges": badges,
+        "clear": clear,
+    }
+
+
+def _build_sales(email: str, billing: Optional[dict],
+                 brief: Optional[dict]) -> dict[str, Any]:
+    """Sales home — handoffs + bids first; billing is secondary."""
+    needs: list[dict] = []
+    queue_rows: list[dict] = []
+    badges: dict[str, int] = {}
+    counts = (billing or {}).get("counts") or {}
+    queues = (billing or {}).get("queues") or {}
+    bids = queues.get("accepted_bids") or []
+    handoff_bids = [b for b in bids if b.get("needs_handoff")]
+    handoff_n = int(counts.get("needs_handoff") or len(handoff_bids))
+    accepted_n = int(counts.get("accepted_bids") or len(bids))
+    ready_n = int(counts.get("ready_to_invoice") or 0)
+
+    metrics = [
+        _metric("Need handoff", handoff_n if billing else "—",
+                "accepted bids without a project"),
+        _metric("Accepted bids", accepted_n if billing else "—",
+                "on the Bid Board"),
+        _metric("Ready to invoice", ready_n if billing else "—",
+                "ops marked ready (billing)"),
+        _metric("Open asks",
+                len(((brief or {}).get("action_requests") or {}).get("incoming") or [])
+                if brief else "—",
+                "waiting on you"),
+    ]
+    if handoff_n:
+        badges["jobstart"] = handoff_n
+    if ready_n and billing:
+        badges["invoice"] = ready_n
+
+    handoff_sorted = sorted(
+        handoff_bids,
+        key=lambda b: (b.get("accepted_date") or "9999-99-99", b.get("name") or ""),
+    )
+    for bid in handoff_sorted[:4]:
+        bid_id = str(bid.get("item_id") or bid.get("bid_item_id") or "").strip()
+        href = bid.get("jobstart_href") or bid.get("primary_href") or "/ui/jobstart"
+        if bid_id and "bid=" not in href and href.startswith("/ui/jobstart"):
+            href = f"/ui/jobstart?bid={bid_id}"
+        needs.append(_need(
+            kind="Handoff",
+            amount=_age_amount(str(bid.get("accepted_date") or ""), prefix="Accepted"),
+            title=bid.get("name") or "Accepted bid",
+            detail="Won deal without a Projects item — hand off before ops mobilizes.",
+            action="Open Job Start",
+            href=href,
+            secondary_href=bid.get("monday_url") or href,
+            sort_key=str(bid.get("accepted_date") or ""),
+        ))
+
+    for bid in handoff_sorted[:12]:
+        bid_id = str(bid.get("item_id") or "").strip()
+        href = bid.get("jobstart_href") or "/ui/jobstart"
+        if bid_id and "bid=" not in href:
+            href = f"/ui/jobstart?bid={bid_id}"
+        queue_rows.append(_queue_row(
+            bid.get("name") or "Accepted bid",
+            bid.get("builder") or "Needs Job Start",
+            tag="Handoff",
+            flagged=True,
+            href=href,
+            row_id=bid_id or href,
+        ))
+
+    for bid in bids:
+        if len(queue_rows) >= 12:
+            break
+        if bid.get("needs_handoff"):
+            continue
+        bid_id = str(bid.get("item_id") or "").strip()
+        href = bid.get("estimate_href") or bid.get("primary_href") or "/ui/estimate"
+        queue_rows.append(_queue_row(
+            bid.get("name") or "Bid",
+            bid.get("builder") or bid.get("stage") or "Accepted",
+            tag="Bid",
+            href=href,
+            row_id=bid_id or href,
+        ))
+
+    if not billing:
+        summary = (
+            "Live bid numbers aren't available yet — Monday may be "
+            "unreachable. Estimate and Job Start still work from the rail."
+        )
+        clear = False
+    elif not needs:
+        summary = (
+            f"You're clear. {accepted_n} accepted bid(s), "
+            f"{handoff_n} waiting on handoff."
+        )
+        clear = True
+    else:
+        summary = f"{len(needs)} handoff(s) need you today."
+        clear = False
+
+    return {
+        "needs": _sort_needs(needs)[:4],
+        "metrics": metrics,
+        "queue_rows": queue_rows,
+        "summary": summary,
+        "badges": badges,
+        "clear": clear,
+    }
+
+
+def _build_gm(email: str, gm_view: Optional[dict], billing: Optional[dict],
+              brief: Optional[dict]) -> dict[str, Any]:
+    """GM home — huddle queue (sequence / unscheduled / ARs), not billing-first."""
+    needs: list[dict] = []
+    queue_rows: list[dict] = []
+    badges: dict[str, int] = {}
+
+    team_prep = (gm_view or {}).get("team_prep") or {}
+    prep_pct = team_prep.get("pct")
+    sequence = list((gm_view or {}).get("sequence") or [])
+    unscheduled = list((gm_view or {}).get("unscheduled") or [])
+    ars = list((gm_view or {}).get("action_requests") or [])
+    planning = list((gm_view or {}).get("planning_signals") or [])
+    attention = [c for c in sequence if (c.get("blocked") or "").strip()]
+
+    ready_n = 0
+    if billing:
+        ready_n = int((billing.get("counts") or {}).get("ready_to_invoice") or 0)
+
+    metrics = [
+        _metric("Team prep",
+                f"{prep_pct}%" if prep_pct is not None else ("—" if not gm_view else "0%"),
+                "ops ready for huddle"),
+        _metric("Need attention", len(attention) if gm_view else "—",
+                "blocked in sequence"),
+        _metric("Unscheduled", len(unscheduled) if gm_view else "—",
+                "not on today's route"),
+        _metric("Open asks", len(ars) if gm_view else "—",
+                "action requests"),
+    ]
+    if attention:
+        badges["jobcheck"] = len(attention)
+    if ars:
+        badges["morning_gm"] = len(ars)
+    if ready_n:
+        badges["invoice"] = ready_n
+
+    for row in attention[:3]:
+        sid = str(row.get("item_id") or "").strip()
+        href = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-gm"
+        needs.append(_need(
+            kind="Blocked",
+            amount=(row.get("blocked") or "Attention")[:40],
+            title=row.get("name") or row.get("project_name") or "Job",
+            detail="On the huddle sequence — clear the block before the meeting.",
+            action="Open GM Huddle",
+            href="/ui/morning-gm",
+            secondary_href=href,
+            urgent=True,
+            sort_key=str(row.get("updated_at") or ""),
+        ))
+
+    for sig in planning[: max(0, 4 - len(needs))]:
+        needs.append(_need(
+            kind="Planning",
+            amount=str(sig.get("count") or "Flag"),
+            title=(sig.get("email") or "Route override")[:80],
+            detail="Planning signal — route overrides need a look before huddle.",
+            action="Open GM Huddle",
+            href="/ui/morning-gm",
+            sort_key="",
+        ))
+
+    for req in ars[: max(0, 4 - len(needs))]:
+        needs.append(_need(
+            kind="Ask",
+            amount=(req.get("due_at") or req.get("escalation") or "Open")[:24],
+            title=(req.get("project_name") or req.get("need") or "Action request")[:80],
+            detail=(req.get("need") or "Open action request.")[:160],
+            action="Open GM Huddle",
+            href="/ui/morning-gm",
+            sort_key=str(req.get("due_at") or req.get("created_at") or ""),
+        ))
+
+    for row in (attention + sequence)[:12]:
+        sid = str(row.get("item_id") or "").strip()
+        if not sid and not row.get("name"):
+            continue
+        # Dedupe by item_id
+        if sid and any(r.get("id") == sid for r in queue_rows):
+            continue
+        href = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-gm"
+        queue_rows.append(_queue_row(
+            row.get("name") or row.get("project_name") or "Job",
+            row.get("blocked") or row.get("stage") or row.get("location") or "In sequence",
+            tag="Flag" if (row.get("blocked") or "").strip() else "Seq",
+            flagged=bool((row.get("blocked") or "").strip()),
+            href=href,
+            row_id=sid or href,
+        ))
+
+    for row in unscheduled[:8]:
+        if len(queue_rows) >= 12:
+            break
+        sid = str(row.get("item_id") or "").strip()
+        if sid and any(r.get("id") == sid for r in queue_rows):
+            continue
+        href = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-gm"
+        queue_rows.append(_queue_row(
+            row.get("name") or "Unscheduled",
+            row.get("location") or row.get("stage") or "Not on route",
+            tag="Open",
+            href=href,
+            row_id=sid or href,
+        ))
+
+    if not gm_view:
+        summary = (
+            "Live huddle numbers aren't available yet — Monday may be "
+            "unreachable. Open GM Morning Huddle when you're ready."
+        )
+        clear = False
+    elif not needs:
+        summary = (
+            f"You're clear. Team prep {prep_pct if prep_pct is not None else '—'}%, "
+            f"{len(unscheduled)} unscheduled, {len(ars)} open ask(s)."
+        )
+        clear = True
+    else:
+        summary = f"{len(needs)} huddle item(s) need you before the meeting."
+        clear = False
+
+    if brief and not gm_view:
+        summary = (
+            (brief.get("hub") or {}).get("label")
+            or summary
+        )
 
     return {
         "needs": _sort_needs(needs)[:4],
@@ -568,10 +837,10 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
     if not needs:
         if billing is None and pulse is None:
             summary = (
-                "You're clear. "
-                "Live numbers will fill in when Monday is reachable — "
-                "nothing is waiting on you in the portal right now."
+                "Live Owner Pulse numbers aren't available yet — Monday may be "
+                "unreachable. Tools still work from the rail."
             )
+            clear = False
         else:
             summary = (
                 "You're clear. "
@@ -579,7 +848,7 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
                 f"{len(safety) if pulse else 0} safety hold(s), "
                 "nothing else waiting on you."
             )
-        clear = True
+            clear = True
     else:
         summary = f"{len(needs)} exception(s) need you today."
         clear = False
@@ -621,17 +890,23 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     home_tool_name = hub_nav.home_tool_label(home_tool)
 
     brief = _try_morning_brief(email) if "morning" in feats else None
-    billing = None
-    if role in ("owner", "office", "gm") and "invoice" in feats:
-        billing = _try_billing()
+    # Bid/invoice queues feed owner, office, gm, and sales homes.
+    billing = _try_billing() if role in ("owner", "office", "gm", "sales") else None
     pulse = None
     if role == "owner" and ("morning_owner" in feats or email in access.superadmin_emails()):
         pulse = _try_owner_pulse(email)
+    gm_view = None
+    if role == "gm" and "morning_gm" in feats:
+        gm_view = _try_gm_view(email)
 
     if role == "owner":
         shaped = _build_owner(email, pulse, billing, brief)
-    elif role in ("office", "gm"):
+    elif role == "gm":
+        shaped = _build_gm(email, gm_view, billing, brief)
+    elif role == "office":
         shaped = _build_office(email, billing, brief)
+    elif role == "sales":
+        shaped = _build_sales(email, billing, brief)
     else:
         shaped = _build_field(email, brief)
 

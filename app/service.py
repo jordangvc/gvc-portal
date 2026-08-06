@@ -1135,14 +1135,17 @@ def ui_hub_pinned_put(req: HubPinnedRequest, request: Request) -> dict:
     email = require_ui_access(request)
     from subsystems.hub import pinned as hub_pins
     try:
-        items = hub_pins.put_for(email, req.items, actor=email)
+        items, persisted = hub_pins.put_for(email, req.items, actor=email)
     except ValueError as e:
         raise HTTPException(
             status_code=422,
             detail={"ok": False, "code": "INVALID_INPUT", "detail": str(e)},
         )
-    activity.log_event("hub.pin", actor=email, target=str(len(items)), result="ok")
-    return {"ok": True, "items": items}
+    activity.log_event(
+        "hub.pin", actor=email, target=str(len(items)),
+        result="ok" if persisted else "ephemeral",
+    )
+    return {"ok": True, "items": items, "persisted": persisted}
 
 
 @app.get("/ui/gvc-command.js")

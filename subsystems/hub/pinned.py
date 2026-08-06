@@ -89,17 +89,17 @@ def list_for(email: str) -> list[dict]:
         return []
 
 
-def put_for(email: str, items: Any, *, actor: str) -> list[dict]:
+def put_for(email: str, items: Any, *, actor: str) -> tuple[list[dict], bool]:
     """
-    Replace the user's pin list. Returns the saved list.
+    Replace the user's pin list. Returns (saved_list, persisted).
     Raises ValueError on bad input; soft-fails store errors → returns validated
-    list without persisting (so optimistic UI can still show them in-session).
+    list with persisted=False (optimistic UI can still show them in-session).
     """
     email = portal_store.normalize_email(email)
     actor = portal_store.normalize_email(actor) or email
     clean = validate_items(items)
     if not email:
-        return clean
+        return clean, False
 
     def mut(doc: dict) -> dict:
         users = dict(doc.get("users") or {})
@@ -125,9 +125,9 @@ def put_for(email: str, items: Any, *, actor: str) -> list[dict]:
             new_doc = mut(doc or _empty_doc())
             portal_store._write_object(  # noqa: SLF001
                 _object_name(), new_doc, if_generation_match=gen)
-        return clean
+        return clean, True
     except PortalStoreNotConfigured:
-        return clean
+        return clean, False
     except Exception as exc:  # noqa: BLE001
         print(f"[hub.pins] put soft-fail: {type(exc).__name__}: {exc}", file=sys.stderr)
-        return clean
+        return clean, False

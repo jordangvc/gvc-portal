@@ -38,6 +38,10 @@ def test_sales_and_ops_match_grants_plan_intent():
     assert by_id["ops"] == {"morning_ops", "jobcheck", "jobstart"}
     assert by_id["crew"] == {"morning_ops", "jobcheck"}
     assert by_id["full"] == {access.WILDCARD}
+    assert "morning_owner" in by_id["owner"]
+    assert "morning_gm" in by_id["gm"]
+    assert "office" in by_id
+    assert set(by_id) >= {"full", "owner", "gm", "sales", "ops", "crew", "office"}
 
 
 if __name__ == "__main__":

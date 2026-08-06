@@ -7,7 +7,7 @@ tools live in a left rail (desktop) or drawer + bottom bar (phone).
 `orchestrators/hub_flow.py` · `subsystems/hub/pinned.py` · `GET /ui/api/hub` ·
 `PUT /ui/api/hub/pinned`
 
-Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r49**.
+Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r50**.
 
 ## Shell
 
@@ -25,6 +25,28 @@ Needs count chip + burgundy inset for Safety/Blocked. Home-tool CTA under the
 greeting (quiet outline when needs compete). Local `?demo=1` overlays sample
 needs for visual QA (dev bypass).
 
+## Roles (grant → home shape)
+
+Priority: `owner > gm > office > sales > field`.
+
+| Role | Grant trigger | Home tool | Needs focus |
+|---|---|---|---|
+| Owner | `morning_owner` only (not bare `admin`) | Owner Pulse | Safety, ready-to-invoice, prep alerts |
+| GM | `morning_gm` | GM Morning Huddle | Sequence blocks, planning, open ARs |
+| Office | `invoice` or `coi` | Billing Hub | Ready to invoice + handoffs |
+| Sales | `estimate` / `takeoff` / `jobstart` (no invoice/coi) | Estimate | Handoffs first |
+| Field | default | Morning Brief | Route stops, blocked jobs, asks |
+
+Admin presets in `/ui/admin`: Full, Owner Pulse, GM huddle, Sales, Operations,
+Crew, Office billing. Grant matrix: grant `morning_owner` to Jordan (and anyone
+who should see Owner Pulse); `morning_gm` to the GM; Sales preset for Jake;
+Office for Andrea when she should see Billing Hub (not Owner) unless she also
+holds `morning_owner`.
+
+- `person.home_tool` (Admin) overrides the role default home tool.
+- Superadmins (`GVC_PORTAL_ALLOWED_EMAILS`) still expand to all features, so they
+  resolve as **owner** via `morning_owner`.
+
 ## Payload
 
 `GET /ui/api/hub` returns one `HubPayload` (user with `homeTool` + `homeToolName`,
@@ -36,16 +58,18 @@ pinned, activity, badges, nav).
 - Invoice / send actions: **"Approve to send"** (never auto-send).
 - Needs sorted urgent-first, then oldest date; handoffs expand per accepted bid.
 - Activity lines are humanized; hub/sign-in noise filtered.
-- Role = `owner > gm > office > field` from grants.
-- `person.home_tool` (Admin) overrides the role default home tool.
+- **`needs_clear` is honest:** unreachable Monday/billing/pulse/GM view never
+  claims "You're clear." The UI shows "Waiting on live data" when the list is
+  empty and `needs_clear` is false.
+- Field incomplete prep badges Morning even when the route is quiet.
 
 ## Pinned
 
 `PUT /ui/api/hub/pinned` `{ items: [{ id, name, sub, href }] }` — max 20, GCS
-`portal/hub-pins.json`, soft-fails without a state bucket. Queue rows have ★ pin.
+`portal/hub-pins.json`. Response includes `persisted: false` when the state
+bucket is missing (in-session only; toast says so). Queue rows have ★ pin.
 
 ## Still open
 
-- GM huddle-shaped payload (still office/billing-shaped today)
 - Richer Activity shared with Owner Pulse as adapters land
 - AR money-at-risk sort when billing exposes due amounts

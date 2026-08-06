@@ -48,6 +48,7 @@ ROLE_HOME_TOOL: dict[str, str] = {
     "owner": "morning_owner",
     "gm": "morning_gm",
     "office": "invoice",  # Billing Hub
+    "sales": "estimate",
     "field": "morning",
 }
 
@@ -55,6 +56,7 @@ ROLE_HOME_HREF: dict[str, str] = {
     "owner": "/ui/morning-owner",
     "gm": "/ui/morning-gm",
     "office": "/ui/billing",
+    "sales": "/ui/estimate",
     "field": "/ui/morning",
 }
 
@@ -62,6 +64,7 @@ ROLE_QUEUE_TITLE: dict[str, str] = {
     "owner": "Exceptions",
     "gm": "Huddle queue",
     "office": "Billing queue",
+    "sales": "Bids & handoffs",
     "field": "Your route today",
 }
 
@@ -69,6 +72,7 @@ ROLE_TITLE: dict[str, str] = {
     "owner": "Owner",
     "gm": "General Manager",
     "office": "Office",
+    "sales": "Sales",
     "field": "Field",
 }
 
@@ -116,14 +120,21 @@ def home_tool_href(feature: str, role: str = "field") -> str:
 
 
 def resolve_role(features: set[str]) -> str:
-    """owner > gm > office > field. One role drives payload shape (handoff §5)."""
+    """owner > gm > office > sales > field. One role drives payload shape.
+
+    Owner is ONLY ``morning_owner`` (not bare ``admin``) so Andrea/admins who
+    lack Owner Pulse do not land on the owner exceptions shell. Sales is
+    estimate/takeoff/jobstart without billing (invoice/coi) — Jake's preset.
+    """
     feats = features or set()
-    if "morning_owner" in feats or "admin" in feats:
+    if "morning_owner" in feats:
         return "owner"
     if "morning_gm" in feats:
         return "gm"
-    if feats & {"invoice", "estimate", "coi", "check"}:
+    if feats & {"invoice", "coi"}:
         return "office"
+    if feats & {"estimate", "takeoff", "jobstart"}:
+        return "sales"
     return "field"
 
 

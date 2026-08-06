@@ -71,6 +71,10 @@ IMPLIES: dict[str, frozenset] = {
 # by _expand() and should not be repeated here (avoids noisy diffs).
 ROLE_PRESETS: tuple[dict, ...] = (
     {"id": "full", "label": "Full admin (*)", "features": (WILDCARD,)},
+    {"id": "owner", "label": "Owner Pulse",
+     "features": ("morning_owner", "invoice", "estimate", "coi", "admin")},
+    {"id": "gm", "label": "GM huddle",
+     "features": ("morning_gm", "jobcheck", "jobstart", "invoice")},
     {"id": "sales", "label": "Sales",
      "features": ("estimate", "takeoff", "jobstart")},
     {"id": "ops", "label": "Operations",

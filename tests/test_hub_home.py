@@ -23,15 +23,24 @@ def test_hub_nav_roles() -> None:
     from shared import hub_nav
 
     check("owner via morning_owner", hub_nav.resolve_role({"morning_owner"}) == "owner")
-    check("owner via admin", hub_nav.resolve_role({"admin", "morning"}) == "owner")
+    check("admin alone is NOT owner",
+          hub_nav.resolve_role({"admin", "morning", "activity"}) == "field")
+    check("admin + invoice → office",
+          hub_nav.resolve_role({"admin", "invoice", "activity"}) == "office")
     check("gm", hub_nav.resolve_role({"morning_gm", "morning"}) == "gm")
     check("office via invoice", hub_nav.resolve_role({"invoice", "morning"}) == "office")
+    check("sales via estimate",
+          hub_nav.resolve_role({"estimate", "takeoff", "jobstart", "morning"}) == "sales")
+    check("estimate+invoice → office not sales",
+          hub_nav.resolve_role({"estimate", "invoice"}) == "office")
     check("field default", hub_nav.resolve_role({"morning", "jobcheck"}) == "field")
     check("greeting morning",
           hub_nav.greeting_for("Jordan Faulkner", hour=8).startswith("Good morning"))
     check("initials", hub_nav.initials_for("Jordan Faulkner", "j@x.com") == "JF")
     check("home label owner", hub_nav.home_tool_label("morning_owner") == "Owner Pulse")
     check("home href billing", hub_nav.home_tool_href("invoice") == "/ui/billing")
+    check("sales home estimate", hub_nav.ROLE_HOME_TOOL["sales"] == "estimate")
+    check("gm queue title", "Huddle" in hub_nav.ROLE_QUEUE_TITLE["gm"])
 
     groups = hub_nav.groups_for_client({"morning", "jobcheck", "fieldguide", "timeoff"})
     names = [g["name"] for g in groups]
@@ -83,6 +92,9 @@ def test_hub_payload_shape() -> None:
     # Without Monday, metrics should be em-dash (source unavailable), not fake zeros.
     vals = [m["value"] for m in payload["metrics"]]
     check("unavailable metrics use dash", all(v == "—" or isinstance(v, (int, str)) for v in vals))
+    # Unreachable sources must NOT claim clear.
+    check("superadmin not false-clear when pulse/billing down",
+          payload.get("needs_clear") is False)
 
 
 def test_hub_files_and_route() -> None:
@@ -90,13 +102,17 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r49 footer", ">r49<" in hub)
+    check("r50 footer", ">r50<" in hub)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)
     check("demo mode", "demoPayload" in hub)
     check("EMAIL_JSON inject", "{{EMAIL_JSON}}" in hub)
     check("pin control", "data-pin" in hub)
+    check("waiting on live data UI", "Waiting on live data" in hub)
+    check("honest clear flag only", "!!payload.needs_clear" in hub)
+    check("pin persisted toast", "not saved yet" in hub)
+    check("activityall id", "activityall" in hub)
     css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
     check("hub css", ".hub-rail" in css and "264px" in css)
     check("clear gold inset", "hub-clear" in css and "inset 3px" in css)
@@ -180,16 +196,93 @@ def test_office_queue_ids_and_handoffs() -> None:
     check("ready amount aged", "Ready" in inv["amount"])
 
 
-def test_clear_summary_leads_youre_clear() -> None:
+def test_clear_summary_honest_when_unreachable() -> None:
     from orchestrators import hub_flow
 
     out = hub_flow._build_owner("o@x.com", None, None, None)
-    check("owner unreachable clear", out["clear"] is True)
-    check("owner summary leads clear",
-          out["summary"].lower().startswith("you're clear"))
+    check("owner unreachable NOT clear", out["clear"] is False)
+    check("owner unreachable no false clear lead",
+          not out["summary"].lower().startswith("you're clear"))
     office = hub_flow._build_office("o@x.com", None, None)
-    check("office summary leads clear",
-          office["summary"].lower().startswith("you're clear"))
+    check("office unreachable NOT clear", office["clear"] is False)
+    check("office unreachable no false clear lead",
+          not office["summary"].lower().startswith("you're clear"))
+    gm = hub_flow._build_gm("g@x.com", None, None, None)
+    check("gm unreachable NOT clear", gm["clear"] is False)
+    sales = hub_flow._build_sales("s@x.com", None, None)
+    check("sales unreachable NOT clear", sales["clear"] is False)
+
+
+def test_build_gm_and_sales_shapes() -> None:
+    from orchestrators import hub_flow
+
+    gm_view = {
+        "ok": True,
+        "team_prep": {"pct": 80, "prepared": 4, "team_size": 5},
+        "sequence": [
+            {"item_id": "i1", "name": "Blocked Job", "blocked": "Waiting on GC",
+             "stage": "Framing"},
+            {"item_id": "i2", "name": "Clear Job", "blocked": "", "stage": "Hang"},
+        ],
+        "unscheduled": [{"item_id": "u1", "name": "Open Job", "location": "Cincy"}],
+        "action_requests": [
+            {"id": "ar1", "need": "Confirm scaffold", "project_name": "Site A",
+             "due_at": "2026-08-07"},
+        ],
+        "planning_signals": [{"email": "crew@x.com", "count": 3, "flag": True}],
+    }
+    gm = hub_flow._build_gm("gm@x.com", gm_view, None, None)
+    check("gm clear false with needs", gm["clear"] is False)
+    check("gm has blocked need", any(n["kind"] == "Blocked" for n in gm["needs"]))
+    check("gm huddle action",
+          any("Huddle" in (n.get("action") or "") for n in gm["needs"]))
+    check("gm queue has rows", len(gm["queue_rows"]) >= 1)
+    prep_m = gm["metrics"][0]
+    check("gm team prep pct", prep_m["value"] == "80%")
+
+    billing = {
+        "counts": {"needs_handoff": 1, "accepted_bids": 2, "ready_to_invoice": 3},
+        "queues": {
+            "accepted_bids": [{
+                "name": "Won", "item_id": "b1", "needs_handoff": True,
+                "accepted_date": "2026-07-20",
+                "jobstart_href": "/ui/jobstart?bid=b1",
+            }],
+            "ready_to_invoice": [],
+        },
+    }
+    sales = hub_flow._build_sales("jake@x.com", billing, None)
+    check("sales handoff primary",
+          sales["needs"] and sales["needs"][0]["kind"] == "Handoff")
+    check("sales clear false", sales["clear"] is False)
+    check("sales metric handoff first", sales["metrics"][0]["label"] == "Need handoff")
+
+    q_link, q_href = hub_flow._queue_link_for("gm", "/ui/morning-gm", "GM Morning Huddle")
+    check("gm queue link huddle", "Huddle" in q_link and "morning-gm" in q_href)
+
+
+def test_field_prep_badge() -> None:
+    from orchestrators import hub_flow
+
+    brief = {
+        "ok": True,
+        "stops": [],
+        "needs_attention": [],
+        "action_requests": {"incoming": []},
+        "preparation": {"ready": 2, "total": 6},
+        "hub": {"label": "You're clear — nothing waiting on you."},
+    }
+    out = hub_flow._build_field("crew@x.com", brief)
+    check("field clear with no needs", out["clear"] is True)
+    check("prep incomplete badges morning", out["badges"].get("morning") == 1)
+
+
+def test_morning_deeplink_hyphens() -> None:
+    text = (ROOT / "orchestrators" / "morning_flow.py").read_text(encoding="utf-8")
+    check("no slash morning/gm deep link", '"/ui/morning/gm"' not in text)
+    check("no slash morning/owner deep link", '"/ui/morning/owner"' not in text)
+    check("hyphen gm route", "/ui/morning-gm" in text)
+    check("hyphen owner route", "/ui/morning-owner" in text)
 
 
 if __name__ == "__main__":
@@ -199,5 +292,8 @@ if __name__ == "__main__":
     test_hub_files_and_route()
     test_need_urgent_flag()
     test_office_queue_ids_and_handoffs()
-    test_clear_summary_leads_youre_clear()
-    print("ALL PASSED")
+    test_clear_summary_honest_when_unreachable()
+    test_build_gm_and_sales_shapes()
+    test_field_prep_badge()
+    test_morning_deeplink_hyphens()
+    print("all hub home tests passed")

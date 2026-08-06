@@ -58,6 +58,20 @@ The old HANDOFF-2026-07-30 §4.3 "show him then post" plan is cancelled.
 Authoritative: `docs/MORNING_BRIEF_BUILD_SPEC.md` §Slack + `AGENTS.md` locked #0.
 (Job Check / Job Start may still notify `#operations` — that is a different flow.)
 
+## ✨ PERSONAL HUB r50 — role-correct homes for team use — BUILT 2026-08-06
+Finish pass so Sales / GM / Office / Field / Owner each land on the right home shape.
+• `resolve_role`: owner ONLY via `morning_owner` (bare `admin` no longer → Owner Pulse);
+  new **sales** role (`estimate`/`takeoff`/`jobstart` without invoice/coi); office via
+  invoice/coi; GM via `morning_gm`.
+• `_build_gm` from `morning_flow.build_gm_view` (team prep / sequence / unscheduled / ARs);
+  `_build_sales` leads with handoffs; queue CTA → GM Huddle / Estimate as appropriate.
+• Honest clear: unreachable Monday/billing/pulse/GM never claims "You're clear"; UI shows
+  "Waiting on live data" when `needs_clear` is false and needs are empty.
+• Field incomplete-prep badges Morning; pin API returns `persisted`; Activity "All" is
+  grant-aware; admin ROLE_PRESETS += owner/gm; morning deep links hyphen-fixed;
+  docs/HUB-HOME.md grant matrix; footer **r50**.
+TESTS: `tests/test_hub_home.py` + `tests/test_admin_roles.py` green.
+
 ## 🔧 JOB CHECK — trade-status slice 2: Taped/coats/sanded/skim — BUILT 2026-08-05
 PR #18 (Framing/Hanging/Scrapping/Finishing → Projects) explicitly listed "Out of scope
 (next slices): Taped / coats / sanded / skim, Completion Date, Notes." This slice ships
