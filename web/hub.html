@@ -167,6 +167,7 @@
   let payload = null;
   let drawerOpen = false;
   let pinBusy = false;
+  const wantDemo = /(?:\?|&)demo=1(?:&|$)/.test(location.search);
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -686,6 +687,7 @@
   }
 
   async function refreshBadges() {
+    if (wantDemo) return;
     try {
       const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
       if (!res.ok) return;
@@ -710,7 +712,6 @@
   }
 
   wireChrome();
-  const wantDemo = /(?:\?|&)demo=1(?:&|$)/.test(location.search);
   fetchPayload()
     .then(() => {
       if (wantDemo) {
