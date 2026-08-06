@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -38,6 +38,7 @@
   <div class="card"><h2>Planning signals</h2><div id="plan" class="muted">None</div></div>
   <div class="card"><h2>Owner decisions</h2><div id="dec" class="muted">None waiting</div></div>
 </main>
+<script src="/ui/gvc-command.js"></script>
 <script>
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 async function load(){

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -63,6 +63,7 @@
   </div>
   <div class="card"><h2>Fireflies proposals</h2><div id="ff"></div></div>
 </main>
+<script src="/ui/gvc-command.js"></script>
 <script>
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 async function api(u, o){ const r=await fetch(u,o); const b=await r.json(); if(!r.ok) throw new Error((b.detail&&b.detail.detail)||b.detail||r.status); return b; }

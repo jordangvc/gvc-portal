@@ -116,8 +116,17 @@
       value: o.value,
       label: (o.textContent || "").trim(),
     }));
-    // Drop a lone empty placeholder option from chip rows when other options exist
-    const meaningful = options.filter((o) => o.value !== "" || options.length === 1);
+    // Drop empty-value placeholders ("", "—", "Select…") when other options exist.
+    // Keep intentional empties with real labels (e.g. Outcome "any").
+    const meaningful = options.filter((o) => {
+      if (o.value !== "") return true;
+      if (options.length === 1) return true;
+      const lab = (o.label || "").trim();
+      if (!lab) return false;
+      if (lab === "—" || lab === "-" || lab === "–") return false;
+      if (/^select\b/i.test(lab) || /^choose\b/i.test(lab)) return false;
+      return true;
+    });
     const useOpts = meaningful.length ? meaningful : options;
     const value = selectEl.value;
     const segmented =

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -40,9 +40,12 @@
     color:var(--gvc-ink-soft); border-radius:999px; padding:8px 12px; min-height:40px;
     font:inherit; font-size:13px; cursor:pointer; line-height:1.1;
   }
-  .feat-tog.on {
-    background:var(--gvc-tint-green); border-color:var(--gvc-green);
-    color:var(--gvc-green-dark); font-weight:600;
+  .feat-tog.on, .feat-tog.is-active {
+    background: var(--color-accent-soft, var(--gvc-tint-green));
+    border-color: var(--color-accent, var(--gvc-gold));
+    color: var(--color-accent-ink, var(--gvc-green-dark));
+    font-weight: 600;
+    box-shadow: inset 0 0 0 1px var(--color-accent, var(--gvc-gold));
   }
   .feat-tog.base {
     background:var(--gvc-line-soft); border-color:var(--gvc-line);
@@ -149,6 +152,7 @@
   </div>
 </main>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s, el=document) => el.querySelector(s);
 const $$ = (s, el=document) => [...el.querySelectorAll(s)];
@@ -246,7 +250,7 @@ function renderToggleGrid(host, selected, { locked=false, onToggle } = {}) {
   const starRow = $(".feat-toggles", star);
   const allBtn = document.createElement("button");
   allBtn.type = "button";
-  allBtn.className = "feat-tog" + (allOn ? " on" : "");
+  allBtn.className = "feat-tog chip" + (allOn ? " on is-active" : "");
   allBtn.textContent = "All access (*)";
   allBtn.disabled = locked;
   allBtn.onclick = () => onToggle("*");
@@ -263,7 +267,7 @@ function renderToggleGrid(host, selected, { locked=false, onToggle } = {}) {
       btn.type = "button";
       const isBase = BASELINE.has(f);
       const on = allOn || selected.has(f) || isBase;
-      btn.className = "feat-tog" + (on ? " on" : "") + (isBase ? " base" : "");
+      btn.className = "feat-tog chip" + (on ? " on is-active" : "") + (isBase ? " base" : "");
       btn.textContent = featureLabel(f) + (isBase ? " · always" : "");
       // Baseline is always on; All access (*) can still be peeled back by
       // tapping an individual tool (expands * → every other feature).

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -232,7 +232,7 @@
       <div id="arout"></div>
     </div>
     <div class="field"><label>Need from (email)</label><input id="arTo" type="email" /></div>
-    <div class="field"><label>Category</label><select id="arCat"></select></div>
+    <div class="field"><label>Category</label><div id="arCatWrap"><select id="arCat" name="category"></select></div></div>
     <div class="field"><label>Need</label><textarea id="arNeed" placeholder="Plain-language ask"></textarea></div>
     <div class="seg"><button type="button" class="row-btn" id="arSend">Send request</button></div>
   </section>
@@ -286,6 +286,7 @@
   </div>
 </div>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
@@ -546,11 +547,13 @@ function render(brief, { offline } = {}) {
 
   const origin = brief.origin || { kind: "office" };
   const originLabels = { home: "Home", office: "Office", current: "Current location", custom: "Custom" };
-  $("#origseg").innerHTML = ["home","office","current","custom"].map((k) =>
-    `<button type="button" data-kind="${k}" class="${origin.kind===k?"on":""}">${originLabels[k]}</button>`).join("");
+  const origseg = $("#origseg");
+  origseg.className = "segmented";
+  origseg.innerHTML = ["home","office","current","custom"].map((k) =>
+    `<button type="button" data-kind="${k}" class="${origin.kind===k?"is-active":""}">${originLabels[k]}</button>`).join("");
   $("#origcustom").style.display = origin.kind === "custom" ? "grid" : "none";
   $("#origaddr").value = origin.address || "";
-  $("#origseg").querySelectorAll("button").forEach((btn) => {
+  origseg.querySelectorAll("button").forEach((btn) => {
     btn.addEventListener("click", async () => {
       const kind = btn.dataset.kind;
       if (kind === "current" && navigator.geolocation) {
@@ -601,7 +604,18 @@ function render(brief, { offline } = {}) {
     </div>`;
   $("#arin").innerHTML = incoming.length ? incoming.map((r) => arRow(r, "in")).join("") : `<div class="mb-empty">Nothing waiting on you.</div>`;
   $("#arout").innerHTML = outgoing.length ? outgoing.map((r) => arRow(r, "out")).join("") : `<div class="mb-empty">No open outgoing requests.</div>`;
-  $("#arCat").innerHTML = (ar.categories||["other"]).map((c) => `<option value="${esc(c)}">${esc(c)}</option>`).join("");
+  // Category chips — remount each brief load (options come from the server).
+  {
+    const cats = ar.categories || ["other"];
+    const prevEl = document.getElementById("arCat");
+    const prev = prevEl ? prevEl.value : "";
+    const host = $("#arCatWrap");
+    host.innerHTML = `<select id="arCat" name="category">${cats.map((c) =>
+      `<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select>`;
+    const sel = document.getElementById("arCat");
+    if (prev && cats.includes(prev)) sel.value = prev;
+    GvcChips.replaceSelect(sel, { segmented: false });
+  }
   document.querySelectorAll(".js-ack").forEach((b) => b.addEventListener("click", async () => {
     await api(`/ui/api/morning/action-requests/${b.dataset.id}/ack`, { method: "POST" });
     await load(false);
