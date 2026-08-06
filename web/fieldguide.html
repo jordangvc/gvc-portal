@@ -3207,38 +3207,42 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         <tr><td>2D drift track / drift clips</td><td>Slots in the legs <b>and</b> the web, so the connection allows vertical deflection <i>and</i> horizontal in-plane drift.</td><td>Seismic designs that call for drift accommodation. Vertical-only products do not cover drift.</td></tr>
       </tbody>
     </table></div>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 200" role="img" aria-label="Side view comparing slotted deflection track and double slip track at the head of wall.">
+        <text class="dg-t lbl" x="4" y="14">SIDE VIEW &#8212; SLOTTED vs DOUBLE / SLIP TRACK</text>
+        <line class="dg-lead" x1="0" y1="28" x2="720" y2="28"/>
+        <text class="dg-t lbl" x="8" y="48">SLOTTED &#8212; stud screwed through vertical slot</text>
+        <rect class="dg-track" x="40" y="56" width="300" height="14"/>
+        <rect class="dg-member" x="100" y="70" width="16" height="70"/>
+        <rect class="dg-member" x="180" y="70" width="16" height="70"/>
+        <line class="dg-dim" x1="108" y1="56" x2="108" y2="48"/>
+        <line class="dg-dim" x1="108" y1="48" x2="120" y2="48"/>
+        <text class="dg-t mid" x="124" y="52">slot</text>
+        <line class="dg-lead" x1="108" y1="62" x2="108" y2="78" stroke-dasharray="4 3"/>
+        <text class="dg-t" x="40" y="152">Stud short of web; fastener in slot &#8212; lateral load + vertical movement</text>
+        <text class="dg-t lbl" x="380" y="48">DOUBLE / SLIP &#8212; inner track on studs slides in outer</text>
+        <rect class="dg-track" x="400" y="56" width="280" height="14"/>
+        <rect class="dg-track" x="408" y="68" width="264" height="10" opacity=".85"/>
+        <rect class="dg-member" x="460" y="78" width="16" height="62"/>
+        <rect class="dg-member" x="540" y="78" width="16" height="62"/>
+        <path class="dg-bad" d="M 520 78 v-8 h24 v8" opacity="0"/>
+        <line class="dg-lead" x1="520" y1="78" x2="544" y2="70"/>
+        <text class="dg-t" x="400" y="152">Never screw inner legs to outer &#8212; pins the slip joint</text>
+      </svg>
+    </div>
+    <figcaption><b>Two common head-of-wall systems.</b> Slotted track keeps studs positively attached while the slot rides vertical movement. Double/slip nests tracks &#8212; studs attach only to the inner piece, which slides inside the outer fixed to structure.</figcaption>
+  </figure>
+
     <p><b>The rules that get broken:</b></p>
     <ul class="plain">
       <li><b>Cut studs short of the track web</b> by the gap the detail requires. A stud bearing hard on the track defeats the whole system and is the most common failed head-of-wall inspection.</li>
       <li><b>Never screw through the legs of a plain slip track into the stud.</b> That pins it solid. On slotted track you screw through the slot — that's different and it's correct.</li>
       <li><b>Deflection and drift are different problems.</b> Vertical movement is deflection; sideways is drift. A vertical-only product doesn't handle drift.</li>
-
-  <figure class="dg">
-    <div class="dg-wrap">
-      <svg viewBox="0 0 720 220" role="img" aria-label="Side-by-side section: slotted deflection track with screws through slots versus nested slip track where the inner assembly slides.">
-        <text class="dg-t lbl" x="4" y="16">SECTION &#8212; TWO COMMON DEFLECTION HEADS</text>
-        <text class="dg-t lbl" x="20" y="42">SLOTTED TRACK</text>
-        <rect class="dg-track" x="40" y="50" width="280" height="18"/>
-        <text class="dg-t" x="48" y="63">slots in track legs</text>
-        <rect class="dg-member" x="90" y="68" width="14" height="110"/>
-        <rect class="dg-member" x="170" y="68" width="14" height="110"/>
-        <rect class="dg-member" x="250" y="68" width="14" height="110"/>
-        <line class="dg-dim" x1="97" y1="58" x2="97" y2="68"/>
-        <circle cx="97" cy="62" r="3" fill="var(--green)"/>
-        <text class="dg-t mid" x="180" y="200">screw THROUGH the slot &#8212; stud can slide</text>
-        <text class="dg-t lbl" x="380" y="42">DOUBLE / SLIP TRACK</text>
-        <rect class="dg-track" x="400" y="50" width="280" height="14"/>
-        <rect class="dg-track" x="410" y="66" width="260" height="14"/>
-        <rect class="dg-member" x="450" y="80" width="14" height="98"/>
-        <rect class="dg-member" x="530" y="80" width="14" height="98"/>
-        <rect class="dg-member" x="610" y="80" width="14" height="98"/>
-        <text class="dg-t mid" x="540" y="200">inner slides &#183; do NOT pin outer to stud</text>
-        <line class="dg-bad" x1="40" y1="210" x2="320" y2="210"/>
-
-      </svg>
-    </div>
-    <figcaption><b>Same job, two systems.</b> Slotted: fasten through the slot so the stud rides vertically. Slip: nested tracks — pinning the outer track to the stud defeats the gap. Cut studs short of the web either way.</figcaption>
-  </figure>
+      <li><b>On rated walls the head of wall is a listed joint system</b> — track type, gap, fill material, and fastener pattern are all part of the listing. Build it as listed or it fails.</li>
+    </ul>
+  </div>
 
   <div class="expert" id="sys-bridging">
     <span class="tag">Full detail · bracing the studs</span>
@@ -3251,12 +3255,6 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="expert" id="sys-crc">
     <h4>Cold-rolled channel (CRC)</h4>
     <p>Solid steel channel, threaded horizontally <b>through the stud knockouts</b> and attached to each stud web — usually with a clip angle. Commonly stocked in <span class="spec">3/4"</span> and <span class="spec">1-1/2"</span> depths.</p>
-    <ul class="plain">
-      <li><b>Why it's the workhorse:</b> it sits inside the wall cavity, so it doesn't add thickness and doesn't interfere with the board.</li>
-      <li><b>Line up the knockouts during stud fill</b> or you'll be fighting every stud to get the channel through. This is why knockout alignment is on the stud-fill checklist.</li>
-      <li>Attachment to each stud is what makes it work — a channel floating loose in the holes braces nothing.</li>
-      <li><b>Anchor the ends.</b> See above — this is the failure mode.</li>
-    </ul>
 
   <figure class="dg">
     <div class="dg-wrap">
@@ -3277,6 +3275,13 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     </div>
     <figcaption><b>Channel alone is not bracing.</b> CRC must be clipped to each stud web <b>and</b> delivered into an end anchorage — wall end, corner, or designed strut. A free float through fifty knockouts braces nothing.</figcaption>
   </figure>
+
+    <ul class="plain">
+      <li><b>Why it's the workhorse:</b> it sits inside the wall cavity, so it doesn't add thickness and doesn't interfere with the board.</li>
+      <li><b>Line up the knockouts during stud fill</b> or you'll be fighting every stud to get the channel through. This is why knockout alignment is on the stud-fill checklist.</li>
+      <li>Attachment to each stud is what makes it work — a channel floating loose in the holes braces nothing.</li>
+      <li><b>Anchor the ends.</b> See above — this is the failure mode.</li>
+    </ul>
 
   </div>
 
