@@ -90,7 +90,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r48 footer", ">r48<" in hub)
+    check("r49 footer", ">r49<" in hub)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)
@@ -180,6 +180,18 @@ def test_office_queue_ids_and_handoffs() -> None:
     check("ready amount aged", "Ready" in inv["amount"])
 
 
+def test_clear_summary_leads_youre_clear() -> None:
+    from orchestrators import hub_flow
+
+    out = hub_flow._build_owner("o@x.com", None, None, None)
+    check("owner unreachable clear", out["clear"] is True)
+    check("owner summary leads clear",
+          out["summary"].lower().startswith("you're clear"))
+    office = hub_flow._build_office("o@x.com", None, None)
+    check("office summary leads clear",
+          office["summary"].lower().startswith("you're clear"))
+
+
 if __name__ == "__main__":
     test_hub_nav_roles()
     test_hub_pins_validate()
@@ -187,4 +199,5 @@ if __name__ == "__main__":
     test_hub_files_and_route()
     test_need_urgent_flag()
     test_office_queue_ids_and_handoffs()
+    test_clear_summary_leads_youre_clear()
     print("ALL PASSED")

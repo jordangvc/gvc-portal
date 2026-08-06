@@ -414,6 +414,7 @@ def _build_office(email: str, billing: Optional[dict],
 
     if not billing:
         summary = (
+            "You're clear. "
             "Billing numbers will fill in when Monday is reachable — "
             "tools still work from the rail."
         )
@@ -567,6 +568,7 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
     if not needs:
         if billing is None and pulse is None:
             summary = (
+                "You're clear. "
                 "Live numbers will fill in when Monday is reachable — "
                 "nothing is waiting on you in the portal right now."
             )
