@@ -29,16 +29,55 @@ def _person_record(email: str) -> dict:
 
 
 def _metric(label: str, value: Any, foot: str) -> dict:
-    zero = isinstance(value, (int, float)) and value == 0
-    return {"label": label, "value": value, "foot": foot, "zero": zero}
+    unavailable = value == "—" or value is None
+    zero = (not unavailable) and isinstance(value, (int, float)) and value == 0
+    # "0/6" style strings that mean empty-ready stay non-zero unless all zero.
+    if not unavailable and not zero and value == "0":
+        zero = True
+    return {
+        "label": label,
+        "value": "—" if unavailable else value,
+        "foot": foot,
+        "zero": zero,
+        "unavailable": unavailable,
+    }
 
 
 _URGENT_KINDS = frozenset({"safety", "blocked", "stop-work", "overdue"})
 
+_ACTIVITY_NOISE = frozenset({
+    "hub.open", "signin", "tool.open", "activity.view", "billing.open",
+    "lien.status",
+})
+
+_ACTIVITY_LABELS = {
+    "invoice.run": "Invoice",
+    "estimate.run": "Estimate",
+    "estimate.qa": "Estimate QA",
+    "change_order.run": "Change order",
+    "coi.run": "COI",
+    "coi.bulk.run": "COI bulk",
+    "check.commit": "Check payment",
+    "check.extract": "Check read",
+    "jobcheck.save": "Job check",
+    "admin.grant.update": "Access changed",
+    "estimate.slack": "Estimate Slack notice",
+    "estimate.draft.save": "Estimate draft",
+    "invoice.draft.save": "Invoice draft",
+    "change_order.draft.save": "CO draft",
+    "jobstart.sent_to_ops": "Job Start → ops",
+    "jobstart.sent_back": "Job Start sent back",
+    "jobstart.accepted": "Job Start accepted",
+    "jobstart.gc_confirmation_drafted": "GC confirmation drafted",
+    "billing.search": "Billing search",
+    "billing.lookup": "Billing lookup",
+}
+
 
 def _need(*, kind: str, amount: str, title: str, detail: str,
           action: str, href: str, secondary_href: Optional[str] = None,
-          urgent: Optional[bool] = None) -> dict:
+          urgent: Optional[bool] = None,
+          sort_key: str = "") -> dict:
     kind_s = (kind or "").strip()
     is_urgent = bool(urgent) if urgent is not None else (
         kind_s.lower() in _URGENT_KINDS
@@ -51,6 +90,7 @@ def _need(*, kind: str, amount: str, title: str, detail: str,
         "action": action,
         "href": href,
         "urgent": is_urgent,
+        "sort_key": sort_key or "",
     }
     if secondary_href:
         out["secondary_href"] = secondary_href
@@ -69,6 +109,69 @@ def _queue_row(name: str, sub: str, *, tag: str = "",
         "flagged": bool(flagged),
         "href": href_s,
     }
+
+
+def _age_amount(date_str: str, *, prefix: str = "Ready") -> str:
+    """Turn YYYY-MM-DD (or similar) into 'Ready 3d' / 'Due today' / prefix."""
+    raw = (date_str or "").strip()[:10]
+    if not raw or len(raw) < 8:
+        return prefix
+    try:
+        d = datetime.strptime(raw, "%Y-%m-%d").date()
+    except ValueError:
+        return f"{prefix} {raw}" if prefix else raw
+    today = datetime.now(_ET).date()
+    days = (today - d).days
+    if days <= 0:
+        return f"{prefix} today" if prefix else "Today"
+    if days == 1:
+        return f"{prefix} 1d"
+    if days < 14:
+        return f"{prefix} {days}d"
+    return f"{prefix} {days}d"
+
+
+def _sort_needs(needs: list[dict]) -> list[dict]:
+    """Urgent first, then oldest sort_key (ISO date), then title."""
+    def key(n: dict) -> tuple:
+        urgent = 0 if n.get("urgent") else 1
+        sk = (n.get("sort_key") or "9999-99-99")
+        return (urgent, sk, (n.get("title") or "").lower())
+    return sorted(needs, key=key)
+
+
+def _human_activity(action: str, target: str, result: str = "") -> Optional[str]:
+    act = (action or "").strip()
+    if not act or act in _ACTIVITY_NOISE:
+        return None
+    label = _ACTIVITY_LABELS.get(act) or act.replace(".", " · ")
+    tgt = (target or "").strip()
+    # Trim long feature lists from hub.open-style targets if any slip through.
+    if tgt and "," in tgt and len(tgt) > 40:
+        tgt = ""
+    text = label + (f" · {tgt}" if tgt else "")
+    res = (result or "").strip().lower()
+    if res and res not in ("ok", "success", ""):
+        text += f" ({result})"
+    return text
+
+
+def _ready_amount(row: dict) -> str:
+    labels = row.get("status_labels") or []
+    if row.get("ready_date"):
+        return _age_amount(str(row.get("ready_date")), prefix="Ready")
+    for lab in labels:
+        if lab:
+            return str(lab)[:40]
+    return (row.get("stage") or row.get("billable") or "Ready")[:40]
+
+
+def _queue_link_for(role: str, home_href: str, home_name: str) -> tuple[str, str]:
+    if role == "owner":
+        return ("Open Owner Pulse", home_href or "/ui/morning-owner")
+    if role in ("office", "gm"):
+        return ("Open Billing", "/ui/billing")
+    return (f"Open {home_name}" if home_name else "Open", home_href or "#")
 
 
 def _try_morning_brief(email: str) -> Optional[dict]:
@@ -191,7 +294,7 @@ def _build_field(email: str, brief: Optional[dict]) -> dict[str, Any]:
         )
 
     return {
-        "needs": needs[:4],
+        "needs": _sort_needs(needs)[:4],
         "metrics": metrics,
         "queue_rows": queue_rows,
         "summary": summary,
@@ -208,7 +311,9 @@ def _build_office(email: str, billing: Optional[dict],
     counts = (billing or {}).get("counts") or {}
     queues = (billing or {}).get("queues") or {}
     ready = queues.get("ready_to_invoice") or []
-    handoff_n = int(counts.get("needs_handoff") or 0)
+    bids = queues.get("accepted_bids") or []
+    handoff_bids = [b for b in bids if b.get("needs_handoff")]
+    handoff_n = int(counts.get("needs_handoff") or len(handoff_bids))
     ready_n = int(counts.get("ready_to_invoice") or len(ready))
 
     metrics = [
@@ -225,38 +330,86 @@ def _build_office(email: str, billing: Optional[dict],
     ]
     if ready_n:
         badges["invoice"] = ready_n
+    if handoff_n:
+        badges["jobstart"] = handoff_n
 
-    for row in ready[:4]:
+    # Oldest ready first (ready_date ascending).
+    ready_sorted = sorted(
+        ready,
+        key=lambda r: (r.get("ready_date") or "9999-99-99", r.get("name") or ""),
+    )
+    for row in ready_sorted[:4]:
         name = row.get("name") or "Job"
         href = row.get("invoice_href") or row.get("primary_href") or "/ui/billing"
+        rid = str(row.get("project_item_id") or row.get("item_id") or "").strip()
         needs.append(_need(
             kind="Invoice",
-            amount=row.get("status_label") or "Ready",
+            amount=_ready_amount(row),
             title=name,
             detail="Crew marked this ready — approve to send from Billing Hub.",
             action="Approve to send",
             href=href,
             secondary_href=row.get("monday_url") or href,
+            sort_key=str(row.get("ready_date") or ""),
         ))
 
-    if handoff_n and len(needs) < 4:
+    handoff_sorted = sorted(
+        handoff_bids,
+        key=lambda b: (b.get("accepted_date") or "9999-99-99", b.get("name") or ""),
+    )
+    for bid in handoff_sorted:
+        if len(needs) >= 4:
+            break
+        bid_id = str(bid.get("item_id") or bid.get("bid_item_id") or "").strip()
+        href = bid.get("jobstart_href") or bid.get("primary_href") or "/ui/jobstart"
+        if bid_id and "bid=" not in href and href.startswith("/ui/jobstart"):
+            href = f"/ui/jobstart?bid={bid_id}"
         needs.append(_need(
             kind="Handoff",
-            amount=str(handoff_n),
-            title="Accepted bids need Job Start",
-            detail="Won deals without a Projects item yet — hand them off before billing.",
+            amount=_age_amount(str(bid.get("accepted_date") or ""), prefix="Accepted"),
+            title=bid.get("name") or "Accepted bid",
+            detail="Won deal without a Projects item — hand off before billing.",
             action="Open Job Start",
-            href="/ui/jobstart",
+            href=href,
+            secondary_href=bid.get("monday_url") or href,
+            sort_key=str(bid.get("accepted_date") or ""),
         ))
-        badges["jobstart"] = handoff_n
 
-    for row in ready[:12]:
+    for row in ready_sorted[:12]:
+        rid = str(row.get("project_item_id") or row.get("item_id") or "").strip()
+        href = row.get("invoice_href") or row.get("primary_href") or "/ui/billing"
+        # Flag when ready ≥3 days.
+        flagged = False
+        try:
+            rd = str(row.get("ready_date") or "")[:10]
+            if rd:
+                d = datetime.strptime(rd, "%Y-%m-%d").date()
+                flagged = (datetime.now(_ET).date() - d).days >= 3
+        except ValueError:
+            flagged = False
         queue_rows.append(_queue_row(
             row.get("name") or "Job",
             row.get("builder") or row.get("location") or "Ready to invoice",
             tag="Ready",
-            flagged=False,
-            href=row.get("invoice_href") or row.get("primary_href") or "/ui/billing",
+            flagged=flagged,
+            href=href,
+            row_id=rid or href,
+        ))
+
+    for bid in handoff_sorted[:8]:
+        if len(queue_rows) >= 12:
+            break
+        bid_id = str(bid.get("item_id") or "").strip()
+        href = bid.get("jobstart_href") or "/ui/jobstart"
+        if bid_id and "bid=" not in href:
+            href = f"/ui/jobstart?bid={bid_id}"
+        queue_rows.append(_queue_row(
+            bid.get("name") or "Accepted bid",
+            bid.get("builder") or "Needs Job Start",
+            tag="Handoff",
+            flagged=True,
+            href=href,
+            row_id=bid_id or href,
         ))
 
     if not billing:
@@ -278,18 +431,20 @@ def _build_office(email: str, billing: Optional[dict],
     # Fold field attention into office if they also have morning (rare).
     if brief and len(needs) < 4:
         for row in (brief.get("needs_attention") or [])[: 4 - len(needs)]:
+            sid = str(row.get("item_id") or "").strip()
             needs.append(_need(
                 kind="Field",
                 amount=(row.get("blocked") or "Attention")[:40],
                 title=row.get("name") or "Job",
                 detail="Flagged on Operations.",
                 action="Open Job Check",
-                href=(f"/ui/jobcheck?item={row['item_id']}"
-                      if row.get("item_id") else "/ui/jobcheck"),
+                href=(f"/ui/jobcheck?item={sid}" if sid else "/ui/jobcheck"),
+                urgent=True,
+                sort_key="",
             ))
 
     return {
-        "needs": needs[:4],
+        "needs": _sort_needs(needs)[:4],
         "metrics": metrics,
         "queue_rows": queue_rows,
         "summary": summary,
@@ -304,7 +459,8 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
     queue_rows: list[dict] = []
     badges: dict[str, int] = {}
     counts = (billing or {}).get("counts") or {}
-    ready_n = int(counts.get("ready_to_invoice") or 0)
+    ready = ((billing or {}).get("queues") or {}).get("ready_to_invoice") or []
+    ready_n = int(counts.get("ready_to_invoice") or len(ready))
     safety = (pulse or {}).get("safety_stops") or []
     prep_alerts = (pulse or {}).get("prep_alerts") or []
     planning = (pulse or {}).get("planning_signals") or []
@@ -329,6 +485,8 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
         badges["morning_owner"] = len(safety)
 
     for row in safety[:3]:
+        sid = str(row.get("item_id") or "").strip()
+        jc = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-owner"
         needs.append(_need(
             kind="Safety",
             amount="Stop-work",
@@ -336,19 +494,38 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
             detail=row.get("blocked") or "Safety hold on Operations.",
             action="Open Owner Pulse",
             href="/ui/morning-owner",
-            secondary_href=(f"/ui/jobcheck?item={row['item_id']}"
-                            if row.get("item_id") else "/ui/morning-owner"),
+            secondary_href=jc,
+            sort_key="",
         ))
 
-    if ready_n and billing and len(needs) < 4:
-        needs.append(_need(
-            kind="Invoice",
-            amount=str(ready_n),
-            title="Jobs ready to invoice",
-            detail="Complete work waiting on an invoice draft — approve to send.",
-            action="Approve to send",
-            href="/ui/billing",
-        ))
+    ready_sorted = sorted(
+        ready,
+        key=lambda r: (r.get("ready_date") or "9999-99-99", r.get("name") or ""),
+    )
+    if ready_sorted and billing and len(needs) < 4:
+        # Prefer one aggregate if many, else surface top aged job.
+        if ready_n > 2:
+            needs.append(_need(
+                kind="Invoice",
+                amount=str(ready_n),
+                title="Jobs ready to invoice",
+                detail="Complete work waiting on an invoice draft — approve to send.",
+                action="Approve to send",
+                href="/ui/billing",
+                sort_key=str(ready_sorted[0].get("ready_date") or ""),
+            ))
+        else:
+            for row in ready_sorted[: max(0, 4 - len(needs))]:
+                href = row.get("invoice_href") or "/ui/billing"
+                needs.append(_need(
+                    kind="Invoice",
+                    amount=_ready_amount(row),
+                    title=row.get("name") or "Job",
+                    detail="Ready to invoice — approve to send.",
+                    action="Approve to send",
+                    href=href,
+                    sort_key=str(row.get("ready_date") or ""),
+                ))
 
     for a in prep_alerts[: max(0, 4 - len(needs))]:
         needs.append(_need(
@@ -358,26 +535,33 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
             detail=a.get("message") or a.get("detail") or "Preparation alert.",
             action="Open Owner Pulse",
             href="/ui/morning-owner",
+            sort_key="",
         ))
 
     for row in (safety + planning)[:12]:
+        sid = str(row.get("item_id") or "").strip()
+        href = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-owner"
         queue_rows.append(_queue_row(
             row.get("name") or row.get("email") or "Exception",
             row.get("blocked") or row.get("message") or "Needs owner eyes",
             tag="Flag",
             flagged=True,
-            href="/ui/morning-owner",
+            href=href,
+            row_id=sid or href,
         ))
 
     if billing:
-        for row in ((billing.get("queues") or {}).get("ready_to_invoice") or [])[:8]:
+        for row in ready_sorted[:8]:
             if len(queue_rows) >= 12:
                 break
+            rid = str(row.get("project_item_id") or row.get("item_id") or "").strip()
+            href = row.get("invoice_href") or "/ui/billing"
             queue_rows.append(_queue_row(
                 row.get("name") or "Job",
                 "Ready to invoice",
                 tag="Ready",
-                href=row.get("invoice_href") or "/ui/billing",
+                href=href,
+                row_id=rid or href,
             ))
 
     if not needs:
@@ -405,7 +589,7 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
         )
 
     return {
-        "needs": needs[:4],
+        "needs": _sort_needs(needs)[:4],
         "metrics": metrics,
         "queue_rows": queue_rows,
         "summary": summary,
@@ -455,16 +639,23 @@ def build_hub_payload(email: str) -> dict[str, Any]:
         from shared import activity_read
         # Soft-fail if Cloud Logging / IAM missing — empty is fine.
         packed = activity_read.fetch_events(
-            actor=email, page_size=8, range_key="7d")
+            actor=email, page_size=16, range_key="7d")
         for ev in packed.get("events") or []:
-            action = ev.get("action") or "event"
+            text = _human_activity(
+                ev.get("action") or "",
+                ev.get("target") or "",
+                ev.get("result") or "",
+            )
+            if not text:
+                continue
             when = ev.get("ts") or ev.get("timestamp") or ""
-            target = ev.get("target") or ""
             activity_rows.append({
-                "text": f"{action}" + (f" · {target}" if target else ""),
+                "text": text,
                 "when": when,
                 "href": "/ui/activity",
             })
+            if len(activity_rows) >= 6:
+                break
     except Exception:  # noqa: BLE001
         activity_rows = []
 
@@ -474,6 +665,8 @@ def build_hub_payload(email: str) -> dict[str, Any]:
         pinned = hub_pins.list_for(email)
     except Exception:  # noqa: BLE001
         pinned = []
+
+    q_link, q_href = _queue_link_for(role, home_href, home_tool_name)
 
     return {
         "ok": True,
@@ -495,8 +688,8 @@ def build_hub_payload(email: str) -> dict[str, Any]:
         "metrics": shaped["metrics"],
         "queue": {
             "title": hub_nav.ROLE_QUEUE_TITLE.get(role, "Your queue"),
-            "link": "Open full list",
-            "href": home_href,
+            "link": q_link,
+            "href": q_href,
             "rows": shaped["queue_rows"],
         },
         "pinned": pinned,
