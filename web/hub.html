@@ -41,53 +41,78 @@
         <div class="hub-search-hits" id="searchhits"></div>
       </div>
 
-      <p class="hub-greet" id="greeting">Loading…</p>
-      <p class="hub-summary" id="summary"></p>
-
-      <section aria-labelledby="needs-kicker">
-        <p class="hub-kicker hub-kicker--needs" id="needs-kicker">Needs you today</p>
-        <div id="needs"></div>
-      </section>
-
-      <section aria-labelledby="metrics-kicker">
-        <p class="hub-kicker" id="metrics-kicker">Today</p>
-        <div class="hub-metrics" id="metrics"></div>
-      </section>
-
-      <div class="hub-cols">
-        <section class="hub-panel" aria-labelledby="queue-title">
-          <div class="hub-panel__hd">
-            <h2 class="hub-panel__title" id="queue-title">Queue</h2>
-            <a class="hub-panel__link" id="queuelink" href="#">Open</a>
-          </div>
-          <div class="hub-queue-scroll" id="queue"></div>
-        </section>
-
-        <div class="hub-stack-side">
-          <section class="hub-panel" aria-labelledby="pinned-title">
-            <div class="hub-panel__hd">
-              <h2 class="hub-panel__title" id="pinned-title">Pinned</h2>
-            </div>
-            <div id="pinned"></div>
-          </section>
-          <section class="hub-panel" style="margin-top:12px;" aria-labelledby="activity-title">
-            <div class="hub-panel__hd">
-              <h2 class="hub-panel__title" id="activity-title">Activity</h2>
-              <a class="hub-panel__link" href="/ui/activity">All</a>
-            </div>
-            <div id="activity"></div>
-          </section>
+      <div id="skel" class="hub-skel" aria-hidden="true">
+        <div class="hub-skel__title"></div>
+        <div class="hub-skel__line"></div>
+        <div class="hub-skel__line hub-skel__line--short"></div>
+        <div class="hub-skel__row">
+          <div class="hub-skel__card"></div>
+          <div class="hub-skel__card"></div>
+        </div>
+        <div class="hub-skel__metrics">
+          <div class="hub-skel__metric"></div>
+          <div class="hub-skel__metric"></div>
+          <div class="hub-skel__metric"></div>
+          <div class="hub-skel__metric"></div>
         </div>
       </div>
 
-      <section aria-labelledby="recent-kicker">
-        <p class="hub-kicker" id="recent-kicker">Jump back in</p>
-        <div class="hub-recent" id="recent"></div>
-      </section>
+      <div id="hublive" hidden>
+        <p class="hub-greet hub-rise hub-rise--1" id="greeting"></p>
+        <p class="hub-date hub-rise hub-rise--1" id="dateline"></p>
+        <p class="hub-summary hub-rise hub-rise--2" id="summary"></p>
+        <div class="hub-rise hub-rise--2" id="homectawrap" hidden>
+          <a class="hub-home-cta" id="homecta" href="#">Open</a>
+        </div>
 
-      <div class="hub-ft-note">
-        <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-        <span style="white-space:nowrap;">Portal <b style="color:var(--color-accent-ink, var(--gvc-gold-dark));">r46</b> · Aug 6, 2026</span>
+        <section class="hub-rise hub-rise--3" aria-labelledby="needs-kicker">
+          <p class="hub-kicker hub-kicker--needs" id="needs-kicker">
+            Needs you today
+            <span class="hub-kicker__count" id="needscount" hidden></span>
+          </p>
+          <div id="needs"></div>
+        </section>
+
+        <section class="hub-rise hub-rise--3" aria-labelledby="metrics-kicker">
+          <p class="hub-kicker" id="metrics-kicker">At a glance</p>
+          <div class="hub-metrics" id="metrics"></div>
+        </section>
+
+        <div class="hub-cols hub-rise hub-rise--4">
+          <section class="hub-panel" aria-labelledby="queue-title">
+            <div class="hub-panel__hd">
+              <h2 class="hub-panel__title" id="queue-title">Queue</h2>
+              <a class="hub-panel__link" id="queuelink" href="#">Open</a>
+            </div>
+            <div class="hub-queue-scroll" id="queue"></div>
+          </section>
+
+          <div class="hub-stack-side">
+            <section class="hub-panel" aria-labelledby="pinned-title">
+              <div class="hub-panel__hd">
+                <h2 class="hub-panel__title" id="pinned-title">Pinned</h2>
+              </div>
+              <div id="pinned"></div>
+            </section>
+            <section class="hub-panel" aria-labelledby="activity-title">
+              <div class="hub-panel__hd">
+                <h2 class="hub-panel__title" id="activity-title">Activity</h2>
+                <a class="hub-panel__link" href="/ui/activity">All</a>
+              </div>
+              <div class="hub-act-scroll" id="activity"></div>
+            </section>
+          </div>
+        </div>
+
+        <section class="hub-rise hub-rise--4" aria-labelledby="recent-kicker">
+          <p class="hub-kicker" id="recent-kicker">Jump back in</p>
+          <div class="hub-recent" id="recent"></div>
+        </section>
+
+        <div class="hub-ft-note">
+          <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
+          <span class="hub-ft-ver">Portal <b>r47</b> · Aug 6, 2026</span>
+        </div>
       </div>
     </div>
   </div>
@@ -142,6 +167,7 @@
   let payload = null;
   let drawerOpen = false;
   let pinBusy = false;
+  const wantDemo = /(?:\?|&)demo=1(?:&|$)/.test(location.search);
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -236,10 +262,56 @@
     });
   }
 
+  function isUrgentKind(kind) {
+    const k = String(kind || "").toLowerCase();
+    return k === "safety" || k === "blocked" || k === "stop-work" || k === "overdue";
+  }
+
+  function formatWhen(raw) {
+    if (!raw) return "";
+    const s = String(raw);
+    const d = new Date(s);
+    if (Number.isNaN(d.getTime())) return s.length > 24 ? s.slice(0, 24) : s;
+    try {
+      return d.toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit",
+      });
+    } catch (_) {
+      return s.slice(0, 24);
+    }
+  }
+
+  function formatDateLine(iso) {
+    const d = iso ? new Date(iso) : new Date();
+    if (Number.isNaN(d.getTime())) return "";
+    try {
+      return d.toLocaleDateString("en-US", {
+        timeZone: "America/New_York",
+        weekday: "long", month: "long", day: "numeric",
+      });
+    } catch (_) {
+      return "";
+    }
+  }
+
   function renderNeeds() {
     const box = $("needs");
+    const countEl = $("needscount");
     if (!payload) return;
-    if (payload.needs_clear || !(payload.needs || []).length) {
+    const list = payload.needs || [];
+    const clear = payload.needs_clear || !list.length;
+    if (countEl) {
+      if (!clear && list.length) {
+        countEl.hidden = false;
+        countEl.textContent = String(list.length);
+      } else {
+        countEl.hidden = true;
+        countEl.textContent = "";
+      }
+    }
+    if (clear) {
       const line = payload.summary || "You're clear.";
       const first = line.split(/[.!?]/)[0];
       const rest = line.slice(first.length).replace(/^[.\s]+/, "");
@@ -248,13 +320,15 @@
         (rest ? esc(rest) : "") + `</div>`;
       return;
     }
-    box.innerHTML = `<div class="hub-needs">` + (payload.needs || []).map((n) => {
+    box.innerHTML = `<div class="hub-needs">` + list.map((n) => {
+      const urgent = n.urgent || isUrgentKind(n.kind);
       const sec = n.secondary_href
         ? `<a class="btn btn--ghost" href="${esc(n.secondary_href)}">Open job</a>`
         : "";
       return (
-        `<article class="hub-need">` +
-        `<div class="hub-need__top"><span class="hub-need__kind">${esc(n.kind)}</span>` +
+        `<article class="hub-need${urgent ? " is-urgent" : ""}">` +
+        `<div class="hub-need__top">` +
+        `<span class="hub-need__kind${urgent ? " is-urgent" : ""}">${esc(n.kind)}</span>` +
         `<span class="hub-need__amount">${esc(n.amount)}</span></div>` +
         `<h3 class="hub-need__title">${esc(n.title)}</h3>` +
         `<p class="hub-need__detail">${esc(n.detail)}</p>` +
@@ -267,9 +341,10 @@
 
   function renderMetrics() {
     $("metrics").innerHTML = (payload.metrics || []).map((m) => {
-      const zero = m.zero || m.value === 0 || m.value === "0";
+      const zero = m.zero || m.value === 0 || m.value === "0" || m.value === "—";
+      const live = !zero && m.value !== "—" && m.value != null && m.value !== "";
       return (
-        `<div class="hub-metric${zero ? " is-zero" : ""}">` +
+        `<div class="hub-metric${zero ? " is-zero" : ""}${live ? " is-live" : ""}">` +
         `<div class="hub-metric__label">${esc(m.label)}</div>` +
         `<div class="hub-metric__value">${esc(m.value)}</div>` +
         `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
@@ -305,7 +380,8 @@
     const rows = q.rows || [];
     if (!rows.length) {
       $("queue").innerHTML =
-        `<div class="hub-empty-soft">Nothing in this queue right now — when something needs you, it lands here.</div>`;
+        `<div class="hub-empty-soft"><strong>Queue is empty</strong>` +
+        `When something needs you, it lands here.</div>`;
       return;
     }
     $("queue").innerHTML = rows.map((r) => rowHtml(r, { pinable: true })).join("");
@@ -316,7 +392,8 @@
     const rows = payload.pinned || [];
     if (!rows.length) {
       $("pinned").innerHTML =
-        `<div class="hub-empty-soft">Tap ★ on a queue row to pin a job here.</div>`;
+        `<div class="hub-empty-soft"><strong>No pins yet</strong>` +
+        `Tap ★ on a queue row to keep a job here.</div>`;
       return;
     }
     $("pinned").innerHTML = rows.map((r) => rowHtml(r, { pinable: true })).join("");
@@ -381,14 +458,29 @@
     const rows = payload.activity || [];
     if (!rows.length) {
       $("activity").innerHTML =
-        `<div class="hub-empty-soft">Sends, approvals, and status changes show up here.</div>`;
+        `<div class="hub-empty-soft"><strong>Quiet so far</strong>` +
+        `Sends, approvals, and status changes show up here.</div>`;
       return;
     }
     $("activity").innerHTML = rows.map((r) => (
       `<a class="hub-act" href="${esc(r.href || "/ui/activity")}">` +
       `<div class="hub-act__text">${esc(r.text)}</div>` +
-      `<div class="hub-act__when">${esc(r.when)}</div></a>`
+      `<div class="hub-act__when">${esc(formatWhen(r.when))}</div></a>`
     )).join("");
+  }
+
+  function renderHomeCta() {
+    const wrap = $("homectawrap");
+    const cta = $("homecta");
+    const u = payload.user || {};
+    if (!wrap || !cta) return;
+    if (!u.homeHref) {
+      wrap.hidden = true;
+      return;
+    }
+    wrap.hidden = false;
+    cta.href = u.homeHref;
+    cta.textContent = "Open " + (u.homeToolName || "home tool");
   }
 
   function renderRecent() {
@@ -400,7 +492,9 @@
       : null;
     const items = recent.length ? recent : (home ? [home] : []);
     if (!items.length) {
-      $("recent").innerHTML = `<div class="hub-empty-soft">Tools you open will land here.</div>`;
+      $("recent").innerHTML =
+        `<div class="hub-empty-soft"><strong>No recent tools</strong>` +
+        `Tools you open will land here.</div>`;
       return;
     }
     $("recent").innerHTML = items.map((t) => {
@@ -433,10 +527,21 @@
     }
   }
 
+  function showLive() {
+    const sk = $("skel");
+    const live = $("hublive");
+    if (sk) sk.hidden = true;
+    if (live) live.hidden = false;
+  }
+
   function renderAll() {
+    showLive();
     $("greeting").textContent = payload.greeting || "Hello.";
+    const dl = $("dateline");
+    if (dl) dl.textContent = formatDateLine(payload.generated_at);
     // When clear, summary lives inside the clear banner — don't duplicate.
     $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
+    renderHomeCta();
     renderUserChrome();
     renderNav($("railnav"));
     renderNav($("drawernav"));
@@ -446,6 +551,70 @@
     renderPinned();
     renderActivity();
     renderRecent();
+  }
+
+  function demoPayload() {
+    const base = payload || {};
+    const u = Object.assign({}, base.user || {}, {
+      name: (base.user && base.user.name) || "Jordan Faulkner",
+      initials: (base.user && base.user.initials) || "JF",
+      title: (base.user && base.user.title) || "Owner",
+      homeToolName: (base.user && base.user.homeToolName) || "Owner Pulse",
+      homeHref: (base.user && base.user.homeHref) || "/ui/morning-owner",
+    });
+    return Object.assign({}, base, {
+      user: u,
+      greeting: "Good afternoon, Jordan.",
+      generated_at: new Date().toISOString(),
+      summary: "3 exceptions need you today.",
+      needs_clear: false,
+      needs: [
+        {
+          kind: "Safety", amount: "Stop-work", urgent: true,
+          title: "21435 Abbys | Greg Gavin",
+          detail: "Safety hold on Operations — clear before the crew mobilizes.",
+          action: "Open Owner Pulse", href: "/ui/morning-owner",
+          secondary_href: "/ui/jobcheck",
+        },
+        {
+          kind: "Invoice", amount: "2 ready",
+          title: "Jobs ready to invoice",
+          detail: "Complete work waiting on an invoice draft — approve to send.",
+          action: "Approve to send", href: "/ui/billing",
+        },
+        {
+          kind: "Handoff", amount: "1",
+          title: "Accepted bid needs Job Start",
+          detail: "Won deal without a Projects item — hand off before billing.",
+          action: "Open Job Start", href: "/ui/jobstart",
+        },
+      ],
+      metrics: [
+        { label: "Ready to invoice", value: 2, foot: "unbilled complete / ready", zero: false },
+        { label: "Team prep", value: "86%", foot: "ops ready for huddle", zero: false },
+        { label: "Safety / stop-work", value: 1, foot: "owner-visible holds", zero: false },
+        { label: "Planning flags", value: 0, foot: "route override signals", zero: true },
+      ],
+      queue: {
+        title: "Exceptions",
+        link: "Open Owner Pulse",
+        href: "/ui/morning-owner",
+        rows: [
+          { id: "demo-1", name: "21435 Abbys | Greg Gavin", sub: "Safety hold", tag: "Flag", flagged: true, href: "/ui/jobcheck" },
+          { id: "demo-2", name: "9761 Gertrude | Tedesco", sub: "Ready to invoice", tag: "Ready", href: "/ui/billing" },
+          { id: "demo-3", name: "937 Madison Ridge | Kaiker", sub: "Needs handoff", tag: "Handoff", href: "/ui/jobstart" },
+        ],
+      },
+      pinned: [
+        { id: "demo-1", name: "21435 Abbys | Greg Gavin", sub: "Safety hold", href: "/ui/jobcheck" },
+      ],
+      activity: [
+        { text: "jobcheck.save · 21435 Abbys", when: new Date(Date.now() - 3600000).toISOString(), href: "/ui/activity" },
+        { text: "invoice.finalize · GVC-2026-C-012", when: new Date(Date.now() - 7200000).toISOString(), href: "/ui/activity" },
+        { text: "estimate.slack · 2026-0806-001", when: new Date(Date.now() - 86400000).toISOString(), href: "/ui/activity" },
+      ],
+      badges: { invoice: 2, morning_owner: 1, jobstart: 1 },
+    });
   }
 
   function setDrawer(open) {
@@ -518,6 +687,7 @@
   }
 
   async function refreshBadges() {
+    if (wantDemo) return;
     try {
       const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
       if (!res.ok) return;
@@ -536,15 +706,28 @@
       renderMetrics();
       renderQueue();
       renderPinned();
+      renderHomeCta();
       $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
     } catch (_) {}
   }
 
   wireChrome();
-  fetchPayload().catch((err) => {
-    $("greeting").textContent = "Couldn't load your hub";
-    $("summary").textContent = String(err.message || err);
-  });
+  fetchPayload()
+    .then(() => {
+      if (wantDemo) {
+        payload = demoPayload();
+        renderAll();
+      }
+    })
+    .catch((err) => {
+      showLive();
+      $("greeting").textContent = "Couldn't load your hub";
+      const dl = $("dateline");
+      if (dl) dl.textContent = "";
+      $("summary").textContent = String(err.message || err);
+      const wrap = $("homectawrap");
+      if (wrap) wrap.hidden = true;
+    });
 
   setInterval(refreshBadges, BADGE_MS);
   window.addEventListener("focus", refreshBadges);

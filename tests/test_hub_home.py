@@ -90,13 +90,24 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r46 footer", ">r46<" in hub)
+    check("r47 footer", ">r47<" in hub)
+    check("skeleton", "hub-skel" in hub and "hublive" in hub)
+    check("home cta", "hub-home-cta" in hub)
+    check("demo mode", "demoPayload" in hub)
     check("EMAIL_JSON inject", "{{EMAIL_JSON}}" in hub)
     check("pin control", "data-pin" in hub)
     css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
     check("hub css", ".hub-rail" in css and "264px" in css)
     check("clear gold inset", "hub-clear" in css and "inset 3px" in css)
     check("desktop header stays", "hub-top { display: none" not in css)
+    check("home cta css", ".hub-home-cta" in css)
+    check("urgent need css", ".hub-need.is-urgent" in css)
+    check("solid skel no shimmer",
+          ".hub-skel" in css and "gvc-shimmer" not in css.split("Hub shell")[-1].split("END COMPONENTS")[0])
+    check("rise motion", "@keyframes hub-rise" in css)
+    check("hidden overrides display",
+          ".hub-skel[hidden]" in css and "#hublive[hidden]" in css
+          and ".hub-kicker__count[hidden]" in css)
 
     from app.service import app
     paths = {getattr(r, "path", None) for r in app.routes}
@@ -106,9 +117,24 @@ def test_hub_files_and_route() -> None:
           "home_tool" in __import__("shared.portal_store", fromlist=["PERSON_FIELDS"]).PERSON_FIELDS)
 
 
+def test_need_urgent_flag() -> None:
+    from orchestrators.hub_flow import _need
+
+    safe = _need(kind="Safety", amount="Stop", title="A", detail="d",
+                 action="Open", href="/x")
+    check("safety urgent", safe["urgent"] is True)
+    inv = _need(kind="Invoice", amount="1", title="B", detail="d",
+                action="Open", href="/x")
+    check("invoice not urgent", inv["urgent"] is False)
+    forced = _need(kind="Ask", amount="1", title="C", detail="d",
+                   action="Open", href="/x", urgent=True)
+    check("forced urgent", forced["urgent"] is True)
+
+
 if __name__ == "__main__":
     test_hub_nav_roles()
     test_hub_pins_validate()
     test_hub_payload_shape()
     test_hub_files_and_route()
+    test_need_urgent_flag()
     print("ALL PASSED")

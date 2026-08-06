@@ -33,15 +33,24 @@ def _metric(label: str, value: Any, foot: str) -> dict:
     return {"label": label, "value": value, "foot": foot, "zero": zero}
 
 
+_URGENT_KINDS = frozenset({"safety", "blocked", "stop-work", "overdue"})
+
+
 def _need(*, kind: str, amount: str, title: str, detail: str,
-          action: str, href: str, secondary_href: Optional[str] = None) -> dict:
+          action: str, href: str, secondary_href: Optional[str] = None,
+          urgent: Optional[bool] = None) -> dict:
+    kind_s = (kind or "").strip()
+    is_urgent = bool(urgent) if urgent is not None else (
+        kind_s.lower() in _URGENT_KINDS
+    )
     out = {
-        "kind": kind,
+        "kind": kind_s,
         "amount": amount,
         "title": title,
         "detail": detail,
         "action": action,
         "href": href,
+        "urgent": is_urgent,
     }
     if secondary_href:
         out["secondary_href"] = secondary_href
@@ -49,13 +58,16 @@ def _need(*, kind: str, amount: str, title: str, detail: str,
 
 
 def _queue_row(name: str, sub: str, *, tag: str = "",
-               flagged: bool = False, href: str = "") -> dict:
+               flagged: bool = False, href: str = "",
+               row_id: str = "") -> dict:
+    href_s = href or "#"
     return {
+        "id": (row_id or href_s).strip() or href_s,
         "name": name,
         "sub": sub,
         "tag": tag,
         "flagged": bool(flagged),
-        "href": href or "#",
+        "href": href_s,
     }
 
 
@@ -155,13 +167,14 @@ def _build_field(email: str, brief: Optional[dict]) -> dict[str, Any]:
         ))
 
     for stop in stops[:12]:
+        sid = str(stop.get("item_id") or "").strip()
         queue_rows.append(_queue_row(
             stop.get("name") or "Stop",
             stop.get("address") or stop.get("stage") or "On route",
             tag=stop.get("stage") or "",
             flagged=bool(stop.get("blocked")),
-            href=(f"/ui/jobcheck?item={stop['item_id']}"
-                  if stop.get("item_id") else "/ui/morning"),
+            href=(f"/ui/jobcheck?item={sid}" if sid else "/ui/morning"),
+            row_id=sid or "",
         ))
 
     if not needs:
