@@ -176,8 +176,17 @@
   /** Build status chips from {label, color?}[] — for Job Check / Job Start. */
   function statusChipset(cfg) {
     const key = cfg.key || cfg.name || "";
-    const labels = cfg.labels || [];
+    const rawLabels = cfg.labels || [];
+    const labels = rawLabels.map((lab) =>
+      typeof lab === "string" ? lab : (lab && lab.label) || ""
+    ).filter(Boolean);
     const colors = cfg.colors || {};
+    // Allow [{label,hex}] without a separate colors map
+    rawLabels.forEach((lab) => {
+      if (lab && typeof lab === "object" && lab.label && lab.hex && !colors[lab.label]) {
+        colors[lab.label] = lab.hex;
+      }
+    });
     const value = cfg.value == null ? "" : String(cfg.value);
     const wrap = document.createElement("div");
     wrap.className = "chipset";

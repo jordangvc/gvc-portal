@@ -130,9 +130,13 @@ On ≤620px, inner max-heights are released (no nested scroll traps on a phone).
 
 | Page | Status |
 |---|---|
-| Hub (`web/hub.html`) | Opted in (emerald) |
-| Billing / Estimate / Invoice / Job Start / … | Still legacy `--gvc-*` until each migrates |
-| Field Manual | Keep local dark-mode until portal-wide theme lands |
+| Hub (`web/hub.html`) | Opted in (emerald) · **r41** |
+| Estimate / Invoice | Emerald + chip project type, delivery, invoice type, retainage scope |
+| Job Start / Job Check | Emerald + status columns as gold-active chips |
+| Activity | Emerald + Outcome / Range chip filters |
+| Morning | Emerald + Action Request category chips; origin segmented |
+| Billing / CO / Check / COI / Admin / Lien / Timeoff / Field Manual | Emerald chrome opted in |
+| Salesperson roster / Monday search lists | Stay as searchable controls (not chips) |
 
 Customer-facing PDF templates (`templates/*.j2`) are **out of scope** — separate brand
 vector decision with Jordan.
