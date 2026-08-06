@@ -11,7 +11,7 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## 📘 FIELD MANUAL — cross-links + Job Start stand-behind (r44) — BUILT 2026-08-06
+## 📘 FIELD MANUAL — cross-links + Job Start stand-behind (r45) — BUILT 2026-08-06
 In-manual navigation: `.doclink` buttons use the same `data-go` router as home
 tiles (delegated click handler; links inside checklist labels do not toggle the
 checkbox). **Your First Week** Day 1–5 steps + reading-path table + role tracks
@@ -19,7 +19,7 @@ checkbox). **Your First Week** Day 1–5 steps + reading-path table + role track
 Portal → Don't Do This carry **Next in your first week** trails.
 Also added stand-behind procedures grounded in Job Start config: `#exclusions-walk`,
 `#board-count-check`, `#garage-finish`, `#protection`, `#closeout-rhythm`,
-`#material-feedback`, `#plywood-backing`, `#abuse-board`. Hub **r44**.
+`#material-feedback`, `#plywood-backing`, `#abuse-board`. Hub **r45**.
 NOT DEPLOYED until merge → Actions. Smoke: First Week → tap Glossary → Next →
 Reading Drawings.
 
