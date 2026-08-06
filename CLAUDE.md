@@ -11,20 +11,20 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## 📘 FIELD MANUAL — stand-behind slice — BUILT 2026-08-06 (r37)
+## 📘 FIELD MANUAL — stand-behind slice — BUILT 2026-08-06 (r37→r38)
 Next content pass after r36 deploy (`gvc-invoice-00133-hq4`). Rule for this slice:
 **only what GVC will stand behind** — grounded in Job Start fields, Job Check
 stages, GA-214, and existing manual rules; no invented STC numbers, return
 depths, production rates, or fake OSHA programs.
-BUILT (+ hub **r37**): `#window-returns` (Job Start window type/returns),
-`#ceiling-finish` (ceiling + garage finish gate), `#sound-walls` (assembly
-governs; RC short-circuit trap), `#level5-skim` (Text/Skim ≠ free upgrade),
-`#rfi-field` (promoted from drawings), `#gc-talk` (CO + scope scrub speech),
-`#ops-lead` (multi-job + never `#operations`), `#receiving`, `#scaffold-lifts`
-(Job Start scaffold; field card honesty), `#residential-field`, `#skill-ladder`.
-~57 sections / 520 checkboxes; JS + tile jumps clean.
-AUTO-DEPLOY: merge to master → GitHub Actions `deploy-cloud-run.yml`.
-NEXT still open: Job Check deep-links; diagrams/photos; AI coaches (roadmap only).
+BUILT (+ hub **r38**): `#window-returns`, `#ceiling-finish`, `#sound-walls`,
+`#level5-skim`, `#rfi-field`, `#gc-talk`, `#ops-lead`, `#receiving`,
+`#scaffold-lifts`, `#residential-field`, `#skill-ladder` (~57 sections).
+**Job Check How-to deep-links expanded:** Projects coat/skim/clean-out →
+`#finish` / `#level5-skim` / `#cleanout`; Ops scaffold/heat/lock box/window/
+open-questions → matching procedures; status_19 collision still board-scoped.
+Tests: `test_fieldguide_anchors_*` green.
+AUTO-DEPLOY: merge PR → GitHub Actions `deploy-cloud-run.yml`.
+NEXT: diagrams/photos; AI coaches (roadmap only).
 
 ## 📘 FIELD MANUAL — onboarding + leadership + ops slice — BUILT 2026-08-06
 Gap analysis (3 parallel agents: trades/ops, onboarding/training, leadership/AI)
