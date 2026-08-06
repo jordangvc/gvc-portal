@@ -1102,7 +1102,7 @@ a:hover{ color:var(--gvc-green-dark); }
   padding: 8px 16px;
   padding-top: calc(8px + env(safe-area-inset-top, 0px));
   background: var(--color-surface, var(--gvc-surface));
-  border-bottom: 1px solid var(--color-divider, var(--gvc-line));
+  border-bottom: 2px solid var(--color-accent, var(--gvc-gold));
 }
 .hub-top__menu {
   flex: 0 0 auto; width: 48px; height: 48px;
@@ -1141,7 +1141,9 @@ a:hover{ color:var(--gvc-green-dark); }
   margin: 0 0 10px;
 }
 .hub-kicker--needs {
-  color: var(--color-accent-ink, var(--gvc-gold-dark));
+  color: var(--color-accent, var(--gvc-gold));
+  font-weight: 700;
+  letter-spacing: 0.14em;
 }
 .hub-needs { display: grid; gap: 12px; margin-bottom: 22px; }
 .hub-need {
