@@ -82,6 +82,10 @@ gcloud run services update "$SERVICE" \
 echo "DONE. Send a test invoice.paid event from the Stripe dashboard's webhook page to confirm."
 ```
 
+Confirm without guessing: `GET https://portal.greenvalleycontractors.com/health` →
+`stripe_webhook_secret_present: true`. (Presence only — still send a Stripe
+test `invoice.paid` to prove Monday flips.)
+
 No Stripe CLI in Cloud Shell? Create the endpoint by hand instead:
 Stripe Dashboard → Developers → Webhooks → **Add endpoint** → URL
 `<RUN_URL>/v1/webhooks/stripe` → event `invoice.paid` → copy the signing
