@@ -361,7 +361,9 @@ def process_change_order(
                                 or "").strip()
                     project_label = _naming.compose_job_name(
                         location, client_d.get("name", ""),
-                        raw_name=(job_d.get("name") or "").strip() or None)
+                        raw_name=(job_d.get("name") or "").strip() or None,
+                        project_type=(job_d.get("project_type") or "").strip() or None,
+                        job_title=(job_d.get("job_title") or "").strip() or None)
                     _ptype = (job_d.get("project_type") or "").lower()
                     if not _ptype:
                         _mjt = (job_d.get("monday_job_type") or "").lower()
