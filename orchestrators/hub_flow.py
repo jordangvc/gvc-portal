@@ -29,7 +29,8 @@ def _person_record(email: str) -> dict:
 
 
 def _metric(label: str, value: Any, foot: str) -> dict:
-    return {"label": label, "value": value, "foot": foot}
+    zero = isinstance(value, (int, float)) and value == 0
+    return {"label": label, "value": value, "foot": foot, "zero": zero}
 
 
 def _need(*, kind: str, amount: str, title: str, detail: str,
@@ -220,7 +221,7 @@ def _build_office(email: str, billing: Optional[dict],
             amount=row.get("status_label") or "Ready",
             title=name,
             detail="Crew marked this ready — approve to send from Billing Hub.",
-            action="Open Billing Hub",
+            action="Approve to send",
             href=href,
             secondary_href=row.get("monday_url") or href,
         ))
@@ -246,8 +247,11 @@ def _build_office(email: str, billing: Optional[dict],
         ))
 
     if not billing:
-        summary = "Billing numbers will fill in when Monday is reachable."
-        clear = False
+        summary = (
+            "Billing numbers will fill in when Monday is reachable — "
+            "tools still work from the rail."
+        )
+        clear = True
     elif not needs:
         summary = (
             f"You're clear. {ready_n} ready to invoice, "
@@ -306,9 +310,9 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
         _metric("Planning flags", len(planning) if pulse else "—",
                 "route override signals"),
     ]
-    if ready_n:
+    if ready_n and billing:
         badges["invoice"] = ready_n
-    if safety:
+    if safety and pulse:
         badges["morning_owner"] = len(safety)
 
     for row in safety[:3]:
@@ -323,13 +327,13 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
                             if row.get("item_id") else "/ui/morning-owner"),
         ))
 
-    if ready_n and len(needs) < 4:
+    if ready_n and billing and len(needs) < 4:
         needs.append(_need(
             kind="Invoice",
             amount=str(ready_n),
             title="Jobs ready to invoice",
             detail="Complete work waiting on an invoice draft — approve to send.",
-            action="Open Billing Hub",
+            action="Approve to send",
             href="/ui/billing",
         ))
 
@@ -364,19 +368,28 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
             ))
 
     if not needs:
-        summary = (
-            "You're clear. "
-            f"{ready_n} ready to invoice, "
-            f"{len(safety)} safety hold(s), nothing else waiting on you."
-        )
+        if billing is None and pulse is None:
+            summary = (
+                "Live numbers will fill in when Monday is reachable — "
+                "nothing is waiting on you in the portal right now."
+            )
+        else:
+            summary = (
+                "You're clear. "
+                f"{ready_n if billing else 0} ready to invoice, "
+                f"{len(safety) if pulse else 0} safety hold(s), "
+                "nothing else waiting on you."
+            )
         clear = True
     else:
         summary = f"{len(needs)} exception(s) need you today."
         clear = False
 
-    if brief and not pulse:
-        # Soften summary when pulse couldn't load.
-        summary = (brief.get("hub") or {}).get("label") or summary
+    if brief and not pulse and not billing:
+        summary = (
+            (brief.get("hub") or {}).get("label")
+            or summary
+        )
 
     return {
         "needs": needs[:4],
@@ -405,12 +418,8 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     greeting = hub_nav.greeting_for(name, hour=now.hour)
 
     home_tool = home_override or hub_nav.ROLE_HOME_TOOL.get(role, "morning")
-    home_href = hub_nav.ROLE_HOME_HREF.get(role, "/ui/morning")
-    if home_override:
-        for t in hub_nav.tools_for_client(feats):
-            if t["feature"] == home_override:
-                home_href = t["href"]
-                break
+    home_href = hub_nav.home_tool_href(home_tool, role)
+    home_tool_name = hub_nav.home_tool_label(home_tool)
 
     brief = _try_morning_brief(email) if "morning" in feats else None
     billing = None
@@ -446,6 +455,13 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         activity_rows = []
 
+    pinned: list[dict] = []
+    try:
+        from subsystems.hub import pinned as hub_pins
+        pinned = hub_pins.list_for(email)
+    except Exception:  # noqa: BLE001
+        pinned = []
+
     return {
         "ok": True,
         "generated_at": now.isoformat(),
@@ -456,6 +472,7 @@ def build_hub_payload(email: str) -> dict[str, Any]:
             "title": title,
             "role": role,
             "homeTool": home_tool,
+            "homeToolName": home_tool_name,
             "homeHref": home_href,
         },
         "greeting": greeting,
@@ -469,7 +486,7 @@ def build_hub_payload(email: str) -> dict[str, Any]:
             "href": home_href,
             "rows": shaped["queue_rows"],
         },
-        "pinned": [],  # write path = build step 5
+        "pinned": pinned,
         "activity": activity_rows,
         "recent": [],  # client fills from localStorage
         "badges": shaped["badges"],

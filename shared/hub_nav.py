@@ -72,6 +72,48 @@ ROLE_TITLE: dict[str, str] = {
     "field": "Field",
 }
 
+# Feature key → display label (home tool + jump-back).
+HOME_TOOL_LABELS: dict[str, str] = {
+    "morning": "Your Morning Brief",
+    "morning_gm": "GM Morning Huddle",
+    "morning_owner": "Owner Pulse",
+    "activity": "Activity",
+    "takeoff": "Takeoff",
+    "estimate": "Estimate Generator",
+    "change_order": "Change Order",
+    "jobstart": "Job Start",
+    "invoice": "Billing Hub",
+    "check": "Paid by Check",
+    "lien": "Lien Watch",
+    "jobcheck": "Job Check",
+    "fieldguide": "Field Manual",
+    "coi": "COI Generator",
+    "timeoff": "Time Off",
+    "admin": "Admin",
+}
+
+
+def home_tool_label(feature: str) -> str:
+    feat = (feature or "").strip()
+    if feat in HOME_TOOL_LABELS:
+        return HOME_TOOL_LABELS[feat]
+    for group, items in TOOL_GROUPS:
+        for name, key, href, _ext in items:
+            if key == feat:
+                return name
+    return feat or "Home"
+
+
+def home_tool_href(feature: str, role: str = "field") -> str:
+    feat = (feature or "").strip()
+    if feat == "invoice":
+        return "/ui/billing"
+    for _group, items in TOOL_GROUPS:
+        for _name, key, href, _ext in items:
+            if key == feat:
+                return href
+    return ROLE_HOME_HREF.get(role, "/ui/morning")
+
 
 def resolve_role(features: set[str]) -> str:
     """owner > gm > office > field. One role drives payload shape (handoff §5)."""

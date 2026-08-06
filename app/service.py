@@ -1085,6 +1085,7 @@ def ui_hub_payload(request: Request) -> dict:
         from shared import hub_nav
         role = hub_nav.resolve_role(feats)
         name = hub_nav.display_name(email, {})
+        home_tool = hub_nav.ROLE_HOME_TOOL.get(role, "morning")
         return {
             "ok": False,
             "user": {
@@ -1093,7 +1094,8 @@ def ui_hub_payload(request: Request) -> dict:
                 "initials": hub_nav.initials_for(name, email),
                 "title": hub_nav.ROLE_TITLE.get(role, ""),
                 "role": role,
-                "homeTool": hub_nav.ROLE_HOME_TOOL.get(role, "morning"),
+                "homeTool": home_tool,
+                "homeToolName": hub_nav.home_tool_label(home_tool),
                 "homeHref": hub_nav.ROLE_HOME_HREF.get(role, "/ui/morning"),
             },
             "greeting": hub_nav.greeting_for(name),
@@ -1101,10 +1103,10 @@ def ui_hub_payload(request: Request) -> dict:
             "needs": [],
             "needs_clear": True,
             "metrics": [
-                {"label": "Status", "value": "—", "foot": "refresh failed"},
-                {"label": "Queue", "value": "—", "foot": "try a tool directly"},
-                {"label": "Alerts", "value": "—", "foot": ""},
-                {"label": "Live data", "value": "—", "foot": type(e).__name__},
+                {"label": "Status", "value": "—", "foot": "refresh failed", "zero": False},
+                {"label": "Queue", "value": "—", "foot": "try a tool directly", "zero": False},
+                {"label": "Alerts", "value": "—", "foot": "", "zero": False},
+                {"label": "Live data", "value": "—", "foot": type(e).__name__, "zero": False},
             ],
             "queue": {
                 "title": hub_nav.ROLE_QUEUE_TITLE.get(role, "Queue"),
@@ -1121,6 +1123,26 @@ def ui_hub_payload(request: Request) -> dict:
                 "features": sorted(feats),
             },
         }
+
+
+class HubPinnedRequest(BaseModel):
+    items: list[dict] = []
+
+
+@app.put("/ui/api/hub/pinned")
+def ui_hub_pinned_put(req: HubPinnedRequest, request: Request) -> dict:
+    """Replace the signed-in user's pinned jobs (max 20)."""
+    email = require_ui_access(request)
+    from subsystems.hub import pinned as hub_pins
+    try:
+        items = hub_pins.put_for(email, req.items, actor=email)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "INVALID_INPUT", "detail": str(e)},
+        )
+    activity.log_event("hub.pin", actor=email, target=str(len(items)), result="ok")
+    return {"ok": True, "items": items}
 
 
 @app.get("/ui/gvc-command.js")

@@ -48,7 +48,10 @@ DOC_VERSION = 1
 DEFAULT_OBJECT = "portal/grants.json"
 HR_OBJECT = "portal/hr_private.json"
 
-PERSON_FIELDS = ("name", "position", "phone", "start_date", "stop_date", "birthday", "time_off_url")
+PERSON_FIELDS = (
+    "name", "position", "phone", "start_date", "stop_date", "birthday",
+    "time_off_url", "home_tool",
+)
 
 
 class PortalStoreNotConfigured(Exception):

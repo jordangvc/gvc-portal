@@ -1,4 +1,4 @@
-"""Pure tests for the personal hub home (nav + payload shape).
+"""Pure tests for the personal hub home (nav + payload + pins).
 
 Run: python tests/test_hub_home.py
   or: .venv/bin/pytest tests/test_hub_home.py -q
@@ -30,6 +30,8 @@ def test_hub_nav_roles() -> None:
     check("greeting morning",
           hub_nav.greeting_for("Jordan Faulkner", hour=8).startswith("Good morning"))
     check("initials", hub_nav.initials_for("Jordan Faulkner", "j@x.com") == "JF")
+    check("home label owner", hub_nav.home_tool_label("morning_owner") == "Owner Pulse")
+    check("home href billing", hub_nav.home_tool_href("invoice") == "/ui/billing")
 
     groups = hub_nav.groups_for_client({"morning", "jobcheck", "fieldguide", "timeoff"})
     names = [g["name"] for g in groups]
@@ -38,6 +40,24 @@ def test_hub_nav_roles() -> None:
     estimate = next(t for g in groups for t in g["tools"] if t["feature"] == "estimate")
     check("granted morning", morning["granted"] is True)
     check("dim estimate", estimate["granted"] is False)
+
+
+def test_hub_pins_validate() -> None:
+    from subsystems.hub import pinned as hub_pins
+
+    items = hub_pins.validate_items([
+        {"name": "Job A", "href": "/ui/jobcheck?item=1", "sub": "Blocked"},
+        {"name": "Job A", "href": "/ui/jobcheck?item=1"},  # dup
+        {"name": "", "href": "/x"},  # drop
+        {"name": "Job B", "href": "/ui/billing"},
+    ])
+    check("deduped to 2", len(items) == 2)
+    check("ids set", items[0]["id"] == "/ui/jobcheck?item=1")
+    try:
+        hub_pins.validate_items("nope")
+        check("reject non-list", False)
+    except ValueError:
+        check("reject non-list", True)
 
 
 def test_hub_payload_shape() -> None:
@@ -55,25 +75,40 @@ def test_hub_payload_shape() -> None:
     check("nav groups", len((payload.get("nav") or {}).get("groups") or []) >= 5)
     check("role owner for superadmin", payload["user"]["role"] == "owner")
     check("homeTool set", bool(payload["user"].get("homeTool")))
+    check("homeToolName human",
+          payload["user"].get("homeToolName") == "Owner Pulse"
+          or "Pulse" in str(payload["user"].get("homeToolName")))
     check("needs capped", len(payload["needs"]) <= 4)
+    check("pinned list", isinstance(payload.get("pinned"), list))
+    # Without Monday, metrics should be em-dash (source unavailable), not fake zeros.
+    vals = [m["value"] for m in payload["metrics"]]
+    check("unavailable metrics use dash", all(v == "—" or isinstance(v, (int, str)) for v in vals))
 
 
 def test_hub_files_and_route() -> None:
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
+    check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r44 footer", ">r44<" in hub)
+    check("r46 footer", ">r46<" in hub)
     check("EMAIL_JSON inject", "{{EMAIL_JSON}}" in hub)
+    check("pin control", "data-pin" in hub)
     css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
     check("hub css", ".hub-rail" in css and "264px" in css)
+    check("clear gold inset", "hub-clear" in css and "inset 3px" in css)
+    check("desktop header stays", "hub-top { display: none" not in css)
 
     from app.service import app
     paths = {getattr(r, "path", None) for r in app.routes}
     check("/ui/api/hub route", "/ui/api/hub" in paths)
+    check("/ui/api/hub/pinned route", "/ui/api/hub/pinned" in paths)
+    check("home_tool in PERSON_FIELDS",
+          "home_tool" in __import__("shared.portal_store", fromlist=["PERSON_FIELDS"]).PERSON_FIELDS)
 
 
 if __name__ == "__main__":
     test_hub_nav_roles()
+    test_hub_pins_validate()
     test_hub_payload_shape()
     test_hub_files_and_route()
     print("ALL PASSED")

@@ -9,8 +9,11 @@
 <body>
 
 <div class="hub-app" id="app">
-  <!-- Desktop left rail -->
   <aside class="hub-rail" id="rail" aria-label="Tools">
+    <div class="hub-rail__brand">
+      <span class="hub-rail__mark">G</span>
+      <span class="hub-rail__word">Green Valley</span>
+    </div>
     <div class="hub-rail__search">
       <input type="search" id="railsearch" placeholder="Find a tool" autocomplete="off" />
     </div>
@@ -42,7 +45,7 @@
       <p class="hub-summary" id="summary"></p>
 
       <section aria-labelledby="needs-kicker">
-        <p class="hub-kicker" id="needs-kicker">Needs you today</p>
+        <p class="hub-kicker hub-kicker--needs" id="needs-kicker">Needs you today</p>
         <div id="needs"></div>
       </section>
 
@@ -84,30 +87,36 @@
 
       <div class="hub-ft-note">
         <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-        <span style="white-space:nowrap;">Portal <b style="color:var(--color-accent-ink, var(--gvc-gold-dark));">r45</b> · Aug 6, 2026</span>
+        <span style="white-space:nowrap;">Portal <b style="color:var(--color-accent-ink, var(--gvc-gold-dark));">r46</b> · Aug 6, 2026</span>
       </div>
     </div>
   </div>
 
   <nav class="hub-dock" aria-label="Phone navigation">
     <button type="button" class="hub-dock__btn is-active" data-dock="home">
-      <span class="hub-dock__ico">⌂</span>Home
+      <span class="hub-dock__ico" aria-hidden="true">⌂</span>Home
     </button>
     <button type="button" class="hub-dock__btn" data-dock="search">
-      <span class="hub-dock__ico">⌕</span>Search
+      <span class="hub-dock__ico" aria-hidden="true">⌕</span>Search
     </button>
     <button type="button" class="hub-dock__btn" data-dock="alerts" id="dockalerts">
-      <span class="hub-dock__ico">◉</span>Alerts
+      <span class="hub-dock__ico" aria-hidden="true">●</span>Alerts
       <span class="hub-dock__badge" id="alertbadge" hidden>0</span>
     </button>
     <button type="button" class="hub-dock__btn" data-dock="tools">
-      <span class="hub-dock__ico">☰</span>Tools
+      <span class="hub-dock__ico" aria-hidden="true">☰</span>Tools
     </button>
   </nav>
 </div>
 
+<div class="hub-toast" id="toast" role="status"></div>
+
 <div class="hub-drawer-backdrop" id="drawerbk" hidden></div>
 <aside class="hub-drawer" id="drawer" aria-label="Tools drawer" hidden>
+  <div class="hub-rail__brand">
+    <span class="hub-rail__mark">G</span>
+    <span class="hub-rail__word">Green Valley</span>
+  </div>
   <div class="hub-rail__search">
     <input type="search" id="drawersearch" placeholder="Find a tool" autocomplete="off" />
   </div>
@@ -132,6 +141,7 @@
 
   let payload = null;
   let drawerOpen = false;
+  let pinBusy = false;
 
   function esc(s) {
     return String(s == null ? "" : s)
@@ -140,6 +150,14 @@
   }
 
   function $(id) { return document.getElementById(id); }
+
+  function toast(msg) {
+    const el = $("toast");
+    el.textContent = msg;
+    el.classList.add("is-on");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(() => el.classList.remove("is-on"), 2200);
+  }
 
   function loadRecent() {
     try {
@@ -160,6 +178,10 @@
     return groups.flatMap((g) => g.tools || []);
   }
 
+  function pinIds() {
+    return new Set((payload.pinned || []).map((p) => p.id || p.href));
+  }
+
   function badgeFor(feature) {
     const b = (payload && payload.badges) || {};
     const n = b[feature];
@@ -170,6 +192,11 @@
     const groups = (payload && payload.nav && payload.nav.groups) || [];
     const q = (filter || "").trim().toLowerCase();
     const html = [];
+    html.push(
+      `<div class="hub-rail__group"><span class="hub-rail__ghead">Home</span>` +
+      `<a class="hub-rail__item is-active" href="/" data-home="1">` +
+      `<span class="hub-rail__item-name">Your hub</span></a></div>`
+    );
     groups.forEach((g) => {
       const tools = (g.tools || []).filter((t) =>
         !q || t.name.toLowerCase().includes(q) || t.feature.toLowerCase().includes(q)
@@ -182,8 +209,7 @@
         const badge = granted
           ? (n ? `<span class="hub-rail__badge">${n}</span>` : "")
           : `<span class="hub-rail__badge is-dash">—</span>`;
-        const cls = "hub-rail__item" + (granted ? "" : " is-dim") +
-          (t.feature === "home" ? " is-active" : "");
+        const cls = "hub-rail__item" + (granted ? "" : " is-dim");
         if (granted) {
           const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
           html.push(
@@ -200,11 +226,12 @@
       html.push("</div>");
     });
     into.innerHTML = html.join("") || `<div class="hub-empty-soft">No tools match.</div>`;
-    into.querySelectorAll("a.hub-rail__item").forEach((a) => {
+    into.querySelectorAll("a.hub-rail__item[data-feature]").forEach((a) => {
       a.addEventListener("click", () => {
         const feat = a.getAttribute("data-feature");
         const tool = flatTools().find((t) => t.feature === feat && t.href === a.getAttribute("href"));
         if (tool) pushRecent(tool);
+        setDrawer(false);
       });
     });
   }
@@ -213,7 +240,12 @@
     const box = $("needs");
     if (!payload) return;
     if (payload.needs_clear || !(payload.needs || []).length) {
-      box.innerHTML = `<div class="hub-clear">${esc(payload.summary || "You're clear.")}</div>`;
+      const line = payload.summary || "You're clear.";
+      const first = line.split(/[.!?]/)[0];
+      const rest = line.slice(first.length).replace(/^[.\s]+/, "");
+      box.innerHTML =
+        `<div class="hub-clear"><strong>${esc(first || "You're clear")}.</strong>` +
+        (rest ? esc(rest) : "") + `</div>`;
       return;
     }
     box.innerHTML = `<div class="hub-needs">` + (payload.needs || []).map((n) => {
@@ -234,12 +266,34 @@
   }
 
   function renderMetrics() {
-    $("metrics").innerHTML = (payload.metrics || []).map((m) => (
-      `<div class="hub-metric">` +
-      `<div class="hub-metric__label">${esc(m.label)}</div>` +
-      `<div class="hub-metric__value">${esc(m.value)}</div>` +
-      `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
-    )).join("");
+    $("metrics").innerHTML = (payload.metrics || []).map((m) => {
+      const zero = m.zero || m.value === 0 || m.value === "0";
+      return (
+        `<div class="hub-metric${zero ? " is-zero" : ""}">` +
+        `<div class="hub-metric__label">${esc(m.label)}</div>` +
+        `<div class="hub-metric__value">${esc(m.value)}</div>` +
+        `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
+      );
+    }).join("");
+  }
+
+  function rowHtml(r, { pinable }) {
+    const id = r.id || r.href || "";
+    const on = pinIds().has(id);
+    const pinBtn = pinable
+      ? `<button type="button" class="hub-pin${on ? " is-on" : ""}" data-pin="${esc(id)}" ` +
+        `aria-label="${on ? "Unpin" : "Pin"}" title="${on ? "Unpin" : "Pin"}">${on ? "★" : "☆"}</button>`
+      : "";
+    const tag = r.tag
+      ? `<span class="hub-qrow__tag${r.flagged ? " is-flag" : ""}">${esc(r.tag)}</span>`
+      : "";
+    return (
+      `<div class="hub-qrow">` +
+      `<a class="hub-qrow__meta" href="${esc(r.href || "#")}" style="text-decoration:none;color:inherit;">` +
+      `<div class="hub-qrow__name">${esc(r.name)}</div>` +
+      `<div class="hub-qrow__sub">${esc(r.sub || "")}</div></a>` +
+      tag + pinBtn + `</div>`
+    );
   }
 
   function renderQueue() {
@@ -250,39 +304,84 @@
     link.textContent = q.link || "Open";
     const rows = q.rows || [];
     if (!rows.length) {
-      $("queue").innerHTML = `<div class="hub-empty-soft">Nothing in this queue right now.</div>`;
+      $("queue").innerHTML =
+        `<div class="hub-empty-soft">Nothing in this queue right now — when something needs you, it lands here.</div>`;
       return;
     }
-    $("queue").innerHTML = rows.map((r) => (
-      `<a class="hub-qrow" href="${esc(r.href || "#")}">` +
-      `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(r.name)}</div>` +
-      `<div class="hub-qrow__sub">${esc(r.sub)}</div></div>` +
-      (r.tag
-        ? `<span class="hub-qrow__tag${r.flagged ? " is-flag" : ""}">${esc(r.tag)}</span>`
-        : "") +
-      `</a>`
-    )).join("");
+    $("queue").innerHTML = rows.map((r) => rowHtml(r, { pinable: true })).join("");
+    wirePins($("queue"));
   }
 
   function renderPinned() {
     const rows = payload.pinned || [];
     if (!rows.length) {
       $("pinned").innerHTML =
-        `<div class="hub-empty-soft">Pin jobs from a queue row — coming next.</div>`;
+        `<div class="hub-empty-soft">Tap ★ on a queue row to pin a job here.</div>`;
       return;
     }
-    $("pinned").innerHTML = rows.map((r) => (
-      `<a class="hub-qrow" href="${esc(r.href || "#")}">` +
-      `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(r.name)}</div>` +
-      `<div class="hub-qrow__sub">${esc(r.sub || "")}</div></div></a>`
-    )).join("");
+    $("pinned").innerHTML = rows.map((r) => rowHtml(r, { pinable: true })).join("");
+    wirePins($("pinned"));
+  }
+
+  function wirePins(root) {
+    root.querySelectorAll("[data-pin]").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        togglePin(btn.getAttribute("data-pin"));
+      });
+    });
+  }
+
+  async function togglePin(id) {
+    if (!id || pinBusy || !payload) return;
+    const cur = (payload.pinned || []).slice();
+    const idx = cur.findIndex((p) => (p.id || p.href) === id);
+    let next;
+    if (idx >= 0) {
+      next = cur.filter((_, i) => i !== idx);
+    } else {
+      const fromQ = ((payload.queue || {}).rows || []).find((r) => (r.id || r.href) === id);
+      const fromP = cur.find((p) => (p.id || p.href) === id);
+      const src = fromQ || fromP;
+      if (!src) return;
+      next = cur.concat([{
+        id: src.id || src.href,
+        name: src.name,
+        sub: src.sub || "",
+        href: src.href || "#",
+      }]);
+    }
+    payload.pinned = next;
+    renderPinned();
+    renderQueue();
+    pinBusy = true;
+    try {
+      const res = await fetch("/ui/api/hub/pinned", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ items: next }),
+      });
+      if (!res.ok) throw new Error("pin " + res.status);
+      const body = await res.json();
+      payload.pinned = body.items || next;
+      renderPinned();
+      renderQueue();
+      toast(idx >= 0 ? "Unpinned" : "Pinned");
+    } catch (_) {
+      toast("Couldn't save pin — try again");
+      fetchPayload().catch(() => {});
+    } finally {
+      pinBusy = false;
+    }
   }
 
   function renderActivity() {
     const rows = payload.activity || [];
     if (!rows.length) {
       $("activity").innerHTML =
-        `<div class="hub-empty-soft">Sends and approvals will show up here.</div>`;
+        `<div class="hub-empty-soft">Sends, approvals, and status changes show up here.</div>`;
       return;
     }
     $("activity").innerHTML = rows.map((r) => (
@@ -294,9 +393,10 @@
 
   function renderRecent() {
     const recent = loadRecent();
-    const home = payload && payload.user
-      ? { name: "Start with " + (payload.user.homeTool || "home"),
-          href: payload.user.homeHref || "/ui/morning", granted: true }
+    const u = payload.user || {};
+    const homeName = u.homeToolName || "Your home tool";
+    const home = u.homeHref
+      ? { name: homeName, href: u.homeHref, granted: true }
       : null;
     const items = recent.length ? recent : (home ? [home] : []);
     if (!items.length) {
@@ -335,6 +435,7 @@
 
   function renderAll() {
     $("greeting").textContent = payload.greeting || "Hello.";
+    // When clear, summary lives inside the clear banner — don't duplicate.
     $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
     renderUserChrome();
     renderNav($("railnav"));
@@ -372,9 +473,15 @@
       ).slice(0, 12);
       $("searchhits").innerHTML = hits.map((t) => {
         const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
-        return `<a class="hub-qrow" href="${esc(t.href)}"${ext}><div class="hub-qrow__meta">` +
-          `<div class="hub-qrow__name">${esc(t.name)}</div></div></a>`;
-      }).join("") || `<div class="hub-empty-soft">No matches.</div>`;
+        return `<a class="hub-qrow" href="${esc(t.href)}"${ext} style="text-decoration:none;color:inherit;">` +
+          `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(t.name)}</div></div></a>`;
+      }).join("") || `<div class="hub-empty-soft">No tools match that search.</div>`;
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") {
+        $("searchpanel").classList.remove("is-open");
+        setDrawer(false);
+      }
     });
 
     document.querySelectorAll("[data-dock]").forEach((btn) => {
@@ -404,7 +511,6 @@
     const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
     if (!res.ok) throw new Error("hub " + res.status);
     payload = await res.json();
-    // Prefer server features, fall back to injected set.
     if (payload.nav && Array.isArray(payload.nav.features)) {
       payload.nav.features.forEach((f) => FEATURES.add(f));
     }
@@ -422,12 +528,15 @@
       payload.summary = next.summary || payload.summary;
       payload.metrics = next.metrics || payload.metrics;
       payload.queue = next.queue || payload.queue;
+      payload.pinned = next.pinned || payload.pinned;
       renderUserChrome();
       renderNav($("railnav"), $("railsearch").value);
       renderNav($("drawernav"), $("drawersearch").value);
       renderNeeds();
       renderMetrics();
       renderQueue();
+      renderPinned();
+      $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
     } catch (_) {}
   }
 
@@ -440,7 +549,6 @@
   setInterval(refreshBadges, BADGE_MS);
   window.addEventListener("focus", refreshBadges);
 
-  // Warm Monday caches for Job Start / Morning / Job Check.
   fetch("/ui/api/monday/warm", {
     method: "POST", credentials: "same-origin", keepalive: true
   }).catch(() => {});

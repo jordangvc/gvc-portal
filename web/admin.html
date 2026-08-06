@@ -319,10 +319,12 @@ async function saveUser(email) {
   const nameEl = card && $("[data-person-name]", card);
   const phoneEl = card && $("[data-person-phone]", card);
   const positionEl = card && $("[data-person-position]", card);
+  const homeEl = card && $("[data-person-home_tool]", card);
   const person = {
     name: nameEl ? nameEl.value.trim() : ((u.person || {}).name || ""),
     position: positionEl ? positionEl.value.trim() : ((u.person || {}).position || ""),
     phone: phoneEl ? phoneEl.value.trim() : ((u.person || {}).phone || ""),
+    home_tool: homeEl ? homeEl.value.trim() : ((u.person || {}).home_tool || ""),
   };
   u.person = person;
   try {
@@ -431,6 +433,39 @@ function renderPeople(filter) {
         mkPersonField("name", "Name", "John Smith"),
         mkPersonField("phone", "Phone", "(812) 290-1093"),
       );
+      // Home tool — cold-link preference for the personal hub.
+      const homeWrap = document.createElement("div");
+      homeWrap.className = "gvc-field";
+      const homeLab = document.createElement("label");
+      homeLab.className = "gvc-label";
+      homeLab.textContent = "Home tool";
+      const homeSel = document.createElement("select");
+      homeSel.className = "gvc-input";
+      homeSel.setAttribute("data-person-home_tool", "1");
+      const homeOpts = [
+        ["", "(role default)"],
+        ["morning", "Your Morning Brief"],
+        ["morning_gm", "GM Morning Huddle"],
+        ["morning_owner", "Owner Pulse"],
+        ["invoice", "Billing Hub"],
+        ["jobcheck", "Job Check"],
+        ["estimate", "Estimate Generator"],
+        ["activity", "Activity"],
+      ];
+      const curHome = (person.home_tool || "");
+      homeOpts.forEach(([val, lab]) => {
+        const o = document.createElement("option");
+        o.value = val; o.textContent = lab;
+        if (val === curHome) o.selected = true;
+        homeSel.appendChild(o);
+      });
+      homeSel.addEventListener("change", () => {
+        if (!dirty.has(u.email)) dirty.set(u.email, storedFeatures(u));
+        setDirtyHint(u.email, true);
+        scheduleSave(u.email);
+      });
+      homeWrap.append(homeLab, homeSel);
+      personHost.append(homeWrap);
       renderRoleButtons(roleHost, (role) => {
         markDirty(u.email, applyRoleToSet(role));
         scheduleSave(u.email);
