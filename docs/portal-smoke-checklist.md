@@ -1,6 +1,7 @@
 # Portal smoke checklist (Andrea + Jake)
 
 **Portal:** https://portal.greenvalleycontractors.com  
+**Expect hub footer:** Portal **r39** (or newer) · if you see older, tell Jordan before deep-testing.  
 **Purpose:** Quick pass/fail on every live tool — catch “looks fine to us, broken for the office” early.  
 **Time:** ~20–30 minutes each. Do it on a phone *and* a laptop if you can (phone first for field tools).
 
@@ -14,6 +15,7 @@ Reply to Jordan with: tool name · ✅ / ❌ / ⏭ skipped · one-line note if a
 2. If a tile is **missing** on the hub, stop and tell Jordan (grants). Don’t assume the tool is broken.
 3. Wrong data or a scary error → screenshot + which job/name you used. Don’t keep retrying a live write.
 4. **Mark is sitting this round out** (capacity). Job Check can wait for him unless Jake has 2 minutes.
+5. **Job names (locked):** `[Street Number Name], [City], [ST] [ZIP] | [Builder] | [Job Title]` — three pipe parts. Residential Job Title = `{Last} residence`. Commercial = real business name (don’t invent from the GC). If a field is wrong/blank, ask — don’t guess.
 
 ---
 
@@ -52,6 +54,7 @@ Overlap is fine — two ✅s on Estimate is better than one.
 ### B2 · Billing Hub (`/ui/billing`)
 - [ ] Page opens (not blank / not error).
 - [ ] Ready-to-Invoice and/or Accepted sections show *something*, or an honest empty state.
+- [ ] Long lists **scroll inside their pane** (page chrome stays put) — not one endless page scroll only.
 - [ ] Search by builder **or** street fragment returns a known job.
 - [ ] **Open invoice** (or equivalent) lands on Invoice with the job filled — not a blank form.
 
@@ -113,6 +116,7 @@ Overlap is fine — two ✅s on Estimate is better than one.
 - [ ] Tile visible (if not → Jordan must grant `jobstart`).
 - [ ] Bid list loads; you can pick a bid (open or accepted — whatever the page shows).
 - [ ] Prefill banner or source tags appear when scope review / board data exists.
+- [ ] Proposed job name shows **3 parts** with pipes (`Street, City, ST ZIP | Builder | Job Title`) — warn if `|` missing or Job Title blank.
 - [ ] Required fields clear; optional blocks don’t bury the form.
 - [ ] *(Real handoff only)* Send to Ops → Ops can see it; **do not Accept your own packet** unless you’re admin and mean to.
 - [ ] After a real Accept (Ops): Projects + Ops items exist, packet PDF in Drive Handoff/ — confirm once with Jordan/Ops.
