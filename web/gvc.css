@@ -839,4 +839,103 @@ a:hover{ color:var(--gvc-green-dark); }
 .gvc-deadline--ok{ border-left-color:var(--gvc-brand-mid); }
 .gvc-meter{ height:6px; border-radius:var(--gvc-r-pill); background:var(--gvc-brand-light); overflow:hidden; }
 .gvc-meter > i{ display:block; height:100%; background:var(--gvc-brand-mid); border-radius:var(--gvc-r-pill); }
+
+
+/* ============================================================
+   Status picker (.sp) — one value + Change → search / next / groups
+   ============================================================ */
+.sp {
+  background: var(--color-surface, var(--gvc-surface));
+  border: 1px solid var(--color-divider, var(--gvc-line));
+  border-radius: var(--radius-lg, var(--gvc-r-lg));
+  overflow: hidden;
+}
+.sp__row {
+  display: flex; align-items: center; gap: var(--space-3, 0.75rem);
+  padding: var(--space-3, 0.75rem) var(--space-5, 1.25rem);
+}
+.sp__meta { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.sp__label {
+  font-family: var(--font-mono, var(--gvc-mono));
+  font-size: var(--text-xs, 0.75rem);
+  letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--color-text-faint, var(--gvc-muted));
+}
+.sp__current { display: flex; align-items: center; gap: var(--space-2, 0.5rem); flex-wrap: wrap; }
+.sp__empty { font-size: var(--text-sm, 0.875rem); color: var(--color-text-faint, var(--gvc-muted)); }
+.sp__hint {
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--color-text-faint, var(--gvc-muted));
+  font-style: italic;
+}
+.sp__toggle { flex: 0 0 auto; min-height: 44px; }
+
+.sp__panel {
+  border-top: 1px solid var(--color-divider, var(--gvc-line));
+  background: var(--color-surface-2, var(--gvc-bg));
+  padding: var(--space-4, 1rem) var(--space-5, 1.25rem) var(--space-5, 1.25rem);
+  display: flex; flex-direction: column; gap: var(--space-4, 1rem);
+}
+.sp__panel[hidden] { display: none !important; }
+
+.sp__search {
+  width: 100%; min-height: 44px; padding: 10px 14px;
+  border: 1px solid var(--color-border, var(--gvc-line-strong));
+  border-radius: var(--radius-full, 9999px);
+  background: var(--color-surface, var(--gvc-surface));
+  font: inherit; font-size: var(--text-sm, 0.875rem);
+  box-sizing: border-box;
+}
+.sp__search:focus {
+  outline: none;
+  border-color: var(--color-accent, var(--gvc-gold));
+  box-shadow: 0 0 0 3px var(--color-primary-ring, rgba(21,66,48,.33));
+}
+
+.sp__block { display: flex; flex-direction: column; gap: var(--space-2, 0.5rem); }
+.sp__kicker {
+  font-family: var(--font-mono, var(--gvc-mono));
+  font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase;
+  color: var(--color-text-faint, var(--gvc-muted));
+}
+.sp__opts { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.sp__group { border-top: 1px solid var(--color-divider, var(--gvc-line)); }
+.sp__ghead {
+  width: 100%; display: flex; align-items: center; gap: var(--space-2, 0.5rem);
+  min-height: 44px; padding: 8px 2px; background: none; border: 0;
+  font: inherit; text-align: left; cursor: pointer; color: inherit;
+}
+.sp__gname { flex: 1; font-size: var(--text-sm, 0.875rem); font-weight: 600;
+             color: var(--color-text, var(--gvc-ink)); }
+.sp__ghead:hover .sp__gname { color: var(--color-primary, var(--gvc-green)); }
+.sp__gdot {
+  width: 7px; height: 7px; border-radius: var(--radius-full, 9999px);
+  background: var(--color-accent, var(--gvc-gold)); flex: 0 0 auto;
+}
+.sp__gcount {
+  font-family: var(--font-mono, var(--gvc-mono));
+  font-size: var(--text-xs, 0.75rem);
+  color: var(--color-text-faint, var(--gvc-muted));
+}
+.sp__gcaret { width: 12px; text-align: center; font-size: 11px;
+              color: var(--color-text-faint, var(--gvc-muted)); }
+.sp__group[data-open='false'] .sp__opts { display: none; }
+.sp__group .sp__opts { padding: 2px 0 var(--space-3, 0.75rem); }
+
+.chip--next {
+  background: var(--color-primary-soft, var(--gvc-tint-green));
+  border-color: var(--color-primary, var(--gvc-green));
+  color: var(--color-primary, var(--gvc-green));
+}
+.chip--next:hover {
+  background: var(--color-primary, var(--gvc-green));
+  color: var(--color-text-inverse, #fff);
+}
+
+@media (max-width: 620px) {
+  .sp .chip { min-height: 44px; padding-inline: 16px; }
+  .sp__toggle { min-height: 48px; }
+}
+
 /* ===================== END COMPONENTS ===================== */

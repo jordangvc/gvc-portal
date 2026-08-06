@@ -71,13 +71,11 @@
     justify-content: center; padding: 4px 10px; flex-shrink: 0; }
   .field .howto:hover { color: var(--gvc-green); }
   .field.dirty > .field-label-row > label::after,
-  .field.dirty > label::after { content: " •"; color: var(--gvc-gold-dark); }
-  /* Status picker — Command chips (visible pills); board hex colors tint the
-     active chip via GvcChips.statusChipset. */
-  .status-chips { width: 100%; }
-  .status-chips .chipset { display: block; width: 100%; }
-  .status-chips .chipset__opts { display: flex; flex-wrap: wrap; gap: 6px; }
-  .field.disabled .status-chips .chip { cursor: not-allowed; }
+  .field.dirty > label::after,
+  .field.dirty .sp__label::after { content: " •"; color: var(--gvc-gold-dark); }
+  /* Status picker — one gold value + Change (search / next / groups). */
+  .status-picker-host { width: 100%; }
+  .field.disabled .sp__toggle { display: none; }
   .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
     width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 14px; font-size: 16px;
     border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface); font-family: inherit; }
@@ -178,7 +176,7 @@
   </div>
 
   <div class="card" id="formcard" style="display:none;">
-    <h2>Quality check <span class="opt" style="text-transform:none;font-weight:400;">— pick a status for each step</span></h2>
+    <h2>Quality check <span class="opt" style="text-transform:none;font-weight:400;">— one status per field</span></h2>
     <div id="fields"></div>
     <div class="hint">Only the fields you change are saved. Money and contract columns can't be
       edited here by design.</div>
@@ -237,6 +235,7 @@
 </div>
 
 <script src="/ui/gvc-command.js"></script>
+<script src="/ui/gvc-status-picker.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
@@ -331,8 +330,8 @@ function fieldKey(col) {
 
 function statusSelectHtml(col) {
   const key = fieldKey(col);
-  // Placeholder host; GvcChips.statusChipset mounts in wireField.
-  return `<div class="status-chips" data-col="${esc(key)}"
+  // Host for GvcStatusPicker.mount — one value + Change (not a chip wall).
+  return `<div class="status-picker-host" data-col="${esc(key)}"
     aria-label="${esc(col.label)}"></div>`;
 }
 
@@ -358,6 +357,14 @@ function fieldHtml(col) {
   const howto = col.fieldguide_anchor
     ? `<a class="howto" href="/ui/fieldguide${esc(col.fieldguide_anchor)}" target="_self">How-to</a>`
     : "";
+  // Status picker owns its label (closed row). Other types keep the field label.
+  if (col.type === "status") {
+    const howtoRow = howto
+      ? `<div class="field-label-row" style="justify-content:flex-end;">${howto}</div>`
+      : "";
+    return `<div class="field${disabled ? " disabled" : ""}" data-field="${esc(key)}">
+      ${howtoRow}${control}</div>`;
+  }
   const labelRow = howto
     ? `<div class="field-label-row"><label>${esc(col.label)}</label>${howto}</div>`
     : `<label>${esc(col.label)}</label>`;
@@ -395,35 +402,26 @@ function wireField(col) {
   const root = document.querySelector(`.field[data-field="${CSS.escape(key)}"]`);
   if (!root) return;
   if (col.type === "status") {
-    const host = root.querySelector(".status-chips");
-    if (!host || typeof GvcChips === "undefined") return;
+    const host = root.querySelector(".status-picker-host");
+    if (!host || typeof GvcStatusPicker === "undefined") return;
     host.replaceChildren();
     const labelRows = (statusSeq[key] || []).filter(Boolean);
-    const labels = labelRows.map((l) => l.label).filter(Boolean);
-    const colors = {};
-    labelRows.forEach((l) => { if (l.label && l.hex) colors[l.label] = l.hex; });
     const writable = col.writable !== false;
-    const chipset = GvcChips.statusChipset({
+    const picker = GvcStatusPicker.mount({
       key,
-      name: key,
-      labels,
-      colors,
+      label: col.label || key,
+      labels: labelRows,
       value: current[key] ?? "",
-      emptyLabel: "(not set)",
-      dataset: { col: key },
+      writable,
       onChange: writable
         ? (v) => {
-            // "" is the explicit clear option — store null so the save sends a clear.
-            current[key] = v === "" ? null : v;
+            // "" / null = clear so the save sends a clear.
+            current[key] = v === "" || v == null ? null : v;
             refreshDirtyUi();
           }
         : undefined,
     });
-    chipset.setAttribute("aria-label", col.label || key);
-    if (!writable) {
-      chipset.querySelectorAll("button").forEach((b) => { b.disabled = true; });
-    }
-    host.appendChild(chipset);
+    host.appendChild(picker.el);
     return;
   }
   if (col.writable === false) return;
