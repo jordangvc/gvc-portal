@@ -21,6 +21,7 @@ from typing import Any, Callable, Optional
 from adapters.monday import cache as monday_cache
 from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID, PROJECTS_BOARD_ID
+from shared.doc_number import search_needles
 
 # ---------------------------------------------------------------------------
 # Column IDs (env-overridable; defaults match live boards / JOBSTART contract)
@@ -346,6 +347,27 @@ def _search_projects_rich_uncached(
         shaper=shape_project_item,
         log_prefix="monday-search",
     )
+    # Prefixed EST-/PRO-/INV- paste: also probe Project # with the bare core
+    # (and the other prefixed forms) so PRO-… cells still match.
+    for needle in search_needles(q)[1:]:
+        extra = _run_legs(
+            mc,
+            board_id=PROJECTS_BOARD_ID,
+            query=_PROJECT_SEARCH_QUERY,
+            q=needle,
+            legs=(("project_number", P_COL_PROJECT_NUMBER),),
+            shaper=shape_project_item,
+            log_prefix="monday-search",
+        )
+        for item_id, row in extra.items():
+            if item_id in merged:
+                fields = list(merged[item_id].get("match_fields") or [])
+                for f in row.get("match_fields") or []:
+                    if f not in fields:
+                        fields.append(f)
+                merged[item_id]["match_fields"] = fields
+            else:
+                merged[item_id] = row
     return rank_and_cap(
         list(merged.values()), q, id_field="project_number", limit=limit
     )
@@ -412,6 +434,27 @@ def _search_bids_rich_uncached(
         shaper=shape_bid_item,
         log_prefix="monday-search",
     )
+    # Bid Board Estimate # stores bare core — strip EST-/PRO-/INV- for a
+    # second probe so pasted outbound ids still hit.
+    for needle in search_needles(q)[1:]:
+        extra = _run_legs(
+            mc,
+            board_id=BID_BOARD_ID,
+            query=_BID_SEARCH_QUERY,
+            q=needle,
+            legs=(("estimate_number", B_COL_ESTIMATE_NUMBER),),
+            shaper=shape_bid_item,
+            log_prefix="monday-search",
+        )
+        for item_id, row in extra.items():
+            if item_id in merged:
+                fields = list(merged[item_id].get("match_fields") or [])
+                for f in row.get("match_fields") or []:
+                    if f not in fields:
+                        fields.append(f)
+                merged[item_id]["match_fields"] = fields
+            else:
+                merged[item_id] = row
     return rank_and_cap(
         list(merged.values()), q, id_field="estimate_number", limit=limit
     )

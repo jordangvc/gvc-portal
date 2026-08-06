@@ -58,6 +58,17 @@ The old HANDOFF-2026-07-30 §4.3 "show him then post" plan is cancelled.
 Authoritative: `docs/MORNING_BRIEF_BUILD_SPEC.md` §Slack + `AGENTS.md` locked #0.
 (Job Check / Job Start may still notify `#operations` — that is a different flow.)
 
+## 🔧 EST-/PRO-/INV- LOOKUP AUTOFILL — FIXED 2026-08-06 (r51)
+After the r26 spine (`EST-`/`PRO-`/`INV-` share one core), Find-the-Project stopped
+treating prefixed numbers as Project #s (`looksLikeProjectNumber` only knew bare
+`YYYY-MMDD-NNN` + legacy `C-/MV-`). Pasting `PRO-…` / `EST-…` fell through to
+free-text search and INV- never auto-filled. Also: Bid Board Estimate # stores the
+**bare** core, so searching `EST-…` missed the cell; invoice lookup now falls back
+to the linked bid's Estimate # when Projects Project # is empty.
+BUILT: `web/invoice.html` classifier accepts EST|PRO|INV; `shared.doc_number.search_needles`
++ estimate/bid/project Monday search probes bare core; `get_project_context` soft-fills
+INV-/PRO- from bid Estimate #. Hub footer **r51**. Tests: `tests/test_doc_number.py`.
+
 ## ✨ PERSONAL HUB r50 — role-correct homes for team use — BUILT 2026-08-06
 Finish pass so Sales / GM / Office / Field / Owner each land on the right home shape.
 • `resolve_role`: owner ONLY via `morning_owner` (bare `admin` no longer → Owner Pulse);

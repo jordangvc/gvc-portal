@@ -18,6 +18,7 @@ from shared.doc_number import (  # noqa: E402
     for_project,
     is_spine_number,
     monday_estimate_cell,
+    search_needles,
     with_prefix,
 )
 from subsystems.estimate.number import (  # noqa: E402
@@ -58,11 +59,33 @@ check("for_invoice keeps Rev",
 check("legacy passthrough", for_invoice("GVC-2026-C-005") == "GVC-2026-C-005")
 check("monday cell is bare",
       monday_estimate_cell("EST-2026-0804-001") == "2026-0804-001")
+check("search needles EST- → typed + core",
+      search_needles("EST-2026-0804-007") == ["EST-2026-0804-007", "2026-0804-007"])
+check("search needles PRO- → typed + core",
+      search_needles("PRO-2026-0804-007") == ["PRO-2026-0804-007", "2026-0804-007"])
+check("search needles bare is single",
+      search_needles("2026-0804-007") == ["2026-0804-007"])
+check("search needles empty", search_needles("  ") == [])
+check("search needles legacy passthrough",
+      search_needles("C-005") == ["C-005"])
 check("same core across kinds",
       core_number(for_estimate("2026-0804-007"))
       == core_number(for_project("2026-0804-007"))
       == core_number(for_invoice("2026-0804-007"))
       == "2026-0804-007")
+
+# Invoice Find-the-Project must recognize prefixed spine numbers (r26 gap).
+_invoice_html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text(
+    encoding="utf-8")
+check("invoice looksLike accepts EST|PRO|INV",
+      "EST|PRO|INV" in _invoice_html and "looksLikeProjectNumber" in _invoice_html)
+
+# INV- autofill prefers project_number; bare estimate spine is enough when
+# Project # is missing (Look-up-&-fill path).
+check("INV from bid estimate spine",
+      for_invoice("2026-0804-009") == "INV-2026-0804-009")
+check("INV from EST- spine",
+      for_invoice("EST-2026-0804-009") == "INV-2026-0804-009")
 
 # --- estimate number ---------------------------------------------------------
 

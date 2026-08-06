@@ -1060,8 +1060,11 @@ function looksLikeMondayRef(s) {
 }
 function looksLikeProjectNumber(s) {
   const t = (s || "").trim();
-  // Legacy series (C-005 / MV-001) or estimate-style spine (2026-0615-002).
-  return /^(C|MV)-\d+/i.test(t) || /^\d{4}-\d{4}-\d{2,}$/.test(t);
+  // Legacy series (C-005 / MV-001), bare spine (2026-0615-002), or
+  // EST-/PRO-/INV- prefixed spine (portal r26+).
+  return /^(C|MV)-\d+/i.test(t)
+    || /^(EST|PRO|INV)-\d{4}-\d{4}-\d{2,}$/i.test(t)
+    || /^\d{4}-\d{4}-\d{2,}$/.test(t);
 }
 function mondayItemIdFromRef(s) {
   const m = String(s || "").match(/\/pulses\/(\d+)/);

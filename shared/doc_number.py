@@ -91,3 +91,21 @@ def for_invoice(value: Optional[str]) -> str:
 def monday_estimate_cell(value: Optional[str]) -> str:
     """Value to write into Bid Board Estimate # (numbers column) — bare core."""
     return core_number(value) or (value or "").strip()
+
+
+def search_needles(value: Optional[str]) -> list[str]:
+    """
+    Query variants for Monday contains_text search on spine numbers.
+
+    Monday stores Bid Board Estimate # as bare core and Projects Project # as
+    PRO-{core}. Pasting EST-/PRO-/INV-… must still hit those cells, so we
+    search both the typed string and the bare core when present.
+    """
+    raw = (value or "").strip()
+    if not raw:
+        return []
+    out: list[str] = []
+    for candidate in (raw, core_number(raw) or ""):
+        if candidate and candidate not in out:
+            out.append(candidate)
+    return out

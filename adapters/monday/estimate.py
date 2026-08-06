@@ -36,7 +36,7 @@ from typing import Optional
 from adapters.monday import cache as monday_cache
 from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID
-from shared.doc_number import is_spine_number
+from shared.doc_number import is_spine_number, search_needles
 NEW_DEALS_GROUP_ID = "new_group__1"  # "New Deals (For Estimate)" — leads awaiting an estimate
 OPEN_DEALS_GROUP_ID = "topics"       # "Open Deals" — estimate sent / deal open
 
@@ -348,8 +348,10 @@ def _search_bids_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
       }
     }
     """
+    # EST-/PRO-/INV- paste must hit Monday's bare-core Estimate # cell.
+    needles = search_needles(q) or [q]
 
-    def _leg(column_id: str):
+    def _leg(column_id: str, value: str):
         # Fresh session per leg — requests.Session is not thread-safe.
         token = None
         try:
@@ -360,15 +362,20 @@ def _search_bids_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
         return local._query(query, {
             "boardId": [str(BID_BOARD_ID)],
             "columnId": column_id,
-            "value": q,
+            "value": value,
         })
 
     results: dict[int, dict] = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        futs = {pool.submit(_leg, col): col
-                for col in ("name", COL_ESTIMATE_NUMBER)}
+    # Name search uses the typed string; Estimate # search uses every needle
+    # (prefixed + bare core) so EST-… still finds bare YYYY-MMDD-NNN cells.
+    work: list[tuple[str, str]] = [("name", needles[0])]
+    for needle in needles:
+        work.append((COL_ESTIMATE_NUMBER, needle))
+
+    with ThreadPoolExecutor(max_workers=min(4, len(work))) as pool:
+        futs = {pool.submit(_leg, col, val): (col, val) for col, val in work}
         for fut in as_completed(futs):
-            column_id = futs[fut]
+            column_id, _val = futs[fut]
             try:
                 data = fut.result()
             except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other

@@ -959,29 +959,11 @@ class MondayClient:
         # ---- Project # → invoice Document # = INV-{same core} ----
         # Estimate assigns the core once (EST-…); Job Start stamps PRO-… on
         # the project; invoicing uses INV-… — letters change, number doesn't.
+        # When Project # is still empty, fall back to the linked bid's
+        # Estimate # so Look-up-&-fill still auto-populates the invoice number.
         project_number = col_text(COL_PROJECT_NUMBER)
         if project_number and is_spine_number(project_number):
             project_number = for_project(project_number)
-        suggested_identifier = (
-            for_invoice(project_number) if project_number else None
-        )
-
-        job: dict = {"name": project["name"], "monday_item_id": int(item_id)}
-        if site_address:
-            job["site_address"] = site_address
-        if project_type:
-            job["project_type"] = project_type
-        if monday_job_type:
-            job["monday_job_type"] = monday_job_type
-        if project_number:
-            job["project_number"] = project_number
-        if drive_project_folder_url:
-            job["drive_project_folder_url"] = drive_project_folder_url
-
-        invoice: dict = {}
-        if suggested_identifier:
-            invoice["identifier"] = suggested_identifier
-        scope = col_text(COL_SCOPE_DETAILS)
 
         # ---- Estimate $ import shortcut (Bid Board rounded total) ----
         # Best-effort only: dollars still come from the office below unless
@@ -1001,6 +983,32 @@ class MondayClient:
                     "enter dollars manually or try the import card again."
                 )
 
+        spine_src = project_number or bid_estimate_number
+        suggested_identifier = (
+            for_invoice(spine_src) if spine_src and is_spine_number(spine_src) else None
+        )
+
+        job: dict = {"name": project["name"], "monday_item_id": int(item_id)}
+        if site_address:
+            job["site_address"] = site_address
+        if project_type:
+            job["project_type"] = project_type
+        if monday_job_type:
+            job["monday_job_type"] = monday_job_type
+        if project_number:
+            job["project_number"] = project_number
+        elif bid_estimate_number and is_spine_number(bid_estimate_number):
+            # Soft-fill Project # from the estimate spine so finalize can also
+            # derive INV-… when the office accepts without retyping.
+            job["project_number"] = for_project(bid_estimate_number)
+        if drive_project_folder_url:
+            job["drive_project_folder_url"] = drive_project_folder_url
+
+        invoice: dict = {}
+        if suggested_identifier:
+            invoice["identifier"] = suggested_identifier
+        scope = col_text(COL_SCOPE_DETAILS)
+
         notes.append("Line items and amounts aren't stored on the project — add them below.")
         return {
             "client": client,
@@ -1009,7 +1017,7 @@ class MondayClient:
             "_matched": {
                 "item_id": int(item_id),
                 "item_name": project["name"],
-                "project_number": project_number,
+                "project_number": project_number or job.get("project_number"),
                 "url": project.get("url") or (
                     f"https://greenvalleycontractors.monday.com/boards/"
                     f"{PROJECTS_BOARD_ID}/pulses/{item_id}"),
