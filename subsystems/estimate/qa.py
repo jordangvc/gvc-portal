@@ -12,6 +12,7 @@ import re
 from typing import Any, Optional
 from urllib.parse import quote
 
+from shared.doc_number import core_number
 from shared.recipients import (
     customer_emails_from_client,
     is_no_email_client,
@@ -39,9 +40,15 @@ def portal_base_url() -> str:
 
 
 def portal_estimate_url(identifier: str) -> str:
-    """Deep link into the estimate tool with the estimate number prefilled."""
+    """Deep link into the estimate tool with the estimate number prefilled.
+
+    Prefer bare core in `q=` — Bid Board Estimate # stores bare YYYY-MMDD-NNN,
+    so EST-/PRO-/INV- deep links would miss until search normalizes. Search
+    already probes both forms; bare core is the reliable Monday match.
+    """
     ident = (identifier or "").strip()
-    return f"{portal_base_url()}/ui/estimate?q={quote(ident, safe='')}"
+    q = core_number(ident) or ident
+    return f"{portal_base_url()}/ui/estimate?q={quote(q, safe='')}"
 
 
 def _digits_as_cents(value: Any) -> str:
