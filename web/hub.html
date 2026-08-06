@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC · Your hub</title>
+<script>
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 </head>
 <body>
@@ -24,6 +38,7 @@
         <div class="hub-rail__user-name" id="railname">…</div>
         <div class="hub-rail__user-role" id="railrole"></div>
       </div>
+      <button type="button" class="hub-rail__signout" id="theme-toggle-rail" data-theme-label>Auto</button>
       <a class="hub-rail__signout" href="/auth/logout">Sign out</a>
     </div>
   </aside>
@@ -111,7 +126,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r51</b> · Aug 6, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r52</b> · Aug 6, 2026</span>
         </div>
       </div>
     </div>
@@ -152,13 +167,19 @@
       <div class="hub-rail__user-name" id="drawername">…</div>
       <div class="hub-rail__user-role" id="drawerrole"></div>
     </div>
+    <button type="button" class="hub-rail__signout" id="theme-toggle-drawer" data-theme-label>Auto</button>
     <a class="hub-rail__signout" href="/auth/logout">Sign out</a>
   </div>
 </aside>
 
+<script src="/ui/gvc-theme.js"></script>
 <script>
 (function () {
   "use strict";
+  if (window.GvcTheme) {
+    window.GvcTheme.mount(document.getElementById("theme-toggle-rail"));
+    window.GvcTheme.mount(document.getElementById("theme-toggle-drawer"));
+  }
   const FEATURES = new Set({{FEATURES_JSON}});
   const EMAIL = {{EMAIL_JSON}};
   const RECENT_KEY = "gvc_hub_recent_v1";

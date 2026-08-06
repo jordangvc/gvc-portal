@@ -204,20 +204,23 @@ and aborts without writing if it isn't).
    compliance documents: a wrong one documents non-compliance, so they want
    careful drafting and a real review, not a fast pass.
 
-3. **Who owns `gvc.css`, and can dark mode go in it?** Jordan said yes to dark
-   mode and asked for a **toggle** (OS preference as default, control to
-   override, remembered per person). `gvc.css` has **zero** dark hooks today and
-   is now the file every page will depend on — so this is a portal-wide change to
-   a file another session is actively building against. Settle ownership first.
+3. **Who owns `gvc.css`, and can dark mode go in it?** ✅ STARTED 2026-08-06 (r52).
+   Jordan said yes to dark mode and asked for a **toggle** (OS preference as default,
+   control to override, remembered per person). `web/gvc.css` already had emerald
+   `data-theme=light|dark` token remaps; what was missing was the remembered toggle
+   + FOUC-safe boot. Shipped: `web/gvc-theme.js` + `GET /ui/gvc-theme.js`, wired on
+   **Hub + Field Manual** first (Auto → Light → Dark cycle, key `gvc-theme`). Other
+   pages still hardcode light until opted in. Remaining: roll the script onto the
+   rest of `web/*.html`.
 
 4. **Trade review** of Cabinets / Doors / FRP / Tectum by someone who installs
    them daily.
 
-5. **Is the active-job list acceptable at baseline?** `GET /ui/api/fieldguide/jobs`
-   is gated by `fieldguide`, which is baseline — so every signed-in employee can
-   list active job names and addresses. Judged not confidential and necessary for
-   crews to pick their job, but it's Jordan's call. To narrow it, gate that one
-   route on `jobcheck` and have crew pick from a text field.
+5. **Is the active-job list acceptable at baseline?** ✅ TIGHTENED 2026-08-06 (r52).
+   `GET /ui/api/fieldguide/jobs` now requires `jobcheck` (not baseline `fieldguide`).
+   Field Manual page + checklist runs stay on `fieldguide`. Without Job Check the
+   sheet offers a typed job label + "Start without a job" — no Monday job
+   enumeration for every signed-in employee.
 
 ---
 
@@ -236,11 +239,16 @@ Text/Skim, RFI Field, Talking to the GC, Ops Lead, Receiving & Freight, Scaffold
 on `gvc-invoice-00133-hq4`. Hub **r36**.
 
 ### Still queued
-- The remaining 9–12 diagrams (list in §4).
-- Migrate the page onto `gvc.css` once §6.3 is settled.
-- Photos for hard-to-diagram defects.
-- **AI roadmap** under `#ai-roadmap` (document only until prioritized).
-- Optional later: abuse-board, plywood-backing, auto-tools deep dive.
+- A few remaining diagrams (Z-furring, tall-wall levers, tile edges) + photos.
+- Roll `gvc-theme.js` onto remaining `web/*.html` pages (Hub + Field Manual done, r52).
+- Photo QC / morning-prep / CO-spotter coaches (Checklist coach LIVE).
+- Optional later: auto-tools deep dive.
+
+### Done 2026-08-06 — systems slice (r52)
+- **Theme toggle** (`web/gvc-theme.js`): OS default + remembered Auto/Light/Dark on Hub + Field Manual.
+- **Jobs list gate**: `/ui/api/fieldguide/jobs` requires `jobcheck`; typed label fallback on the sheet.
+- **Checklist coach LIVE**: `GET /ui/api/fieldguide/coach` + Coach button on procedures (deterministic; no LLM / no Job Check writes).
+- **+8 diagrams** (deflection heads, CRC+anchor, strap-and-block, coat progression, butterfly patch, FRP gaps, ACT borders, HW-D joint) → 11 total SVGs.
 
 ---
 

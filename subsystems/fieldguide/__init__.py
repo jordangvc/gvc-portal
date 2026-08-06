@@ -1,1 +1,1 @@
-"""Field Manual subsystem — resumable per-job procedure checklists."""
+"""Field Manual subsystem — resumable checklists + deterministic coach."""
