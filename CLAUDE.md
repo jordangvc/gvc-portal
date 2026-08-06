@@ -11,6 +11,27 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — onboarding + leadership + ops slice — BUILT 2026-08-06
+Gap analysis (3 parallel agents: trades/ops, onboarding/training, leadership/AI)
+against live `/ui/fieldguide`. Manual was trade-strong and almost empty as a
+company operating / ramp book.
+BUILT in `web/fieldguide.html` (+ hub **r35**): new home groups **Onboarding &
+training** and **How we run the day**, plus 14 procedures — `#onboard-week1`,
+`#safety-orient` (+ silica expert), `#dont`, `#track-laborer`, `#track-lead`,
+`#portal-field-tools` (Job Check how-to + Morning Brief never `#operations`),
+`#morning-rhythm`, `#lead-day`, `#escalate`, `#qc-walk`, `#ai-field-rules`
+(+ `#ai-roadmap` future agents, not built), `#jobstart-firstday`,
+`#preboard-walk`, `#cleanout`. Component Index + Glossary ops terms updated;
+Sources notes onboarding pages = GVC practice not OSHA/HR. Totals ~39 sections,
+416 checkboxes, 37 expert blocks; JS `node --check` clean; all tile/`data-jump`
+targets resolve.
+NOT DEPLOYED. DEPLOY (admin): `--source .` → smoke `/ui/fieldguide` as baseline
+user → Onboarding tiles → Safety → Portal Tools shows `#operations` rule → Lead
+Day checklist run against a job.
+NEXT (backlog in `docs/HANDOFF-field-manual.md` §7): Job Check deep-links;
+cement-board / window-returns / sound-walls / job-conditions; hanger/finisher/ACT
+tracks; skill ladder; diagrams/photos.
+
 ## 🔒 Morning Brief Slack — NEVER `#operations` (Jordan 2026-08-05)
 Morning Brief / field brief / huddle summary / route sheet / prep status is
 **always a side chat or DM**. Do not post it to Slack `#operations`
