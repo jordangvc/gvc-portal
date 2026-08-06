@@ -207,12 +207,15 @@
 
   <div class="card" id="namecard" style="display:none;">
     <h2>Job name</h2>
-    <input id="jobname" type="text" placeholder="Street, City, ST ZIP | Builder" />
+    <input id="jobname" type="text" placeholder="Street, City, ST ZIP | Builder | Job Title" />
     <div id="namenote" class="hint"></div>
-    <div class="hint"><b>GVC standard:</b> <code>Street Number Name, City, ST ZIP | Builder</code> —
-      pipe separator; include city, state and ZIP (we work in three states with shared road names).
+    <div class="hint"><b>GVC standard:</b>
+      <code>Street Number Name, City, ST ZIP | Builder | Job Title</code>
+      — pipe separators; city, state and ZIP required; Job Title is the third part.
+      Residential Job Title = <code>Smith residence</code>.
+      Commercial Job Title = the business name (<code>First Financial Bank</code>).
       Job type stays in the fields. Example:
-      <code>9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek</code></div>
+      <code>9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence</code></div>
   </div>
 
   <div class="card" id="reqcard" style="display:none;">
@@ -929,8 +932,11 @@ $("#gcemail").addEventListener("click", draftGcEmail);
 $("#jobname").addEventListener("input", () => {
   jobName = $("#jobname").value;
   let tip = "";
-  if (!jobName.includes("|")) {
-    tip = "Missing the | separator — GVC standard is Street, City, ST ZIP | Builder.";
+  const parts = jobName.split("|").map((p) => p.trim()).filter(Boolean);
+  if (parts.length < 2) {
+    tip = "Missing the | separators — standard is Street, City, ST ZIP | Builder | Job Title.";
+  } else if (parts.length < 3) {
+    tip = "Add the Job Title (third part): residential = \"Smith residence\"; commercial = business name.";
   } else if (!/\b\d{5}\b/.test(jobName)) {
     tip = "Add the ZIP (and city/state) — same road names exist in OH, IN, and KY.";
   }

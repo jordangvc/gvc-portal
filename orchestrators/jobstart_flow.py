@@ -625,20 +625,37 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
             "help": field["help"], "labels": labels.get(field["key"]) or [],
         })
 
-    # ---- Job name in Jake's pipe standard (Jordan, 2026-07-29: "We prefer the
-    # -Pipe- | it looks so much better"). A name already saved on the packet wins
-    # — it's what a human decided. Otherwise suggest the standard form, and if a
-    # piece is missing say so rather than guessing (Jake's own rule).
+    # ---- Job name — 3-part pipe (Jordan 2026-08-06):
+    # Street, City, ST ZIP | Builder | Job Title
+    # A name already saved on the packet wins — it's what a human decided.
+    # Otherwise suggest the standard form, and if a piece is missing say so
+    # rather than guessing (Jake's own rule).
     from subsystems.jobstart import naming as _naming
+    from adapters.monday.jobstart import looks_like_person_name
+
+    ctx = bid.get("context") or {}
+    customer = (ctx.get("customer") or "").strip() or None
+    ptype = (values.get("project_type")
+             or (bid.get("prefill") or {}).get("project_type")
+             or "").strip() or None
+    # Soft job-title hints only from recorded facts — never invent a business
+    # or homeowner. Residential: person-like Customer → last name residence.
+    # Commercial: do NOT use the GC/customer as the business job title.
+    homeowner = None
+    if ptype and "res" in ptype.lower() and customer and looks_like_person_name(customer):
+        homeowner = customer
 
     saved_name = (saved or {}).get("job_name")
     std = _naming.to_standard(
         bid["name"],
-        customer_hint=(bid.get("context") or {}).get("customer"),
-        location_hint=(bid.get("context") or {}).get("location"))
+        customer_hint=customer,
+        location_hint=ctx.get("location"),
+        project_type=ptype,
+        homeowner_last=homeowner,
+    )
     backfill_builder(
         values, sources, std=std,
-        customer=(bid.get("context") or {}).get("customer"))
+        customer=customer)
     # Soft finish/spec defaults need a known builder — run AFTER backfill so a
     # customer/pipe-derived builder still unlocks prior-job ceiling/garage/etc.
     for key, val in _history_values(bid, values).items():
@@ -647,12 +664,21 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
             sources[key] = ingest.SOURCE_HISTORY
     if saved_name:
         suggested_name = saved_name
-        naming_info = {"standard": _naming.is_standard(saved_name),
-                       "suggestion": std["name"], "note": std["note"]}
+        naming_info = {
+            "standard": _naming.is_standard(saved_name),
+            "suggestion": std["name"],
+            "note": std["note"],
+            "job_title": std.get("job_title"),
+        }
     else:
         suggested_name = std["name"] or bid["name"]
-        naming_info = {"standard": std["ok"], "suggestion": std["name"],
-                       "note": std["note"], "original": bid["name"]}
+        naming_info = {
+            "standard": std["ok"],
+            "suggestion": std["name"],
+            "note": std["note"],
+            "original": bid["name"],
+            "job_title": std.get("job_title"),
+        }
 
     missing = missing_required(values)
     status = (saved or {}).get("status") or drafts.STATUS_DRAFT
