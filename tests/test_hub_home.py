@@ -90,9 +90,10 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r47 footer", ">r47<" in hub)
+    check("r48 footer", ">r48<" in hub)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
+    check("quiet cta", "hub-home-cta--quiet" in hub)
     check("demo mode", "demoPayload" in hub)
     check("EMAIL_JSON inject", "{{EMAIL_JSON}}" in hub)
     check("pin control", "data-pin" in hub)
@@ -101,7 +102,12 @@ def test_hub_files_and_route() -> None:
     check("clear gold inset", "hub-clear" in css and "inset 3px" in css)
     check("desktop header stays", "hub-top { display: none" not in css)
     check("home cta css", ".hub-home-cta" in css)
+    check("quiet cta css", ".hub-home-cta--quiet" in css)
+    check("unavailable metric", ".hub-metric.is-unavailable" in css)
     check("urgent need css", ".hub-need.is-urgent" in css)
+    check("tablet dock until 1024",
+          ".hub-dock { display: none" in css.split("@media (min-width: 1024px)")[1].split("@media")[0]
+          or "1024px" in css and "hub-dock" in css)
     check("solid skel no shimmer",
           ".hub-skel" in css and "gvc-shimmer" not in css.split("Hub shell")[-1].split("END COMPONENTS")[0])
     check("rise motion", "@keyframes hub-rise" in css)
@@ -118,7 +124,7 @@ def test_hub_files_and_route() -> None:
 
 
 def test_need_urgent_flag() -> None:
-    from orchestrators.hub_flow import _need
+    from orchestrators.hub_flow import _need, _metric, _human_activity, _age_amount
 
     safe = _need(kind="Safety", amount="Stop", title="A", detail="d",
                  action="Open", href="/x")
@@ -129,6 +135,49 @@ def test_need_urgent_flag() -> None:
     forced = _need(kind="Ask", amount="1", title="C", detail="d",
                    action="Open", href="/x", urgent=True)
     check("forced urgent", forced["urgent"] is True)
+    dash = _metric("Ready", "—", "x")
+    check("dash unavailable", dash["unavailable"] is True and dash["zero"] is False)
+    zero = _metric("Ready", 0, "x")
+    check("zero live empty", zero["zero"] is True and zero["unavailable"] is False)
+    check("noise filtered", _human_activity("hub.open", "a") is None)
+    check("jobcheck label", "Job check" in (_human_activity("jobcheck.save", "X") or ""))
+    check("age amount", "d" in _age_amount("2026-07-01", prefix="Ready"))
+
+
+def test_office_queue_ids_and_handoffs() -> None:
+    from orchestrators import hub_flow
+
+    billing = {
+        "counts": {
+            "ready_to_invoice": 1, "needs_handoff": 1,
+            "accepted_bids": 1, "projects_billing": 0,
+        },
+        "queues": {
+            "ready_to_invoice": [{
+                "name": "Ready Job", "item_id": "ops1",
+                "project_item_id": "proj9",
+                "ready_date": "2026-08-01",
+                "invoice_href": "/ui/billing?x=1",
+                "builder": "ACME",
+                "status_labels": ["Ready 2026-08-01"],
+            }],
+            "accepted_bids": [{
+                "name": "Won Bid", "item_id": "bid7",
+                "needs_handoff": True,
+                "accepted_date": "2026-07-15",
+                "jobstart_href": "/ui/jobstart?bid=bid7",
+                "builder": "Builder",
+            }],
+        },
+    }
+    out = hub_flow._build_office("office@x.com", billing, None)
+    check("has handoff need", any(n["kind"] == "Handoff" for n in out["needs"]))
+    check("has invoice need", any(n["kind"] == "Invoice" for n in out["needs"]))
+    check("queue ids present", all(r.get("id") for r in out["queue_rows"]))
+    check("project id preferred",
+          any(r.get("id") == "proj9" for r in out["queue_rows"]))
+    inv = next(n for n in out["needs"] if n["kind"] == "Invoice")
+    check("ready amount aged", "Ready" in inv["amount"])
 
 
 if __name__ == "__main__":
@@ -137,4 +186,5 @@ if __name__ == "__main__":
     test_hub_payload_shape()
     test_hub_files_and_route()
     test_need_urgent_flag()
+    test_office_queue_ids_and_handoffs()
     print("ALL PASSED")

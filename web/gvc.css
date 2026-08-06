@@ -1039,7 +1039,10 @@ a:hover{ color:var(--gvc-green-dark); }
 .hub-rail__item.is-active {
   background: var(--color-primary-soft, var(--gvc-tint-green));
   color: var(--color-primary, var(--gvc-green));
-  box-shadow: inset 2px 0 0 var(--color-primary, var(--gvc-green));
+  /* Command selection: primary left bar + gold bottom accent */
+  box-shadow:
+    inset 2px 0 0 var(--color-primary, var(--gvc-green)),
+    inset 0 -2px 0 var(--color-accent, var(--gvc-gold));
   font-weight: 600;
 }
 .hub-rail__item.is-dim {
@@ -1157,6 +1160,18 @@ a:hover{ color:var(--gvc-green-dark); }
   background: var(--color-primary-hover, var(--gvc-green-dark));
   border-color: var(--color-primary-hover, var(--gvc-green-dark));
 }
+/* Outline/ghost so a primary needs-CTA can win on phone */
+.hub-home-cta--quiet {
+  background: transparent;
+  color: var(--color-primary, var(--gvc-green));
+  border-color: var(--color-primary, var(--gvc-green));
+  box-shadow: none;
+}
+.hub-home-cta--quiet:hover {
+  background: var(--color-primary-soft, var(--gvc-tint-green));
+  border-color: var(--color-primary, var(--gvc-green));
+  color: var(--color-primary, var(--gvc-green));
+}
 .hub-kicker {
   display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
   font-family: var(--font-mono, var(--gvc-mono));
@@ -1181,6 +1196,16 @@ a:hover{ color:var(--gvc-green-dark); }
   text-transform: none;
 }
 .hub-kicker__count[hidden] { display: none !important; }
+/* Urgency chrome — danger soft/border/ink (not gold) when alerts need attention */
+#app.is-alerts .hub-kicker__count,
+.hub-kicker--needs.has-urgent .hub-kicker__count {
+  background: var(--color-danger-soft, #e4dcd7);
+  color: var(--color-danger, #6b4038);
+  border-color: var(--color-danger, #6b4038);
+}
+.hub-kicker--needs.is-flash {
+  box-shadow: inset 0 -2px 0 var(--color-accent, var(--gvc-gold));
+}
 .hub-needs { display: grid; gap: 12px; margin-bottom: 22px; }
 .hub-need {
   background: var(--color-surface, var(--gvc-surface));
@@ -1254,7 +1279,7 @@ a:hover{ color:var(--gvc-green-dark); }
   min-height: 88px;
 }
 .hub-metric.is-live {
-  box-shadow: inset 2px 0 0 var(--color-primary, var(--gvc-green));
+  box-shadow: inset 3px 0 0 var(--color-primary, var(--gvc-green));
 }
 .hub-metric__label {
   font-family: var(--font-mono, var(--gvc-mono));
@@ -1271,6 +1296,11 @@ a:hover{ color:var(--gvc-green-dark); }
 .hub-metric.is-zero .hub-metric__value {
   color: var(--color-text-faint, var(--gvc-muted));
   font-weight: 600;
+}
+/* Em-dash / unavailable — quieter than live empty 0 (.is-zero) */
+.hub-metric.is-unavailable .hub-metric__value {
+  color: var(--color-text-faint, var(--gvc-muted));
+  font-weight: 500;
 }
 .hub-metric__foot {
   font-size: var(--text-xs, 0.75rem);
@@ -1315,9 +1345,15 @@ a:hover{ color:var(--gvc-green-dark); }
 }
 .hub-qrow:first-child { border-top: 0; }
 @media (hover: hover) {
-  a.hub-qrow:hover { background: var(--color-surface-2, var(--gvc-bg)); }
+  .hub-qrow:hover { background: var(--color-surface-2, var(--gvc-bg)); }
 }
-.hub-qrow__meta { flex: 1 1 auto; min-width: 0; }
+.hub-qrow__meta {
+  flex: 1 1 auto; min-width: 0;
+  text-decoration: none; color: inherit;
+}
+a.hub-qrow__meta {
+  text-decoration: none; color: inherit;
+}
 .hub-qrow__name {
   font-size: var(--text-sm, 0.875rem); font-weight: 600;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
@@ -1392,6 +1428,10 @@ a:hover{ color:var(--gvc-green-dark); }
   color: var(--color-primary, var(--gvc-green));
   box-shadow: inset 0 2px 0 var(--color-accent, var(--gvc-gold));
 }
+/* Alerts tab: keep gold top accent; danger ink when #app is in alerts mode */
+#app.is-alerts .hub-dock__btn[data-dock=alerts].is-active {
+  color: var(--color-danger, #6b4038);
+}
 .hub-dock__ico {
   width: 22px; height: 22px; display: inline-flex;
   align-items: center; justify-content: center;
@@ -1406,10 +1446,15 @@ a:hover{ color:var(--gvc-green-dark); }
   font-family: var(--font-mono, var(--gvc-mono));
   font-size: 10px; line-height: 16px; text-align: center; font-weight: 700;
 }
+.hub-dock__badge.is-urgent {
+  background: var(--color-danger, #6b4038);
+  color: var(--color-text-inverse, #fff);
+}
 .hub-dock__badge[hidden] { display: none !important; }
 .hub-drawer-backdrop {
   display: none; position: fixed; inset: 0; z-index: 8;
-  background: rgba(16, 17, 17, 0.45);
+  /* Solid scrim — Command bans opacity fades; drawer sits opaque above */
+  background: var(--color-text, #101111);
 }
 .hub-drawer-backdrop.is-open { display: block; }
 .hub-drawer {
@@ -1541,7 +1586,8 @@ a:hover{ color:var(--gvc-green-dark); }
 .hub-pin:focus-visible,
 .hub-top__menu:focus-visible,
 .hub-recent a:focus-visible,
-.hub-home-cta:focus-visible {
+.hub-home-cta:focus-visible,
+.hub-qrow__meta:focus-visible {
   outline: 2px solid var(--color-accent, var(--gvc-gold));
   outline-offset: 2px;
 }
@@ -1559,13 +1605,14 @@ a:hover{ color:var(--gvc-green-dark); }
 .hub-toast.is-on { display: block; }
 
 @media (min-width: 768px) {
-  .hub-dock { display: none; }
-  .hub-body { padding: 20px 28px 40px; }
+  /* Dock stays visible through tablet (<1024); keep bottom clearance for it */
+  .hub-body { padding: 20px 28px calc(88px + env(safe-area-inset-bottom, 0px)); }
   .hub-home-cta { width: auto; }
-  .hub-drawer, .hub-drawer-backdrop { display: none !important; }
-  .hub-toast { bottom: 24px; }
 }
 @media (min-width: 1024px) {
+  .hub-dock { display: none; }
+  .hub-drawer, .hub-drawer-backdrop { display: none !important; }
+  .hub-toast { bottom: 24px; }
   .hub-app { grid-template-columns: 264px minmax(0, 1fr); }
   .hub-rail { display: flex; }
   .hub-top__menu { display: none; }
@@ -1573,10 +1620,10 @@ a:hover{ color:var(--gvc-green-dark); }
     padding-left: 28px; padding-right: 28px;
     padding-top: 8px;
   }
-  .hub-body { padding-top: 24px; }
+  .hub-body { padding: 24px 28px 40px; }
   .hub-greet { font-size: clamp(1.85rem, 2.4vw, 2.35rem); }
   .hub-metrics {
-    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
   }
   .hub-metric__value { font-size: 27px; }
   .hub-cols {

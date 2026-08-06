@@ -111,7 +111,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r47</b> · Aug 6, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r48</b> · Aug 6, 2026</span>
         </div>
       </div>
     </div>
@@ -311,6 +311,13 @@
         countEl.textContent = "";
       }
     }
+    const hasUrgent = !clear && list.some((n) => n.urgent || isUrgentKind(n.kind));
+    const kick = $("needs-kicker");
+    if (kick) kick.classList.toggle("has-urgent", !!hasUrgent);
+    const app = $("app");
+    if (app) app.classList.toggle("is-alerts", !!hasUrgent);
+    const badge = $("alertbadge");
+    if (badge) badge.classList.toggle("is-urgent", !!hasUrgent);
     if (clear) {
       const line = payload.summary || "You're clear.";
       const first = line.split(/[.!?]/)[0];
@@ -341,10 +348,17 @@
 
   function renderMetrics() {
     $("metrics").innerHTML = (payload.metrics || []).map((m) => {
-      const zero = m.zero || m.value === 0 || m.value === "0" || m.value === "—";
-      const live = !zero && m.value !== "—" && m.value != null && m.value !== "";
+      const unavailable = m.unavailable || m.value === "—";
+      const zero = !unavailable && (m.zero || m.value === 0 || m.value === "0");
+      const live = !unavailable && !zero && m.value != null && m.value !== "";
+      const cls = [
+        "hub-metric",
+        zero ? "is-zero" : "",
+        unavailable ? "is-unavailable" : "",
+        live ? "is-live" : "",
+      ].filter(Boolean).join(" ");
       return (
-        `<div class="hub-metric${zero ? " is-zero" : ""}${live ? " is-live" : ""}">` +
+        `<div class="${cls}">` +
         `<div class="hub-metric__label">${esc(m.label)}</div>` +
         `<div class="hub-metric__value">${esc(m.value)}</div>` +
         `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
@@ -357,14 +371,15 @@
     const on = pinIds().has(id);
     const pinBtn = pinable
       ? `<button type="button" class="hub-pin${on ? " is-on" : ""}" data-pin="${esc(id)}" ` +
-        `aria-label="${on ? "Unpin" : "Pin"}" title="${on ? "Unpin" : "Pin"}">${on ? "★" : "☆"}</button>`
+        `aria-label="${on ? "Unpin" : "Pin"}" aria-pressed="${on ? "true" : "false"}" ` +
+        `title="${on ? "Unpin" : "Pin"}">${on ? "★" : "☆"}</button>`
       : "";
     const tag = r.tag
       ? `<span class="hub-qrow__tag${r.flagged ? " is-flag" : ""}">${esc(r.tag)}</span>`
       : "";
     return (
       `<div class="hub-qrow">` +
-      `<a class="hub-qrow__meta" href="${esc(r.href || "#")}" style="text-decoration:none;color:inherit;">` +
+      `<a class="hub-qrow__meta" href="${esc(r.href || "#")}">` +
       `<div class="hub-qrow__name">${esc(r.name)}</div>` +
       `<div class="hub-qrow__sub">${esc(r.sub || "")}</div></a>` +
       tag + pinBtn + `</div>`
@@ -481,6 +496,15 @@
     wrap.hidden = false;
     cta.href = u.homeHref;
     cta.textContent = "Open " + (u.homeToolName || "home tool");
+    // Quiet outline when needs compete for attention; solid when clear.
+    const busy = !payload.needs_clear && (payload.needs || []).length > 0;
+    cta.classList.toggle("hub-home-cta--quiet", busy);
+  }
+
+  function setDockActive(mode) {
+    document.querySelectorAll("[data-dock]").forEach((b) => {
+      b.classList.toggle("is-active", b.getAttribute("data-dock") === mode);
+    });
   }
 
   function renderRecent() {
@@ -590,28 +614,28 @@
         },
       ],
       metrics: [
-        { label: "Ready to invoice", value: 2, foot: "unbilled complete / ready", zero: false },
-        { label: "Team prep", value: "86%", foot: "ops ready for huddle", zero: false },
-        { label: "Safety / stop-work", value: 1, foot: "owner-visible holds", zero: false },
-        { label: "Planning flags", value: 0, foot: "route override signals", zero: true },
+        { label: "Ready to invoice", value: 2, foot: "unbilled complete / ready", zero: false, unavailable: false },
+        { label: "Team prep", value: "86%", foot: "ops ready for huddle", zero: false, unavailable: false },
+        { label: "Safety / stop-work", value: 1, foot: "owner-visible holds", zero: false, unavailable: false },
+        { label: "Planning flags", value: 0, foot: "route override signals", zero: true, unavailable: false },
       ],
       queue: {
         title: "Exceptions",
         link: "Open Owner Pulse",
         href: "/ui/morning-owner",
         rows: [
-          { id: "demo-1", name: "21435 Abbys | Greg Gavin", sub: "Safety hold", tag: "Flag", flagged: true, href: "/ui/jobcheck" },
+          { id: "demo-1", name: "21435 Abbys | Greg Gavin", sub: "Safety hold", tag: "Flag", flagged: true, href: "/ui/jobcheck?item=demo-1" },
           { id: "demo-2", name: "9761 Gertrude | Tedesco", sub: "Ready to invoice", tag: "Ready", href: "/ui/billing" },
-          { id: "demo-3", name: "937 Madison Ridge | Kaiker", sub: "Needs handoff", tag: "Handoff", href: "/ui/jobstart" },
+          { id: "demo-3", name: "937 Madison Ridge | Kaiker", sub: "Needs handoff", tag: "Handoff", flagged: true, href: "/ui/jobstart?bid=demo-3" },
         ],
       },
       pinned: [
-        { id: "demo-1", name: "21435 Abbys | Greg Gavin", sub: "Safety hold", href: "/ui/jobcheck" },
+        { id: "demo-1", name: "21435 Abbys | Greg Gavin", sub: "Safety hold", href: "/ui/jobcheck?item=demo-1" },
       ],
       activity: [
-        { text: "jobcheck.save · 21435 Abbys", when: new Date(Date.now() - 3600000).toISOString(), href: "/ui/activity" },
-        { text: "invoice.finalize · GVC-2026-C-012", when: new Date(Date.now() - 7200000).toISOString(), href: "/ui/activity" },
-        { text: "estimate.slack · 2026-0806-001", when: new Date(Date.now() - 86400000).toISOString(), href: "/ui/activity" },
+        { text: "Job check · 21435 Abbys", when: new Date(Date.now() - 3600000).toISOString(), href: "/ui/activity" },
+        { text: "Invoice · GVC-2026-C-012", when: new Date(Date.now() - 7200000).toISOString(), href: "/ui/activity" },
+        { text: "Estimate Slack notice · 2026-0806-001", when: new Date(Date.now() - 86400000).toISOString(), href: "/ui/activity" },
       ],
       badges: { invoice: 2, morning_owner: 1, jobstart: 1 },
     });
@@ -642,7 +666,7 @@
       ).slice(0, 12);
       $("searchhits").innerHTML = hits.map((t) => {
         const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
-        return `<a class="hub-qrow" href="${esc(t.href)}"${ext} style="text-decoration:none;color:inherit;">` +
+        return `<a class="hub-qrow" href="${esc(t.href)}"${ext}>` +
           `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(t.name)}</div></div></a>`;
       }).join("") || `<div class="hub-empty-soft">No tools match that search.</div>`;
     });
@@ -650,26 +674,37 @@
       if (e.key === "Escape") {
         $("searchpanel").classList.remove("is-open");
         setDrawer(false);
+        setDockActive("home");
       }
     });
 
     document.querySelectorAll("[data-dock]").forEach((btn) => {
       btn.addEventListener("click", () => {
-        document.querySelectorAll("[data-dock]").forEach((b) => b.classList.remove("is-active"));
-        btn.classList.add("is-active");
         const mode = btn.getAttribute("data-dock");
-        if (mode === "tools") { setDrawer(true); return; }
+        if (mode === "tools") {
+          setDockActive("tools");
+          setDrawer(true);
+          return;
+        }
         if (mode === "search") {
+          setDockActive("search");
           $("searchpanel").classList.add("is-open");
           $("mobilesearch").focus();
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
         if (mode === "alerts") {
+          setDockActive("alerts");
           $("searchpanel").classList.remove("is-open");
           $("needs-kicker").scrollIntoView({ behavior: "smooth", block: "start" });
+          const kick = $("needs-kicker");
+          if (kick) {
+            kick.classList.add("is-flash");
+            setTimeout(() => kick.classList.remove("is-flash"), 900);
+          }
           return;
         }
+        setDockActive("home");
         $("searchpanel").classList.remove("is-open");
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
