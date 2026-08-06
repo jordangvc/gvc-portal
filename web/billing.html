@@ -52,9 +52,28 @@
   #status { display: none; }
   #status.show { display: flex; }
   #search-status { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-top: 8px; }
+
+  /* Fat queue rows (title + meta + chips + actions) need a taller scroll
+     pane than the compact 44px-row picker default in gvc.css. */
+  .billing-scroll {
+    max-height: min(56vh, 520px);
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    border: 1px solid var(--gvc-line-strong);
+    border-radius: var(--gvc-r);
+    background: var(--gvc-surface);
+    padding: 0 14px;
+  }
+  .billing-scroll > .empty { padding: 18px 4px; }
+  .billing-scroll > .queue-row:last-child,
+  .billing-scroll > .act-row:last-child { border-bottom: 0; }
+  #search-results.billing-scroll { margin-top: 14px; padding-top: 4px; }
+
   @media (max-width: 640px) {
     .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
     .gvc-wordmark { font-size: 15px; }
+    .billing-scroll { max-height: min(48vh, 420px); }
   }
 </style>
 </head>
@@ -100,7 +119,7 @@
                  autocomplete="off" />
         </div>
         <div id="search-status"></div>
-        <div id="search-results" class="gvc-results" style="margin-top:14px;"></div>
+        <div id="search-results" class="billing-scroll" style="display:none;"></div>
       </div>
     </div>
 
@@ -109,8 +128,10 @@
         <span class="gvc-card-title">Ready to Invoice</span>
         <span class="count-pill" id="count-ready">—</span>
       </div>
-      <div class="gvc-card-bd" id="queue-ready">
-        <div class="empty">Loading Operations Ready to Invoice…</div>
+      <div class="gvc-card-bd">
+        <div class="billing-scroll" id="queue-ready">
+          <div class="empty">Loading Operations Ready to Invoice…</div>
+        </div>
       </div>
     </div>
 
@@ -120,8 +141,10 @@
         <span class="gvc-help">need handoff / next office step</span>
         <span class="count-pill" id="count-bids">—</span>
       </div>
-      <div class="gvc-card-bd" id="queue-bids">
-        <div class="empty">Loading accepted bids…</div>
+      <div class="gvc-card-bd">
+        <div class="billing-scroll" id="queue-bids">
+          <div class="empty">Loading accepted bids…</div>
+        </div>
       </div>
     </div>
 
@@ -131,8 +154,10 @@
         <span class="gvc-help">secondary — Invoice Status set on Projects</span>
         <span class="count-pill" id="count-projects">—</span>
       </div>
-      <div class="gvc-card-bd" id="queue-projects">
-        <div class="empty">Loading Projects billing list…</div>
+      <div class="gvc-card-bd">
+        <div class="billing-scroll" id="queue-projects">
+          <div class="empty">Loading Projects billing list…</div>
+        </div>
       </div>
     </div>
 
@@ -145,7 +170,7 @@
         <label class="gvc-label" for="act-filter">Filter this list</label>
         <input class="gvc-input" id="act-filter" type="search"
                placeholder="Filter by action, customer, job…" autocomplete="off" />
-        <div id="activity-list" style="margin-top:12px;">
+        <div class="billing-scroll" id="activity-list" style="margin-top:12px;">
           <div class="empty">Loading recent activity…</div>
         </div>
       </div>
@@ -244,18 +269,20 @@ function renderSearch(body) {
   if (!projects.length && !bids.length) {
     const tip = (body.notes || []).map(esc).join(" ")
       || "No matches. Try a different builder, street, or number.";
+    box.style.display = "block";
     box.innerHTML = `<div class="empty">${tip}</div>`;
     return;
   }
   let html = "";
   if (projects.length) {
-    html += `<h3 class="gvc-card-title" style="margin:0 0 8px;">Projects (${projects.length})</h3>`;
+    html += `<h3 class="gvc-card-title" style="margin:8px 0;">Projects (${projects.length})</h3>`;
     html += projects.map(rowHtml).join("");
   }
   if (bids.length) {
     html += `<h3 class="gvc-card-title" style="margin:16px 0 8px;">Bids (${bids.length})</h3>`;
     html += bids.map(rowHtml).join("");
   }
+  box.style.display = "block";
   box.innerHTML = html;
 }
 
