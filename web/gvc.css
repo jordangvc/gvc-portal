@@ -1216,7 +1216,8 @@ a:hover{ color:var(--gvc-green-dark); }
   box-shadow: inset 3px 0 0 var(--color-accent, var(--gvc-gold));
 }
 .hub-need.is-urgent {
-  box-shadow: inset 3px 0 0 var(--color-danger, #5d1e21);
+  box-shadow: inset 4px 0 0 var(--color-danger, #6b4038);
+  border-color: var(--color-danger, #6b4038);
 }
 .hub-need__top {
   display: flex; align-items: baseline; justify-content: space-between;
@@ -1228,7 +1229,8 @@ a:hover{ color:var(--gvc-green-dark); }
   color: var(--color-accent-ink, var(--gvc-gold-dark));
 }
 .hub-need__kind.is-urgent {
-  color: var(--color-danger, #5d1e21);
+  color: var(--color-danger, #6b4038);
+  font-weight: 700;
 }
 .hub-need__amount {
   font-family: var(--font-mono, var(--gvc-mono));

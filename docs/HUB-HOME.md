@@ -7,7 +7,7 @@ tools live in a left rail (desktop) or drawer + bottom bar (phone).
 `orchestrators/hub_flow.py` · `subsystems/hub/pinned.py` · `GET /ui/api/hub` ·
 `PUT /ui/api/hub/pinned`
 
-Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r48**.
+Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r49**.
 
 ## Shell
 

@@ -111,7 +111,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r48</b> · Aug 6, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r49</b> · Aug 6, 2026</span>
         </div>
       </div>
     </div>
@@ -319,11 +319,10 @@
     const badge = $("alertbadge");
     if (badge) badge.classList.toggle("is-urgent", !!hasUrgent);
     if (clear) {
-      const line = payload.summary || "You're clear.";
-      const first = line.split(/[.!?]/)[0];
-      const rest = line.slice(first.length).replace(/^[.\s]+/, "");
+      const line = (payload.summary || "You're clear.").trim();
+      const rest = line.replace(/^you['\u2019]?re clear[.!\u2014\u2013\s-]*/i, "").trim();
       box.innerHTML =
-        `<div class="hub-clear"><strong>${esc(first || "You're clear")}.</strong>` +
+        `<div class="hub-clear"><strong>You're clear.</strong>` +
         (rest ? esc(rest) : "") + `</div>`;
       return;
     }
