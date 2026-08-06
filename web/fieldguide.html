@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -89,13 +89,23 @@
   .backlink:hover, .backlink:focus-visible { border-color:var(--green); color:var(--green); }
   body.in-doc .backlink { display:inline-flex; }
   body.in-doc .cb-label { display:none; }
-  .seg { display:inline-flex; border:1px solid var(--line); border-radius:8px; overflow:hidden; }
-  .seg button {
-    background:var(--surface); border:0; color:var(--ink-2); font:inherit; font-size:12.5px;
+  .seg, .segmented {
+    display:inline-flex; border:1px solid var(--line); border-radius:999px; overflow:hidden;
+    background:var(--surface); gap:0;
+  }
+  .seg button, .segmented button {
+    background:transparent; border:0; color:var(--ink-2); font:inherit; font-size:12.5px;
     padding:0 13px; min-height:40px; cursor:pointer; white-space:nowrap;
   }
-  .seg button[aria-pressed="true"] { background:var(--green); color:#fff; font-weight:700; }
-  .seg button:focus-visible { outline:2px solid var(--gold); outline-offset:-2px; }
+  .seg button[aria-pressed="true"],
+  .seg button.is-active,
+  .segmented button.is-active,
+  .segmented button[aria-pressed="true"] {
+    background:var(--gold-soft, var(--gold)); color:var(--ink); font-weight:700;
+  }
+  .seg button:focus-visible, .segmented button:focus-visible {
+    outline:2px solid var(--gold); outline-offset:2px;
+  }
 
   /* ---------- diagrams ----------
      Drafting conventions, matched to the reference guide: green stroke on
@@ -390,9 +400,9 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 <div class="controlbar">
   <button class="backlink" type="button" id="back">&larr; All procedures</button>
   <span class="cb-label">Production procedures</span>
-  <div class="seg" role="group" aria-label="Detail level">
+  <div class="seg segmented" role="group" aria-label="Detail level">
     <button type="button" id="lvl-plain" aria-pressed="false">Plain</button>
-    <button type="button" id="lvl-full" aria-pressed="true">Full detail</button>
+    <button type="button" id="lvl-full" aria-pressed="true" class="is-active">Full detail</button>
   </div>
 </div>
 
@@ -4787,6 +4797,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <p>Check marks and your detail-level choice save on this device only. Nothing here is transmitted anywhere.</p>
 </footer>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
   (function () {
     var CHECK_KEY = "gvc-field-manual-v2";
@@ -4860,6 +4871,8 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       body.classList.toggle("plain", plain);
       btnPlain.setAttribute("aria-pressed", plain ? "true" : "false");
       btnFull.setAttribute("aria-pressed", plain ? "false" : "true");
+      btnPlain.classList.toggle("is-active", plain);
+      btnFull.classList.toggle("is-active", !plain);
       if (persist !== false) {
         try { window.localStorage.setItem(LVL_KEY, level); } catch (e) { /* no-op */ }
       }

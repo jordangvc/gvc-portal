@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
@@ -72,18 +72,12 @@
   .field .howto:hover { color: var(--gvc-green); }
   .field.dirty > .field-label-row > label::after,
   .field.dirty > label::after { content: " •"; color: var(--gvc-gold-dark); }
-  /* Status picker — native <select> so phones open the OS picker. Closed control
-     still carries the chosen label's real board color. */
-  .select-wrap { position: relative; display: block; width: 100%; }
-  .status-select { -webkit-appearance: none; appearance: none;
-    width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 42px 10px 16px; border-radius: var(--gvc-r-lg);
-    border: 1px solid var(--gvc-line); background-color: var(--gvc-bg); color: var(--gvc-ink);
-    font: inherit; font-size: 16px; font-weight: 700; cursor: pointer; }
-  .status-select.unset { color: var(--gvc-muted); font-weight: 600; }
-  .status-select:focus { outline: 2px solid var(--gvc-gold); border-color: var(--gvc-gold); }
-  .select-chev { position: absolute; right: 16px; top: 50%; transform: translateY(-50%);
-    pointer-events: none; font-size: 13px; opacity: .85; }
-  .status-select option { background: var(--gvc-surface); color: var(--gvc-ink); font-weight: 600; }
+  /* Status picker — Command chips (visible pills); board hex colors tint the
+     active chip via GvcChips.statusChipset. */
+  .status-chips { width: 100%; }
+  .status-chips .chipset { display: block; width: 100%; }
+  .status-chips .chipset__opts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .field.disabled .status-chips .chip { cursor: not-allowed; }
   .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
     width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 14px; font-size: 16px;
     border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface); font-family: inherit; }
@@ -242,6 +236,7 @@
   </div>
 </div>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
@@ -336,21 +331,9 @@ function fieldKey(col) {
 
 function statusSelectHtml(col) {
   const key = fieldKey(col);
-  const val = current[key] ?? "";
-  const labels = (statusSeq[key] || []).filter(Boolean);
-  const chosen = labels.find((l) => l.label === val);
-  const bg = chosen && chosen.hex ? chosen.hex : "";
-  const fg = bg ? textColorFor(bg) : "";
-  const style = bg ? `background-color:${esc(bg)};color:${fg};border-color:${esc(bg)};` : "";
-  const disabled = col.writable === false ? " disabled" : "";
-  const opts = [`<option value=""${val === "" ? " selected" : ""}>(not set)</option>`].concat(
-    labels.map((l) =>
-      `<option value="${esc(l.label)}"${l.label === val ? " selected" : ""}>${esc(l.label)}</option>`)
-  );
-  return `<span class="select-wrap">
-    <select class="status-select${bg ? "" : " unset"}" data-col="${esc(key)}"
-      aria-label="${esc(col.label)}" style="${style}"${disabled}>${opts.join("")}</select>
-    <span class="select-chev"${fg ? ` style="color:${fg};"` : ""}>▼</span></span>`;
+  // Placeholder host; GvcChips.statusChipset mounts in wireField.
+  return `<div class="status-chips" data-col="${esc(key)}"
+    aria-label="${esc(col.label)}"></div>`;
 }
 
 function fieldHtml(col) {
@@ -410,18 +393,41 @@ function refreshDirtyUi() {
 function wireField(col) {
   const key = fieldKey(col);
   const root = document.querySelector(`.field[data-field="${CSS.escape(key)}"]`);
-  if (!root || col.writable === false) return;
+  if (!root) return;
   if (col.type === "status") {
-    const sel = root.querySelector("select");
-    sel.addEventListener("change", () => {
-      // "" is the explicit clear option — store null so the save sends a clear.
-      current[key] = sel.value === "" ? null : sel.value;
-      // Re-render so the control repaints in the newly chosen label's color.
-      root.outerHTML = fieldHtml(col);
-      wireField(col);
-      refreshDirtyUi();
+    const host = root.querySelector(".status-chips");
+    if (!host || typeof GvcChips === "undefined") return;
+    host.replaceChildren();
+    const labelRows = (statusSeq[key] || []).filter(Boolean);
+    const labels = labelRows.map((l) => l.label).filter(Boolean);
+    const colors = {};
+    labelRows.forEach((l) => { if (l.label && l.hex) colors[l.label] = l.hex; });
+    const writable = col.writable !== false;
+    const chipset = GvcChips.statusChipset({
+      key,
+      name: key,
+      labels,
+      colors,
+      value: current[key] ?? "",
+      emptyLabel: "(not set)",
+      dataset: { col: key },
+      onChange: writable
+        ? (v) => {
+            // "" is the explicit clear option — store null so the save sends a clear.
+            current[key] = v === "" ? null : v;
+            refreshDirtyUi();
+          }
+        : undefined,
     });
-  } else if (col.type === "checkbox") {
+    chipset.setAttribute("aria-label", col.label || key);
+    if (!writable) {
+      chipset.querySelectorAll("button").forEach((b) => { b.disabled = true; });
+    }
+    host.appendChild(chipset);
+    return;
+  }
+  if (col.writable === false) return;
+  if (col.type === "checkbox") {
     const cb = root.querySelector("input[type=checkbox]");
     cb.addEventListener("change", () => {
       current[key] = cb.checked ? "true" : null;
