@@ -83,7 +83,7 @@ of writing it has uncommitted changes in `app/service.py` and `web/fieldguide.ht
 | The gate | **Two-party.** Field completeness gates the *send*; **ops acceptance gates the job**. Monday items are created ONLY in `accept()`. |
 | Self-acceptance | Refused — the sender can't accept their own packet (admins excepted, and logged) |
 | "Silence is acceptance" | **Deleted.** It contradicted "no signature, no crew". |
-| Job naming | **Pipe:** `[Street Number Name], [City], [ST] [ZIP] | [Builder]`. City/state/ZIP required (Jordan 2026-08-05). Not dashes. |
+| Job naming | **Pipe:** `[Street], [City], [ST] [ZIP] \| [Builder] \| [Job Title]`. Job Title required (residential = `Smith residence`; commercial = business name). Jordan 2026-08-06. |
 | Output | Generated PDF filed to Drive. **No handwriting anywhere** — this is a hard requirement from Jordan. |
 | History | Not backfilled. "Leave history alone." |
 
