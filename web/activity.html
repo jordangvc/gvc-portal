@@ -1,10 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>Activity · GVC Portal</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. Command: docs/GVC-COMMAND-STYLE.md -->
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
 
@@ -151,7 +151,7 @@
     </div>
     <div class="field">
       <label for="f-result">Outcome</label>
-      <select id="f-result">
+      <select id="f-result" name="result">
         <option value="">any</option>
         <option value="ok">ok</option>
         <option value="partial">partial — a step failed</option>
@@ -162,7 +162,7 @@
     </div>
     <div class="field">
       <label for="f-range">Range</label>
-      <select id="f-range">
+      <select id="f-range" name="range">
         <option value="24h">Last 24 hours</option>
         <option value="7d" selected>Last 7 days</option>
         <option value="30d">Last 30 days</option>
@@ -212,6 +212,7 @@
   </div><!-- /gvc-stack -->
 </main>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
   const $ = (id) => document.getElementById(id);
   let nextToken = null;
@@ -550,6 +551,11 @@
       $('loading').textContent = '';
     }
   }
+
+  // Outcome + Range → Command chips (hidden inputs keep id/name for filters()/CSV).
+  // Do NOT convert #f-action (datalist text field).
+  GvcChips.replaceSelect($('f-result'), { segmented: false });
+  GvcChips.replaceSelect($('f-range'), { segmented: false });
 
   $('apply').addEventListener('click', () => load(true));
   $('refresh').addEventListener('click', () => load(true));

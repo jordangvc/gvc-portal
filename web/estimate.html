@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -338,6 +338,7 @@
   </div><!-- /gvc-stack -->
 </main>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
@@ -883,6 +884,7 @@ function setSaveState(kind, text) {
 function setField(name, value) {
   const el = $("#estimate-form").elements[name];
   if (el) el.value = value == null ? "" : value;
+  if (window.GvcChips) GvcChips.sync(name);
 }
 function applyData(p) {
   p = p || {}; const pb = p.prepared_by || {}, c = p.client || {}, j = p.job || {}, e = p.estimate || {};
@@ -1423,6 +1425,10 @@ $("#scope-admin-toggle").addEventListener("click", openScopeAdmin);
 
 $("[name=date]").value = new Date().toISOString().slice(0, 10);
 updateReviseUI();
+if (window.GvcChips) {
+  GvcChips.replaceSelect($('select[name="project_type"]'), { label: "Project type" });
+  GvcChips.replaceSelect($("#delivery_method") || $('select[name="delivery_method"]'));
+}
 if ($("#client_no_email")) {
   $("#client_no_email").addEventListener("change", syncNoEmailUi);
   syncNoEmailUi();

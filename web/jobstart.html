@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -147,9 +147,9 @@
   .state.blocked, .fbad { color:var(--gvc-danger); font-weight:600; }
   .readonly-note { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); padding:8px 10px;
     background:var(--gvc-bg); border-radius:var(--gvc-r-md); border:1px dashed var(--gvc-line); }
-  .select-wrap { position:relative; }
-  .select-chev { pointer-events:none; }
-  .status-select { width:100%; }
+  .status-chips { width:100%; }
+  .status-chips .chipset { display:block; width:100%; }
+  .status-chips .chipset__opts { display:flex; flex-wrap:wrap; gap:6px; }
   .linkish { color:var(--gvc-green-dark); font-weight:600; cursor:pointer; text-decoration:underline;
     background:none; border:0; font:inherit; padding:0; }
   .savebar { position:sticky; bottom:0; background:var(--gvc-surface); border-top:1px solid var(--gvc-line);
@@ -262,6 +262,7 @@
   <div id="savestate"></div>
 </div>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
@@ -412,20 +413,10 @@ function renderContext(bid, d) {
 }
 
 function statusSelectHtml(f) {
-  const val = values[f.key] ?? "";
-  const labels = f.labels || [];
-  const chosen = labels.find((l) => l.label === val);
-  const bg = chosen && chosen.hex ? chosen.hex : "";
-  const fg = bg ? textColorFor(bg) : "";
-  const style = bg ? `background-color:${esc(bg)};color:${fg};border-color:${esc(bg)};` : "";
-  const opts = [`<option value=""${val === "" ? " selected" : ""}>(not set)</option>`].concat(
-    labels.map((l) =>
-      `<option value="${esc(l.label)}"${l.label === val ? " selected" : ""}>${esc(l.label)}</option>`)
-  );
-  return `<span class="select-wrap">
-    <select class="status-select${bg ? "" : " unset"}" data-key="${esc(f.key)}"
-      aria-label="${esc(f.label)}" style="${style}">${opts.join("")}</select>
-    <span class="select-chev"${fg ? ` style="color:${fg};"` : ""}>▼</span></span>`;
+  // Placeholder host; GvcChips.statusChipset mounts in wireField (bindings
+  // cannot survive an HTML-string round-trip).
+  return `<div class="status-chips" data-key="${esc(f.key)}"
+    aria-label="${esc(f.label)}"></div>`;
 }
 
 function fieldHtml(f) {
@@ -469,14 +460,29 @@ function wireField(f) {
   const root = document.querySelector(`.field[data-field="${CSS.escape(f.key)}"]`);
   if (!root) return;
   if (f.type === "status") {
-    const sel = root.querySelector("select");
-    sel.addEventListener("change", () => {
-      values[f.key] = sel.value === "" ? "" : sel.value;
-      // Re-render so the control repaints in the chosen label's board color.
-      root.outerHTML = fieldHtml(f);
-      wireField(f);
-      onEdit();
+    const host = root.querySelector(".status-chips");
+    if (!host || typeof GvcChips === "undefined") return;
+    host.replaceChildren();
+    const labelRows = f.labels || [];
+    const labels = labelRows.map((l) => l.label).filter(Boolean);
+    const colors = {};
+    labelRows.forEach((l) => { if (l.label && l.hex) colors[l.label] = l.hex; });
+    const chipset = GvcChips.statusChipset({
+      key: f.key,
+      name: f.key,
+      labels,
+      colors,
+      value: values[f.key] ?? "",
+      emptyLabel: "(not set)",
+      dataset: { key: f.key },
+      onChange: (v) => {
+        values[f.key] = v === "" ? "" : v;
+        root.classList.toggle("missing", f.required && !String(v ?? "").trim());
+        onEdit();
+      },
     });
+    chipset.setAttribute("aria-label", f.label || f.key);
+    host.appendChild(chipset);
   } else {
     const input = root.querySelector("input, textarea");
     input.addEventListener("input", () => {

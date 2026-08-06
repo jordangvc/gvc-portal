@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-palette="emerald" data-theme="light">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -360,6 +360,7 @@
   </div><!-- /gvc-stack -->
 </main>
 
+<script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
@@ -1010,6 +1011,7 @@ async function checkHealth() {
 function setVal(name, value) {
   const el = $("#invoice-form").elements[name];
   if (el && value !== undefined && value !== null) el.value = value;
+  if (window.GvcChips) GvcChips.sync(name);
 }
 function applyPhoneToContactName(phone) {
   // Invoice form has no dedicated phone field — fold into contact_name as
@@ -1341,6 +1343,7 @@ function setField(name, value) {
   if (!el) return;
   if (el.type === "checkbox") el.checked = !!value;
   else el.value = value == null ? "" : value;
+  if (window.GvcChips) GvcChips.sync(name);
 }
 
 function applyData(p) {
@@ -1542,6 +1545,11 @@ $("[name=project_number_lookup]").addEventListener("keydown", (e) => {
 });
 $("[name=customer_search]").addEventListener("input", customerSearch);
 $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
+if (window.GvcChips) {
+  GvcChips.replaceSelect($("#delivery_method") || $('select[name="delivery_method"]'));
+  GvcChips.replaceSelect($('select[name="invoice_type"]'), { label: "Invoice type" });
+  GvcChips.replaceSelect($('select[name="retainage_scope"]'), { segmented: true, label: "Scope" });
+}
 if ($("#client_no_email")) {
   $("#client_no_email").addEventListener("change", syncNoEmailUi);
   syncNoEmailUi();
