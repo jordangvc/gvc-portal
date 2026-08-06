@@ -1070,17 +1070,13 @@ def _portal_home_impl(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
-@app.get("/ui/gvc.css")
-def portal_stylesheet() -> Response:
+@app.get("/ui/gvc-command.js")
+def portal_command_js() -> Response:
     """
-    The shared GVC design system (web/gvc.css), served to every portal page.
-
-    Deliberately NOT behind require_ui_access: a stylesheet carries no data, and
-    gating it would mean the sign-in page itself renders unstyled. Cached for an
-    hour — long enough to stop refetching on every page, short enough that a
-    redeploy shows up without anyone clearing a cache.
+    Shared chip / segmented helpers for Command UI (web/gvc-command.js).
+    Ungated like gvc.css — no secrets; short cache so deploys show up.
     """
-    path = WEB_DIR / "gvc.css"
+    path = WEB_DIR / "gvc-command.js"
     if not path.exists():
         raise HTTPException(
             status_code=500,
@@ -1090,7 +1086,7 @@ def portal_stylesheet() -> Response:
         )
     return Response(
         content=path.read_text(encoding="utf-8"),
-        media_type="text/css",
+        media_type="application/javascript; charset=utf-8",
         headers={"Cache-Control": "public, max-age=3600"},
     )
 
