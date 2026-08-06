@@ -107,6 +107,34 @@
     outline:2px solid var(--gold); outline-offset:2px;
   }
 
+
+  /* ---------- in-manual cross-links (tap to open another procedure) ---------- */
+  button.doclink, a.doclink {
+    appearance:none; -webkit-appearance:none;
+    display:inline; margin:0; padding:0;
+    border:0; background:none; border-radius:0;
+    font:inherit; font-weight:700; color:var(--green-deep);
+    text-decoration:underline; text-decoration-thickness:1.5px;
+    text-underline-offset:2px; cursor:pointer;
+    text-align:inherit;
+  }
+  button.doclink:hover, a.doclink:hover { color:var(--green); }
+  button.doclink:focus-visible, a.doclink:focus-visible {
+    outline:2px solid var(--gold); outline-offset:2px; border-radius:3px;
+  }
+  .nextpath {
+    margin:22px 0 0; padding:14px 16px;
+    background:var(--green-soft); border:1px solid var(--line); border-radius:10px;
+  }
+  .nextpath .tag {
+    display:block; font-family:var(--mono); font-size:10px; letter-spacing:.12em;
+    text-transform:uppercase; color:var(--green-deep); font-weight:700; margin:0 0 6px;
+  }
+  .nextpath p { margin:0; font-size:14.5px; line-height:1.55; color:var(--ink-2); }
+  .nextpath .doclink { font-size:inherit; }
+  .pathlinks { display:flex; flex-wrap:wrap; gap:6px 4px; align-items:center; }
+  .pathlinks .sep { color:var(--muted); font-size:12px; padding:0 2px; user-select:none; }
+
   /* ---------- diagrams ----------
      Drafting conventions, matched to the reference guide: green stroke on
      structural members, grey fill for track, dashed green centerlines for the
@@ -562,6 +590,16 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Skill Ladder</span>
       <span class="desc">Observable skills from helper to ops lead — tied to this manual, not invented certs.</span>
     </button>
+    <button class="tile" data-go="closeout-rhythm">
+      <span class="icon">🏁</span><span class="stage">Daily rhythm</span>
+      <span class="name">End-of-Day Closeout</span>
+      <span class="desc">Honest Job Check, photos, material, tomorrow&apos;s first hour — briefs stay off #operations.</span>
+    </button>
+    <button class="tile" data-go="protection">
+      <span class="icon">🛡️</span><span class="stage">Every job</span>
+      <span class="name">Protection &amp; Other-Trade Damage</span>
+      <span class="desc">Protect finished work. Photo damage before you touch it — or it becomes ours.</span>
+    </button>
   </div>
 
   <p class="sect-label">Start here</p>
@@ -580,6 +618,21 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="icon">📋</span><span class="stage">Handoff</span>
       <span class="name">Job Start → First Day</span>
       <span class="desc">Ops accepted the packet. Lock box, exclusions, open questions — do not invent the job on site.</span>
+    </button>
+    <button class="tile" data-go="exclusions-walk">
+      <span class="icon">🚫</span><span class="stage">Handoff</span>
+      <span class="name">Exclusions &amp; Open Questions</span>
+      <span class="desc">Walk what we did NOT sell and every open question before the crew treats the floor as ours.</span>
+    </button>
+    <button class="tile" data-go="board-count-check">
+      <span class="icon">#️⃣</span><span class="stage">Handoff</span>
+      <span class="name">Board Count Check</span>
+      <span class="desc">Required Job Start field / billing basis — verify and report, never invent or edit money columns.</span>
+    </button>
+    <button class="tile" data-go="garage-finish">
+      <span class="icon">🚗</span><span class="stage">Classic rework</span>
+      <span class="name">Garage Finish</span>
+      <span class="desc">How far the garage goes is in the packet. Subdivision habit is not authorization.</span>
     </button>
     <button class="tile" data-go="rfi-field">
       <span class="icon">❓</span><span class="stage">Every job</span>
@@ -619,6 +672,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Metal Stud Framing</span>
       <span class="desc">Layout first, then batch by operation. Full detail covers deflection track, bridging, strapping, cold-rolled channel, Z-furring, and tall walls.</span>
     </button>
+    <button class="tile" data-go="plywood-backing">
+      <span class="icon">🪵</span><span class="stage">Backing</span>
+      <span class="name">Plywood / Sheathing Backing</span>
+      <span class="desc">Sheet backing for mounts when we sold it. Rated walls: listing wins — no invented panels.</span>
+    </button>
   </div>
 
   <p class="sect-label">Material — before the work starts</p>
@@ -637,6 +695,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="icon">🧾</span><span class="stage">At the truck</span>
       <span class="name">Receiving &amp; Freight</span>
       <span class="desc">Count, photo damage on the truck, quarantine wet/crushed board — then stock.</span>
+    </button>
+    <button class="tile" data-go="material-feedback">
+      <span class="icon">♻️</span><span class="stage">Estimating loop</span>
+      <span class="name">Material Return &amp; Feedback</span>
+      <span class="desc">Count overage, return it, report actual vs ordered — no invented production rates.</span>
     </button>
   </div>
 
@@ -665,6 +728,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="icon">🔩</span><span class="stage">Hanging Status</span>
       <span class="name">Hanging Drywall</span>
       <span class="desc">Sheet layout that kills joints before they exist. Full detail covers board types, fastening, rated assemblies, and control joints.</span>
+    </button>
+    <button class="tile" data-go="abuse-board">
+      <span class="icon">🧱</span><span class="stage">Specified product</span>
+      <span class="name">Abuse- / Impact-Resistant Board</span>
+      <span class="desc">When the schedule calls for it, hang that product. Submittal governs — no silent substitution.</span>
     </button>
     <button class="tile" data-go="scrape">
       <span class="icon">🔪</span><span class="stage">Scrapping Status</span>
@@ -856,6 +924,15 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <div class="idx-item"><button data-jump="qc-walk">QC walk / raking light</button><span>Pass/fix before Job Check advances. Light at a low angle tells the truth.</span></div>
       <div class="idx-item"><button data-jump="safety-orient|safety-silica">Silica (everyday)</button><span>Cut, grind, and sand controls — not only demolition.</span></div>
 
+      <div class="idx-item"><button data-jump="abuse-board">Abuse-resistant board</button><span>Specified product. Submittal fastening/finish notes win — no substitute standard rock.</span></div>
+      <div class="idx-item"><button data-jump="board-count-check">Board count</button><span>Required Job Start field and Projects billing basis. Field verifies; office owns the column.</span></div>
+      <div class="idx-item"><button data-jump="closeout-rhythm">End-of-day closeout</button><span>Honest Job Check, photos, material, tomorrow prep. Never post prep to #operations.</span></div>
+      <div class="idx-item"><button data-jump="exclusions-walk">Exclusions / open questions</button><span>Walk Job Start exclusions before the crew treats excluded work as free.</span></div>
+      <div class="idx-item"><button data-jump="garage-finish">Garage finish</button><span>Classic rework. Packet status decides how far the garage goes.</span></div>
+      <div class="idx-item"><button data-jump="material-feedback">Material return / waste feedback</button><span>Count overage, return, report actual vs ordered to estimating.</span></div>
+      <div class="idx-item"><button data-jump="plywood-backing">Plywood backing</button><span>Sheet backing for mounts when in scope. Rated assemblies: listing only.</span></div>
+      <div class="idx-item"><button data-jump="protection">Protection / other-trade damage</button><span>Photo before repair. Undocumented fix becomes our cost.</span></div>
+
       <div class="idx-item"><button data-jump="cement-board">Cement board / tile backer</button><span>Not gypsum. Fasten per manufacturer; confirm who owns waterproofing.</span></div>
       <div class="idx-item"><button data-jump="job-conditions">Cold / wet conditions</button><span>Product temperature floors; heat or wait; document delay.</span></div>
       <div class="idx-item"><button data-jump="inspection-hold">Hold points / inspection photos</button><span>Photo before cover on rated layers, firestop, insulation, RC.</span></div>
@@ -961,8 +1038,17 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         <tr><td>Level 5</td><td>GA-214 full skim over the whole surface. Not a free upgrade from Level 4.</td></tr>
         <tr><td>Resilient channel (RC)</td><td>Channel that decouples board from studs for sound. Screws into the stud through it kill the point.</td></tr>
         <tr><td>RFI</td><td>Request for information — the written question when documents conflict.</td></tr>
+        <tr><td>Exclusions</td><td>What we did NOT sell — required on Job Start. Asking us to do it is a change order path.</td></tr>
+        <tr><td>Open questions</td><td>Clarifications from the handoff / scope review that must be answered before that work starts.</td></tr>
+        <tr><td>Board count</td><td>Sheet count on the handoff and Projects billing basis. Field verifies; does not rewrite money columns.</td></tr>
+        <tr><td>Garage finish</td><td>Job Start status for how far the garage is finished — classic rework when guessed.</td></tr>
       </tbody>
     </table></div>
+  </div>
+
+  <div class="nextpath">
+    <span class="tag">Next in your first week</span>
+    <p>Done with the words? Open <button type="button" class="doclink" data-go="drawings">Reading Drawings</button> next (Plain mode), then <button type="button" class="doclink" data-go="changeorder">Spotting a Change Order</button>. Or jump back to <button type="button" class="doclink" data-go="onboard-week1">Your First Week</button>.</p>
   </div>
 </section>
 
@@ -986,37 +1072,42 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <div class="block">
     <h3>Day 1–5 checklist</h3>
-    <p class="sub">Do these in order. Check them off as you go — start a checklist run against your first job if you have one.</p>
+    <p class="sub">Do these in order. Tap a blue-green link to open that procedure, then come back here with ← All procedures. Check them off as you go — start a checklist run against your first job if you have one.</p>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Read the Glossary once.</b> Half the manual opens up after you know what "on center," "butt joint," and "raking light" mean.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Read Reading Drawings</b> in Plain. Never scale with a ruler; find the sheet that owns the answer.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Read Spotting a Change Order.</b> If it is not on our drawings, stop, photo, write it down, call.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Complete Safety Orientation</b> before you climb, cut, sand, or demo anything unsupervised.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Open the portal on your phone:</b> Field Manual, Job Check, Morning Brief, Time Off. Know which tile does what.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Shadow one full stage</b> with a lead — stocking, hang, scrape, or finish — and ask why each step exists.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Watch a Job Check save</b> — pick the job, change only what you did, Save once. Monday is the office truth.</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt"><b>Walk a QC pass with a lead</b> under raking light. See what "done" actually looks like before you claim a stage.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b><button type="button" class="doclink" data-go="glossary">Read the Glossary</button> once.</b> Half the manual opens up after you know what "on center," "butt joint," and "raking light" mean.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b><button type="button" class="doclink" data-go="drawings">Read Reading Drawings</button></b> in Plain. Never scale with a ruler; find the sheet that owns the answer.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b><button type="button" class="doclink" data-go="changeorder">Read Spotting a Change Order</button>.</b> If it is not on our drawings, stop, photo, write it down, call.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b><button type="button" class="doclink" data-go="safety-orient">Complete Safety Orientation</button></b> before you climb, cut, sand, or demo anything unsupervised.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Open the portal on your phone:</b> Field Manual, Job Check, Morning Brief, Time Off — start with <button type="button" class="doclink" data-go="portal-field-tools">Portal Tools for the Field</button>.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Shadow one full stage</b> with a lead — <button type="button" class="doclink" data-go="stock-general">stocking</button>, <button type="button" class="doclink" data-go="hang">hang</button>, <button type="button" class="doclink" data-go="scrape">scrape</button>, or <button type="button" class="doclink" data-go="finish">finish</button> — and ask why each step exists.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Watch a Job Check save</b> — pick the job, change only what you did, Save once. Monday is the office truth (see <button type="button" class="doclink" data-go="portal-field-tools">Job Check how-to</button>).</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Walk a QC pass with a lead</b> under raking light — <button type="button" class="doclink" data-go="qc-walk">QC Walk Before Done</button>. See what "done" actually looks like before you claim a stage.</span></label></li>
     </ul>
+  </div>
+
+  <div class="nextpath">
+    <span class="tag">Start here · tap through</span>
+    <p class="pathlinks"><button type="button" class="doclink" data-go="glossary">1 · Glossary</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="drawings">2 · Reading Drawings</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="changeorder">3 · Change Order</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="safety-orient">4 · Safety</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="portal-field-tools">5 · Portal Tools</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="dont">6 · Don't Do This</button></p>
   </div>
 
   <div class="block">
     <h3>New-hire reading paths (existing procedures)</h3>
-    <p class="sub">You do not need every trade on day one. Start on your lane.</p>
+    <p class="sub">You do not need every trade on day one. Start on your lane — each name is a link.</p>
     <div class="table-wrap"><table>
       <thead><tr><th scope="col">If you are…</th><th scope="col">Read in this order</th></tr></thead>
       <tbody>
-        <tr><td>Laborer / helper</td><td>Stocking Any Material → Stocking Drywall → Scraping → Clean-Out → QC Walk</td></tr>
-        <tr><td>Hanger</td><td>Drawings → Pre-Board Walk → Hanging → Scraping → Insulation (awareness)</td></tr>
-        <tr><td>Finisher</td><td>Scraping → Finishing → Drywall Touch-Up → Painting (handoff)</td></tr>
-        <tr><td>ACT / ceilings</td><td>Drawings → Acoustical Ceilings → Tectum (if on the job)</td></tr>
-        <tr><td>Lead (new to GVC)</td><td>Change Order → Lead Day → Job Check How-To → Rated Walls / Firestop → Full detail on Framing, Hang, Finish</td></tr>
+        <tr><td>Laborer / helper</td><td><span class="pathlinks"><button type="button" class="doclink" data-go="stock-general">Stocking Any Material</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="stock-drywall">Stocking Drywall</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="scrape">Scraping</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="cleanout">Clean-Out</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="qc-walk">QC Walk</button></span></td></tr>
+        <tr><td>Hanger</td><td><span class="pathlinks"><button type="button" class="doclink" data-go="drawings">Drawings</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="preboard-walk">Pre-Board Walk</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="hang">Hanging</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="scrape">Scraping</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="insulation">Insulation</button></span></td></tr>
+        <tr><td>Finisher</td><td><span class="pathlinks"><button type="button" class="doclink" data-go="scrape">Scraping</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="finish">Finishing</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="touchup-drywall">Drywall Touch-Up</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="painting">Painting</button></span></td></tr>
+        <tr><td>ACT / ceilings</td><td><span class="pathlinks"><button type="button" class="doclink" data-go="drawings">Drawings</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="act">Acoustical Ceilings</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="tectum">Tectum</button></span></td></tr>
+        <tr><td>Lead (new to GVC)</td><td><span class="pathlinks"><button type="button" class="doclink" data-go="changeorder">Change Order</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="lead-day">Lead Day</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="portal-field-tools">Portal / Job Check</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="ratedwalls">Rated Walls</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="firestop">Firestop</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="framing">Framing</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="hang">Hang</button><span class="sep" aria-hidden="true">→</span><button type="button" class="doclink" data-go="finish">Finish</button></span></td></tr>
       </tbody>
     </table></div>
   </div>
 
   <div class="note stop">
     <span class="tag">Non-negotiables from day one</span>
-    <p><b>Never guess on a rated wall, shaftwall, or firestop.</b> Wrong height or the wrong UL system is tear-out and liability. <b>Never invent scope</b> or promise the GC we will "just take care of it." <b>Never skip the stop</b> when work is not on our drawings. Asking is the job.</p>
+    <p><b>Never guess on a rated wall, shaftwall, or firestop</b> — read <button type="button" class="doclink" data-go="ratedwalls">Fire Walls &amp; Shaftwall</button> and <button type="button" class="doclink" data-go="firestop">Firestopping</button>. <b>Never invent scope</b> or promise the GC we will "just take care of it." <b>Never skip the stop</b> when work is not on our drawings — <button type="button" class="doclink" data-go="changeorder">Spotting a Change Order</button>. Asking is the job.</p>
   </div>
 
   <div class="provenance">
@@ -1047,7 +1138,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         <tr><td>Pole sand / power sand</td><td>Eye protection; vacuum collection preferred; respirator when Table 1 controls are not met</td></tr>
         <tr><td>Grind bead / cut steel</td><td>Eye + face as needed; hearing; gloves; silica controls on concrete/masonry</td></tr>
         <tr><td>ACT / overhead</td><td>Eye protection; hard hat where the GC requires it; secure footing before looking up</td></tr>
-        <tr><td>Demo</td><td>Full site PPE + stop rules on the Demolition page — do not start without reading it</td></tr>
+        <tr><td>Demo</td><td>Full site PPE + stop rules on the <button type="button" class="doclink" data-go="demo">Demolition</button> page — do not start without reading it</td></tr>
       </tbody>
     </table></div>
   </div>
@@ -1082,6 +1173,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>Orientation only — not compliance advice and not a substitute for GVC's written safety programs. OSHA 1926.1101 (asbestos), EPA lead RRP concepts, and OSHA 1926.1153 Table 1 (silica) are cited so you know the names; the office owns the programs behind them. See also Demolition expert block on regs.</p>
+  </div>
+
+  <div class="nextpath">
+    <span class="tag">Next in your first week</span>
+    <p>Next: <button type="button" class="doclink" data-go="portal-field-tools">Portal Tools for the Field</button>, then <button type="button" class="doclink" data-go="dont">Don't Do This</button>. Demo hard stops live on <button type="button" class="doclink" data-go="demo">Demolition</button>.</p>
   </div>
 </section>
 
@@ -1142,6 +1238,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>GVC portal practice (Job Check, Job Start, Morning Brief build specs). Slack rule for Morning Brief locked by Jordan 2026-08-05 — authoritative in <code>docs/MORNING_BRIEF_BUILD_SPEC.md</code> and AGENTS.md.</p>
+  </div>
+
+  <div class="nextpath">
+    <span class="tag">Next in your first week</span>
+    <p>Next: <button type="button" class="doclink" data-go="dont">Don't Do This</button>. Then pick a role track from <button type="button" class="doclink" data-go="onboard-week1">Your First Week</button> or open <button type="button" class="doclink" data-go="qc-walk">QC Walk</button>.</p>
   </div>
 </section>
 
@@ -1472,6 +1573,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <span class="tag">Where this came from</span>
     <p>Curated from existing Field Manual failure lists and GVC ops pain. Prefer linking out over inventing new trade rules here.</p>
   </div>
+
+  <div class="nextpath">
+    <span class="tag">First-week path complete</span>
+    <p>Return to <button type="button" class="doclink" data-go="onboard-week1">Your First Week</button> and finish the Day 1–5 checklist. Role tracks: <button type="button" class="doclink" data-go="track-laborer">Laborer</button>, <button type="button" class="doclink" data-go="track-hanger">Hanger</button>, <button type="button" class="doclink" data-go="track-finisher">Finisher</button>, <button type="button" class="doclink" data-go="track-act">ACT</button>, <button type="button" class="doclink" data-go="track-lead">Lead</button>.</p>
+  </div>
 </section>
 
 <!-- ==================== AI FIELD RULES ==================== -->
@@ -1537,11 +1643,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="block">
     <h3>Reading + practice list</h3>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt">Safety Orientation + Don't Do This</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Stocking Any Material + Stocking Drywall (body mechanics, floor load)</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Scraping — why it is its own Job Check stage</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Clean-Out Between Stages</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Shadow a Pre-Board Walk and a QC Walk once each</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="safety-orient">Safety Orientation</button> + <button type="button" class="doclink" data-go="dont">Don't Do This</button></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="stock-general">Stocking Any Material</button> + <button type="button" class="doclink" data-go="stock-drywall">Stocking Drywall</button> (body mechanics, floor load)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="scrape">Scraping</button> — why it is its own Job Check stage</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="cleanout">Clean-Out Between Stages</button></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt">Shadow a <button type="button" class="doclink" data-go="preboard-walk">Pre-Board Walk</button> and a <button type="button" class="doclink" data-go="qc-walk">QC Walk</button> once each</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Graduation signal: lead trusts you to stock a room and scrape without creating sanding debt</span></label></li>
     </ul>
   </div>
@@ -1568,10 +1674,10 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="block">
     <h3>Lead track checklist</h3>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt">Lead Carpenter Day + Morning Prep &amp; Huddle + Escalation Ladder</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Portal Tools + Job Start → First Day + Job Check habit</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Spotting a Change Order + QC Walk + Don't Do This</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Fire Walls &amp; Shaftwall + Firestopping in Full detail</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="lead-day">Lead Carpenter Day</button> + <button type="button" class="doclink" data-go="morning-rhythm">Morning Prep &amp; Huddle</button> + <button type="button" class="doclink" data-go="escalate">Escalation Ladder</button></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="portal-field-tools">Portal Tools</button> + <button type="button" class="doclink" data-go="jobstart-firstday">Job Start → First Day</button> + Job Check habit</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="changeorder">Spotting a Change Order</button> + <button type="button" class="doclink" data-go="qc-walk">QC Walk</button> + <button type="button" class="doclink" data-go="dont">Don't Do This</button></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="ratedwalls">Fire Walls &amp; Shaftwall</button> + <button type="button" class="doclink" data-go="firestop">Firestopping</button> in Full detail</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Run one job day end-to-end: brief → QC → Job Check → closeout photos</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Teach one procedure to a helper in Plain mode</span></label></li>
     </ul>
@@ -1727,11 +1833,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="block">
     <h3>Hanger track</h3>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt">Reading Drawings + Pre-Board Walk</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Hanging Drywall (Plain, then Full: board types, rated, control joints)</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Scraping — own the handoff to finish</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Insulation awareness (first side / sound walls)</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Don't Do This — quality + rated bullets</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="drawings">Reading Drawings</button> + <button type="button" class="doclink" data-go="preboard-walk">Pre-Board Walk</button></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="hang">Hanging Drywall</button> (Plain, then Full: board types, rated, control joints)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="scrape">Scraping</button> — own the handoff to finish</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="insulation">Insulation</button> awareness (<button type="button" class="doclink" data-go="sound-walls">sound walls</button>)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="dont">Don't Do This</button> — quality + rated bullets</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Graduation: lead trusts you on a room without forced board or missed backing</span></label></li>
     </ul>
   </div>
@@ -1758,11 +1864,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="block">
     <h3>Finisher track</h3>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt">Scraping + Finishing Drywall (levels + mud choice in Full detail)</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Safety Orientation silica / vacuum sanding</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">QC Walk + Drywall Touch-Up</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Painting handoff (primer / sheen traps)</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Punch List Cadence</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="scrape">Scraping</button> + <button type="button" class="doclink" data-go="finish">Finishing Drywall</button> (levels + mud choice in Full detail)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="safety-orient">Safety Orientation</button> silica / vacuum sanding</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="qc-walk">QC Walk</button> + <button type="button" class="doclink" data-go="touchup-drywall">Drywall Touch-Up</button></span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="painting">Painting</button> handoff (primer / sheen traps)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="punch-cadence">Punch List Cadence</button></span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Graduation: coats match Job Check; no skip-scrape habit; Level 5 only when specified</span></label></li>
     </ul>
   </div>
@@ -1789,11 +1895,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="block">
     <h3>ACT track</h3>
     <ul class="steps">
-      <li><label class="step"><input type="checkbox"><span class="txt">Reading Drawings (RCP + reflected notes)</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Acoustical Ceilings — layout, wire, tile edges</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Tectum when the job has direct-attach panels</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Clean-Out after grid/tile</span></label></li>
-      <li><label class="step"><input type="checkbox"><span class="txt">Don't Do This — wires on duct, dirty borders</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="drawings">Reading Drawings</button> (RCP + reflected notes)</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="act">Acoustical Ceilings</button> — layout, wire, tile edges</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="tectum">Tectum</button> when the job has direct-attach panels</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="cleanout">Clean-Out</button> after grid/tile</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><button type="button" class="doclink" data-go="dont">Don't Do This</button> — wires on duct, dirty borders</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Graduation: level grid, equal borders, no duct hangers, clean gloves on tile</span></label></li>
     </ul>
   </div>
@@ -2159,11 +2265,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <div class="table-wrap"><table>
       <thead><tr><th scope="col">Level</th><th scope="col">You can show</th><th scope="col">Manual path</th></tr></thead>
       <tbody>
-        <tr><td>Helper</td><td>Safe stocking, scrape assist, clean-out, stop when unsure</td><td>Track: Laborer + Safety + Don&apos;t Do This</td></tr>
-        <tr><td>Trade hand</td><td>Independent hang <em>or</em> finish coats <em>or</em> ACT layout to QC standard</td><td>Track: Hanger / Finisher / ACT</td></tr>
-        <tr><td>Multi-trade</td><td>Two of the above + pre-board walk + honest Job Check updates</td><td>Pre-Board + Portal Tools + QC Walk</td></tr>
-        <tr><td>Lead</td><td>Crew brief, CO discipline, rated stop authority, end-of-day close</td><td>Track: Lead + Lead Day + Escalation</td></tr>
-        <tr><td>Ops lead</td><td>Multi-job prep truth, pull criteria, private brief discipline</td><td>Ops Lead playbook</td></tr>
+        <tr><td>Helper</td><td>Safe stocking, scrape assist, clean-out, stop when unsure</td><td><button type="button" class="doclink" data-go="track-laborer">Track: Laborer</button> + <button type="button" class="doclink" data-go="safety-orient">Safety</button> + <button type="button" class="doclink" data-go="dont">Don't Do This</button></td></tr>
+        <tr><td>Trade hand</td><td>Independent hang <em>or</em> finish coats <em>or</em> ACT layout to QC standard</td><td><button type="button" class="doclink" data-go="track-hanger">Hanger</button> / <button type="button" class="doclink" data-go="track-finisher">Finisher</button> / <button type="button" class="doclink" data-go="track-act">ACT</button></td></tr>
+        <tr><td>Multi-trade</td><td>Two of the above + pre-board walk + honest Job Check updates</td><td><button type="button" class="doclink" data-go="preboard-walk">Pre-Board</button> + <button type="button" class="doclink" data-go="portal-field-tools">Portal Tools</button> + <button type="button" class="doclink" data-go="qc-walk">QC Walk</button></td></tr>
+        <tr><td>Lead</td><td>Crew brief, CO discipline, rated stop authority, end-of-day close</td><td><button type="button" class="doclink" data-go="track-lead">Track: Lead</button> + <button type="button" class="doclink" data-go="lead-day">Lead Day</button> + <button type="button" class="doclink" data-go="escalate">Escalation</button></td></tr>
+        <tr><td>Ops lead</td><td>Multi-job prep truth, pull criteria, private brief discipline</td><td><button type="button" class="doclink" data-go="ops-lead">Ops Lead playbook</button></td></tr>
       </tbody>
     </table></div>
   </div>
@@ -2180,6 +2286,258 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>GVC training design wrapping existing procedures and Job Check stages. Not an apprenticeship accreditation and not tied to published production rates (Sources &amp; Method — we deliberately publish none).</p>
+  </div>
+</section>
+
+<!-- ==================== EXCLUSIONS WALK ==================== -->
+<section class="doc" id="exclusions-walk">
+  <div class="doc-head">
+    <span class="stage-line">Job Start · before first screw</span>
+    <h2>Exclusions &amp; Open Questions Walk</h2>
+    <p class="lede">Job Start requires <b>What we did NOT sell</b> and surfaces Jake&apos;s open questions for a reason. Walk them before the crew treats the whole floor as ours.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>The packet is not wallpaper. Read the exclusions out loud with the lead. Read every open question. If a GC asks for something on the exclusions list, that is Spotting a Change Order — not &quot;we must have missed it.&quot; If an open question still blocks framing or hang, that is send-back / office work, not field invention.</p>
+  </div>
+
+  <div class="block">
+    <h3>Same-morning walk</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Open the Handoff PDF</b> — exclusions + open questions sections. Do not rely on memory of the bid meeting.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Walk the areas named</b> in exclusions (NIC / by others / no FRP scope / etc.). Photo the boundary if it will be argued later.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Open questions:</b> answered in writing, or still blocking? Blocking ⇒ call ops/office before mobilizing that scope.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Brief the crew</b> on the three things we are <em>not</em> doing today — so helpful hands do not &quot;just finish it.&quot;</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>GC asks for excluded work:</b> stop → photo → write → call. Same path as any verbal add.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note money">
+    <span class="tag">Why GVC will stand behind this</span>
+    <p>Exclusions and open questions are <b>required / first-class Job Start fields</b> — the handoff contract, not optional notes. Scope-review clarifications become change orders when unread. This page only teaches the field ritual that makes those fields real.</p>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Job Start fields <code>exclusions</code> (required) and <code>open_questions</code>; Jake scope-review ingest (clarifications → open questions). GVC practice. Does not redefine contractual scope — the signed set and the packet do.</p>
+  </div>
+</section>
+
+<!-- ==================== BOARD COUNT CHECK ==================== -->
+<section class="doc" id="board-count-check">
+  <div class="doc-head">
+    <span class="stage-line">Job Start · estimating feedback</span>
+    <h2>Board Count Check</h2>
+    <p class="lede">Board count is a <b>required</b> Job Start field and the Projects billing basis. Treat the packet number as a claim to verify — not a number to invent on site.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>We do not guess board count in a stairwell. The handoff should already carry it. Your job is to notice when reality is wildly off (wrong product, wrong floor, obvious short) and report actual vs packet back to the office — that is how estimating gets better. You do not rewrite Monday money columns from Job Check.</p>
+  </div>
+
+  <div class="block">
+    <h3>Field checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Read board count from Job Start / Projects</b> before the hang wave starts.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Receiving:</b> count specialty board (shaftliner, MR, cement, abuse) separate from standard — see Material Receiving.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Obvious miss:</b> photo + tell the lead/office same day. Do not silently &quot;make it work&quot; with random leftovers from another floor.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Overage / leftover:</b> count returnable sheets before they get ruined — Material Feedback.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Never edit billing basis columns</b> from the field. Job Check will not offer them; that is office-owned.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Job Start required field <code>board_count</code> → Projects <code>board_counts</code>. Hard-excluded from Job Check writes (billing basis). GVC practice for field verification + estimating feedback — not a license to change contract quantities on the phone.</p>
+  </div>
+</section>
+
+<!-- ==================== GARAGE FINISH ==================== -->
+<section class="doc" id="garage-finish">
+  <div class="doc-head">
+    <span class="stage-line">Job Start · classic rework</span>
+    <h2>Garage Finish</h2>
+    <p class="lede">Job Start calls garage finish a classic rework cause. How far the garage goes is sold in the packet — not decided by whoever hangs first.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Before you hang or finish a garage, read <b>Garage finish</b> on Job Start and any ceiling/wall notes. Fire-rated garage ceilings, unfinished storage, and &quot;taped only&quot; vs paint-ready are different jobs. Guessing the subdivision default is how we donate a remobilization.</p>
+  </div>
+
+  <div class="block">
+    <h3>Before you touch the garage</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Read Job Start Garage finish</b> (status) and related ceiling notes. Match the packet.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Check drawings / finish schedule</b> for rated ceiling or wall assemblies in the garage — rated work follows Fire Walls / Firestop, not habit.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Confirm height and how far</b> (walls only, ceiling, both, fire tape only). If the builder points at the neighbor&apos;s garage, that is not authorization.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Upgrade requests</b> (&quot;go ahead and finish it out&quot;) → Change Order path.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Cold / damp garages:</b> Job Conditions before mud or paint.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Job Start field <code>garage_finish</code> — help text in portal config literally flags it as a classic rework cause. Ceiling finish gate is sibling reading. Assembly details still come from the set and listed assemblies when rated.</p>
+  </div>
+</section>
+
+<!-- ==================== PROTECTION ==================== -->
+<section class="doc" id="protection">
+  <div class="doc-head">
+    <span class="stage-line">Every job · finished work</span>
+    <h2>Protection &amp; Other-Trade Damage</h2>
+    <p class="lede">Protect what we finished. Photograph what others damage <em>before</em> we touch it. The moment we repair undocumented damage, it becomes ours.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Corner guards, floor protection, and covering finished walls are not courtesy — they are how we keep punch from eating the margin. If another trade blows out a corner, <b>photo first</b>, then call. Fixing it as a favor is unpaid drywall.</p>
+  </div>
+
+  <div class="block">
+    <h3>Protection &amp; damage checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Before we leave an area:</b> protect outside corners and finished surfaces that other trades will still work past.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Floor / path protection</b> where mud, paint, or board traffic will ruin finished floors — coordinate with GC rules.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Other-trade damage:</b> wide + close photo, location, date, who was in the area if known — then lead/office.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Do not repair</b> until authorization path is clear (T&amp;M / CO / GC direction in writing). See Spotting a Change Order.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Our own damage / our own rework</b> stays ours — claiming it as a CO spends credibility (same page).</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC practice extending Spotting a Change Order (other-trade damage, photo-before-touch). Not a claim against a specific GC contract form — notice windows still live in the subcontract the office owns.</p>
+  </div>
+</section>
+
+<!-- ==================== CLOSEOUT RHYTHM ==================== -->
+<section class="doc" id="closeout-rhythm">
+  <div class="doc-head">
+    <span class="stage-line">How we run the day · close the loop</span>
+    <h2>End-of-Day / End-of-Week Closeout</h2>
+    <p class="lede">Morning Brief opens the day. Closeout closes it: honest Job Check, photos, material, and tomorrow&apos;s first hour — without broadcasting prep to #operations.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Do not leave the site with Monday still lying and tomorrow&apos;s stock unknown. A five-minute closeout beats a twenty-minute argument in the morning huddle.</p>
+  </div>
+
+  <div class="block">
+    <h3>Closeout checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Job Check:</b> only stages that passed QC. Clear mistakes; do not advance on hope.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Photos</b> of finished areas / hold points / damage — job Pictures habit the lead uses.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Material:</b> cover what needs covering; note shortages; stage tomorrow&apos;s first room.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Action Requests / open questions</b> from the brief — ack or escalate; silence is not a plan.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Standing-by or extras today:</b> written record same day (Change Order page).</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Week end:</b> returnable overage counted; Cleaned Out honest where claimed; punch list ownership clear.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="note stop">
+    <span class="tag">Slack</span>
+    <p>Closeout notes that are really prep/route/huddle content stay in <b>side chat or DM</b> — never Slack <b>#operations</b>. Same locked rule as Morning Brief.</p>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>GVC ops practice completing Lead Day + Morning Prep loops. Slack rule: Jordan 2026-08-05 / AGENTS.md locked #0.</p>
+  </div>
+</section>
+
+<!-- ==================== MATERIAL FEEDBACK ==================== -->
+<section class="doc" id="material-feedback">
+  <div class="doc-head">
+    <span class="stage-line">Material · estimating loop</span>
+    <h2>Material Return &amp; Waste Feedback</h2>
+    <p class="lede">Stocking already says track overage. This is the close: count it, return it, and tell estimating what actually happened — or the next bid repeats the miss.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Leftover board in the rain is not a cushion — it is money. Count returnables before the window closes. Tell the office actual vs ordered in plain numbers. Do not invent waste factors in the manual; Job Check history and real counts are the source.</p>
+  </div>
+
+  <div class="block">
+    <h3>Feedback checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Count leftover</b> by product (standard / MR / shaft / cement / steel) before it gets damaged or stolen.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Call in returns</b> in the supplier window the office uses — lead or office places the pickup.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Report actual vs ordered</b> same week — short note is enough (job name, product, ordered, used, returned, damaged).</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Damaged after staging:</b> photo trail (Receiving + Protection) so it is not silently eaten as &quot;waste.&quot;</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>No published production rates</b> in this manual — do not invent them in the feedback note either; stick to counts.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Extends Stocking Any Material &quot;track the overage / report actual vs ordered.&quot; GVC practice. Sources &amp; Method still forbids publishing production rates as authoritative.</p>
+  </div>
+</section>
+
+<!-- ==================== PLYWOOD BACKING ==================== -->
+<section class="doc" id="plywood-backing">
+  <div class="doc-head">
+    <span class="stage-line">Framing · mounts &amp; panels</span>
+    <h2>Plywood / Sheathing Backing</h2>
+    <p class="lede">Jake&apos;s scope reviews list <b>PLYWOOD</b> when we own sheet backing for mounts and casework. This is backing in the wall — not structural sheathing we were never sold.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Blocking is one stud bay. Plywood backing is a panel so something can land anywhere on that wall. Install what the drawings / packet call for, flush or recessed as detailed, and stop if the wall is rated and the listing does not allow random plywood.</p>
+  </div>
+
+  <div class="block">
+    <h3>Install checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Confirm we sold it</b> — scope / Job Start / drawings. Plywood for mounts is easy to &quot;just add&quot; as free work.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Size and thickness</b> per detail or approved submittal — do not guess ¾&quot; everywhere.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Fasten to framing</b> so the panel cannot rattle; edges supported as detailed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Flush vs recessed</b> for board plane — proud plywood prints through finish.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Rated walls:</b> only what the listed assembly / detail allows. When unclear → RFI, do not invent.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Mark locations</b> for hangers so cabinets/TVs land on the panel (ties Framing backing list + Cabinets).</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Jake Estimating scope-review trade sections include PLYWOOD; Framing checklist already owns backing for casework. This page is GVC practice for sheet backing when in scope. Structural sheathing / shear walls are engineer territory — not claimed here. Thickness and fastening: project detail and manufacturer/engineered requirements win.</p>
+  </div>
+</section>
+
+<!-- ==================== ABUSE BOARD ==================== -->
+<section class="doc" id="abuse-board">
+  <div class="doc-head">
+    <span class="stage-line">Hang · specified products</span>
+    <h2>Abuse- / Impact-Resistant Board</h2>
+    <p class="lede">Corridors, schools, hospitals — when the finish schedule calls for abuse or impact board, install that product. Ordinary rock in its place is a failed submittal waiting to happen.</p>
+  </div>
+
+  <div class="plainwords">
+    <span class="tag">In plain words</span>
+    <p>Abuse-resistant and impact-resistant panels are specified products with their own fastening and finishing notes. Use the approved submittal. Do not substitute standard board because the stack was closer.</p>
+  </div>
+
+  <div class="block">
+    <h3>Crew checklist</h3>
+    <ul class="steps">
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Confirm the product</b> on the finish / partition schedule and approved submittal.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Segregate on the floor</b> at receiving — do not mix into the standard stack.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Fasten per manufacturer</b> for that panel — patterns can differ from standard ½&quot; / ⅝&quot; gypsum.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Transitions</b> to standard board are intentional — height and bead as detailed.</span></label></li>
+      <li><label class="step"><input type="checkbox"><span class="txt"><b>Finishing:</b> follow manufacturer joint treatment notes; do not assume ordinary paper-tape habits always apply.</span></label></li>
+    </ul>
+  </div>
+
+  <div class="provenance">
+    <span class="tag">Where this came from</span>
+    <p>Manufacturer installation instructions for abuse/impact panels (USG, National Gypsum, etc.) + Hanging Drywall board-type awareness. <b>The approved submittal governs.</b> No GVC-specific fastening table is published here on purpose — inventing one would be something we could not stand behind.</p>
   </div>
 </section>
 
@@ -2310,6 +2668,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="provenance">
     <span class="tag">Where this came from</span>
     <p>Sheet numbering follows the widely used National CAD Standard convention (discipline designator + sheet type + sequence) — most commercial sets in our market use it, though not all, so read the set's own index. Scales, title block contents, grid systems, and callout conventions are standard drafting practice. <b>The document precedence order is the part to be careful with:</b> the spec-versus-drawings question is decided by the individual project's own precedence clause, which is why this document tells you to go read it rather than giving you an answer. The residential/commercial comparison reflects GVC's own mix of work.</p>
+  </div>
+
+  <div class="nextpath">
+    <span class="tag">Next in your first week</span>
+    <p>Next: <button type="button" class="doclink" data-go="changeorder">Spotting a Change Order</button>, then <button type="button" class="doclink" data-go="safety-orient">Safety Orientation</button>. Back to <button type="button" class="doclink" data-go="onboard-week1">Your First Week</button> checklist anytime.</p>
   </div>
 </section>
 
@@ -4612,6 +4975,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <span class="tag">Where this came from</span>
     <p>This is GVC practice and standard subcontract administration, not a technical standard. <b>What counts as extra work is decided by our contract on each individual job</b> — the scope, the drawings and revisions listed in it, and its notice provisions. Many subcontracts contain a <b>written-notice deadline</b> for claiming extra work, measured in days from when the condition was discovered; missing that window can forfeit the claim no matter how legitimate it is. That's the strongest possible reason to report the same day rather than at the end of the month. Andrea and the office own the contractual side; the field's job is to notice, stop, document, and call.</p>
   </div>
+
+  <div class="nextpath">
+    <span class="tag">Next in your first week</span>
+    <p>Next: <button type="button" class="doclink" data-go="safety-orient">Safety Orientation</button>. Related: <button type="button" class="doclink" data-go="rfi-field">RFI Field Playbook</button>, <button type="button" class="doclink" data-go="gc-talk">Talking to the GC</button>, <button type="button" class="doclink" data-go="exclusions-walk">Exclusions walk</button>.</p>
+  </div>
 </section>
 
 <!-- ==================== SOURCES ==================== -->
@@ -4835,17 +5203,24 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       window.scrollTo(0, 0);
     }
 
-    document.querySelectorAll("[data-go]").forEach(function (btn) {
-      btn.addEventListener("click", function () { show(btn.getAttribute("data-go"), null, true); });
-    });
-
-    /* index entries: "docId|anchorId" */
-    document.querySelectorAll("[data-jump]").forEach(function (btn) {
-      btn.addEventListener("click", function () {
-        var parts = btn.getAttribute("data-jump").split("|");
-        setLevel("full");                    // expert content is the point of a jump
-        show(parts[0], parts[1], true);
-      });
+    /* Delegated nav — home tiles, inline .doclink buttons, index jumps.
+       stopPropagation so a link inside a checklist <label> does not toggle the checkbox. */
+    document.addEventListener("click", function (e) {
+      var jump = e.target.closest("[data-jump]");
+      if (jump) {
+        e.preventDefault();
+        e.stopPropagation();
+        var parts = jump.getAttribute("data-jump").split("|");
+        setLevel("full");
+        show(parts[0], parts[1] || null, true);
+        return;
+      }
+      var go = e.target.closest("[data-go]");
+      if (go) {
+        e.preventDefault();
+        e.stopPropagation();
+        show(go.getAttribute("data-go"), null, true);
+      }
     });
 
     document.getElementById("back").addEventListener("click", function () { show("home", null, true); });
