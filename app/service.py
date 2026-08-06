@@ -86,6 +86,7 @@ from orchestrators import stripe_paid_flow
 from orchestrators import coi_flow
 from orchestrators import lien_flow
 from orchestrators import jobcheck_flow
+from orchestrators import fieldguide_coach_flow
 from orchestrators import morning_flow
 from orchestrators import jobstart_flow
 from orchestrators import billing_flow
@@ -1146,6 +1147,28 @@ def ui_hub_pinned_put(req: HubPinnedRequest, request: Request) -> dict:
         result="ok" if persisted else "ephemeral",
     )
     return {"ok": True, "items": items, "persisted": persisted}
+
+
+@app.get("/ui/gvc-theme.js")
+def portal_theme_js() -> Response:
+    """
+    Portal theme boot + toggle (web/gvc-theme.js). Ungated like gvc.css —
+    no secrets; short cache so deploys show up. Sets html[data-theme] from
+    localStorage (system | light | dark); OS preference is the default.
+    """
+    path = WEB_DIR / "gvc-theme.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_text(encoding="utf-8"),
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
 
 
 @app.get("/ui/gvc-command.js")
@@ -2296,10 +2319,39 @@ def ui_fieldguide_run_delete(run_id: str, request: Request) -> dict:
 
 @app.get("/ui/api/fieldguide/jobs")
 def ui_fieldguide_jobs(request: Request) -> dict:
-    """Active Monday jobs, for attaching a checklist run to a job. Reuses the
-    Job Check reader verbatim so the two tools always show the same job list."""
-    require_feature(request, "fieldguide")
+    """Active Monday jobs, for attaching a checklist run to a job.
+
+    Reuses the Job Check reader so both tools show the same list. Gated by
+    `jobcheck` (not baseline `fieldguide`) so every signed-in employee cannot
+    enumerate active job names/addresses — crews without Job Check still use
+    "Start without a job" or a typed label on the Field Manual page.
+    """
+    require_feature(request, "jobcheck")
     return jobcheck_flow.list_active_jobs()
+
+
+@app.get("/ui/api/fieldguide/coach")
+def ui_fieldguide_coach(
+    request: Request,
+    procedure: Optional[str] = None,
+    stage: Optional[str] = None,
+    column_id: Optional[str] = None,
+    board: Optional[str] = None,
+) -> dict:
+    """Deterministic checklist coach — Field Manual next steps only.
+
+    Optional ``stage``, ``column_id``, and ``board`` refine which stand-behind
+    steps to surface (e.g. Job Check chip deep-links). Never writes Monday /
+    Job Check, never posts Slack, never authorizes work. Gated by baseline
+    ``fieldguide`` (no job-list data).
+    """
+    require_feature(request, "fieldguide")
+    return fieldguide_coach_flow.get_coach(
+        procedure=procedure,
+        stage=stage,
+        column_id=column_id,
+        board=board,
+    )
 
 
 # ---------------------------------------------------------------------------

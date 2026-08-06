@@ -11,6 +11,21 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — theme + jobs gate + coach + diagrams (r52) — BUILT 2026-08-06
+Systems slice on the Field Manual track:
+- **Theme toggle** — `web/gvc-theme.js` + `GET /ui/gvc-theme.js`; OS default +
+  remembered Auto/Light/Dark; wired on Hub + Field Manual (other pages later).
+- **Jobs list tightened** — `GET /ui/api/fieldguide/jobs` now requires `jobcheck`;
+  Field Manual still baseline; typed job label + “Start without a job” remain.
+- **Checklist coach LIVE** — pure `subsystems/fieldguide/coach.py` +
+  `GET /ui/api/fieldguide/coach`; Coach button on procedures; never writes Job
+  Check / never #operations / never invents SF. Photo QC etc still roadmap.
+- **+8 inline SVG diagrams** (11 total): deflection heads, CRC+anchor,
+  strap-and-block, coat progression, butterfly patch, FRP gaps, ACT borders,
+  HW-D joint. Hub **r52**.
+TESTS: `tests/test_fieldguide_coach.py`, `tests/test_fieldguide_jobs_gate.py`;
+all SVGs XML-validated; fieldguide JS `node --check` clean.
+
 ## 📘 FIELD MANUAL — cross-links + Job Start stand-behind (r44) — BUILT 2026-08-06
 In-manual navigation: `.doclink` buttons use the same `data-go` router as home
 tiles (delegated click handler; links inside checklist labels do not toggle the

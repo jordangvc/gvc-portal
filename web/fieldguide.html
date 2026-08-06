@@ -4,12 +4,26 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Field Manual</title>
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
   /* Field Manual — page behavior + content palette.
-     Brand topbar/tokens from gvc.css. Dark mode stays local until portal-wide
-     theme ownership lands (see docs/HANDOFF-field-manual.md §6.3).
-     Embedded faces live in gvc.css now. */
+     Brand topbar/tokens from gvc.css. Theme: html[data-theme] via gvc-theme.js
+     (OS default + remembered override). Local content tokens follow data-theme. */
   :root {
     /* Shared with gvc.css */
     --ink: var(--gvc-ink);
@@ -38,8 +52,9 @@
     --check-mark: #FFFFFF;
     --serif: var(--display);
   }
+  /* Only when theme JS hasn't set an explicit data-theme yet (rare). */
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme]) {
       --green:#7FB894; --green-deep:#A8D4B8; --green-soft:#17251C;
       --gold:#D9B76A; --gold-dark:#C9A24B; --gold-soft:#241D0F;
       --ink:#F0EEE9; --ink-2:#C9C4BB; --muted:#94908A;
@@ -187,6 +202,41 @@
   }
   .rb-chip.ok   { color:var(--green); border-color:var(--green); }
   .rb-chip.wait { color:var(--gold-dark); border-color:var(--gold-dark); }
+
+  /* ---------- checklist coach (deterministic API) ---------- */
+  .coach-panel {
+    display:none; margin:0 16px 14px; padding:14px 16px;
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    border-left:3px solid var(--gold);
+  }
+  .coach-panel.is-open { display:block; }
+  .coach-head { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; margin-bottom:8px; }
+  .coach-head h3 { margin:0; font-family:var(--serif); font-size:18px; color:var(--green-deep); }
+  .coach-close {
+    font:inherit; font-size:13px; font-weight:600; min-height:36px; padding:0 12px;
+    border-radius:8px; cursor:pointer; border:1.5px solid var(--line);
+    background:var(--surface-2); color:var(--ink-2);
+  }
+  .coach-summary { margin:0 0 12px; font-size:15px; color:var(--ink-2); max-width:62ch; }
+  .coach-block { margin:12px 0; }
+  .coach-block h4 { margin:0 0 8px; font-size:13px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+  .coach-steps, .coach-related { margin:0; padding:0; list-style:none; display:flex; flex-direction:column; gap:8px; }
+  .coach-steps li, .coach-related li { margin:0; }
+  .coach-steps button, .coach-related button {
+    font:inherit; font-size:14.5px; text-align:left; width:100%; min-height:44px; padding:10px 12px;
+    border-radius:8px; cursor:pointer; border:1px solid var(--line); background:var(--surface-2); color:var(--ink);
+  }
+  .coach-steps button:hover, .coach-related button:hover { border-color:var(--green); background:var(--green-soft); }
+  .coach-related small { display:block; margin-top:3px; font-size:12.5px; color:var(--muted); font-weight:400; }
+  .coach-bans {
+    margin:12px 0 0; padding-top:10px; border-top:1px dashed var(--line);
+    font-size:12.5px; color:var(--muted); line-height:1.45;
+  }
+  .coach-loading { font-size:14px; color:var(--muted); margin:0; }
+  .coach-tag-live {
+    font-family:var(--mono); font-size:10px; letter-spacing:.1em; text-transform:uppercase;
+    font-weight:700; color:var(--green); margin-left:8px;
+  }
   .rb-chip.off  { color:var(--alert); border-color:var(--alert); }
 
   /* run picker sheet */
@@ -419,6 +469,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <span class="gvc-topbar-sep"></span>
     <span class="gvc-topbar-title">Field Manual</span>
     <div class="gvc-topbar-right">
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <span class="gvc-topbar-user" id="email">{{EMAIL}}</span>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
@@ -436,10 +487,28 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
 <div class="runbar" id="runbar">
   <button class="rb-btn" type="button" id="rb-start">Start a checklist for a job</button>
+  <button class="rb-btn ghost" type="button" id="rb-coach">Coach</button>
   <span class="rb-job" id="rb-job" hidden></span>
   <span class="rb-chip" id="rb-state" hidden></span>
   <button class="rb-btn ghost" type="button" id="rb-finish" hidden>Finish</button>
   <button class="rb-btn ghost" type="button" id="rb-close" hidden>Close</button>
+</div>
+
+<div class="coach-panel" id="coach-panel" hidden aria-live="polite">
+  <div class="coach-head">
+    <h3 id="coach-title">Checklist coach</h3>
+    <button type="button" class="coach-close" id="coach-close">Close</button>
+  </div>
+  <p class="coach-summary" id="coach-summary"></p>
+  <div class="coach-block" id="coach-steps-wrap">
+    <h4>Next steps</h4>
+    <ul class="coach-steps" id="coach-steps"></ul>
+  </div>
+  <div class="coach-block" id="coach-related-wrap">
+    <h4>Related procedures</h4>
+    <ul class="coach-related" id="coach-related"></ul>
+  </div>
+  <p class="coach-bans" id="coach-bans"></p>
 </div>
 
 <div class="sheet-scrim" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
@@ -456,6 +525,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <p class="hint" style="margin-bottom:8px;"><b>Or start a new one</b> on a job.</p>
       <input type="search" id="jobsearch" placeholder="Search active jobs — name, address, project #…" autocomplete="off" />
       <div class="joblist" id="joblist" style="margin-top:9px;"><div class="none">Loading active jobs…</div></div>
+      <div id="job-manual-wrap" hidden style="margin-top:12px;">
+        <p class="hint" style="margin-bottom:8px;"><b>Or type a job label</b> (no Monday list on this account — still saves for the crew).</p>
+        <input type="text" id="job-manual" placeholder="e.g. 9195 Silva · Willow Creek" autocomplete="off" maxlength="200" />
+        <button class="rb-btn" type="button" id="sheet-manual" style="margin-top:9px;width:100%;">Start with this label</button>
+      </div>
     </div>
 
     <div class="sheet-row">
@@ -1605,12 +1679,12 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   </div>
 
   <div class="expert" id="ai-roadmap">
-    <span class="tag">Full detail · roadmap (not built yet)</span>
-    <h4>Ideas we may add later</h4>
+    <span class="tag">Full detail · roadmap</span>
+    <h4>Assists on the roadmap</h4>
     <div class="table-wrap"><table>
       <thead><tr><th scope="col">Assist</th><th scope="col">Helps</th><th scope="col">Still human</th></tr></thead>
       <tbody>
-        <tr><td>Checklist coach</td><td>Suggests next Field Manual steps for a stage</td><td>Never writes Job Check</td></tr>
+        <tr><td><b>Checklist coach</b> <span class="coach-tag-live">LIVE</span></td><td>Suggests next Field Manual steps for a stage — open <button type="button" class="doclink" id="ai-coach-link">Coach</button> on any procedure page</td><td>Never writes Job Check</td></tr>
         <tr><td>Photo QC coach</td><td>Hints at unfinished work / proud screws / missing bead</td><td>Lead decides pass/fail</td></tr>
         <tr><td>Morning prep agent</td><td>Drafts private brief from Monday + weather</td><td>Slack DM only; human edits</td></tr>
         <tr><td>CO spotter</td><td>Flags verbal-add language in notes/photos</td><td>No auto-bill</td></tr>
@@ -1623,7 +1697,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <div class="provenance">
     <span class="tag">Where this came from</span>
-    <p>GVC portal locked architecture (no auto-send Gmail; Monday as SoT; Morning Brief Slack rule) extended to AI assists. Roadmap is documentation only until Jordan prioritizes builds.</p>
+    <p>GVC portal locked architecture (no auto-send Gmail; Monday as SoT; Morning Brief Slack rule) extended to AI assists. Checklist coach is curated Field Manual links only — no invented scope or Job Check writes. Other assists stay roadmap until prioritized.</p>
   </div>
 </section>
 
@@ -2720,6 +2794,28 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <li><b>Number = nominal joint width.</b> <span class="spec">0000–0999</span> = up to 2". <span class="spec">1000–1999</span> = over 2" up to 6". <span class="spec">2000–2999</span> = over 6" up to 12".</li>
     </ul>
     <p>So <span class="spec">HW-D-1000</span> reads as: head-of-wall joint, dynamic, joint width somewhere over 2" and up to 6".</p>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Section of a dynamic head-of-wall firestop joint over a deflection track and studs.">
+        <text class="dg-t lbl" x="4" y="16">SECTION &#8212; HW-D HEAD-OF-WALL JOINT (DYNAMIC)</text>
+        <rect class="dg-track" x="200" y="30" width="320" height="16"/>
+        <text class="dg-t mid" x="360" y="24">structure / deck</text>
+        <rect x="240" y="46" width="240" height="36" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.4"/>
+        <text class="dg-t mid" x="360" y="68">listed joint fill (moves)</text>
+        <rect class="dg-track" x="250" y="82" width="220" height="14"/>
+        <text class="dg-t mid" x="360" y="108">deflection track / gap</text>
+        <rect class="dg-member" x="280" y="96" width="16" height="100"/>
+        <rect class="dg-member" x="360" y="96" width="16" height="100"/>
+        <rect class="dg-member" x="440" y="96" width="16" height="100"/>
+        <rect class="dg-member" x="250" y="120" width="220" height="12"/>
+        <text class="dg-t mid" x="360" y="210">Static fill in a moving joint tears on first load &#8212; use dynamic (D) systems here</text>
+
+      </svg>
+    </div>
+    <figcaption><b>HW-D means head-of-wall, dynamic.</b> The deflection gap is exactly why a static firestop fails after inspection day. Build the listed joint width, packing, and sealant — the number on the drawing is the system.</figcaption>
+  </figure>
+
     <p><b>Through-penetrations</b> use a similar scheme — <span class="spec">W-L-1087</span> and the like, where <span class="spec">W</span> indicates a wall assembly and the following letter identifies the class of wall and penetrant. You mostly need to recognize that <b>the number is specific to the penetrant</b>: a system for a metallic pipe is not a system for a bundle of cables, and swapping them voids it.</p>
 
     <h4>The one that catches people: dynamic vs. static</h4>
@@ -3116,9 +3212,33 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <li><b>Cut studs short of the track web</b> by the gap the detail requires. A stud bearing hard on the track defeats the whole system and is the most common failed head-of-wall inspection.</li>
       <li><b>Never screw through the legs of a plain slip track into the stud.</b> That pins it solid. On slotted track you screw through the slot — that's different and it's correct.</li>
       <li><b>Deflection and drift are different problems.</b> Vertical movement is deflection; sideways is drift. A vertical-only product doesn't handle drift.</li>
-      <li><b>On rated walls the head of wall is a listed joint system</b> — track type, gap, fill material, and fastener pattern are all part of the listing. Build it as listed or it fails.</li>
-    </ul>
-  </div>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Side-by-side section: slotted deflection track with screws through slots versus nested slip track where the inner assembly slides.">
+        <text class="dg-t lbl" x="4" y="16">SECTION &#8212; TWO COMMON DEFLECTION HEADS</text>
+        <text class="dg-t lbl" x="20" y="42">SLOTTED TRACK</text>
+        <rect class="dg-track" x="40" y="50" width="280" height="18"/>
+        <text class="dg-t" x="48" y="63">slots in track legs</text>
+        <rect class="dg-member" x="90" y="68" width="14" height="110"/>
+        <rect class="dg-member" x="170" y="68" width="14" height="110"/>
+        <rect class="dg-member" x="250" y="68" width="14" height="110"/>
+        <line class="dg-dim" x1="97" y1="58" x2="97" y2="68"/>
+        <circle cx="97" cy="62" r="3" fill="var(--green)"/>
+        <text class="dg-t mid" x="180" y="200">screw THROUGH the slot &#8212; stud can slide</text>
+        <text class="dg-t lbl" x="380" y="42">DOUBLE / SLIP TRACK</text>
+        <rect class="dg-track" x="400" y="50" width="280" height="14"/>
+        <rect class="dg-track" x="410" y="66" width="260" height="14"/>
+        <rect class="dg-member" x="450" y="80" width="14" height="98"/>
+        <rect class="dg-member" x="530" y="80" width="14" height="98"/>
+        <rect class="dg-member" x="610" y="80" width="14" height="98"/>
+        <text class="dg-t mid" x="540" y="200">inner slides &#183; do NOT pin outer to stud</text>
+        <line class="dg-bad" x1="40" y1="210" x2="320" y2="210"/>
+
+      </svg>
+    </div>
+    <figcaption><b>Same job, two systems.</b> Slotted: fasten through the slot so the stud rides vertically. Slip: nested tracks — pinning the outer track to the stud defeats the gap. Cut studs short of the web either way.</figcaption>
+  </figure>
 
   <div class="expert" id="sys-bridging">
     <span class="tag">Full detail · bracing the studs</span>
@@ -3137,6 +3257,27 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <li>Attachment to each stud is what makes it work — a channel floating loose in the holes braces nothing.</li>
       <li><b>Anchor the ends.</b> See above — this is the failure mode.</li>
     </ul>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Elevation of studs with cold-rolled channel through knockouts and a highlighted end anchorage.">
+        <text class="dg-t lbl" x="4" y="16">ELEVATION &#8212; CRC THROUGH KNOCKOUTS + END ANCHOR</text>
+        <rect class="dg-member" x="80" y="40" width="18" height="160"/>
+        <rect class="dg-member" x="200" y="40" width="18" height="160"/>
+        <rect class="dg-member" x="320" y="40" width="18" height="160"/>
+        <rect class="dg-member" x="440" y="40" width="18" height="160"/>
+        <rect class="dg-member" x="560" y="40" width="18" height="160"/>
+        <rect x="70" y="100" width="520" height="12" class="dg-track"/>
+        <text class="dg-t" x="70" y="94">CRC through aligned knockouts</text>
+        <path class="dg-bad" d="M590 90 L650 70 L650 130 Z" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.4"/>
+        <text class="dg-t lbl" x="600" y="155">ANCHOR</text>
+        <text class="dg-t warn mid" x="360" y="210">Without end anchorage the channel is decoration</text>
+
+      </svg>
+    </div>
+    <figcaption><b>Channel alone is not bracing.</b> CRC must be clipped to each stud web <b>and</b> delivered into an end anchorage — wall end, corner, or designed strut. A free float through fifty knockouts braces nothing.</figcaption>
+  </figure>
+
   </div>
 
   <div class="expert" id="sys-strap">
@@ -3144,6 +3285,29 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <p><b>Flat strap</b> is flat steel banding run horizontally across the stud flanges and screwed to each one. Code-prescribed horizontal straps are commonly <b>not less than 1½" wide and 33 mils thick, with one #8 screw per stud flange</b>. Straps normally go on <b>both sides</b> of the wall — a strap on one face alone can still let the stud roll.</p>
     <p><b>Strap and block</b> adds a short piece of stud or track blocked between studs at intervals along the strap run. This is the method to reach for <b>once studs get deeper than about 6"</b> — U-channel bridging alone doesn't adequately brace members that wide. The block gives the strap something solid to work against and delivers the accumulated force.</p>
     <p><b>Diagonal strap bracing — X-bracing, sometimes called Z bracing on drawings</b> — is a different animal. It runs on a diagonal across the wall frame to resist <b>racking and lateral load</b>, not stud rotation. It's a shear element. If a drawing shows diagonal straps, they are not a substitute for horizontal bridging, and horizontal bridging is not a substitute for them. Read which one is called for and install both if both are shown.</p>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Elevation showing horizontal flat strap across studs with short blocking pieces between studs.">
+        <text class="dg-t lbl" x="4" y="16">ELEVATION &#8212; STRAP AND BLOCK</text>
+        <rect class="dg-member" x="100" y="36" width="16" height="160"/>
+        <rect class="dg-member" x="220" y="36" width="16" height="160"/>
+        <rect class="dg-member" x="340" y="36" width="16" height="160"/>
+        <rect class="dg-member" x="460" y="36" width="16" height="160"/>
+        <rect class="dg-member" x="580" y="36" width="16" height="160"/>
+        <rect x="90" y="100" width="520" height="8" fill="var(--gold)" stroke="var(--gold-dark)" stroke-width="1"/>
+        <text class="dg-t" x="90" y="94">flat strap both faces (near side shown)</text>
+        <rect class="dg-track" x="140" y="88" width="60" height="32"/>
+        <rect class="dg-track" x="380" y="88" width="60" height="32"/>
+        <text class="dg-t mid" x="170" y="108">block</text>
+        <text class="dg-t mid" x="410" y="108">block</text>
+        <text class="dg-t" x="90" y="200">Reach for this once studs get deeper than about 6&#8243; &#8212; U-channel alone is not enough</text>
+
+      </svg>
+    </div>
+    <figcaption><b>Strap + block delivers the force.</b> Flat strap on the flanges needs blocks between studs on deep members so the strap has something solid to work against. Diagonal X-bracing is a different job (shear), not a substitute.</figcaption>
+  </figure>
+
   </div>
 
   <div class="expert" id="sys-blocking">
@@ -3656,6 +3820,29 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   </div>
 
   <div class="block">
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Section diagram of drywall joint coats getting progressively wider and thinner.">
+        <text class="dg-t lbl" x="4" y="16">SECTION &#8212; COAT PROGRESSION (EACH WIDER AND THINNER)</text>
+        <rect class="dg-member" x="40" y="80" width="640" height="28"/>
+        <path d="M200 80 Q360 70 520 80 L520 95 Q360 88 200 95 Z" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.2"/>
+        <text class="dg-t mid" x="360" y="72">tape / bed</text>
+        <path d="M140 78 Q360 55 580 78" fill="none" stroke="var(--green)" stroke-width="2"/>
+        <text class="dg-t mid" x="360" y="48">2nd coat &#8212; wider</text>
+        <path d="M80 76 Q360 40 640 76" fill="none" stroke="var(--gold-dark)" stroke-width="1.6"/>
+        <text class="dg-t mid" x="360" y="32">3rd / finish &#8212; widest, thinnest</text>
+        <line class="dg-dim" x1="200" y1="130" x2="520" y2="130"/>
+        <text class="dg-t mid" x="360" y="148">narrow bed</text>
+        <line class="dg-dim" x1="80" y1="160" x2="640" y2="160"/>
+        <text class="dg-t mid" x="360" y="178">wide feather &#8212; that is how the joint disappears</text>
+        <text class="dg-t" x="40" y="208">Only coat over a fully dry previous coat. Scrape ridges before they harden.</text>
+
+      </svg>
+    </div>
+    <figcaption><b>Wider and thinner, every pass.</b> The bed is narrow; each following coat grows the feather. Sanding should blend edges, not reshape a starved wall. Finish to the specified level — not higher.</figcaption>
+  </figure>
+
     <h3>The coat sequence</h3>
     <h4>Prep — before any mud</h4>
     <ul class="steps">
@@ -3781,6 +3968,29 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <span class="tag">In plain words</span>
     <p>You hang a metal grid from the structure on wires, then drop tiles into it. Two things make it look right: <b>the grid is dead level</b>, and <b>the cut tiles around the edges are big and even</b>. Get those two and it looks professional. Miss either one and everybody notices, even people who don't know why.</p>
   </div>
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Plan of an ACT grid with highlighted equalized border tiles at opposite walls.">
+        <text class="dg-t lbl" x="4" y="16">PLAN &#8212; ACT BORDER / WALL-ANGLE LAYOUT</text>
+        <rect x="40" y="40" width="640" height="140" fill="none" stroke="var(--muted)" stroke-width="2"/>
+        <line class="dg-center" x1="40" y1="80" x2="680" y2="80"/>
+        <line class="dg-center" x1="40" y1="140" x2="680" y2="140"/>
+        <line class="dg-center" x1="160" y1="40" x2="160" y2="180"/>
+        <line class="dg-center" x1="280" y1="40" x2="280" y2="180"/>
+        <line class="dg-center" x1="400" y1="40" x2="400" y2="180"/>
+        <line class="dg-center" x1="520" y1="40" x2="520" y2="180"/>
+        <line class="dg-center" x1="640" y1="40" x2="640" y2="180"/>
+        <rect x="40" y="40" width="120" height="40" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.2"/>
+        <rect x="560" y="140" width="120" height="40" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.2"/>
+        <text class="dg-t mid" x="100" y="64">border</text>
+        <text class="dg-t mid" x="620" y="164">border</text>
+        <text class="dg-t" x="40" y="208">Equalize border tiles on opposite walls. Wall angle is the edge &#8212; not a place to hide a leftover sliver.</text>
+
+      </svg>
+    </div>
+    <figcaption><b>Equal borders beat leftover slivers.</b> Lay out so opposite walls share similar border widths. The wall angle finishes the edge; a skinny cut tile at the wall always reads as a mistake.</figcaption>
+  </figure>
+
 
   <div class="note why">
     <span class="tag">Why layout comes first</span>
@@ -4389,6 +4599,28 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="block">
     <h3>The California / butterfly patch</h3>
     <p class="sub">Uses the board's own paper as the tape, so there's nothing to blister and no backing to install.</p>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Diagram of a California butterfly patch with paper flange around a gypsum plug.">
+        <text class="dg-t lbl" x="4" y="16">CALIFORNIA / BUTTERFLY PATCH</text>
+        <rect class="dg-member" x="40" y="50" width="280" height="140" fill="var(--surface-2)"/>
+        <rect x="120" y="90" width="120" height="60" fill="none" stroke="var(--alert)" stroke-width="1.8" stroke-dasharray="4 3"/>
+        <text class="dg-t mid warn" x="180" y="125">hole</text>
+        <rect class="dg-member" x="400" y="50" width="260" height="140"/>
+        <rect x="460" y="90" width="140" height="60" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.4"/>
+        <path d="M430 70 H490 V170 H430" fill="none" stroke="var(--gold-dark)" stroke-width="2"/>
+        <path d="M570 70 H630 V170 H570" fill="none" stroke="var(--gold-dark)" stroke-width="2"/>
+        <path d="M460 50 V90 H600 V50" fill="none" stroke="var(--gold-dark)" stroke-width="2"/>
+        <path d="M460 150 V190 H600 V150" fill="none" stroke="var(--gold-dark)" stroke-width="2"/>
+        <text class="dg-t mid" x="530" y="125">plug</text>
+        <text class="dg-t mid" x="530" y="208">paper flange left on &#8212; that is the tape</text>
+
+      </svg>
+    </div>
+    <figcaption><b>The paper is the tape.</b> Score the back, snap the gypsum off the border, leave the face paper as a flange. Butter, set, squeeze the mud out from under the flange — trapped mud bubbles later.</figcaption>
+  </figure>
+
     <ul class="steps">
       <li><label class="step"><input type="checkbox"><span class="txt">Square up the hole and cut back to sound board.</span></label></li>
       <li><label class="step"><input type="checkbox"><span class="txt">Take a scrap piece roughly <b>3–4" larger than the hole in both directions.</b></span></label></li>
@@ -4684,7 +4916,27 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     </ul>
   </div>
 
-  <div class="block">
+  
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Plan view of FRP panels with labeled expansion gaps between panels and at perimeter.">
+        <text class="dg-t lbl" x="4" y="16">PLAN &#8212; FRP EXPANSION GAPS (TYPICAL)</text>
+        <rect class="dg-member" x="60" y="60" width="200" height="120"/>
+        <rect class="dg-member" x="280" y="60" width="200" height="120"/>
+        <rect class="dg-member" x="500" y="60" width="160" height="120"/>
+        <line class="dg-dim" x1="260" y1="70" x2="280" y2="70"/>
+        <text class="dg-t mid" x="270" y="55">1/8&#8243;</text>
+        <line class="dg-dim" x1="480" y1="70" x2="500" y2="70"/>
+        <text class="dg-t mid" x="490" y="55">1/8&#8243;</text>
+        <line class="dg-dim" x1="60" y1="50" x2="60" y2="60"/>
+        <text class="dg-t" x="68" y="48">1/4&#8243; top + bottom</text>
+        <text class="dg-t" x="60" y="210">Gaps are not optional — panels grow. Molding stems need room; silicone in washdown areas.</text>
+
+      </svg>
+    </div>
+    <figcaption><b>Leave room for the panel to move.</b> Typical field gaps: about 1/4&#8243; at top and bottom, 1/8&#8243; between panels, and clearance at the molding stem. Project / manufacturer details win when they differ.</figcaption>
+  </figure>
+<div class="block">
     <h3>Before you call it done</h3>
     <ul class="steps">
       <li><label class="step"><input type="checkbox"><span class="txt">No bubbles or hollow spots — sound the panel with your hand across the whole face.</span></label></li>
@@ -5165,9 +5417,11 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <p>Check marks and your detail-level choice save on this device only. Nothing here is transmitted anywhere.</p>
 </footer>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
   (function () {
+    if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
     var CHECK_KEY = "gvc-field-manual-v2";
     var LVL_KEY = "gvc-field-manual-level";
     var docs = Array.prototype.slice.call(document.querySelectorAll(".doc"));
@@ -5568,28 +5822,58 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
     function loadJobs() {
       var list = document.getElementById("joblist");
+      var manual = document.getElementById("job-manual-wrap");
+      var search = document.getElementById("jobsearch");
+      if (jobsCache && jobsCache._denied) {
+        list.innerHTML = '<div class="none">Active job list needs a <b>Job Check</b> grant. ' +
+          'Type a label below, or use <b>Start without a job</b>.</div>';
+        if (manual) manual.hidden = false;
+        if (search) search.hidden = true;
+        return;
+      }
       if (jobsCache) { renderJobs(jobsCache, ""); return; }
       list.innerHTML = '<div class="none">Loading active jobs…</div>';
+      if (manual) manual.hidden = true;
+      if (search) search.hidden = false;
       fetch("/ui/api/fieldguide/jobs")
-        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (r) {
+          if (r.status === 403) {
+            jobsCache = [];
+            jobsCache._denied = true;
+            list.innerHTML = '<div class="none">Active job list needs a <b>Job Check</b> grant. ' +
+              'Type a label below, or use <b>Start without a job</b>.</div>';
+            if (manual) manual.hidden = false;
+            if (search) search.hidden = true;
+            return null;
+          }
+          return r.ok ? r.json() : null;
+        })
         .then(function (j) {
+          if (jobsCache && jobsCache._denied) return;
           jobsCache = (j && (j.jobs || j.items)) || [];
+          if (manual) manual.hidden = false; /* typed label always available */
           renderJobs(jobsCache, "");
         })
         .catch(function () {
           list.innerHTML = '<div class="none">Can\'t reach the job list right now — ' +
-            'use <b>Start without a job</b> and it\'ll still save.</div>';
+            'type a label below or use <b>Start without a job</b>.</div>';
+          if (manual) manual.hidden = false;
         });
     }
 
     function renderJobs(jobs, q) {
       var list = document.getElementById("joblist");
+      if (jobs && jobs._denied) return;
       var needle = (q || "").toLowerCase();
-      var hits = jobs.filter(function (jb) {
+      var hits = (jobs || []).filter(function (jb) {
         if (!needle) return true;
         return JSON.stringify(jb).toLowerCase().indexOf(needle) !== -1;
       }).slice(0, 60);
-      if (!hits.length) { list.innerHTML = '<div class="none">No matching active jobs.</div>'; return; }
+      if (!hits.length) {
+        list.innerHTML = '<div class="none">' +
+          (needle ? "No matching active jobs." : "No active jobs returned.") + "</div>";
+        return;
+      }
       list.innerHTML = "";
       hits.forEach(function (jb) {
         var name = jb.name || jb.job_name || ("Job " + (jb.id || jb.item_id || ""));
@@ -5605,11 +5889,23 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     }
 
     document.getElementById("jobsearch").addEventListener("input", function (e) {
-      if (jobsCache) { renderJobs(jobsCache, e.target.value); }
+      if (jobsCache && !jobsCache._denied) { renderJobs(jobsCache, e.target.value); }
     });
     document.getElementById("sheet-nojob").addEventListener("click", function () {
       startRun("", "");
     });
+    var sheetManual = document.getElementById("sheet-manual");
+    if (sheetManual) {
+      sheetManual.addEventListener("click", function () {
+        var inp = document.getElementById("job-manual");
+        var label = (inp && inp.value || "").trim();
+        if (!label) {
+          window.alert("Type a short job label, or use Start without a job.");
+          return;
+        }
+        startRun("", label);
+      });
+    }
 
     function startRun(jobId, jobName) {
       var run = {
@@ -5672,6 +5968,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     onDocShown = function (docId) {
       applyChecks(docId);
       if (NON_PROC.indexOf(docId) === -1) { renderBar(); }
+      syncCoachBar(docId);
     };
 
     /* Migrate the old index-array format once, then load initial state. */
@@ -5679,6 +5976,127 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       var old = lsGet(CHECK_KEY, null);
       if (Array.isArray(old)) { lsSet(CHECK_KEY, {}); }
     })();
+
+
+    /* ---------- checklist coach ---------- */
+    var coachBtn = document.getElementById("rb-coach");
+    var coachPanel = document.getElementById("coach-panel");
+    var coachCache = {};
+    var coachOpenFor = null;
+
+    function closeCoach() {
+      if (!coachPanel) return;
+      coachPanel.classList.remove("is-open");
+      coachPanel.hidden = true;
+      coachOpenFor = null;
+    }
+
+    function syncCoachBar(docId) {
+      if (!coachBtn) return;
+      var isProc = NON_PROC.indexOf(docId) === -1;
+      coachBtn.hidden = !isProc;
+      if (!isProc) { closeCoach(); return; }
+      if (coachOpenFor && coachOpenFor !== docId) { openCoach(docId); }
+    }
+
+    function parseCoachAnchor(anchor) {
+      var raw = String(anchor || "").replace(/^#/, "");
+      var parts = raw.split("/");
+      return { doc: parts[0] || "home", frag: parts[1] || null };
+    }
+
+    function renderCoach(data) {
+      if (!coachPanel || !data) return;
+      document.getElementById("coach-title").textContent = data.title || "Checklist coach";
+      var summary = data.summary || "";
+      if (data.jobcheck_hint && data.jobcheck_hint.label) {
+        summary += " (Job Check: " + data.jobcheck_hint.label + ")";
+      }
+      document.getElementById("coach-summary").textContent = summary;
+      var steps = document.getElementById("coach-steps");
+      steps.innerHTML = "";
+      (data.next_steps || []).forEach(function (s) {
+        var li = document.createElement("li");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.textContent = s.text || "";
+        b.addEventListener("click", function () {
+          var a = parseCoachAnchor(s.anchor);
+          setLevel("full");
+          show(a.doc, a.frag, true);
+        });
+        li.appendChild(b);
+        steps.appendChild(li);
+      });
+      var rel = document.getElementById("coach-related");
+      rel.innerHTML = "";
+      (data.related || []).forEach(function (r) {
+        var li = document.createElement("li");
+        var b = document.createElement("button");
+        b.type = "button";
+        b.innerHTML = esc(r.title || r.id) +
+          (r.why ? "<small>" + esc(r.why) + "</small>" : "");
+        b.addEventListener("click", function () { show(r.id, null, true); });
+        li.appendChild(b);
+        rel.appendChild(li);
+      });
+      var bans = document.getElementById("coach-bans");
+      bans.textContent = (data.bans || []).join(" · ");
+      coachPanel.hidden = false;
+      coachPanel.classList.add("is-open");
+      try { coachPanel.scrollIntoView({ block: "nearest" }); } catch (e) {}
+    }
+
+    function openCoach(procId) {
+      var id = procId || currentDoc;
+      if (!coachPanel) return;
+      coachOpenFor = id;
+      if (coachCache[id]) { renderCoach(coachCache[id]); return; }
+      document.getElementById("coach-summary").textContent = "Loading…";
+      document.getElementById("coach-steps").innerHTML = "";
+      document.getElementById("coach-related").innerHTML = "";
+      document.getElementById("coach-bans").textContent = "";
+      coachPanel.hidden = false;
+      coachPanel.classList.add("is-open");
+      fetch("/ui/api/fieldguide/coach?procedure=" + encodeURIComponent(id))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j) {
+            document.getElementById("coach-summary").textContent =
+              "Coach unavailable right now — keep using the procedures below.";
+            return;
+          }
+          coachCache[id] = j;
+          renderCoach(j);
+        })
+        .catch(function () {
+          document.getElementById("coach-summary").textContent =
+            "Can't reach the coach — check signal and try again.";
+        });
+    }
+
+    if (coachBtn) {
+      coachBtn.addEventListener("click", function () {
+        if (coachOpenFor === currentDoc && coachPanel && !coachPanel.hidden) {
+          closeCoach();
+          return;
+        }
+        openCoach(currentDoc);
+      });
+    }
+    var coachClose = document.getElementById("coach-close");
+    if (coachClose) coachClose.addEventListener("click", closeCoach);
+    var aiCoachLink = document.getElementById("ai-coach-link");
+    if (aiCoachLink) {
+      aiCoachLink.addEventListener("click", function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        var proc = NON_PROC.indexOf(currentDoc) === -1 ? currentDoc : "";
+        if (proc) { openCoach(proc); }
+        else { show("hang", null, true); setTimeout(function () { openCoach("hang"); }, 50); }
+      });
+    }
+
 
     /* initial view from hash */
     fromHash(location.hash, false);

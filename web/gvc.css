@@ -295,6 +295,37 @@ html,body{ margin:0; padding:0; }
   --shadow-md: 0 4px 14px rgb(0 0 0 / 0.65);
   --shadow-lg: 0 18px 44px rgb(0 0 0 / 0.8);
   --scrim: rgb(0 0 0 / 0.75);
+
+  /* Re-bridge --gvc-* (same bindings as light). --color-* above win by
+     specificity; without this, a future split of the light rule could leave
+     dark chrome on stale gvc tokens. Theme toggle: web/gvc-theme.js. */
+  --gvc-bg: var(--color-bg);
+  --gvc-surface: var(--color-surface-2);
+  --gvc-ink: var(--color-text);
+  --gvc-ink-soft: var(--color-text-muted);
+  --gvc-muted: var(--color-text-muted);
+  --gvc-line: var(--color-divider);
+  --gvc-line-soft: var(--color-surface-offset);
+  --gvc-line-strong: var(--color-border);
+  --gvc-cream: var(--color-surface-offset);
+  --gvc-green: var(--color-primary);
+  --gvc-green-dark: var(--color-primary-hover);
+  --gvc-gold: var(--color-accent);
+  --gvc-gold-dark: var(--color-accent-ink);
+  --gvc-gold-matte: var(--color-accent);
+  --gvc-tint-green: var(--color-primary-soft);
+  --gvc-tint-sand: var(--color-accent-soft);
+  --gvc-danger: var(--color-danger);
+  --gvc-danger-dark: var(--color-danger);
+  --gvc-danger-tint: var(--color-danger-soft);
+  --gvc-warn: var(--color-warn);
+  --gvc-warn-tint: var(--color-warn-soft);
+  --gvc-ok: var(--color-primary);
+  --gvc-ok-tint: var(--color-primary-soft);
+  --gvc-shadow-1: var(--shadow-sm);
+  --gvc-shadow-2: var(--shadow-md);
+  --gvc-shadow-3: var(--shadow-lg);
+  --gvc-shadow-sm: var(--shadow-sm);
 }
 
 /* Command interaction extras (palette-gated) */
