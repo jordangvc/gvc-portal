@@ -2,6 +2,12 @@
    gvc.css — Green Valley Contractors portal design system
    Plain CSS. Tokens only. No imports, no remote assets.
 
+   STYLING CONTRACT: docs/GVC-COMMAND-STYLE.md (GVC Command).
+   Command tokens (--color-*, --text-*, --space-*, .btn/.chip/.segmented)
+   activate when <html data-palette="emerald">. Legacy --gvc-* pages keep
+   working unchanged until they opt in. Tap floor stays ≥48px on phones
+   (Command asks ≥44; portal keeps the stronger Jordan rule).
+
    Design-agent delivery, with three GVC changes applied on intake.
    Everything else lifts verbatim.
 
@@ -135,6 +141,318 @@
 
 *,*::before,*::after{ box-sizing:border-box; }
 html,body{ margin:0; padding:0; }
+
+/* ============================================================
+   GVC Command — tokens + primitives (docs/GVC-COMMAND-STYLE.md)
+   Opt-in via html[data-palette="emerald"][data-theme="light|dark"].
+   Without data-palette, nothing below remaps --gvc-* (no surprise restyles).
+   ============================================================ */
+
+:root {
+  /* Type scale (fluid) — available everywhere; colors stay palette-gated */
+  --text-xs: clamp(0.75rem, 0.72rem + 0.12vw, 0.8125rem);
+  --text-sm: clamp(0.875rem, 0.85rem + 0.12vw, 0.9375rem);
+  --text-base: clamp(1rem, 0.97rem + 0.15vw, 1.0625rem);
+  --text-lg: clamp(1.125rem, 1.05rem + 0.4vw, 1.375rem);
+  --text-xl: clamp(1.5rem, 1.3rem + 0.9vw, 2rem);
+  --text-num-sm: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+  --text-num: clamp(1.375rem, 1.2rem + 0.8vw, 1.875rem);
+
+  --space-1: 0.25rem;  --space-2: 0.5rem;   --space-3: 0.75rem;
+  --space-4: 1rem;     --space-5: 1.25rem;  --space-6: 1.5rem;
+  --space-8: 2rem;     --space-10: 2.5rem;  --space-12: 3rem;  --space-16: 4rem;
+
+  --radius-sm: 0.375rem; --radius-md: 0.5rem; --radius-lg: 0.75rem;
+  --radius-xl: 1rem;     --radius-full: 9999px;
+
+  --transition-interactive: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* Faces named in Command; fall through to embedded Montserrat/Lato (no CDN).
+     Do NOT reference --gvc-face-* here — emerald remaps those TO --font-* (cycle). */
+  --font-display: 'Cabinet Grotesk', 'Satoshi', 'Montserrat', Baskerville, "Baskerville Old Face", Georgia, system-ui, sans-serif;
+  --font-body: 'Satoshi', 'Lato', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+
+  --sidebar-w: 232px;
+  --header-h: 60px;
+  --rows-max: 26rem;
+}
+
+/* --- EMERALD light (default Command) --- */
+[data-palette='emerald'],
+[data-palette='emerald'][data-theme='light'] {
+  --color-bg: #e6e2da;
+  --color-surface: #efece6;
+  --color-surface-2: #f7f5f1;
+  --color-surface-offset: #dcd7cd;
+  --color-surface-dynamic: #cfc9bd;
+  --color-divider: #d5d0c5;
+  --color-border: #bdb7aa;
+
+  --color-text: #101111;
+  --color-text-muted: #4e5551;
+  --color-text-faint: #838a85;
+  --color-text-inverse: #f7f5f1;
+
+  --color-primary: #154230;
+  --color-primary-hover: #0d2e21;
+  --color-primary-soft: #d3ded7;
+  --color-primary-ring: #15423055;
+
+  --color-accent: #a6824a;
+  --color-accent-ink: #6d5326;
+  --color-accent-soft: #eee3cf;
+
+  --color-danger: #6b4038;
+  --color-danger-soft: #e4dcd7;
+  --color-warn: #8a6a1f;
+  --color-warn-soft: #efe3c9;
+  --color-info: #29525c;
+  --color-info-soft: #d8e1e2;
+  --color-violet: #4c4358;
+  --color-violet-soft: #ddd9e0;
+  --color-neutral-soft: #dcd7cd;
+
+  --shadow-sm: 0 1px 2px rgb(16 17 17 / 0.08);
+  --shadow-md: 0 4px 14px rgb(16 17 17 / 0.1);
+  --shadow-lg: 0 18px 44px rgb(16 17 17 / 0.18);
+  --scrim: rgb(16 17 17 / 0.5);
+
+  /* Bridge: legacy --gvc-* components pick up Command without a rewrite */
+  --gvc-bg: var(--color-bg);
+  --gvc-surface: var(--color-surface-2);
+  --gvc-ink: var(--color-text);
+  --gvc-ink-soft: var(--color-text-muted);
+  --gvc-muted: var(--color-text-muted);
+  --gvc-line: var(--color-divider);
+  --gvc-line-soft: var(--color-surface-offset);
+  --gvc-line-strong: var(--color-border);
+  --gvc-cream: var(--color-surface-offset);
+  --gvc-green: var(--color-primary);
+  --gvc-green-dark: var(--color-primary-hover);
+  --gvc-gold: var(--color-accent);
+  --gvc-gold-dark: var(--color-accent-ink);
+  --gvc-gold-matte: var(--color-accent);
+  --gvc-tint-green: var(--color-primary-soft);
+  --gvc-tint-sand: var(--color-accent-soft);
+  --gvc-danger: var(--color-danger);
+  --gvc-danger-dark: var(--color-danger);
+  --gvc-danger-tint: var(--color-danger-soft);
+  --gvc-warn: var(--color-warn);
+  --gvc-warn-tint: var(--color-warn-soft);
+  --gvc-ok: var(--color-primary);
+  --gvc-ok-tint: var(--color-primary-soft);
+  --gvc-shadow-1: var(--shadow-sm);
+  --gvc-shadow-2: var(--shadow-md);
+  --gvc-shadow-3: var(--shadow-lg);
+  --gvc-shadow-sm: var(--shadow-sm);
+  --gvc-r-sm: var(--radius-sm);
+  --gvc-r: var(--radius-md);
+  --gvc-r-md: var(--radius-md);
+  --gvc-r-lg: var(--radius-lg);
+  --gvc-r-pill: var(--radius-full);
+  --gvc-face-display: var(--font-display);
+  --gvc-face-body: var(--font-body);
+  --gvc-sans: var(--font-body);
+  --gvc-display: var(--font-display);
+  --gvc-mono: var(--font-mono);
+}
+
+[data-palette='emerald'][data-theme='dark'] {
+  --color-bg: #101111;
+  --color-surface: #171a18;
+  --color-surface-2: #1d211e;
+  --color-surface-offset: #191d1a;
+  --color-surface-dynamic: #253029;
+  --color-divider: #212623;
+  --color-border: #35443b;
+
+  --color-text: #e6e2da;
+  --color-text-muted: #a0a8a2;
+  --color-text-faint: #767e78;
+  --color-text-inverse: #101111;
+
+  --color-primary: #4f9070;
+  --color-primary-hover: #74b494;
+  --color-primary-soft: #154230;
+  --color-primary-ring: #4f907066;
+
+  --color-accent: #a6824a;
+  --color-accent-ink: #cfa96a;
+  --color-accent-soft: #2a2317;
+
+  --color-danger: #a9887f;
+  --color-danger-soft: #241e1b;
+  --color-warn: #cfa96a;
+  --color-warn-soft: #2b2416;
+  --color-info: #7ba0a8;
+  --color-info-soft: #1a2528;
+  --color-violet: #9b93ad;
+  --color-violet-soft: #232029;
+  --color-neutral-soft: #1e2320;
+
+  --shadow-sm: 0 1px 2px rgb(0 0 0 / 0.55);
+  --shadow-md: 0 4px 14px rgb(0 0 0 / 0.65);
+  --shadow-lg: 0 18px 44px rgb(0 0 0 / 0.8);
+  --scrim: rgb(0 0 0 / 0.75);
+}
+
+/* Command interaction extras (palette-gated) */
+[data-palette='emerald'] ::selection {
+  background: var(--color-primary-soft);
+  color: var(--color-text);
+}
+[data-palette='emerald'] :focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+[data-palette='emerald'] .gvc-btn:disabled,
+[data-palette='emerald'] .btn:disabled,
+[data-palette='emerald'] .chip:disabled {
+  opacity: 0.45; /* sole legitimate opacity use per Command */
+}
+
+/* Primary = green + gold hairline; pills */
+[data-palette='emerald'] .gvc-btn,
+[data-palette='emerald'] .gvc-btn--primary,
+[data-palette='emerald'] .gvc-btn--ghost,
+[data-palette='emerald'] .gvc-btn--gold {
+  border-radius: var(--radius-full);
+}
+[data-palette='emerald'] .gvc-btn--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-inverse);
+  box-shadow: inset 0 0 0 1px var(--color-accent);
+}
+[data-palette='emerald'] .gvc-btn--primary:hover {
+  background: var(--color-primary-hover);
+}
+
+/* Command primitives — use on new UI; do not replace .gvc-* wholesale yet */
+.btn {
+  display: inline-flex; align-items: center; gap: var(--space-2);
+  padding: 8px 14px;
+  border: 1px solid var(--color-border, var(--gvc-line));
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2, var(--gvc-surface));
+  color: var(--color-text, var(--gvc-ink));
+  font-size: var(--text-sm); font-weight: 500;
+  min-height: var(--gvc-ctl-h);
+  transition: all var(--transition-interactive);
+  cursor: pointer;
+}
+.btn:hover { border-color: var(--color-text-faint, var(--gvc-muted)); }
+.btn--primary {
+  background: var(--color-primary, var(--gvc-green));
+  border-color: var(--color-primary, var(--gvc-green));
+  color: var(--color-text-inverse, #fff);
+  box-shadow: inset 0 0 0 1px var(--color-accent, var(--gvc-gold));
+}
+.btn--primary:hover { background: var(--color-primary-hover, var(--gvc-green-dark)); }
+.btn--ghost {
+  background: none; border-color: transparent;
+  color: var(--color-text-muted, var(--gvc-muted));
+}
+.btn--ghost:hover { background: var(--color-surface-offset, var(--gvc-line-soft)); }
+
+.chipset { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+.chipset__label {
+  font-size: var(--text-xs); text-transform: uppercase;
+  letter-spacing: 0.06em; color: var(--color-text-faint, var(--gvc-muted));
+}
+.chipset__opts { display: inline-flex; flex-wrap: wrap; gap: 4px; }
+.chip {
+  padding: 5px 12px;
+  border: 1px solid var(--color-border, var(--gvc-line));
+  border-radius: var(--radius-full);
+  background: var(--color-surface-2, var(--gvc-surface));
+  font-size: var(--text-xs); font-weight: 600;
+  color: var(--color-text-muted, var(--gvc-muted)); white-space: nowrap;
+  min-height: var(--gvc-ctl-h);
+  transition: all var(--transition-interactive);
+  cursor: pointer;
+}
+.chip:hover { border-color: var(--color-accent, var(--gvc-gold)); color: var(--color-text, var(--gvc-ink)); }
+.chip.is-active {
+  background: var(--color-accent-soft, var(--gvc-tint-sand));
+  border-color: var(--color-accent, var(--gvc-gold));
+  color: var(--color-accent-ink, var(--gvc-gold-dark));
+  box-shadow: inset 0 0 0 1px var(--color-accent, var(--gvc-gold));
+}
+
+.segmented {
+  display: inline-flex; gap: 2px; padding: 3px;
+  background: var(--color-surface-offset, var(--gvc-line-soft));
+  border: 1px solid var(--color-divider, var(--gvc-line));
+  border-radius: var(--radius-full);
+}
+.segmented button {
+  padding: 5px 13px; border-radius: var(--radius-full);
+  border: 0; background: transparent;
+  font-size: var(--text-xs); font-weight: 600;
+  color: var(--color-text-muted, var(--gvc-muted)); white-space: nowrap;
+  min-height: calc(var(--gvc-ctl-h) - 6px);
+  transition: all var(--transition-interactive);
+  cursor: pointer;
+}
+.segmented button:hover { color: var(--color-text, var(--gvc-ink)); }
+.segmented button.is-active {
+  background: var(--color-accent-soft, var(--gvc-tint-sand));
+  color: var(--color-accent-ink, var(--gvc-gold-dark));
+  box-shadow: inset 0 0 0 1px var(--color-accent, var(--gvc-gold));
+}
+
+.card {
+  background: var(--color-surface, var(--gvc-surface));
+  border: 1px solid var(--color-divider, var(--gvc-line));
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+  min-width: 0;
+}
+.card--flush { padding: 0; overflow: hidden; }
+
+.rows {
+  max-height: var(--rows-max, 26rem);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+.card--flush > .rows { --rows-max: 62vh; }
+.rows__more {
+  position: sticky; bottom: 0;
+  background: var(--color-surface, var(--gvc-surface));
+  border-top: 1px solid var(--color-divider, var(--gvc-line));
+}
+.tablewrap {
+  max-height: 62vh; overflow-y: auto; overscroll-behavior: contain;
+}
+.tablewrap thead th,
+.tbl thead th {
+  position: sticky; top: 0; z-index: 2;
+  background: var(--color-surface, var(--gvc-surface));
+}
+
+@media (max-width: 620px) {
+  .chipset__opts,
+  .segmented {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .chipset__opts::-webkit-scrollbar,
+  .segmented::-webkit-scrollbar { display: none; }
+  .chip, .segmented button, .btn, .icon-btn {
+    min-height: 48px; /* portal floor ≥ Command's 44 */
+    padding-inline: 16px;
+  }
+  .rows, .tablewrap, .card--flush > .rows, .stack > .card {
+    max-height: none;
+    overflow-y: visible;
+  }
+}
+
 body{
   background:var(--gvc-bg); color:var(--gvc-ink);
   font-family:var(--gvc-sans); font-size:var(--gvc-fs-body); line-height:var(--gvc-lh-body);
