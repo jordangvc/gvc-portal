@@ -61,6 +61,9 @@
 
   .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--gvc-line-soft); }
   .field:last-child { border-bottom: 0; }
+  /* Status/date .sp cards own their chrome — drop the field rule so rows stack cleanly */
+  .field:has(.sp) { padding: 0; border-bottom: 0; margin-bottom: 10px; }
+  .field:has(.sp):last-child { margin-bottom: 0; }
   .field-label-row { display: flex; align-items: center; justify-content: space-between;
     gap: 8px; flex-wrap: wrap; }
   .field > label, .field-label-row > label { font-size: var(--gvc-fs-small); font-weight: 700;
@@ -76,11 +79,11 @@
   /* Status picker — one gold value + Change (search / next / groups). */
   .status-picker-host { width: 100%; }
   .field.disabled .sp__toggle { display: none; }
-  .field input[type="text"], .field input[type="date"], .field input[type="number"], .field textarea {
+  .field input[type="text"], .field input[type="date"]:not(.sp__date), .field input[type="number"], .field textarea {
     width: 100%; min-height: var(--gvc-ctl-h); padding: 10px 14px; font-size: 16px;
     border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); background: var(--gvc-surface); font-family: inherit; }
   .field textarea { min-height: 88px; resize: vertical; }
-  .field input:focus, .field textarea:focus { outline: 2px solid var(--gvc-gold); border-color: var(--gvc-gold); }
+  .field input:not(.sp__date):focus, .field textarea:focus { outline: 2px solid var(--gvc-gold); border-color: var(--gvc-gold); }
   .checkwrap { display: flex; align-items: center; gap: 14px; min-height: var(--gvc-ctl-h); cursor: pointer; }
   .checkwrap input[type="checkbox"] { width: 28px; height: 28px; accent-color: var(--gvc-green); cursor: pointer; }
   .checkwrap span { font-size: 16px; }
@@ -335,6 +338,22 @@ function statusSelectHtml(col) {
     aria-label="${esc(col.label)}"></div>`;
 }
 
+function dateFieldHtml(col) {
+  const key = fieldKey(col);
+  const v = current[key];
+  const disabled = col.writable === false;
+  // Same row grammar as status picker: mono kicker over pill control.
+  return `<section class="sp" aria-label="${esc(col.label)}">
+    <div class="sp__row">
+      <div class="sp__meta">
+        <span class="sp__label">${esc(col.label)}</span>
+        <input type="date" class="sp__date" data-col="${esc(key)}"
+          value="${esc(v || "")}"${disabled ? " disabled" : ""} />
+      </div>
+    </div>
+  </section>`;
+}
+
 function fieldHtml(col) {
   const key = fieldKey(col);
   const v = current[key];
@@ -346,7 +365,7 @@ function fieldHtml(col) {
     control = `<label class="checkwrap"><input type="checkbox" data-col="${esc(key)}"
       ${v ? "checked" : ""}${disabled ? " disabled" : ""}/><span>${v ? "Done" : "Not done"}</span></label>`;
   } else if (col.type === "date") {
-    control = `<input type="date" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
+    control = dateFieldHtml(col);
   } else if (col.type === "number") {
     control = `<input type="number" inputmode="decimal" step="any" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   } else if (col.type === "long_text") {
@@ -357,8 +376,8 @@ function fieldHtml(col) {
   const howto = col.fieldguide_anchor
     ? `<a class="howto" href="/ui/fieldguide${esc(col.fieldguide_anchor)}" target="_self">How-to</a>`
     : "";
-  // Status picker owns its label (closed row). Other types keep the field label.
-  if (col.type === "status") {
+  // Status + date own their mono-kicker label inside .sp. Other types keep the field label.
+  if (col.type === "status" || col.type === "date") {
     const howtoRow = howto
       ? `<div class="field-label-row" style="justify-content:flex-end;">${howto}</div>`
       : "";

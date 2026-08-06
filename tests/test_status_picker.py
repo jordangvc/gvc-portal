@@ -92,7 +92,20 @@ def test_route_registers() -> None:
     check("gvc-status-picker.js route", "/ui/gvc-status-picker.js" in paths)
 
 
+def test_row_align_css() -> None:
+    """§7 handoff: meta takes leftover width; date inputs are pill-rounded."""
+    css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
+    check(".sp__meta uses flex 1 1 auto", "flex: 1 1 auto" in css)
+    check(".sp__date pill input exists", ".sp__date" in css)
+    check(".sp__row nowrap", "flex-wrap: nowrap" in css)
+    jc = (ROOT / "web" / "jobcheck.html").read_text(encoding="utf-8")
+    check("date fields use dateFieldHtml / sp__date", "sp__date" in jc and "dateFieldHtml" in jc)
+    hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
+    check("hub footer r43", ">r43<" in hub)
+
+
 if __name__ == "__main__":
     test_status_picker_groups()
     test_route_registers()
+    test_row_align_css()
     print("ALL PASSED")
