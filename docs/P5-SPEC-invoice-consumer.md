@@ -39,3 +39,15 @@ Dry-run replay of 3 already-invoiced jobs; drafted amounts within ±5%; zero wri
 
 - **Code:** dry-run consumer shipped (`check_ready_to_invoice`, default `dry_run=true`).
 - **Live staging / scheduler activate:** after dry-run gauntlet on real Ready queue.
+
+## Activate (Jordan — GitHub Actions; no local gcloud)
+
+Workflow: `.github/workflows/p5-activate-ready.yml` → Actions → **P5 activate ready-to-invoice**.
+
+| Mode | What it does |
+|---|---|
+| `check` | Confirms Cloud Run + secret access; no writes |
+| `activate` | Creates/updates scheduler `gvc-ready-to-invoice` (every 15 min) with **`dry_run: true`** + runs one dry POST |
+| `gauntlet` | Same as activate, then extra dry-run probes for ±5% review |
+
+Never flips `dry_run` to false in this workflow — live staging is a separate, deliberate env/body change after gauntlet pass. Agent `workflow_dispatch` may 403; run from the Actions UI while signed in as Jordan.

@@ -147,6 +147,8 @@ Skip deep Job Check if you’re slammed; one save is enough for this round.
 | GM Morning / Owner Pulse | Role tiles; smoke when you use the huddle. |
 | Lien Watch | Banner says data catch-up / counsel — open once; don’t treat deadlines as gospel yet. |
 | Mark’s full Job Check pass | When he has bandwidth. |
+| Stripe online → Monday Paid | One-time: set `STRIPE_WEBHOOK_SECRET` (docs/DEPLOY-IN-BROWSER.md). `/health` → `stripe_webhook_secret_present`. |
+| P5 Ready-to-Invoice scheduler | Actions → **P5 activate ready-to-invoice** → `check` then `activate` (stays dry_run). See docs/P5-SPEC-invoice-consumer.md. |
 
 ---
 

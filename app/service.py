@@ -431,6 +431,10 @@ def healthz() -> dict:
         "ok": True,
         "service": "gvc-invoice",
         "stripe_configured": bool(os.environ.get("STRIPE_API_KEY")),
+        # Presence only (cannot verify the signing secret without a live Stripe
+        # event). False ⇒ online Pay Now never flips Invoices Sent to Paid —
+        # see docs/DEPLOY-IN-BROWSER.md "Stripe invoice.paid webhook".
+        "stripe_webhook_secret_present": bool(os.environ.get("STRIPE_WEBHOOK_SECRET")),
         "drive_configured": bool(os.environ.get("GVC_DRIVE_SHARED_DRIVE_ID")),
         # v r6: monday_configured now means "token WORKS", not "token PRESENT"
         # — same correction Slack got after 2026-07-02. monday_auth_error
