@@ -11,21 +11,32 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — stand-behind slice — BUILT 2026-08-06 (r37→r38)
+Next content pass after r36 deploy (`gvc-invoice-00133-hq4`). Rule for this slice:
+**only what GVC will stand behind** — grounded in Job Start fields, Job Check
+stages, GA-214, and existing manual rules; no invented STC numbers, return
+depths, production rates, or fake OSHA programs.
+BUILT (+ hub **r38**): `#window-returns`, `#ceiling-finish`, `#sound-walls`,
+`#level5-skim`, `#rfi-field`, `#gc-talk`, `#ops-lead`, `#receiving`,
+`#scaffold-lifts`, `#residential-field`, `#skill-ladder` (~57 sections).
+**Job Check How-to deep-links expanded:** Projects coat/skim/clean-out →
+`#finish` / `#level5-skim` / `#cleanout`; Ops scaffold/heat/lock box/window/
+open-questions → matching procedures; status_19 collision still board-scoped.
+Tests: `test_fieldguide_anchors_*` green.
+AUTO-DEPLOY: merge PR → GitHub Actions `deploy-cloud-run.yml`.
+NEXT: diagrams/photos; AI coaches (roadmap only).
+
 ## 📘 FIELD MANUAL — onboarding + leadership + ops slice — BUILT 2026-08-06
 Gap analysis (3 parallel agents: trades/ops, onboarding/training, leadership/AI)
 against live `/ui/fieldguide`. Manual was trade-strong and almost empty as a
 company operating / ramp book.
-BUILT in `web/fieldguide.html` (+ hub **r36**): new home groups **Onboarding &
-training** and **How we run the day**, plus **21 procedures** across two commits —
-`#onboard-week1`, `#safety-orient`, `#dont`, role tracks (laborer/hanger/finisher/
-ACT/lead), `#portal-field-tools` (Job Check + Morning Brief never `#operations`),
-`#morning-rhythm`, `#lead-day`, `#escalate`, `#qc-walk`, `#ai-field-rules` (+
-roadmap), `#jobstart-firstday`, `#preboard-walk`, `#cleanout`, `#job-conditions`,
-`#cement-board`, `#punch-cadence`, `#inspection-hold`. Index/Glossary/Sources
-updated. ~46 sections, 457 checkboxes; JS clean; all tile jumps resolve.
-NOT DEPLOYED. DEPLOY (admin): `--source .` → smoke `/ui/fieldguide` baseline user.
-NEXT: Job Check deep-links; window-returns / sound-walls / level5-skim;
-skill-ladder; ops-lead / gc-talk / rfi-field; diagrams/photos.
+BUILT in `web/fieldguide.html` (+ hub **r36**, deployed rev **gvc-invoice-00133-hq4**):
+new home groups **Onboarding & training** and **How we run the day**, plus **21
+procedures** — `#onboard-week1`, `#safety-orient`, `#dont`, role tracks
+(laborer/hanger/finisher/ACT/lead), `#portal-field-tools`, `#morning-rhythm`,
+`#lead-day`, `#escalate`, `#qc-walk`, `#ai-field-rules` (+ roadmap),
+`#jobstart-firstday`, `#preboard-walk`, `#cleanout`, `#job-conditions`,
+`#cement-board`, `#punch-cadence`, `#inspection-hold`.
 
 ## 🔒 Morning Brief Slack — NEVER `#operations` (Jordan 2026-08-05)
 Morning Brief / field brief / huddle summary / route sheet / prep status is

@@ -223,31 +223,24 @@ and aborts without writing if it isn't).
 
 ## 7. Queued build work
 
+### Done 2026-08-06 — stand-behind slice (r37) + Job Check deep-links (r38)
+**11 procedures** grounded in Job Start / Job Check / GA-214 / existing manual
+rules: Window Returns, Ceiling Finish Decision, Sound Walls & RC, Level 5 /
+Text/Skim, RFI Field, Talking to the GC, Ops Lead, Receiving & Freight, Scaffold
+& Lifts, Residential Field Habits, Skill Ladder.
+**Job Check How-to links:** coat/skim/clean-out + Ops logistics anchors wired;
+`status_19` remains board-scoped. Hub **r38**. Deploy via merge → Actions.
+
 ### Done 2026-08-06 — ops / onboarding / leadership slice (r36)
-**21 procedures** added: First Week, Safety Orientation, Don't Do This, role
-tracks (laborer/hanger/finisher/ACT/lead), Portal Tools (Job Check + Morning Brief
-`#operations` rule), Morning Prep, Lead Day, Escalation, QC Walk, AI field
-rules/roadmap, Job Start → First Day, Pre-Board Walk, Clean-Out, Cold & Wet
-Conditions, Cement Board, Punch Cadence, Inspection Photos. Hub **r36**.
+**21 procedures** — First Week through Inspection Photos (see prior note). Live
+on `gvc-invoice-00133-hq4`. Hub **r36**.
 
 ### Still queued
 - The remaining 9–12 diagrams (list in §4).
-- Migrate the page onto `gvc.css` once §6.3 is settled. Mapping is mechanical:
-  `.tile`→`.gvc-tile`, `.note`→`.gvc-banner--*`, `.table-wrap`→`.gvc-tablewrap`,
-  `label.step`→`.gvc-check`, `.seg`/buttons→`.gvc-btn--*`, plus `--gvc-*` tokens.
-  Do it as its own commit so the diff is reviewable.
-- **Deep-link each Job Check stage chip to its procedure.** Job Check already
-  cycles Framing → Hanging → Scrapping → Taped → …; each chip linking to the
-  matching doc is the highest-value small feature left on this track.
-- Photos. Several sections would land harder with a photograph than a diagram —
-  crushed Tectum corners, a blistered tape, a bowed cabinet back.
-- **Next Field Manual content (prioritized gap backlog):** window-returns,
-  sound-walls / RC, level5-skim, scaffold-lifts, receiving freight, skill-ladder,
-  ops-lead multi-job playbook, gc-talk, rfi-field (promote drawings expert),
-  residential-field habits, track-super.
-- **AI roadmap (document only until prioritized):** checklist coach, photo QC coach,
-  morning prep agent (DM only), CO spotter, handoff open-questions coach, punch
-  drafter — all under `#ai-field-rules` / `#ai-roadmap` hard rules.
+- Migrate the page onto `gvc.css` once §6.3 is settled.
+- Photos for hard-to-diagram defects.
+- **AI roadmap** under `#ai-roadmap` (document only until prioritized).
+- Optional later: abuse-board, plywood-backing, auto-tools deep dive.
 
 ---
 
