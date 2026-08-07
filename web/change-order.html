@@ -544,6 +544,8 @@ async function lookupFromMonday() {
   if (!q) { setLinkState("warn", "Enter a Monday Project URL (or item id) — or type a client, address, project #, or CO number to search."); return; }
   if (looksLikeMondayRef(q)) return loadProject(q);
   if (looksLikeCoNumber(q)) return loadForRevision(q);
+  // Spine / legacy Project # — same search path, but searchProjects auto-loads
+  // a single clear parent (parity with Invoice Find-the-Project).
   return searchProjects(q);
 }
 
@@ -562,6 +564,21 @@ async function searchProjects(q) {
   }
   const rows = data.results || [];
   if (!rows.length) { setLinkState("warn", `No projects matched “${escapeHtml(q)}”. Try fewer words, or paste the Monday URL.`); return; }
+
+  const parents = rows.filter((row) => !looksLikeCoNumber(row.project_number || ""));
+  const cosOnly = rows.filter((row) => looksLikeCoNumber(row.project_number || ""));
+  // One clear parent (CO noise ok) → load it. One CO and no parent → revision.
+  if (parents.length === 1) {
+    setLinkState("ok", "Matched — loading…");
+    $("#search-results").innerHTML = "";
+    return loadProject(String(parents[0].item_id));
+  }
+  if (parents.length === 0 && cosOnly.length === 1) {
+    setLinkState("ok", "Matched CO — loading for revision…");
+    $("#search-results").innerHTML = "";
+    return loadForRevision(cosOnly[0].project_number);
+  }
+
   setLinkState("ok", `${rows.length} match${rows.length === 1 ? "" : "es"} — pick one:`);
   const list = $("#search-results");
   rows.forEach((row) => {
