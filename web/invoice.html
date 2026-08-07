@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Invoice Generator</title>
 <!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
 
@@ -136,6 +151,7 @@
     <div class="gvc-topbar-right">
       <div id="health">Checking service…</div>
       <span class="gvc-topbar-sep"></span>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -360,8 +376,11 @@
   </div><!-- /gvc-stack -->
 </main>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
 
@@ -1118,7 +1137,19 @@ async function searchProjects(q) {
     note.textContent = `No projects matched “${q}”. Try fewer words, a Project #, or paste the Monday URL.`;
     return;
   }
-  note.textContent = `${rows.length} match${rows.length === 1 ? "" : "es"} — pick one:`;
+  // One clear parent project (ignore CO.{n}- rows) → load without an extra tap.
+  const parents = rows.filter((row) => !/^CO\.\d+-/i.test(String(row.project_number || "").trim()));
+  if (parents.length === 1) {
+    note.textContent = "Matched — loading…";
+    list.innerHTML = "";
+    return loadProjectFromLookup(parents[0]);
+  }
+  if (rows.length === 1) {
+    note.textContent = "Matched — loading…";
+    list.innerHTML = "";
+    return loadProjectFromLookup(rows[0]);
+  }
+  note.textContent = `${rows.length} matches — pick one:`;
   list.innerHTML = "";
   rows.forEach((row) => {
     const div = document.createElement("div");
@@ -1152,8 +1183,9 @@ async function searchProjects(q) {
 async function loadProjectFromLookup(row) {
   const pn = (row && (row.project_number || row.projectNumber) || "").trim();
   const itemId = String((row && (row.item_id || row.itemId || row.monday_item_id)) || "").trim();
-  if (pn) return lookupProjectByNumber(pn);
+  // Prefer item id — skips Project # re-search on Monday (1–3 probes).
   if (itemId) return lookupProjectByItemId(itemId);
+  if (pn) return lookupProjectByNumber(pn);
   $("#prefill-note").textContent = "That result has no Project # or Monday item id to load.";
 }
 
@@ -1239,7 +1271,8 @@ function bootInvoiceFromUrl() {
   //   ?monday_item_id=123  (or ?item_id=123)
   //   ?co=CO.1-2026-0603-004  (auto-add after project lookup + billable list load)
   //   ?q=builder+or+address
-  // Prefer Project #, then Monday item id, then free-text search.
+  // Prefer Monday Projects item id when present (skips Project # re-search).
+  // Fall back to Project #, then free-text search.
   const params = new URLSearchParams(location.search);
   const co = (params.get("co") || "").trim();
   if (co) pendingCoFromUrl = co;
@@ -1248,6 +1281,17 @@ function bootInvoiceFromUrl() {
     params.get("monday_item_id") || params.get("item_id") || ""
   ).trim();
   const q = (params.get("q") || "").trim();
+  if (mondayItemId) {
+    if (pn) {
+      const adv = $("#advanced-pn");
+      if (adv) adv.open = true;
+      const pnInput = $("#invoice-form").elements["project_number_lookup"];
+      if (pnInput) pnInput.value = pn;
+    }
+    if ($("#project-search")) $("#project-search").value = pn || mondayItemId;
+    lookupProjectByItemId(mondayItemId);
+    return;
+  }
   if (pn) {
     const adv = $("#advanced-pn");
     if (adv) adv.open = true;
@@ -1255,11 +1299,6 @@ function bootInvoiceFromUrl() {
     if (pnInput) pnInput.value = pn;
     if ($("#project-search")) $("#project-search").value = pn;
     lookupProjectByNumber(pn);
-    return;
-  }
-  if (mondayItemId) {
-    if ($("#project-search")) $("#project-search").value = mondayItemId;
-    lookupProjectByItemId(mondayItemId);
     return;
   }
   if (q) {
@@ -1570,6 +1609,10 @@ if ($("#client_no_email")) {
 checkHealth();
 refreshDrafts();
 bootInvoiceFromUrl();
+</script>
+<script src="/ui/gvc-theme.js"></script>
+<script>
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
 </body>
 </html>

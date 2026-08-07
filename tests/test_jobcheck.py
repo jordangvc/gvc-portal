@@ -451,6 +451,8 @@ def test_fieldguide_anchors_map_trade_columns():
     assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["dup__of_scrapped_status"] == "#finish"
     assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["dup__of_sanded"] == "#level5-skim"
     assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["color8"] == "#cleanout"
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["date1"] == "#closeout-rhythm"
+    assert boards.JOBCHECK_FIELDGUIDE_ANCHORS["notes7"] == "#qc-walk"
     # status_19 on Ops is Scheduled Day — no Hanging how-to there.
     assert jf.fieldguide_anchor("status_19", "ops") is None
     assert jf.fieldguide_anchor("status_19", "projects") == "#hang"

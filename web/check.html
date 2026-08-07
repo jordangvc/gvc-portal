@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Portal — Paid by Check</title>
 <!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
 
@@ -152,6 +167,7 @@
     <span class="gvc-topbar-title">Paid by Check</span>
     <div class="gvc-topbar-right">
       <span class="gvc-topbar-user">{{EMAIL}}</span>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -217,8 +233,11 @@
   </div>
 </div>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
   const $ = s => document.querySelector(s);
   function setStatus(kind, msg) {
     const e = $("#status");
@@ -537,6 +556,10 @@
     $("#overlay").classList.remove("show");
   });
   $("#confirm").addEventListener("click", confirm);
+</script>
+<script src="/ui/gvc-theme.js"></script>
+<script>
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
 </body>
 </html>

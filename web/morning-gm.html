@@ -1,9 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC GM Morning Huddle</title>
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
   body { background: var(--gvc-bg); }
@@ -27,7 +42,8 @@
   <a class="gvc-brand" href="/"><span class="gvc-mono">G</span><span class="gvc-wordmark">Green Valley Contractors</span></a>
   <span class="gvc-topbar-sep"></span><span class="gvc-topbar-title">GM Huddle</span>
   <div class="gvc-topbar-right"><span class="gvc-topbar-user">{{EMAIL}}</span>
-    <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
+    <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
 </div></header>
 <main>
   <div><p class="gvc-eyebrow">6:45 operations huddle</p><h1 class="gvc-h1">Run sheet</h1>
@@ -63,8 +79,11 @@
   </div>
   <div class="card"><h2>Fireflies proposals</h2><div id="ff"></div></div>
 </main>
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 async function api(u, o){ const r=await fetch(u,o); const b=await r.json(); if(!r.ok) throw new Error((b.detail&&b.detail.detail)||b.detail||r.status); return b; }
 function rows(list){ return (list||[]).map(p => `<div class="row"><b>${esc(p.name)}</b><div class="gvc-sub">${esc(p.stage||"")} ${esc(p.blocked||"")} ${esc(p.location||"")}</div>
@@ -113,6 +132,10 @@ document.getElementById("migrateNfj").onclick = async () => {
   }
 };
 load();
+</script>
+<script src="/ui/gvc-theme.js"></script>
+<script>
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
 </body>
 </html>
