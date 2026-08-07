@@ -1463,7 +1463,12 @@ def ui_invoice_lookup(
     try:
         mc = MondayClient()
         target_id: Optional[int] = None
-        if pn:
+        # Prefer a concrete Projects item id when the caller already has one
+        # (Billing hub / search Load). Skipping find_project_by_number saves
+        # 1–3 Monday contains_text probes on the hot path.
+        if parsed_id:
+            target_id = int(parsed_id)
+        elif pn:
             match = mc.find_project_by_number(pn)
             if not match:
                 raise HTTPException(
@@ -1474,7 +1479,12 @@ def ui_invoice_lookup(
                 )
             target_id = int(match["item_id"])
         else:
-            target_id = int(parsed_id)  # type: ignore[arg-type]
+            raise HTTPException(
+                status_code=422,
+                detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
+                        "detail": "Enter a Project #, paste a Monday URL, or pick a search result.",
+                        "advice": "Search by builder, address, city, or Project #."},
+            )
         prefill = mc.build_invoice_prefill(target_id)
     except HTTPException:
         raise
