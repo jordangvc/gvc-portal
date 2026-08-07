@@ -18,6 +18,11 @@ SAMPLE_VALUE = json.dumps({
     "address": "9195 Silva Drive, Cincinnati, OH 45241",
 })
 
+STANDARD = (
+    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+)
+JOB_TITLE = "Smith residence"
+
 
 def test_parse_monday_location_json():
     out = ll.parse_monday_location_json(SAMPLE_VALUE)
@@ -42,13 +47,13 @@ def test_plan_enriched_uses_json_without_geocode():
         name="9195 Silva | Willow Creek",
         location_value_json=SAMPLE_VALUE,
         builder="Willow Creek",
+        job_title=JOB_TITLE,
         geocode=False,
         item_id=1,
         board="projects",
     )
     assert plan["action"] == "rename"
-    assert plan["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plan["new_name"] == STANDARD
 
 
 def test_plan_enriched_geocode_fallback():
@@ -65,6 +70,7 @@ def test_plan_enriched_geocode_fallback():
 
     plan = re.plan_enriched_row(
         name="9195 Silva | Willow Creek",
+        job_title=JOB_TITLE,
         geocode=True,
         geocode_street_fn=fake_geo,
         reverse_geocode_fn=lambda *a, **k: None,
@@ -72,12 +78,12 @@ def test_plan_enriched_geocode_fallback():
     )
     assert plan["action"] == "rename"
     assert "nominatim_tri_state" in (plan.get("lookup_sources") or [])
-    assert plan["new_name"].endswith("| Willow Creek")
+    assert plan["new_name"].endswith(f"| Willow Creek | {JOB_TITLE}")
     assert "45241" in plan["new_name"]
 
 
 def test_co_cascade_with_parent():
-    parent = "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek"
+    parent = STANDARD
     plan = rp.plan_row(
         name="CO.1 - 9195 Silva | Willow Creek",
         parent_name=parent,
@@ -95,10 +101,13 @@ def test_parent_index_and_resolve():
     plans = [
         rp.plan_row(
             name="9195 Silva | Willow Creek",
-            location="9195 Silva Drive, Cincinnati, OH 45241"),
+            location="9195 Silva Drive, Cincinnati, OH 45241",
+            job_title=JOB_TITLE,
+        ),
     ]
+    assert plans[0]["action"] == "rename"
     index = re.index_parent_titles(plans)
-    assert index["9195 Silva | Willow Creek"].endswith("| Willow Creek")
+    assert index["9195 Silva | Willow Creek"] == STANDARD
     resolved = re.resolve_parent_title(
         "CO.2 - 9195 Silva | Willow Creek", index)
     assert resolved == plans[0]["new_name"]

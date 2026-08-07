@@ -20,6 +20,14 @@ from shared.boards import (  # noqa: E402
 )
 
 
+STANDARD_SILVA = (
+    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+)
+STANDARD_SUSANNA = (
+    "3776 Susanna, Lawrenceburg, IN 47025 | Martin | Martin residence"
+)
+
+
 def _column(column_id: str, text: str, **extra) -> dict:
     return {"id": column_id, "text": text, **extra}
 
@@ -27,15 +35,14 @@ def _column(column_id: str, text: str, **extra) -> dict:
 def test_plan_project_item_uses_projects_columns_and_keeps_gfolder():
     item = {
         "id": "123",
-        "name": "9195 Silva",
+        "name": "9195 Silva | Willow Creek | Smith residence",
         "column_values": [
             _column(
                 JOBSTART_P_COL_LOCATION,
                 "9195 Silva Drive, Cincinnati, OH 45241",
             ),
             _column(COL_BUILDER, "Willow Creek"),
-            _column(COL_PROJECT_TYPE_STATUS, "Residential"),
-            _column(JOBSTART_P_COL_CUSTOMER, "John Smith"),
+            _column(JOBSTART_P_COL_CUSTOMER, "Fallback Customer"),
             _column(
                 PROJECTS_GFOLDER_COL,
                 "GFolder",
@@ -49,25 +56,25 @@ def test_plan_project_item_uses_projects_columns_and_keeps_gfolder():
     assert plan["action"] == "rename"
     assert plan["item_id"] == 123
     assert plan["board"] == "projects"
-    assert plan["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
-    )
+    assert plan["new_name"] == STANDARD_SILVA
     assert plan["gfolder_url"] == (
         "https://drive.google.com/drive/folders/folder123"
     )
 
 
 def test_plan_project_item_uses_linked_customer_when_builder_is_empty():
+    # Job title lives in the third pipe segment; builder comes from Customer
+    # when the Builder column is blank (name still carries builder|title so
+    # the 3-part planner can complete).
     item = {
         "id": "456",
-        "name": "3776 Susanna",
+        "name": "3776 Susanna | Martin | Martin residence",
         "column_values": [
             _column(
                 JOBSTART_P_COL_LOCATION,
                 "3776 Susanna, Lawrenceburg, IN 47025",
             ),
             _column(COL_BUILDER, ""),
-            _column(COL_PROJECT_TYPE_STATUS, "Residential"),
             _column(JOBSTART_P_COL_CUSTOMER, "Martin"),
         ],
     }
@@ -75,9 +82,8 @@ def test_plan_project_item_uses_linked_customer_when_builder_is_empty():
     plan = script.plan_project_item(item)
 
     assert plan["action"] == "rename"
-    assert plan["new_name"] == (
-        "3776 Susanna, Lawrenceburg, IN 47025 | Martin | Martin residence"
-    )
+    assert plan["new_name"] == STANDARD_SUSANNA
+
 
 
 def test_plan_project_item_commercial_uses_customer_as_job_title():
@@ -104,11 +110,13 @@ def test_plan_project_item_commercial_uses_customer_as_job_title():
     )
 
 
-def test_plan_project_item_leaves_co_without_parent_incomplete():
+def test_plan_project_item_leaves_co_decision_to_shared_planner():
+    # Shared planner: CO without a standard parent → skip_incomplete
+    # (not skip_co — that override is Drive-folder specific).
     plan = script.plan_project_item(
         {
             "id": "789",
-            "name": "CO.1 - 9195 Silva | Willow Creek",
+            "name": "CO.1 - 9195 Silva | Willow Creek | Smith residence",
             "column_values": [],
         }
     )

@@ -42,13 +42,17 @@ def test_hub_nav_roles() -> None:
     check("sales home estimate", hub_nav.ROLE_HOME_TOOL["sales"] == "estimate")
     check("gm queue title", "Huddle" in hub_nav.ROLE_QUEUE_TITLE["gm"])
 
-    groups = hub_nav.groups_for_client({"morning", "jobcheck", "fieldguide", "timeoff"})
+    groups = hub_nav.groups_for_client(
+        {"morning", "jobcheck", "fieldguide", "timeoff", "training"})
     names = [g["name"] for g in groups]
     check("Today group first", names[0] == "Today")
     morning = next(t for g in groups for t in g["tools"] if t["feature"] == "morning")
     estimate = next(t for g in groups for t in g["tools"] if t["feature"] == "estimate")
+    training = next(t for g in groups for t in g["tools"] if t["feature"] == "training")
     check("granted morning", morning["granted"] is True)
     check("dim estimate", estimate["granted"] is False)
+    check("training on hub", training["granted"] is True)
+    check("training href", training["href"] == "/ui/training")
 
 
 def test_hub_pins_validate() -> None:

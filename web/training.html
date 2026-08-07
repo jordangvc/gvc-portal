@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Portal — Training</title>
+<link rel="stylesheet" href="/ui/gvc.css" />
+<style>
+  .tr-path {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    margin: var(--gvc-space-4) 0 var(--gvc-space-6);
+    font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+  }
+  .tr-path b {
+    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
+    border-radius: 999px; padding: 4px 10px; color: var(--gvc-ink);
+    font-weight: 600;
+  }
+  .tr-path span { opacity: .55; }
+  .tr-role {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: var(--gvc-green-tint, #E8F0EA);
+    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r);
+    padding: 8px 12px; margin-bottom: var(--gvc-space-5);
+    font-size: var(--gvc-fs-body);
+  }
+  .tr-role strong { color: var(--gvc-green-dark, #1F4D32); }
+  .tr-mod {
+    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
+    border-radius: var(--gvc-r-lg); padding: var(--gvc-space-5);
+    margin-bottom: var(--gvc-space-4);
+  }
+  .tr-mod.is-locked { opacity: .55; }
+  .tr-mod-hd {
+    display: flex; gap: 12px; align-items: flex-start;
+    justify-content: space-between; flex-wrap: wrap;
+  }
+  .tr-mod h2 { margin: 0 0 4px; font-size: var(--gvc-fs-lead); }
+  .tr-mod .why { margin: 0 0 var(--gvc-space-3); color: var(--gvc-muted);
+    font-size: var(--gvc-fs-body); }
+  .tr-badge {
+    font-size: 11px; font-weight: 700; letter-spacing: .04em;
+    text-transform: uppercase; border-radius: 999px; padding: 3px 8px;
+    border: 1px solid var(--gvc-line); white-space: nowrap;
+  }
+  .tr-badge.open { background: #E8F0EA; color: #1F4D32; }
+  .tr-badge.lock { background: #F3F1EC; color: #6B6560; }
+  .tr-badge.done { background: #E7F0FF; color: #1A3A6B; }
+  .tr-steps { margin: 0; padding-left: 1.2rem; }
+  .tr-steps li { margin: 0 0 8px; }
+  .tr-steps label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
+  .tr-steps input { margin-top: 4px; }
+  .tr-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--gvc-space-4); }
+  .tr-note {
+    background: var(--gvc-warn-tint); border: 1px solid #E0CDA9;
+    border-left: 4px solid var(--gvc-gold-dark); border-radius: var(--gvc-r);
+    padding: var(--gvc-space-4); margin: var(--gvc-space-5) 0;
+    font-size: var(--gvc-fs-body);
+  }
+  .tr-note strong { display: block; margin-bottom: 4px; }
+  .tr-toc a {
+    display: block; padding: 8px 0; border-bottom: 1px solid var(--gvc-line);
+    color: inherit; text-decoration: none;
+  }
+  .tr-toc a:hover { color: var(--gvc-green-dark, #1F4D32); }
+  .tr-toc .dim { color: var(--gvc-muted); }
+  .tr-progress {
+    font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+    margin-bottom: var(--gvc-space-4);
+  }
+</style>
+</head>
+<body>
+
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Training</span>
+    <div class="gvc-topbar-right">
+      <span class="gvc-topbar-user">{{EMAIL}}</span>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
+</header>
+
+<main class="gvc-shell">
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Company</p>
+    <h1 class="gvc-h1">Portal &amp; systems training</h1>
+    <p class="gvc-sub">
+      Walk through what each hub tool does — based on <b>your</b> access.
+      Check off steps as you go. Progress stays on this phone/browser.
+    </p>
+  </div>
+
+  <div class="tr-role" id="rolebox">Loading your access…</div>
+
+  <div class="tr-note">
+    <strong>The money path (know this cold)</strong>
+    How work becomes cash at GVC. Every tool sits on this spine:
+  </div>
+  <div class="tr-path" aria-label="Money path">
+    <b>Takeoff</b><span>→</span>
+    <b>Estimate</b><span>→</span>
+    <b>Job Start</b><span>→</span>
+    <b>Job Check</b><span>→</span>
+    <b>Change Orders</b><span>→</span>
+    <b>Invoice</b><span>→</span>
+    <b>Paid</b>
+  </div>
+
+  <p class="tr-progress" id="progress">—</p>
+
+  <div class="tr-toc" id="toc"></div>
+
+  <div id="modules"></div>
+
+  <div class="tr-note" style="margin-top:32px;">
+    <strong>Hard rules (every role)</strong>
+    <ul style="margin:8px 0 0; padding-left:1.2rem;">
+      <li>We never auto-send customer email from the portal — office clicks <b>Send</b> in Gmail.</li>
+      <li>Morning Brief / field brief / Action Requests never post to Slack <b>#operations</b> — side chat / DM only.</li>
+      <li>Job names: <code>Street Number Name, City, ST ZIP | Builder | Job Title</code> (pipe; residential = <code>Last residence</code>).</li>
+      <li>Need a tool that's dimmed on the hub? Ask an admin — don't work around it in Monday alone.</li>
+    </ul>
+  </div>
+</main>
+
+<script>
+const EMAIL = {{EMAIL_JSON}};
+const STORE_KEY = "gvc-training-v1:" + (EMAIL || "anon");
+
+/** Modules: need = feature keys (any one unlocks). empty need = always shown. */
+const MODULES = [
+  {
+    id: "map",
+    title: "1 · Your hub map",
+    need: [],
+    why: "Find the left rail. Tools you have are live; tools you don't are dimmed — ask for access instead of inventing a side process.",
+    steps: [
+      "Open the portal home (Green Valley logo).",
+      "Scan Today / Estimating / Money / Field / Paperwork / Company.",
+      "Tap your home tool (GM Huddle if you're GM) and come back here.",
+    ],
+    links: [{ href: "/", label: "Open hub" }],
+  },
+  {
+    id: "morning",
+    title: "2 · Your Morning Brief",
+    need: ["morning"],
+    why: "Private daily prep on your phone. This is yours — not a channel blast.",
+    steps: [
+      "Open Your Morning Brief before the huddle.",
+      "Read today's jobs, flags, and anything marked for you.",
+      "Action Requests: acknowledge in the portal (DM only — never #operations).",
+    ],
+    links: [{ href: "/ui/morning", label: "Open Morning Brief" }],
+  },
+  {
+    id: "gm-huddle",
+    title: "3 · GM Morning Huddle (Donnie track)",
+    need: ["morning_gm"],
+    why: "Your 6:45 run sheet. You sequence the day, take attendance, park issues, and leave the field with a clear board.",
+    steps: [
+      "Open GM Morning Huddle.",
+      "Start the huddle when the room is ready.",
+      "Walk the queue — jobs, holds, Action Requests.",
+      "Park anything that needs Jordan without dumping it into #operations.",
+      "End the huddle when the field knows the plan.",
+    ],
+    links: [{ href: "/ui/morning-gm", label: "Open GM Huddle" }],
+  },
+  {
+    id: "money-spine",
+    title: "4 · Walk the money spine (dry)",
+    need: [],
+    why: "Before you touch live jobs, say the path out loud once. This is how GVC stays paid.",
+    steps: [
+      "Takeoff measures the job (gvctakeoff.netlify.app).",
+      "Estimate Generator builds the customer PDF + hello@ draft (Bid Board).",
+      "Job Start hands a won bid to Ops — Ops accepts; Monday Projects + Operations appear.",
+      "Job Check is the field's truth on stage (hang/tape/finish…). Mark Ready to Invoice when billing can start.",
+      "Change Orders capture extras before they get lost.",
+      "Billing Hub → Invoice Generator → customer pays (Stripe or Paid by Check).",
+    ],
+    links: [
+      { href: "https://gvctakeoff.netlify.app/v2.html", label: "Takeoff", external: true },
+      { href: "/ui/estimate", label: "Estimate", feature: "estimate" },
+      { href: "/ui/jobstart", label: "Job Start", feature: "jobstart" },
+      { href: "/ui/jobcheck", label: "Job Check", feature: "jobcheck" },
+      { href: "/ui/billing", label: "Billing Hub", feature: "invoice" },
+    ],
+  },
+  {
+    id: "takeoff",
+    title: "5 · Takeoff",
+    need: ["takeoff"],
+    why: "Measure → numbers. Portal picks up an Export / Send to Portal Queue into Estimate drafts.",
+    steps: [
+      "Open Takeoff (opens in a new tab).",
+      "Open a named draft and walk Estimate → Customer.",
+      "Prefer Send to Portal Queue; clipboard Export is the fallback.",
+    ],
+    links: [{ href: "https://gvctakeoff.netlify.app/v2.html", label: "Open Takeoff", external: true }],
+  },
+  {
+    id: "estimate",
+    title: "6 · Estimate Generator",
+    need: ["estimate"],
+    why: "Turns takeoff/scope into a customer-facing estimate. Lands on the Bid Board.",
+    steps: [
+      "Open Estimate Generator.",
+      "Search or paste a Bid Board link (or import from Takeoff).",
+      "Review scope, run dry if unsure, then finalize.",
+      "Office sends the Gmail draft — you don't auto-mail customers.",
+    ],
+    links: [{ href: "/ui/estimate", label: "Open Estimate" }],
+  },
+  {
+    id: "jobstart",
+    title: "7 · Job Start (hard gate)",
+    need: ["jobstart"],
+    why: "Won bid → real job. Sales fills the packet; Ops accepts. Nothing is created in Monday until Ops accepts.",
+    steps: [
+      "Open Job Start and pick an Accepted / won bid.",
+      "Check the suggested job name — must be Street, City, ST ZIP | Builder | Job Title.",
+      "Fill every required field (Ops can't start without them).",
+      "Sales: Send to Ops. Ops: Accept (sender can't accept their own — admins excepted).",
+      "Confirm Projects + Operations items exist and the handoff PDF is in Drive.",
+    ],
+    links: [{ href: "/ui/jobstart", label: "Open Job Start" }],
+  },
+  {
+    id: "jobcheck",
+    title: "8 · Job Check (field truth)",
+    need: ["jobcheck"],
+    why: "Crew/PM updates Monday stages from the phone. Honest stages beat optimistic ones.",
+    steps: [
+      "Open Job Check and find today's job.",
+      "Update only what is actually done (hang / coats / sand / finish…).",
+      "When the job is ready for billing, tap Mark Ready to Invoice (don't auto-fire on Save).",
+      "Confirm it shows in Billing Hub's Ready queue.",
+    ],
+    links: [
+      { href: "/ui/jobcheck", label: "Open Job Check" },
+      { href: "/ui/billing", label: "Billing Hub", feature: "invoice" },
+    ],
+  },
+  {
+    id: "co",
+    title: "9 · Change Orders",
+    need: ["change_order"],
+    why: "Extras get a number and a paper trail before they evaporate.",
+    steps: [
+      "Open Change Order and find the project.",
+      "Write the scope, amount, and why.",
+      "Finalize so PDF + Ops task exist — then keep Job Check honest.",
+    ],
+    links: [{ href: "/ui/change-order", label: "Open Change Order" }],
+  },
+  {
+    id: "billing",
+    title: "10 · Billing Hub & Invoice",
+    need: ["invoice"],
+    why: "Ready-to-bill queue → Stripe invoice + GVC PDF + hello@ draft. Office sends.",
+    steps: [
+      "Open Billing Hub — Ready to Invoice should show Job Check handoffs.",
+      "Open a job into Invoice Generator; check amounts and COs.",
+      "Approve / finalize. Confirm Stripe + Drive + Gmail draft — do not skip the draft check.",
+      "Paid by Check is for paper checks (OCR → Stripe/Monday).",
+    ],
+    links: [
+      { href: "/ui/billing", label: "Billing Hub" },
+      { href: "/ui/invoice", label: "Invoice Generator" },
+      { href: "/ui/check", label: "Paid by Check", feature: "check" },
+    ],
+  },
+  {
+    id: "lien",
+    title: "11 · Lien Watch",
+    need: ["lien"],
+    why: "Deadline awareness for notices / liens / retainage. Banner says counsel hasn't verified — treat as a watch list.",
+    steps: [
+      "Open Lien Watch and skim what's coming due.",
+      "Escalate anything unclear to the office / counsel — don't invent dates.",
+    ],
+    links: [{ href: "/ui/lien", label: "Open Lien Watch" }],
+  },
+  {
+    id: "fieldguide",
+    title: "12 · Field Manual",
+    need: ["fieldguide"],
+    why: "How we hang, finish, run the day, and onboard crew. Your coaching book.",
+    steps: [
+      "Open Field Manual on your phone.",
+      "Skim: Portal Tools for the Field, Morning Prep & Huddle, Job Start → First Day, Escalation Ladder.",
+      "Point leads at the role tracks — don't make them hunt Slack history.",
+    ],
+    links: [{ href: "/ui/fieldguide", label: "Open Field Manual" }],
+  },
+  {
+    id: "gm-week",
+    title: "13 · GM first week (Donnie)",
+    need: ["morning_gm"],
+    why: "A practical week-one loop so you're useful by Friday without memorizing every trade tip.",
+    steps: [
+      "Day 1: Hub map + Morning Brief + sit one GM Huddle (even if Jordan leads).",
+      "Day 2: Shadow one Job Start accept and one Job Check Ready-to-Invoice.",
+      "Day 3: Walk Billing Hub Ready queue with office — see an invoice draft get sent.",
+      "Day 4: Coach one lead using Field Manual (QC walk + escalation).",
+      "Day 5: Run the huddle yourself; park two Action Requests the right way (DM / portal, not #operations).",
+    ],
+    links: [
+      { href: "/ui/morning-gm", label: "GM Huddle" },
+      { href: "/ui/jobstart", label: "Job Start", feature: "jobstart" },
+      { href: "/ui/jobcheck", label: "Job Check", feature: "jobcheck" },
+      { href: "/ui/billing", label: "Billing", feature: "invoice" },
+    ],
+  },
+  {
+    id: "monday",
+    title: "14 · Monday boards (where truth lives)",
+    need: [],
+    why: "Portal writes into Monday. Know the four boards so you don't create duplicates by hand.",
+    steps: [
+      "Bid Board — estimates / opportunities before handoff.",
+      "Projects — the job record after Job Start accept.",
+      "Operations — crew tasks / Job Check stages.",
+      "Invoices Sent — money documents (don't rename these for fun).",
+      "If the portal can do it, prefer the portal — copy-paste automation is how we got duplicates before.",
+    ],
+    links: [],
+  },
+];
+
+function loadState() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY) || "{}") || {}; }
+  catch { return {}; }
+}
+function saveState(st) {
+  localStorage.setItem(STORE_KEY, JSON.stringify(st));
+}
+
+function hasAny(feats, need) {
+  if (!need || !need.length) return true;
+  return need.some((f) => feats.has(f));
+}
+
+function esc(s) {
+  return String(s ?? "").replace(/[&<>"']/g, (c) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  })[c]);
+}
+
+async function boot() {
+  const rolebox = document.getElementById("rolebox");
+  const modsEl = document.getElementById("modules");
+  const toc = document.getElementById("toc");
+  const progress = document.getElementById("progress");
+
+  let feats = new Set();
+  let role = "field";
+  let roleTitle = "Team member";
+  try {
+    const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
+    const data = await res.json();
+    (data.nav && data.nav.features ? data.nav.features : []).forEach((f) => feats.add(f));
+    role = (data.user && data.user.role) || role;
+    roleTitle = (data.user && data.user.roleTitle) || roleTitle;
+  } catch (e) {
+    rolebox.textContent = "Could not load your access — refresh and try again.";
+    return;
+  }
+
+  const gm = feats.has("morning_gm");
+  rolebox.innerHTML =
+    `Signed in as <strong>${esc(EMAIL)}</strong> · hub role <strong>${esc(roleTitle)}</strong>` +
+    (gm
+      ? " · <strong>GM track unlocked</strong> (modules 3 &amp; 13)"
+      : " · ask an admin for the <strong>GM huddle</strong> preset if this should be you");
+
+  const st = loadState();
+  st.checks = st.checks || {};
+
+  let openCount = 0, doneMods = 0, totalStepsOpen = 0, doneSteps = 0;
+
+  toc.innerHTML = "";
+  modsEl.innerHTML = "";
+
+  MODULES.forEach((mod) => {
+    const open = hasAny(feats, mod.need);
+    if (open) openCount++;
+
+    const stepKeys = mod.steps.map((_, i) => `${mod.id}:${i}`);
+    const stepDone = stepKeys.filter((k) => st.checks[k]).length;
+    if (open) {
+      totalStepsOpen += mod.steps.length;
+      doneSteps += stepDone;
+      if (stepDone === mod.steps.length && mod.steps.length) doneMods++;
+    }
+
+    const a = document.createElement("a");
+    a.href = `#mod-${mod.id}`;
+    a.className = open ? "" : "dim";
+    a.textContent = (open ? "" : "Locked · ") + mod.title +
+      (open && mod.steps.length ? ` (${stepDone}/${mod.steps.length})` : "");
+    toc.appendChild(a);
+
+    const badge = open
+      ? (stepDone === mod.steps.length && mod.steps.length
+          ? `<span class="tr-badge done">Done</span>`
+          : `<span class="tr-badge open">Your access</span>`)
+      : `<span class="tr-badge lock">Needs access</span>`;
+
+    const links = (mod.links || [])
+      .filter((l) => !l.feature || feats.has(l.feature))
+      .map((l) => {
+        const ext = l.external ? ` target="_blank" rel="noopener"` : "";
+        return `<a class="btn btn--ghost" href="${esc(l.href)}"${ext}>${esc(l.label)}</a>`;
+      })
+      .join("");
+
+    const steps = mod.steps.map((text, i) => {
+      const key = `${mod.id}:${i}`;
+      const checked = st.checks[key] ? "checked" : "";
+      const disabled = open ? "" : "disabled";
+      return `<li><label>
+        <input type="checkbox" data-key="${esc(key)}" ${checked} ${disabled}/>
+        <span>${esc(text)}</span>
+      </label></li>`;
+    }).join("");
+
+    const needNote = !open && mod.need.length
+      ? `<p class="why">Ask an admin to grant: <code>${esc(mod.need.join(", "))}</code>
+         (GM preset covers huddle + job start + job check + billing).</p>`
+      : "";
+
+    const card = document.createElement("section");
+    card.className = "tr-mod" + (open ? "" : " is-locked");
+    card.id = `mod-${mod.id}`;
+    card.innerHTML = `
+      <div class="tr-mod-hd">
+        <div>
+          <h2>${esc(mod.title)}</h2>
+          <p class="why">${esc(mod.why)}</p>
+          ${needNote}
+        </div>
+        ${badge}
+      </div>
+      <ol class="tr-steps">${steps}</ol>
+      <div class="tr-actions">${links}</div>`;
+    modsEl.appendChild(card);
+  });
+
+  progress.textContent = openCount
+    ? `Your open modules: ${doneMods}/${openCount} complete · checklist ${doneSteps}/${totalStepsOpen} steps`
+    : "No modules unlocked — you may not be provisioned yet.";
+
+  modsEl.addEventListener("change", (ev) => {
+    const t = ev.target;
+    if (!t.matches('input[type="checkbox"][data-key]')) return;
+    const st2 = loadState();
+    st2.checks = st2.checks || {};
+    st2.checks[t.getAttribute("data-key")] = !!t.checked;
+    saveState(st2);
+    // Refresh counts without full reload
+    boot();
+  });
+}
+
+boot();
+</script>
+<script src="/ui/gvc-command.js"></script>
+</body>
+</html>

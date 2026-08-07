@@ -12,6 +12,14 @@ from scripts import backfill_job_rename_drive as script  # noqa: E402
 
 FOLDER_ID = "1AbCdEfGhIjKlMnOp"
 
+STANDARD = (
+    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+)
+STANDARD_SLUG = (
+    "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek Smith residence"
+)
+SHORT = "9195 Silva | Willow Creek | Smith residence"
+
 
 STANDARD = (
     "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
@@ -24,7 +32,7 @@ STANDARD_SLUG = (
 def _item(
     *,
     item_id: str = "101",
-    name: str = "9195 Silva | Willow Creek",
+    name: str = SHORT,
     location: str = "9195 Silva Drive, Cincinnati, OH 45241",
     builder: str = "Willow Creek",
     customer: str = "John Smith",
@@ -68,7 +76,7 @@ def test_shape_project_row_uses_location_builder_customer_and_gfolder():
               project_type="Commercial"))
     assert row == {
         "item_id": 101,
-        "name": "9195 Silva | Willow Creek",
+        "name": SHORT,
         "group_title": "Active",
         "location": "9195 Silva Drive, Cincinnati, OH 45241",
         "location_value_json": "",
@@ -131,7 +139,7 @@ def test_list_projects_pages_and_requires_nonempty_gfolder():
 def test_plan_drive_rename_uses_drive_safe_slug_and_folder_id():
     plan = script.plan_drive_rename(
         shape_project_row_for_plan(
-            name="9195 Silva | Willow Creek",
+            name=SHORT,
             location="9195 Silva Drive, Cincinnati, OH 45241"))
     assert plan["action"] == "rename"
     assert plan["folder_id"] == FOLDER_ID
@@ -228,7 +236,7 @@ def test_plan_drive_rename_skips_equal_sanitized_names(monkeypatch):
 def test_plan_drive_rename_preserves_planner_skips():
     plan = script.plan_drive_rename(
         shape_project_row_for_plan(
-            name="CO.1 - 9195 Silva | Willow Creek"))
+            name=f"CO.1 - {SHORT}"))
     assert plan["action"] == "skip_co"
 
 
@@ -243,7 +251,7 @@ def test_apply_renames_only_eligible_rows(monkeypatch):
         shape_project_row_for_plan(),
         shape_project_row_for_plan(
             item_id=102,
-            name="CO.1 - 9195 Silva | Willow Creek",
+            name=f"CO.1 - {SHORT}",
         ),
     ]
     calls = []
@@ -294,7 +302,7 @@ def test_no_geocode_flag(monkeypatch):
 def shape_project_row_for_plan(**overrides) -> dict:
     row = {
         "item_id": 101,
-        "name": "9195 Silva | Willow Creek",
+        "name": SHORT,
         "group_title": "Active",
         "location": "9195 Silva Drive, Cincinnati, OH 45241",
         "location_value_json": "",
