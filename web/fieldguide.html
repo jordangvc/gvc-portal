@@ -318,10 +318,89 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     text-transform:uppercase; background:var(--gold-soft); color:var(--gold-dark);
     border:1px solid var(--line); border-radius:999px; padding:3px 9px; font-weight:600;
   }
+  .tile.is-hidden { display:none !important; }
+  .sect-label.is-hidden,
+  .tiles.is-hidden { display:none !important; }
+
+  .continue-card {
+    display:none; background:var(--gold-soft); border:1px solid var(--line);
+    border-left:4px solid var(--gold-dark); border-radius:10px; padding:14px 16px;
+    margin:0 0 18px; gap:12px; align-items:center; flex-wrap:wrap;
+  }
+  .continue-card.is-visible { display:flex; }
+  .continue-card .cc-text { flex:1 1 12rem; min-width:0; }
+  .continue-card .cc-text strong { display:block; font-family:var(--serif); font-size:16px; color:var(--green-deep); margin:0 0 4px; }
+  .continue-card .cc-text span { font-size:14px; color:var(--ink-2); }
+  .continue-card .cc-btn {
+    font:inherit; font-size:14px; font-weight:700; min-height:48px; padding:0 18px;
+    border-radius:8px; cursor:pointer; border:1.5px solid var(--green);
+    background:var(--green); color:#fff; white-space:nowrap;
+  }
+  .continue-card .cc-btn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
+  .home-toolbar {
+    position:sticky; top:58px; z-index:20; background:var(--bg);
+    padding:12px 0 14px; margin:0 0 8px;
+    border-bottom:1px solid var(--line-soft);
+  }
+  .home-search-wrap {
+    display:flex; gap:8px; align-items:center; margin:0 0 12px;
+  }
+  .home-search-wrap input[type="search"] {
+    flex:1 1 auto; min-width:0; min-height:48px; font:inherit; font-size:16px;
+    padding:0 14px; border:1px solid var(--line); border-radius:10px;
+    background:var(--surface); color:var(--ink);
+  }
+  .home-search-wrap input[type="search"]:focus {
+    outline:2px solid var(--gold); outline-offset:1px; border-color:var(--green);
+  }
+  .home-search-wrap input[type="search"]::placeholder { color:var(--muted); }
+  .home-search-clear {
+    font:inherit; font-size:13px; font-weight:600; min-height:48px; min-width:48px;
+    padding:0 14px; border-radius:10px; cursor:pointer;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+  }
+  .home-search-clear:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+  .home-search-clear[hidden] { display:none; }
+
+  .role-chips { display:flex; flex-wrap:wrap; gap:8px; }
+  .role-chip {
+    font:inherit; font-size:12.5px; font-weight:600; min-height:40px;
+    padding:0 14px; border-radius:999px; cursor:pointer;
+    border:1px solid var(--line); background:var(--surface); color:var(--ink-2);
+  }
+  .role-chip[aria-pressed="true"] {
+    background:var(--gold-soft); border-color:var(--gold-dark); color:var(--ink); font-weight:700;
+  }
+  .role-chip:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
+
+  .home-empty {
+    display:none; text-align:center; padding:28px 16px; color:var(--muted); font-size:15px;
+  }
+  .home-empty.is-visible { display:block; }
 
   /* ---------- doc views ---------- */
-  .doc { display:none; }
-  .doc.active { display:block; }
+  .doc {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 800px;
+  }
+  /* Prefer content-visibility over display:none so inactive procedures skip
+     layout/paint while staying in the DOM (checkboxes + coach keep working). */
+  .doc:not(.active) {
+    content-visibility: hidden;
+    contain-intrinsic-size: 0 0;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    visibility: hidden;
+  }
+  .doc.active {
+    content-visibility: visible;
+    visibility: visible;
+  }
 
   .doc-head { margin-bottom:20px; display:flex; flex-direction:column; gap:8px; }
   .doc-head .stage-line { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--green); font-weight:600; }
@@ -546,6 +625,13 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="intro">
     <h2>Field Manual</h2>
     <p>How we run jobs and how we do the work. Onboarding and leadership up top; trade procedures underneath. Written for someone on their first week, with the technical detail a lead needs sitting right under the plain language.</p>
+    <div class="continue-card" id="continue-card" hidden>
+      <div class="cc-text">
+        <strong id="continue-title">Continue</strong>
+        <span id="continue-meta"></span>
+      </div>
+      <button type="button" class="cc-btn" id="continue-btn">Resume</button>
+    </div>
   </div>
 
   <div class="principle-strip">
@@ -558,9 +644,26 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     <p><b>The expensive work is the work you do twice.</b> Sanding costs more than scraping. Rework costs more than layout. Walking for material costs more than staging it. Every procedure here front-loads the cheap step that kills the expensive one.</p>
   </div>
 
+  <div class="home-toolbar" id="home-toolbar">
+    <div class="home-search-wrap">
+      <input type="search" id="home-search" placeholder="Search procedures…" autocomplete="off" enterkeyhint="search" />
+      <button type="button" class="home-search-clear" id="home-search-clear" hidden aria-label="Clear search">Clear</button>
+    </div>
+    <div class="role-chips" id="role-chips" role="group" aria-label="Filter by role">
+      <button type="button" class="role-chip" data-role-filter="all" aria-pressed="true">All</button>
+      <button type="button" class="role-chip" data-role-filter="laborer" aria-pressed="false">Laborer</button>
+      <button type="button" class="role-chip" data-role-filter="hanger" aria-pressed="false">Hanger</button>
+      <button type="button" class="role-chip" data-role-filter="finisher" aria-pressed="false">Finisher</button>
+      <button type="button" class="role-chip" data-role-filter="act" aria-pressed="false">ACT</button>
+      <button type="button" class="role-chip" data-role-filter="lead" aria-pressed="false">Lead</button>
+      <button type="button" class="role-chip" data-role-filter="ops" aria-pressed="false">Ops</button>
+    </div>
+  </div>
+  <p class="home-empty" id="home-empty" hidden>No procedures match your search.</p>
+
   <p class="sect-label">Onboarding &amp; training</p>
   <div class="tiles">
-    <button class="tile" data-go="onboard-week1">
+    <button class="tile" data-go="onboard-week1" data-role="laborer">
       <span class="icon">👋</span><span class="stage">Day one</span>
       <span class="name">Your First Week</span>
       <span class="desc">Who we are, who to call, what to open on your phone, and the non-negotiables. Role reading paths included.</span>
@@ -570,32 +673,32 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Safety Orientation</span>
       <span class="desc">PPE by task, ladders and lifts, everyday silica on cut/sand, and the hard stops where you put the tools down.</span>
     </button>
-    <button class="tile" data-go="dont">
+    <button class="tile" data-go="dont" data-role="laborer">
       <span class="icon">⛔</span><span class="stage">Week one</span>
       <span class="name">Don't Do This</span>
       <span class="desc">Money, safety, quality, and rated-assembly failure modes — each linked to the right procedure.</span>
     </button>
-    <button class="tile" data-go="track-laborer">
+    <button class="tile" data-go="track-laborer" data-role="laborer">
       <span class="icon">🧰</span><span class="stage">Role track</span>
       <span class="name">Track: Laborer</span>
       <span class="desc">Stocking, scrape assist, clean-out, and graduation signals for the first 30–90 days.</span>
     </button>
-    <button class="tile" data-go="track-lead">
+    <button class="tile" data-go="track-lead" data-role="lead">
       <span class="icon">🧭</span><span class="stage">Role track</span>
       <span class="name">Track: Lead</span>
       <span class="desc">Daily loop, portal habits, CO discipline, and teaching in Plain mode.</span>
     </button>
-    <button class="tile" data-go="track-hanger">
+    <button class="tile" data-go="track-hanger" data-role="hanger">
       <span class="icon">🔩</span><span class="stage">Role track</span>
       <span class="name">Track: Hanger</span>
       <span class="desc">Pre-board walk → hang → scrape handoff. Graduation without forced board.</span>
     </button>
-    <button class="tile" data-go="track-finisher">
+    <button class="tile" data-go="track-finisher" data-role="finisher">
       <span class="icon">🪣</span><span class="stage">Role track</span>
       <span class="name">Track: Finisher</span>
       <span class="desc">Coat sequence matching Job Check chips, scrape-before-sand, punch path.</span>
     </button>
-    <button class="tile" data-go="track-act">
+    <button class="tile" data-go="track-act" data-role="act">
       <span class="icon">▦</span><span class="stage">Role track</span>
       <span class="name">Track: ACT</span>
       <span class="desc">Layout, structure-only wire, border art, clean tile habits.</span>
@@ -604,27 +707,27 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">How we run the day</p>
   <div class="tiles">
-    <button class="tile" data-go="portal-field-tools">
+    <button class="tile" data-go="portal-field-tools" data-role="ops">
       <span class="icon">📱</span><span class="stage">Portal</span>
       <span class="name">Portal Tools for the Field</span>
       <span class="desc">Field Manual, Job Check, Job Start, Morning Brief — what each replaces, and the #operations rule.</span>
     </button>
-    <button class="tile" data-go="morning-rhythm">
+    <button class="tile" data-go="morning-rhythm" data-role="lead ops">
       <span class="icon">🌅</span><span class="stage">Daily rhythm</span>
       <span class="name">Morning Prep &amp; Huddle</span>
       <span class="desc">Private brief → prep → huddle → field. Unscheduled work last unless ops rearranges.</span>
     </button>
-    <button class="tile" data-go="lead-day">
+    <button class="tile" data-go="lead-day" data-role="lead">
       <span class="icon">👷</span><span class="stage">Lead</span>
       <span class="name">Lead Carpenter Day</span>
       <span class="desc">Open packet, brief the crew, stage, mid-day QC, Job Check, closeout. Owning the room.</span>
     </button>
-    <button class="tile" data-go="escalate">
+    <button class="tile" data-go="escalate" data-role="lead">
       <span class="icon">📞</span><span class="stage">Lead</span>
       <span class="name">Escalation Ladder</span>
       <span class="desc">Who owns production vs scope and money, and which channel to use.</span>
     </button>
-    <button class="tile" data-go="qc-walk">
+    <button class="tile" data-go="qc-walk" data-role="lead">
       <span class="icon">🔍</span><span class="stage">Quality</span>
       <span class="name">QC Walk Before "Done"</span>
       <span class="desc">Pass/fix by stage under raking light. Job Check advances only after the walk.</span>
@@ -644,7 +747,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Inspection Photos</span>
       <span class="desc">What to photo before you cover rated layers, firestop, and insulation.</span>
     </button>
-    <button class="tile" data-go="ops-lead">
+    <button class="tile" data-go="ops-lead" data-role="lead ops">
       <span class="icon">🗺️</span><span class="stage">Ops</span>
       <span class="name">Ops Lead Playbook</span>
       <span class="desc">Multi-job prep truth, unscheduled last, private briefs — never #operations.</span>
@@ -654,7 +757,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Residential Field Habits</span>
       <span class="desc">Verbal changes still need stop-photo-write-call. Packet beats subdivision habit.</span>
     </button>
-    <button class="tile" data-go="scaffold-lifts">
+    <button class="tile" data-go="scaffold-lifts" data-role="ops">
       <span class="icon">🪜</span><span class="stage">Access</span>
       <span class="name">Scaffold &amp; Lifts</span>
       <span class="desc">Match the Job Start scaffold field. Refuse unsafe access. Field card, not the written program.</span>
@@ -664,7 +767,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Skill Ladder</span>
       <span class="desc">Observable skills from helper to ops lead — tied to this manual, not invented certs.</span>
     </button>
-    <button class="tile" data-go="closeout-rhythm">
+    <button class="tile" data-go="closeout-rhythm" data-role="ops">
       <span class="icon">🏁</span><span class="stage">Daily rhythm</span>
       <span class="name">End-of-Day Closeout</span>
       <span class="desc">Honest Job Check, photos, material, tomorrow&apos;s first hour — briefs stay off #operations.</span>
@@ -683,12 +786,12 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Reading Drawings</span>
       <span class="desc">How a set is organized, where our sheets live, and the rule that keeps you out of trouble: never scale with a ruler. Residential and commercial both.</span>
     </button>
-    <button class="tile" data-go="changeorder">
+    <button class="tile" data-go="changeorder" data-role="lead">
       <span class="icon">💰</span><span class="stage">Every job</span>
       <span class="name">Spotting a Change Order</span>
       <span class="desc">If it isn't on our drawings, stop. The five ways extra work sneaks in, and what to do in the next ten minutes.</span>
     </button>
-    <button class="tile" data-go="jobstart-firstday">
+    <button class="tile" data-go="jobstart-firstday" data-role="ops">
       <span class="icon">📋</span><span class="stage">Handoff</span>
       <span class="name">Job Start → First Day</span>
       <span class="desc">Ops accepted the packet. Lock box, exclusions, open questions — do not invent the job on site.</span>
@@ -708,12 +811,12 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Garage Finish</span>
       <span class="desc">How far the garage goes is in the packet. Subdivision habit is not authorization.</span>
     </button>
-    <button class="tile" data-go="rfi-field">
+    <button class="tile" data-go="rfi-field" data-role="lead">
       <span class="icon">❓</span><span class="stage">Every job</span>
       <span class="name">RFI Field Playbook</span>
       <span class="desc">Document conflict → propose an answer → work elsewhere. Never pick one sheet and build.</span>
     </button>
-    <button class="tile" data-go="gc-talk">
+    <button class="tile" data-go="gc-talk" data-role="lead">
       <span class="icon">🗣️</span><span class="stage">Every job</span>
       <span class="name">Talking to the GC</span>
       <span class="desc">What you can promise, what you must not say, and why "we'll take care of it" is unpaid work.</span>
@@ -731,7 +834,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">Framing</p>
   <div class="tiles">
-    <button class="tile" data-go="ratedwalls">
+    <button class="tile" data-go="ratedwalls" data-role="hanger">
       <span class="icon">🧨</span><span class="stage">Rated assemblies</span>
       <span class="name">Fire Walls &amp; Shaftwall</span>
       <span class="desc">Four different things all called "fire wall," and what decides how high it goes. Plus shaftwall, built entirely from one side.</span>
@@ -755,17 +858,17 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">Material — before the work starts</p>
   <div class="tiles">
-    <button class="tile" data-go="stock-general">
+    <button class="tile" data-go="stock-general" data-role="laborer">
       <span class="icon">🚚</span><span class="stage">Pre-production</span>
       <span class="name">Stocking Any Material</span>
       <span class="desc">Stock to the work, not to the door. Applies to steel, mud, ceiling, insulation, and paint.</span>
     </button>
-    <button class="tile" data-go="stock-drywall">
+    <button class="tile" data-go="stock-drywall" data-role="hanger">
       <span class="icon">📦</span><span class="stage">Pre-production</span>
       <span class="name">Stocking Drywall</span>
       <span class="desc">The heaviest, most fragile, most injury-prone thing we move. Load placement, stack rules, floor loading.</span>
     </button>
-    <button class="tile" data-go="receiving">
+    <button class="tile" data-go="receiving" data-role="ops">
       <span class="icon">🧾</span><span class="stage">At the truck</span>
       <span class="name">Receiving &amp; Freight</span>
       <span class="desc">Count, photo damage on the truck, quarantine wet/crushed board — then stock.</span>
@@ -793,12 +896,12 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">Drywall — the Job Check sequence</p>
   <div class="tiles">
-    <button class="tile" data-go="preboard-walk">
+    <button class="tile" data-go="preboard-walk" data-role="hanger">
       <span class="icon">👀</span><span class="stage">Before hang</span>
       <span class="name">Pre-Board Walk</span>
       <span class="desc">Backing, ROs, MEP, insulation, rated photo plan — the last cheap chance before the first sheet.</span>
     </button>
-    <button class="tile" data-go="hang">
+    <button class="tile" data-go="hang" data-role="hanger">
       <span class="icon">🔩</span><span class="stage">Hanging Status</span>
       <span class="name">Hanging Drywall</span>
       <span class="desc">Sheet layout that kills joints before they exist. Full detail covers board types, fastening, rated assemblies, and control joints.</span>
@@ -808,17 +911,17 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Abuse- / Impact-Resistant Board</span>
       <span class="desc">When the schedule calls for it, hang that product. Submittal governs — no silent substitution.</span>
     </button>
-    <button class="tile" data-go="scrape">
+    <button class="tile" data-go="scrape" data-role="laborer hanger finisher">
       <span class="icon">🔪</span><span class="stage">Scrapping Status</span>
       <span class="name">Scraping</span>
       <span class="desc">The cheapest hour on the job, and it deletes the most expensive one. Why it's its own stage.</span>
     </button>
-    <button class="tile" data-go="finish">
+    <button class="tile" data-go="finish" data-role="finisher">
       <span class="icon">🪣</span><span class="stage">Taped → Sanded</span>
       <span class="name">Finishing Drywall</span>
       <span class="desc">Coat sequence and mud selection. Full detail covers finish levels, compound chemistry, bead options, and the automatic-tool decision.</span>
     </button>
-    <button class="tile" data-go="level5-skim">
+    <button class="tile" data-go="level5-skim" data-role="finisher">
       <span class="icon">✨</span><span class="stage">Text/Skim</span>
       <span class="name">Level 5 / Full Skim</span>
       <span class="desc">Only when specified or CO'd. Job Check Text/Skim is not a free upgrade.</span>
@@ -827,17 +930,17 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">Ceilings</p>
   <div class="tiles">
-    <button class="tile" data-go="ceiling-finish">
+    <button class="tile" data-go="ceiling-finish" data-role="act">
       <span class="icon">🧭</span><span class="stage">Before layout</span>
       <span class="name">Ceiling Finish Decision</span>
       <span class="desc">Hard lid vs ACT vs garage finish — from Job Start + drawings before you lay out.</span>
     </button>
-    <button class="tile" data-go="act">
+    <button class="tile" data-go="act" data-role="act">
       <span class="icon">▦</span><span class="stage">CT / ACT</span>
       <span class="name">Acoustical Ceilings</span>
       <span class="desc">Grid layout, hanging, and tile. Full detail covers grid face profiles, tile edge types, hanger wire rules, and seismic bracing.</span>
     </button>
-    <button class="tile" data-go="tectum">
+    <button class="tile" data-go="tectum" data-role="act">
       <span class="icon">🪵</span><span class="stage">Acoustic panel</span>
       <span class="name">Tectum Panels</span>
       <span class="desc">Direct-attach wood-fiber acoustic panel. Flush screw heads, never countersunk, and don't crush the corners.</span>
@@ -884,7 +987,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <p class="sect-label">Repair &amp; punch</p>
   <div class="tiles">
-    <button class="tile" data-go="cleanout">
+    <button class="tile" data-go="cleanout" data-role="laborer finisher">
       <span class="icon">🧹</span><span class="stage">Cleaned Out</span>
       <span class="name">Clean-Out Between Stages</span>
       <span class="desc">What clean means after hang, sand, and ACT — and when Job Check Cleaned Out is honest.</span>
@@ -894,12 +997,12 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <span class="name">Drywall Patch</span>
       <span class="desc">Match the method to the hole. Four methods and when each one wins.</span>
     </button>
-    <button class="tile" data-go="touchup-drywall">
+    <button class="tile" data-go="touchup-drywall" data-role="finisher">
       <span class="icon">🔧</span><span class="stage">Punch · step 1</span>
       <span class="name">Drywall Touch-Up</span>
       <span class="desc">Fixing the wall, not the paint. The raking-light walk, and what each defect actually means. Cheap before the painter, expensive after.</span>
     </button>
-    <button class="tile" data-go="touchup-paint">
+    <button class="tile" data-go="touchup-paint" data-role="finisher">
       <span class="icon">🖌️</span><span class="stage">Punch · step 2</span>
       <span class="name">Paint Touch-Up</span>
       <span class="desc">Why touch-ups flash, and the rules that make them disappear. Sheen decides everything.</span>
@@ -3330,6 +3433,30 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   <div class="expert" id="sys-zfur">
     <h4>Z-furring channel</h4>
     <p>Z-shaped channel used to <b>fur out concrete or masonry walls</b> — it holds rigid insulation tight against the substrate and gives you a surface to screw drywall to, all in one member.</p>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Section through masonry, Z-furring channel, insulation, and drywall.">
+        <text class="dg-t lbl" x="4" y="16">SECTION &#8212; Z-FURRING OVER MASONRY</text>
+        <rect x="40" y="36" width="90" height="160" fill="#C8C2B0" stroke="var(--muted)" stroke-width="1.4"/>
+        <text class="dg-t mid" x="85" y="120" transform="rotate(-90 85 120)">masonry</text>
+        <path class="dg-track" d="M130 36 L130 196 L155 196 L155 120 L200 120 L200 36 L175 36 L175 100 L130 100 Z"/>
+        <text class="dg-t" x="132" y="58">Z-fur</text>
+        <rect x="155" y="100" width="45" height="96" fill="var(--green-soft)" stroke="var(--green)" stroke-width="1.2" opacity=".9"/>
+        <text class="dg-t mid" x="177" y="150" transform="rotate(-90 177 150)">insul.</text>
+        <rect class="dg-member" x="200" y="36" width="14" height="160"/>
+        <text class="dg-t" x="220" y="120">drywall</text>
+        <line class="dg-dim" x1="130" y1="206" x2="200" y2="206"/>
+        <text class="dg-t mid" x="165" y="218">cavity depth = fur thickness</text>
+        <circle cx="142" cy="70" r="3" fill="var(--gold-dark)"/>
+        <circle cx="142" cy="110" r="3" fill="var(--gold-dark)"/>
+        <circle cx="142" cy="150" r="3" fill="var(--gold-dark)"/>
+        <text class="dg-t" x="150" y="74">anchors 16&#8243;&#8211;24&#8243; o.c.</text>
+      </svg>
+    </div>
+    <figcaption><b>Z-fur traps insulation and carries board.</b> Narrow flange against masonry, anchors on the web, rigid insulation between channels, gypsum on the outboard flange. The channel follows whatever it's screwed to &#8212; a wavy block wall becomes a wavy finish.</figcaption>
+  </figure>
+
     <ul class="plain">
       <li><b>Depths:</b> commonly <span class="spec">1"</span>, <span class="spec">1-1/2"</span>, <span class="spec">2"</span>, <span class="spec">2-1/2"</span>, <span class="spec">3"</span>. Stock length is usually 10'.</li>
       <li><b>Orientation:</b> installed <b>vertically</b>, with the narrow (about ¾") flange against the wall.</li>
@@ -3352,6 +3479,44 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       <li><b>Tighter spacing</b> — 24" o.c. → 16" o.c. → 12" o.c.</li>
       <li><b>More bracing</b> — bridging at closer intervals shortens the unbraced length and raises the allowable height.</li>
     </ol>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Four levers for taller stud walls: deeper member, heavier gauge, tighter spacing, more bracing.">
+        <text class="dg-t lbl" x="4" y="16">ELEVATION &#8212; FOUR LEVERS FOR MORE HEIGHT</text>
+        <text class="dg-t lbl" x="30" y="40">1 &#183; DEEPER</text>
+        <rect class="dg-member" x="50" y="130" width="10" height="70"/>
+        <rect class="dg-member" x="70" y="110" width="14" height="90"/>
+        <rect class="dg-member" x="96" y="80" width="18" height="120"/>
+        <text class="dg-t" x="44" y="210">3-5/8&#8243; &#8594; 6&#8243; &#8594; 8&#8243;</text>
+        <text class="dg-t lbl" x="200" y="40">2 &#183; HEAVIER GAUGE</text>
+        <rect class="dg-member" x="220" y="80" width="14" height="120" stroke-width="1"/>
+        <rect class="dg-member" x="250" y="80" width="14" height="120" stroke-width="2.2"/>
+        <rect class="dg-member" x="280" y="80" width="14" height="120" stroke-width="3.4"/>
+        <text class="dg-t" x="214" y="210">25ga &#8594; 20ga &#8594; 14ga</text>
+        <text class="dg-t lbl" x="370" y="40">3 &#183; TIGHTER SPACING</text>
+        <rect class="dg-member" x="390" y="80" width="12" height="120"/>
+        <rect class="dg-member" x="430" y="80" width="12" height="120"/>
+        <rect class="dg-member" x="470" y="80" width="12" height="120"/>
+        <line class="dg-dim" x1="390" y1="70" x2="482" y2="70"/>
+        <text class="dg-t mid" x="436" y="64">24&#8243; o.c.</text>
+        <rect class="dg-member" x="520" y="80" width="12" height="120"/>
+        <rect class="dg-member" x="544" y="80" width="12" height="120"/>
+        <rect class="dg-member" x="568" y="80" width="12" height="120"/>
+        <rect class="dg-member" x="592" y="80" width="12" height="120"/>
+        <line class="dg-dim" x1="520" y1="70" x2="604" y2="70"/>
+        <text class="dg-t mid" x="562" y="64">16&#8243; o.c.</text>
+        <text class="dg-t lbl" x="620" y="40">4 &#183; MORE BRACING</text>
+        <rect class="dg-member" x="640" y="80" width="12" height="120"/>
+        <rect class="dg-member" x="670" y="80" width="12" height="120"/>
+        <rect x="636" y="110" width="58" height="8" class="dg-track"/>
+        <rect x="636" y="150" width="58" height="8" class="dg-track"/>
+        <text class="dg-t" x="628" y="210">closer bridging</text>
+      </svg>
+    </div>
+    <figcaption><b>Four ways to buy height from the table.</b> Deeper and heavier are the big levers; tighter o.c. spacing and more bridging shorten unbraced length. Combine them per the manufacturer&#8217;s limiting-height table &#8212; never guess past it.</figcaption>
+  </figure>
+
     <p>Flange width matters too — a wider flange stiffens the stud. To give a sense of the range involved: published tables show a 6" 25ga stud at 16" o.c. with single-layer board both sides reaching roughly 20', the same stud at 24" o.c. dropping to around 15', 20ga reaching into the 30s, and 8" 14ga going to around 40'. <b>These are illustrative of one manufacturer's table — always pull the actual table for the actual product.</b></p>
 
     <h4>The deflection criterion drives everything</h4>
@@ -4067,6 +4232,34 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         <tr><td>Reveal / vector</td><td>Tile sits in a reveal with a shadow line. More architectural, less forgiving of cut quality on borders.</td></tr>
       </tbody>
     </table></div>
+
+  <figure class="dg">
+    <div class="dg-wrap">
+      <svg viewBox="0 0 720 220" role="img" aria-label="Section comparing square lay-in, tegular, and reveal ACT tile edge profiles on grid.">
+        <text class="dg-t lbl" x="4" y="16">SECTION &#8212; TILE EDGE PROFILES (MATCHED TO GRID)</text>
+        <text class="dg-t lbl" x="50" y="40">SQUARE LAY-IN</text>
+        <rect class="dg-track" x="40" y="150" width="180" height="10"/>
+        <rect class="dg-center" x="70" y="110" width="120" height="40"/>
+        <text class="dg-t mid" x="130" y="134">tile</text>
+        <text class="dg-t" x="40" y="178">face flush with grid plane</text>
+        <text class="dg-t lbl" x="280" y="40">TEGULAR</text>
+        <rect class="dg-track" x="270" y="150" width="180" height="10"/>
+        <path class="dg-member" d="M300 110 L300 150 L420 150 L420 130 L360 130 L360 110 Z"/>
+        <text class="dg-t mid" x="360" y="124">face drops</text>
+        <line class="dg-dim" x1="300" y1="108" x2="360" y2="108"/>
+        <text class="dg-t" x="270" y="178">stepped edge below flange</text>
+        <text class="dg-t lbl" x="510" y="40">REVEAL / VECTOR</text>
+        <rect class="dg-track" x="500" y="150" width="180" height="10"/>
+        <rect class="dg-center" x="530" y="118" width="120" height="32"/>
+        <rect x="526" y="114" width="128" height="6" fill="none" stroke="var(--muted)" stroke-width="1.2"/>
+        <text class="dg-t mid" x="590" y="136">tile</text>
+        <text class="dg-t" x="500" y="178">shadow line in slotted grid</text>
+        <text class="dg-t warn mid" x="360" y="210">Grid face + tile edge are a matched pair &#8212; confirm both on the submittal</text>
+      </svg>
+    </div>
+    <figcaption><b>Three edge types, three grid requirements.</b> Square sits on the flange; tegular steps below it; reveal engages a slotted profile for a shadow line. Border cuts on tegular and reveal must be reworked to match the factory edge.</figcaption>
+  </figure>
+
     <p><b>Border cuts on tegular and reveal tile are skilled work</b> — the cut edge has to be reworked to match the factory edge profile, or the border reads as obviously cut. Price this differently than square lay-in.</p>
   </div>
 
@@ -5419,7 +5612,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 <footer>
   <button class="reset" type="button" id="reset">Clear all check marks</button>
   <p><b>Green Valley Contractors — Field Manual.</b> Procedures and sequence are GVC practice. Standards, dimensions, fastener spacings, finish levels, limiting heights, and rated-assembly requirements come from the project specification, the approved submittals, the structural drawings, and the manufacturer's instructions — <b>those govern, and this manual does not replace them.</b></p>
-  <p>Check marks and your detail-level choice save on this device only. Nothing here is transmitted anywhere.</p>
+  <p>Your detail-level choice and device-only check marks (when you are not in a shared checklist run) stay on this phone. <b>Shared checklist runs sync to the portal for the crew</b> when you are online — so anyone on the job can pick up where you left off.</p>
 </footer>
 
 <script src="/ui/gvc-theme.js"></script>
@@ -5515,8 +5708,10 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     btnPlain.addEventListener("click", function () { setLevel("plain"); });
     btnFull.addEventListener("click", function () { setLevel("full"); });
 
-    try { setLevel(window.localStorage.getItem(LVL_KEY) === "plain" ? "plain" : "full", false); }
-    catch (e) { setLevel("full", false); }
+    try {
+      var savedLvl = window.localStorage.getItem(LVL_KEY);
+      setLevel(savedLvl === "full" ? "full" : "plain", false);
+    } catch (e) { setLevel("plain", false); }
 
     /* =====================================================================
        CHECKLIST RUNS
@@ -5674,7 +5869,9 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     }
 
     /* ---------- sync ---------- */
-    var syncTimer = null;
+    /* Per-runId timers so switching procedures cannot cancel another run's flush. */
+    var syncTimers = {};
+    var syncInFlight = {};
 
     function saveRunLocal(run) {
       run.updated_at = new Date().toISOString();
@@ -5684,14 +5881,28 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
     function queueSync(run, immediate) {
       run._pending = true;
+      lsSet(LS_RUN + run.run_id, run);
       renderSyncChip(run);
-      if (syncTimer) { clearTimeout(syncTimer); }
-      syncTimer = setTimeout(function () { pushRun(run.run_id); }, immediate ? 0 : 900);
+      var id = run.run_id;
+      if (syncTimers[id]) { clearTimeout(syncTimers[id]); }
+      syncTimers[id] = setTimeout(function () {
+        delete syncTimers[id];
+        pushRun(id);
+      }, immediate ? 0 : 900);
     }
 
     function pushRun(runId) {
       var run = localRun(runId);
-      if (!run) return Promise.resolve();
+      if (!run) return Promise.resolve(true);
+      /* Coalesce: mark requeue and let the in-flight PUT finish, then push again. */
+      if (syncInFlight[runId]) {
+        run._requeue = true;
+        run._pending = true;
+        lsSet(LS_RUN + runId, run);
+        return Promise.resolve(false);
+      }
+      var sentAt = run.updated_at;
+      syncInFlight[runId] = true;
       var bodyJson = {
         payload: {
           job_id: run.job_id || "",
@@ -5712,24 +5923,46 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.json();
       }).then(function (j) {
+        delete syncInFlight[runId];
         var cur = localRun(runId) || run;
-        cur._pending = false; cur._syncErr = false; cur._synced = true;
-        // A stale response means somebody else is further along — take theirs.
+        /* A stale response means somebody else is further along — take theirs. */
         if (j && j.stale && j.run) {
           cur.checked = j.run.checked || [];
           cur.note = j.run.note || "";
+          cur.done = !!j.run.done;
           cur.updated_at = j.run.updated_at;
+          cur._pending = false;
+          cur._syncErr = false;
+          cur._synced = true;
+          delete cur._requeue;
           lsSet(LS_RUN + runId, cur);
-          if (currentDoc === cur.procedure) { applyChecks(currentDoc); }
-        } else {
-          lsSet(LS_RUN + runId, cur);
+          if (currentDoc === cur.procedure) { applyChecks(currentDoc); renderBar(); }
+          return true;
         }
+        /* Local edits landed while this PUT was in flight — push again. */
+        if (cur.updated_at !== sentAt || cur._requeue) {
+          delete cur._requeue;
+          cur._pending = true;
+          cur._syncErr = false;
+          lsSet(LS_RUN + runId, cur);
+          if (currentDoc === cur.procedure) { renderSyncChip(cur); }
+          return pushRun(runId);
+        }
+        cur._pending = false;
+        cur._syncErr = false;
+        cur._synced = true;
+        lsSet(LS_RUN + runId, cur);
         if (currentDoc === cur.procedure) { renderBar(); }
+        return true;
       }).catch(function () {
+        delete syncInFlight[runId];
         var cur = localRun(runId) || run;
-        cur._pending = false; cur._syncErr = true; cur._synced = false;
+        cur._pending = false;
+        cur._syncErr = true;
+        cur._synced = false;
         lsSet(LS_RUN + runId, cur);
         if (currentDoc === cur.procedure) { renderSyncChip(cur); }
+        return false;
       });
     }
 
@@ -5766,8 +5999,15 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         saveRunLocal(run); queueSync(run, true); renderBar();
         return;
       }
-      boxes.forEach(function (b) { b.checked = false; });
-      lsSet(CHECK_KEY, {});
+      /* Device-only: clear THIS procedure's marks, not every page. */
+      if (!window.confirm("Clear check marks on this procedure (this phone only)?")) { return; }
+      var on = lsGet(CHECK_KEY, {}) || {};
+      if (Array.isArray(on)) { on = {}; }
+      boxesFor(currentDoc).forEach(function (b) {
+        b.checked = false;
+        delete on[b.dataset.k];
+      });
+      lsSet(CHECK_KEY, on);
     });
 
     /* ---------- the start / resume sheet ---------- */
@@ -5929,6 +6169,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       boxesFor(currentDoc).forEach(function (b) { b.checked = false; });
       queueSync(run, true);
       closeSheet(); renderBar();
+      if (typeof renderContinueCard === "function") { renderContinueCard(); }
     }
 
     function resumeRun(runId) {
@@ -5949,6 +6190,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     rb.close.addEventListener("click", function () {
       var map = activeMap(); delete map[currentDoc]; lsSet(LS_ACTIVE, map);
       applyChecks(currentDoc); renderBar();
+      if (typeof renderContinueCard === "function") { renderContinueCard(); }
     });
 
     rb.finish.addEventListener("click", function () {
@@ -5963,9 +6205,18 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       if (!window.confirm(msg)) { return; }
       run.done = true;
       saveRunLocal(run);
-      pushRun(runId).then(function () {
+      /* Cancel debounce and flush now; only leave the run after a successful PUT. */
+      if (syncTimers[runId]) { clearTimeout(syncTimers[runId]); delete syncTimers[runId]; }
+      pushRun(runId).then(function (ok) {
+        var cur = localRun(runId);
+        if (!ok || !cur || cur._syncErr || cur._pending) {
+          renderBar();
+          window.alert("Couldn't save the finished checklist — check signal and tap Finish again. Your marks are still on this phone.");
+          return;
+        }
         var map = activeMap(); delete map[currentDoc]; lsSet(LS_ACTIVE, map);
         applyChecks(currentDoc); renderBar();
+        if (typeof renderContinueCard === "function") { renderContinueCard(); }
       });
     });
 
@@ -5974,6 +6225,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       applyChecks(docId);
       if (NON_PROC.indexOf(docId) === -1) { renderBar(); }
       syncCoachBar(docId);
+      if (docId === "home") { renderContinueCard(); }
     };
 
     /* Migrate the old index-array format once, then load initial state. */
@@ -6102,9 +6354,222 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       });
     }
 
+    /* ---------- home search, role filter, continue card ---------- */
+    var ROLE_KEY = "gvc-field-manual-role";
+    var homeSearch = document.getElementById("home-search");
+    var homeSearchClear = document.getElementById("home-search-clear");
+    var homeEmpty = document.getElementById("home-empty");
+    var roleChipBtns = Array.prototype.slice.call(
+      document.querySelectorAll("#role-chips .role-chip")
+    );
+    var homeTiles = Array.prototype.slice.call(
+      document.querySelectorAll("#home .tile[data-go]")
+    );
+    var homeSectLabels = Array.prototype.slice.call(
+      document.querySelectorAll("#home > .sect-label")
+    );
+    var continueCard = document.getElementById("continue-card");
+    var continueMeta = document.getElementById("continue-meta");
+    var continueBtn = document.getElementById("continue-btn");
+    var selectedRole = "all";
+
+    function tileSearchText(tile) {
+      var name = tile.querySelector(".name");
+      var desc = tile.querySelector(".desc");
+      return ((name ? name.textContent : "") + " " + (desc ? desc.textContent : ""))
+        .toLowerCase();
+    }
+
+    function tileMatchesRole(tile, role) {
+      if (!role || role === "all") { return true; }
+      var raw = (tile.getAttribute("data-role") || "").trim();
+      if (!raw) { return true; } /* untagged = universal */
+      var roles = raw.split(/\s+/);
+      return roles.indexOf(role) !== -1;
+    }
+
+    function applyHomeFilter() {
+      var q = (homeSearch && homeSearch.value || "").trim().toLowerCase();
+      var anyVisible = false;
+      homeTiles.forEach(function (tile) {
+        var textOk = !q || tileSearchText(tile).indexOf(q) !== -1;
+        var roleOk = tileMatchesRole(tile, selectedRole);
+        var showTile = textOk && roleOk;
+        tile.classList.toggle("is-hidden", !showTile);
+        if (showTile) { anyVisible = true; }
+      });
+      homeSectLabels.forEach(function (label) {
+        var tiles = label.nextElementSibling;
+        var hasVisible = false;
+        if (tiles && tiles.classList.contains("tiles")) {
+          hasVisible = tiles.querySelectorAll(".tile:not(.is-hidden)").length > 0;
+          tiles.classList.toggle("is-hidden", !hasVisible);
+        }
+        label.classList.toggle("is-hidden", !hasVisible);
+      });
+      if (homeEmpty) {
+        homeEmpty.classList.toggle("is-visible", !anyVisible);
+        homeEmpty.hidden = anyVisible;
+      }
+      if (homeSearchClear) {
+        homeSearchClear.hidden = !q;
+      }
+    }
+
+    function setRoleFilter(role, persist) {
+      selectedRole = role || "all";
+      roleChipBtns.forEach(function (btn) {
+        var on = btn.getAttribute("data-role-filter") === selectedRole;
+        btn.setAttribute("aria-pressed", on ? "true" : "false");
+      });
+      if (persist !== false) {
+        try { window.localStorage.setItem(ROLE_KEY, selectedRole); } catch (e) { /* no-op */ }
+      }
+      applyHomeFilter();
+    }
+
+    function findBestLocalRun() {
+      var map = activeMap();
+      var best = null;
+      Object.keys(map).forEach(function (proc) {
+        var run = localRun(map[proc]);
+        if (!run || run.done) { return; }
+        if (!best || String(run.updated_at || "") > String(best.updated_at || "")) {
+          best = run;
+        }
+      });
+      return best;
+    }
+
+    function candidateFromServerSummary(s) {
+      var local = localRun(s.run_id);
+      if (local && !local.done &&
+          String(local.updated_at || "") >= String(s.updated_at || "")) {
+        return local;
+      }
+      return {
+        run_id: s.run_id,
+        procedure: s.procedure,
+        procedure_name: s.procedure_name || (local && local.procedure_name) || "",
+        job_name: s.job_name || (local && local.job_name) || "",
+        checked: (local && local.checked) || [],
+        checked_count: s.checked_count,
+        updated_at: s.updated_at || "",
+        _needsFetch: true
+      };
+    }
+
+    function pickBestContinue(localBest, serverRuns) {
+      var best = localBest || null;
+      (serverRuns || []).forEach(function (s) {
+        if (!s || s.done) { return; }
+        var cand = candidateFromServerSummary(s);
+        if (!best || String(cand.updated_at || "") > String(best.updated_at || "")) {
+          best = cand;
+        }
+      });
+      return best;
+    }
+
+    var continueServerRuns = null;
+    var continueHydrating = false;
+
+    function hydrateContinueFromServer() {
+      if (continueHydrating) { return; }
+      if (typeof navigator !== "undefined" && navigator.onLine === false) { return; }
+      continueHydrating = true;
+      fetch("/ui/api/fieldguide/runs")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          continueServerRuns = (j && j.runs) || [];
+          renderContinueCard(false);
+        })
+        .catch(function () { /* offline — local Continue still works */ })
+        .then(function () { continueHydrating = false; });
+    }
+
+    function renderContinueCard(alsoHydrate) {
+      if (!continueCard) { return; }
+      var run = pickBestContinue(findBestLocalRun(), continueServerRuns);
+      var titleEl = document.getElementById("continue-title");
+      if (!run) {
+        continueCard.hidden = true;
+        continueCard.classList.remove("is-visible");
+        if (alsoHydrate !== false) { hydrateContinueFromServer(); }
+        return;
+      }
+      var pname = run.procedure_name || procName(run.procedure) || run.procedure;
+      var job = run.job_name || "No job attached";
+      var n = (run.checked_count != null)
+        ? run.checked_count
+        : (run.checked || []).length;
+      if (titleEl) { titleEl.textContent = "Continue: " + pname; }
+      if (continueMeta) {
+        continueMeta.textContent = job + " · " + n + " checked" +
+          (run._needsFetch && !localRun(run.run_id) ? " · shared" : "");
+      }
+      continueCard.hidden = false;
+      continueCard.classList.add("is-visible");
+      if (continueBtn) {
+        continueBtn.onclick = function () {
+          var map = activeMap();
+          map[run.procedure] = run.run_id;
+          lsSet(LS_ACTIVE, map);
+          if (run._needsFetch || !localRun(run.run_id)) {
+            resumeRun(run.run_id);
+            return;
+          }
+          if (currentDoc !== run.procedure) { show(run.procedure, null, true); }
+          applyChecks(run.procedure);
+          renderBar();
+        };
+      }
+      if (alsoHydrate !== false) { hydrateContinueFromServer(); }
+    }
+
+    try {
+      var savedRole = window.localStorage.getItem(ROLE_KEY);
+      if (savedRole && ["all", "laborer", "hanger", "finisher", "act", "lead", "ops"]
+          .indexOf(savedRole) !== -1) {
+        setRoleFilter(savedRole, false);
+      }
+    } catch (e) { /* default all */ }
+
+    if (homeSearch) {
+      homeSearch.addEventListener("input", applyHomeFilter);
+    }
+    if (homeSearchClear) {
+      homeSearchClear.addEventListener("click", function () {
+        if (homeSearch) { homeSearch.value = ""; homeSearch.focus(); }
+        applyHomeFilter();
+      });
+    }
+    roleChipBtns.forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        setRoleFilter(btn.getAttribute("data-role-filter") || "all");
+      });
+    });
+
+    applyHomeFilter();
+    renderContinueCard();
+
+    /* Job Check deep-link: /ui/fieldguide?coach=1#hang opens coach once after show. */
+    var coachDeepLinkPending = new URLSearchParams(location.search).get("coach") === "1";
+    var prevOnDocShown = onDocShown;
+    onDocShown = function (docId) {
+      prevOnDocShown(docId);
+      if (coachDeepLinkPending && NON_PROC.indexOf(docId) === -1) {
+        coachDeepLinkPending = false;
+        openCoach(docId);
+      }
+    };
+
 
     /* initial view from hash */
     fromHash(location.hash, false);
+
+    /* speed: warm Monday snapshot for checklist job picker (non-blocking) */
+    fetch("/ui/api/monday/warm", { method: "POST", credentials: "same-origin", keepalive: true }).catch(function(){});
   })();
 </script>
 </body>
