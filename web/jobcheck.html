@@ -266,12 +266,10 @@
   </div>
 </div>
 
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script src="/ui/gvc-status-picker.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "jobcheck"); }
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,

@@ -79,11 +79,8 @@
   </div>
   <div class="card"><h2>Fireflies proposals</h2><div id="ff"></div></div>
 </main>
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 async function api(u, o){ const r=await fetch(u,o); const b=await r.json(); if(!r.ok) throw new Error((b.detail&&b.detail.detail)||b.detail||r.status); return b; }
 function rows(list){ return (list||[]).map(p => `<div class="row"><b>${esc(p.name)}</b><div class="gvc-sub">${esc(p.stage||"")} ${esc(p.blocked||"")} ${esc(p.location||"")}</div>
