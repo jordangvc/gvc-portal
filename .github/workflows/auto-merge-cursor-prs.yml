@@ -25,6 +25,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  actions: write
 
 jobs:
   gate:
@@ -94,3 +95,14 @@ jobs:
             esac
           done
           gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+
+      # GITHUB_TOKEN merges do NOT fire push-triggered workflows (GitHub recursion
+      # guard). Kick Cloud Run deploy explicitly so master still ships.
+      - name: Trigger Cloud Run deploy
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run deploy-cloud-run.yml \
+            --repo "$GITHUB_REPOSITORY" \
+            --ref master
+          echo "Deploy dispatched — watch Actions for Deploy to Cloud Run."
