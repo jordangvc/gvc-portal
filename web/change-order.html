@@ -149,7 +149,7 @@
     <p class="sec-help">Paste a Monday Project link — or search by client, address, or project #/CO number. Existing COs can load for revision.</p>
     <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
       <div><label>Monday Project URL — or search</label>
-        <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
+        <input id="monday-url" placeholder="https://…/pulses/… — or name, EST-/PRO-/INV-…, or CO.1-…" /></div>
       <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
     </div>
     <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
@@ -481,6 +481,13 @@ function looksLikeMondayRef(s) {
   return /\/pulses\/\d+/.test(s) || /^\d{8,}$/.test(s.trim()) || s.includes("monday.com");
 }
 function looksLikeCoNumber(s) { return /^CO\.\d+-/i.test((s || "").trim()); }
+function looksLikeProjectNumber(s) {
+  const t = (s || "").trim();
+  // Legacy series, bare spine, or EST-/PRO-/INV- (portal r26+).
+  return /^(C|MV)-\d+/i.test(t)
+    || /^(EST|PRO|INV)-\d{4}-\d{4}-\d{2,}$/i.test(t)
+    || /^\d{4}-\d{4}-\d{2,}$/.test(t);
+}
 
 /** Strip trailing " Rev N" and parse CO.{n}-{base}; mirrors subsystems/change_order/number.py */
 function parseCoNumber(value) {
@@ -908,6 +915,15 @@ $("[name=date]").value = new Date().toISOString().slice(0, 10);
 updateReviseUI();
 checkHealth();
 refreshDrafts();
+
+(function bootChangeOrderFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const q = (params.get("q") || params.get("project_number") || params.get("co") || "").trim();
+  if (!q) return;
+  const input = $("#monday-url");
+  if (input) input.value = q;
+  lookupFromMonday();
+})();
 </script>
 </body>
 </html>

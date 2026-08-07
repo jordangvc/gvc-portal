@@ -45,6 +45,8 @@ from typing import Optional
 from adapters.monday import cache as monday_cache
 from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID, OPERATIONS_BOARD_ID, PROJECTS_BOARD_ID, SUBITEMS_BOARD_ID
+from shared.doc_number import core_number, search_needles
+from subsystems.change_order.number import parse_co_number
 
 # Projects board columns we read (see monday/client.py for the wider map).
 P_COL_CUSTOMER_LINK = "connect_boards9"
@@ -341,7 +343,7 @@ def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
     }
     """ % P_COL_PROJECT_NUMBER
 
-    def _leg(column_id: str):
+    def _leg(column_id: str, value: str):
         # Fresh session per leg — requests.Session is not thread-safe.
         token = None
         try:
@@ -352,15 +354,21 @@ def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
         return local._query(query, {
             "boardId": [str(PROJECTS_BOARD_ID)],
             "columnId": column_id,
-            "value": q,
+            "value": value,
         })
 
+    # Name uses the typed string; Project # probes EST-/PRO-/INV-/bare so
+    # pasting EST-… still hits PRO-{core} cells (invoice/estimate parity).
+    needles = search_needles(q) or [q]
+    work: list[tuple[str, str]] = [("name", q)]
+    for needle in needles:
+        work.append((P_COL_PROJECT_NUMBER, needle))
+
     results: dict[int, dict] = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        futs = {pool.submit(_leg, col): col
-                for col in ("name", P_COL_PROJECT_NUMBER)}
+    with ThreadPoolExecutor(max_workers=min(4, len(work))) as pool:
+        futs = {pool.submit(_leg, col, val): (col, val) for col, val in work}
         for fut in as_completed(futs):
-            column_id = futs[fut]
+            column_id, _val = futs[fut]
             try:
                 data = fut.result()
             except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
@@ -383,15 +391,34 @@ def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
     return list(results.values())[:limit]
 
 
+def normalize_co_list_base(base_number: str) -> str:
+    """
+    Bare spine core used to list/match CO.{n}-{base} items.
+
+    Job Start / invoice soft-fill hand PRO-{core} (or EST-/INV-) as the
+    project number; CO identifiers store the bare core. Strip CO wrappers
+    and spine prefixes so list_co_items finds ``CO.1-2026-…`` when the
+    form carries ``PRO-2026-…``.
+    """
+    base = (base_number or "").strip()
+    while True:
+        parsed = parse_co_number(base)
+        if not parsed:
+            break
+        base = parsed[1]
+    return core_number(base) or base
+
+
 def list_co_items(mc, base_number: str) -> list[dict]:
     """
     Top-level CO items for a base (estimate) number: Projects items whose
     Project # column contains `-{base}` and parses as CO.{n}-{base}.
     Returns [{item_id, identifier, status, amount, name, url}].
-    """
-    from subsystems.change_order.number import parse_co_number
 
-    base = (base_number or "").strip()
+    ``base_number`` may be bare, EST-/PRO-/INV-, or a CO id — all reduce to
+    the bare core before search + equality.
+    """
+    base = normalize_co_list_base(base_number)
     if not base:
         return []
     query = """
@@ -419,7 +446,10 @@ def list_co_items(mc, base_number: str) -> list[dict]:
                      for cv in item.get("column_values") or []}
             ident = texts.get(P_COL_PROJECT_NUMBER, "")
             parsed = parse_co_number(ident)
-            if not parsed or parsed[1] != base:
+            if not parsed:
+                continue
+            item_base = core_number(parsed[1]) or (parsed[1] or "").strip()
+            if item_base != base:
                 continue
             amount = None
             raw_amt = texts.get(CO_ITEM_COL_AMOUNT) or ""
@@ -601,8 +631,6 @@ def _read_parent_for_copy(mc, parent_item_id: int) -> dict:
 def co_item_name(parent_name: str, co_identifier: str) -> str:
     """PURE: the CO item/task title — `CO.{n} - {parent title}` (per the original design: the
     exact original title, prefixed). Falls back to the identifier alone."""
-    from subsystems.change_order.number import parse_co_number
-
     parsed = parse_co_number(co_identifier)
     prefix = f"CO.{parsed[0]}" if parsed else (co_identifier or "CO")
     parent_name = (parent_name or "").strip()

@@ -509,7 +509,10 @@ def test_invoice_page_boots_monday_item_id_deep_link():
     assert "lookupProjectByItemId" in html
     # boot order: project_number first, then monday item id, then q
     boot_idx = html.index("function bootInvoiceFromUrl")
-    snippet = html[boot_idx:boot_idx + 900]
+    # bootInvoiceFromUrl grew (project_number / q / monday paths) — don't truncate
+    # before the monday_item_id branch.
+    end = html.find("\nfunction ", boot_idx + 1)
+    snippet = html[boot_idx: end if end != -1 else boot_idx + 4000]
     assert 'params.get("monday_item_id")' in snippet
     assert "lookupProjectByItemId(mondayItemId)" in snippet
 
