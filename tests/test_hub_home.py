@@ -142,9 +142,12 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r63 footer", ">r63<" in hub)
+    check("r64 footer", ">r64<" in hub)
     check("light refresh endpoint", "/ui/api/hub/refresh" in hub)
     check("refresh debounce", "REFRESH_MIN_MS" in hub)
+    fetch_fn = hub.split("async function fetchPayload")[1].split("async function refreshBadges")[0]
+    check("first paint uses refresh", "/ui/api/hub/refresh" in fetch_fn)
+    check("first paint then full hub", 'fetch("/ui/api/hub"' in fetch_fn)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)

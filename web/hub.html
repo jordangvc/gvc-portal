@@ -126,7 +126,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r63</b> · Aug 7, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r64</b> · Aug 7, 2026</span>
         </div>
       </div>
     </div>
@@ -768,7 +768,42 @@
     });
   }
 
+  function applyRefreshSlice(next) {
+    if (!payload) payload = {};
+    payload.badges = next.badges || {};
+    payload.needs = next.needs || payload.needs || [];
+    payload.needs_clear = next.needs_clear;
+    payload.summary = next.summary != null ? next.summary : (payload.summary || "");
+    payload.metrics = next.metrics || payload.metrics || [];
+    payload.queue = next.queue || payload.queue || { title: "Queue", rows: [] };
+    if (next.generated_at) payload.generated_at = next.generated_at;
+  }
+
+  function renderLiveSlice() {
+    // First paint / light poll — needs, metrics, queue, badges only.
+    showLive();
+    $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
+    const dl = $("dateline");
+    if (dl && payload.generated_at) dl.textContent = formatDateLine(payload.generated_at);
+    renderUserChrome();
+    renderNeeds();
+    renderMetrics();
+    renderQueue();
+    renderHomeCta();
+  }
+
   async function fetchPayload() {
+    // Two-step load: paint live Monday slice ASAP, then hydrate identity /
+    // nav / activity / pins (Cloud Logging) without blocking first paint.
+    const refreshRes = await fetch("/ui/api/hub/refresh", { credentials: "same-origin" });
+    if (!refreshRes.ok) throw new Error("hub refresh " + refreshRes.status);
+    const refresh = await refreshRes.json();
+    lastRefreshAt = Date.now();
+    if (!(refresh.ok === false && !refresh.badges && !(refresh.needs || []).length)) {
+      applyRefreshSlice(refresh);
+      renderLiveSlice();
+    }
+
     const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
     if (!res.ok) throw new Error("hub " + res.status);
     payload = await res.json();
@@ -790,12 +825,7 @@
       if (!res.ok) return;
       const next = await res.json();
       if (next.ok === false && !next.badges && !(next.needs || []).length) return;
-      payload.badges = next.badges || {};
-      payload.needs = next.needs || payload.needs;
-      payload.needs_clear = next.needs_clear;
-      payload.summary = next.summary || payload.summary;
-      payload.metrics = next.metrics || payload.metrics;
-      payload.queue = next.queue || payload.queue;
+      applyRefreshSlice(next);
       renderUserChrome();
       renderNav($("railnav"), $("railsearch").value);
       renderNav($("drawernav"), $("drawersearch").value);
@@ -811,7 +841,6 @@
   wireChrome();
   fetchPayload()
     .then(() => {
-      lastRefreshAt = Date.now();
       if (wantDemo) {
         payload = demoPayload();
         renderAll();

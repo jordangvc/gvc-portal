@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Hub first-paint two-step load (r64) — BUILT 2026-08-07
+Cold hub open no longer waits on Cloud Logging activity + pins before showing
+live needs/metrics/queue. `web/hub.html` `fetchPayload` calls
+`/ui/api/hub/refresh` first (paint live slice, set `lastRefreshAt`), then
+`/ui/api/hub` to hydrate user/greeting/nav/activity/pinned. Focus refresh
+still debounced. Hub footer **r64**.
+
 ## ⚡ Morning → Job Check deep links + more next-steps (r63) — BUILT 2026-08-07
 - Morning Brief project cards + route stops link **Job Check `?item=`** (Ops id).
 - CO finalize + Paid by Check success get Billing / hub next-step lines.
