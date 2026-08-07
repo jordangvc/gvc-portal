@@ -42,7 +42,9 @@ def test_is_unbilled_co_status_filters_billed_and_void():
 
 
 def test_list_unbilled_co_items_returns_only_open_top_level_cos():
+    from adapters.monday import cache as monday_cache
     base = "2026-0616-B2"
+    monday_cache.invalidate(f"list:co_items:{base.lower()}")
     mc = _FakeMC([
         _co_item(11, f"CO.1-{base}", "Approved", "1500.00", "CO.1 - Demo"),
         _co_item(12, f"CO.2-{base}", "Billed", "200.00", "CO.2 - Demo"),
@@ -65,11 +67,31 @@ def test_list_co_items_accepts_pro_est_inv_base():
         _co_item(21, f"CO.1-{bare}", "Drafted", "100", "CO.1"),
         _co_item(22, f"CO.2-{bare}", "Approved", "200", "CO.2"),
     ]
+    from adapters.monday import cache as monday_cache
     for base in (f"PRO-{bare}", f"EST-{bare}", f"INV-{bare}", bare):
+        monday_cache.invalidate(f"list:co_items:{bare.lower()}")
         mc = _FakeMC(items)
         rows = monday_co.list_co_items(mc, base)
         assert [r["item_id"] for r in rows] == [21, 22], base
         assert mc.queries[-1][1]["value"] == f"-{bare}", base
+
+
+def test_list_co_items_short_ttl_cache():
+    """Second list for the same bare core must not re-query Monday."""
+    from adapters.monday import cache as monday_cache
+    bare = "2026-0810-099"
+    monday_cache.invalidate(f"list:co_items:{bare.lower()}")
+    items = [_co_item(31, f"CO.1-{bare}", "Drafted", "10", "CO.1")]
+    mc = _FakeMC(items)
+    first = monday_co.list_co_items(mc, f"PRO-{bare}")
+    assert len(mc.queries) == 1
+    second = monday_co.list_co_items(mc, bare)
+    assert len(mc.queries) == 1  # cache hit
+    assert [r["item_id"] for r in first] == [r["item_id"] for r in second]
+    monday_co.invalidate_co_list_cache(f"CO.1-{bare}")
+    third = monday_co.list_co_items(mc, f"EST-{bare}")
+    assert len(mc.queries) == 2
+    assert [r["item_id"] for r in third] == [31]
 
 
 def test_normalize_co_list_base_strips_prefixes():

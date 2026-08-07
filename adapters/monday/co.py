@@ -416,11 +416,21 @@ def list_co_items(mc, base_number: str) -> list[dict]:
     Returns [{item_id, identifier, status, amount, name, url}].
 
     ``base_number`` may be bare, EST-/PRO-/INV-, or a CO id — all reduce to
-    the bare core before search + equality.
+    the bare core before search + equality. Short-TTL cached — invoice lookup
+    and CO get_project_context often hit the same base twice in one sitting.
     """
     base = normalize_co_list_base(base_number)
     if not base:
         return []
+    cache_key = f"list:co_items:{base.lower()}"
+    return monday_cache.get_or_set(
+        cache_key,
+        lambda: _list_co_items_uncached(mc, base),
+        ttl=monday_cache.search_ttl(),
+    )
+
+
+def _list_co_items_uncached(mc, base: str) -> list[dict]:
     query = """
     query ($boardId: [ID!], $value: CompareValue!) {
       boards(ids: $boardId) {
@@ -468,6 +478,13 @@ def list_co_items(mc, base_number: str) -> list[dict]:
             })
     out.sort(key=lambda c: c["identifier"])
     return out
+
+
+def invalidate_co_list_cache(base_number: str) -> None:
+    """Drop cached CO rows for a project base after create/revise writes."""
+    base = normalize_co_list_base(base_number)
+    if base:
+        monday_cache.invalidate(f"list:co_items:{base.lower()}")
 
 
 def _is_unbilled_co_status(status: Optional[str]) -> bool:
@@ -862,6 +879,7 @@ def write_back(
         report["monday_co_item_url"] = _item_url(PROJECTS_BOARD_ID, co_item_id)
         # Back-compat alias used by older UI/result rendering.
         report["monday_item_url"] = report["monday_co_item_url"]
+        invalidate_co_list_cache(co_identifier)
 
         # ---- The Operations-board task (best-effort; never fails the CO) ----
         try:
