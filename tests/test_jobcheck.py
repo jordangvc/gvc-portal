@@ -76,6 +76,23 @@ def test_hard_exclusions_beat_config_edits():
         boards.JOBCHECK_COLUMNS = saved
 
 
+def test_columns_present_on_board_drops_stale_ids():
+    entries = [
+        {"id": "status", "label": "Stage", "type": "status", "board": "ops"},
+        {"id": "long_text_mkpzf3je", "label": "Open questions for Ops",
+         "type": "long_text", "board": "ops"},
+    ]
+    # Empty meta = board read failed → keep allowlist (don't blank the form).
+    assert jf.columns_present_on_board(entries, {}) == entries
+    # Partial meta = Monday omitted the deleted column id.
+    live = jf.columns_present_on_board(entries, {"status": {"id": "status"}})
+    assert [c["id"] for c in live] == ["status"]
+    msg = jf.missing_board_column_message(entries[1], "long_text_mkpzf3je")
+    assert "Open questions for Ops" in msg
+    assert "long_text_mkpzf3je" in msg
+    assert "Operations" in msg
+
+
 # ------------------------------------------------------------- value shaping
 
 def test_shape_status_date_number_text():
@@ -614,6 +631,89 @@ def test_save_missing_project_link_fails_trade_only():
     assert "link_to_projects" in out["failures"]["projects:status_19"]
     assert "link_to_projects" in out["failures"]["projects:color_mkza9z7c"]
     assert "not a label" not in out["failures"]["projects:color_mkza9z7c"]
+
+
+def test_save_skips_ops_column_missing_from_live_board():
+    """Stale Ops column ids (InvalidColumnIdException) must not be sent to
+    Monday, and must not block sibling columns from saving — live 2026-08-07
+    failure mode for long_text_mkpzf3je / Open questions for Ops."""
+    ops_before = {
+        "item_id": 101, "name": "Job A", "url": "https://monday/x",
+        "values": {"status_19": "Friday", "long_text_mkpzf3je": None},
+    }
+    calls = {"set": []}
+
+    class _MC:
+        pass
+
+    def fake_client():
+        return _MC()
+
+    def fake_get_item_values(mc, item_id, column_ids):
+        return dict(ops_before, values=dict(ops_before["values"]))
+
+    def fake_get_board_columns(mc, column_ids, board_id=None):
+        # Monday omits the deleted Open questions column from columns(ids:…).
+        out = {}
+        for cid in column_ids:
+            if cid == "long_text_mkpzf3je":
+                continue
+            if cid in ("status", "status_19", "color_mm1hmwdm", "color_mm1hrm6z",
+                       "color_mm1gemtq", "color_mm02xmc0"):
+                out[cid] = {"id": cid, "type": "status",
+                            "labels": [{"label": "Friday"}, {"label": "Clear"},
+                                       {"label": "Ops Team"}, {"label": "Touch Up/Service"}]}
+            else:
+                out[cid] = {"id": cid, "type": "text", "labels": []}
+        return out
+
+    def fake_get_linked_project_id(mc, ops_item_id):
+        return {"project_item_id": None, "error": "empty"}
+
+    def fake_set_item_columns(mc, item_id, values, board_id=None):
+        calls["set"].append(dict(values))
+        assert "long_text_mkpzf3je" not in values
+        return {"written": sorted(values), "failed": {}}
+
+    import adapters.monday.client as mcmod
+    import adapters.slack_notify as sn
+
+    real = {
+        "client": mcmod.MondayClient,
+        "get_item_values": mj.get_item_values,
+        "get_board_columns": mj.get_board_columns,
+        "get_linked_project_id": mj.get_linked_project_id,
+        "set_item_columns": mj.set_item_columns,
+        "notify": sn.notify_jobcheck_saved,
+    }
+    try:
+        mcmod.MondayClient = fake_client  # type: ignore
+        jf.MondayClient = fake_client  # type: ignore
+        mj.get_item_values = fake_get_item_values  # type: ignore
+        mj.get_board_columns = fake_get_board_columns  # type: ignore
+        mj.get_linked_project_id = fake_get_linked_project_id  # type: ignore
+        mj.set_item_columns = fake_set_item_columns  # type: ignore
+        sn.notify_jobcheck_saved = lambda _p: False  # type: ignore
+
+        out = jf.save_job_check(101, {
+            "status_19": "Friday",
+            "long_text_mkpzf3je": "GC still owes paint schedule",
+        }, "mark@greenvalleycontractors.com")
+    finally:
+        mcmod.MondayClient = real["client"]  # type: ignore
+        jf.MondayClient = real["client"]  # type: ignore
+        mj.get_item_values = real["get_item_values"]  # type: ignore
+        mj.get_board_columns = real["get_board_columns"]  # type: ignore
+        mj.get_linked_project_id = real["get_linked_project_id"]  # type: ignore
+        mj.set_item_columns = real["set_item_columns"]  # type: ignore
+        sn.notify_jobcheck_saved = real["notify"]  # type: ignore
+
+    assert out["ok"] is False  # open questions still named in failures
+    assert "status_19" in out["written"]
+    assert "long_text_mkpzf3je" in out["failures"]
+    assert "not on the Operations board" in out["failures"]["long_text_mkpzf3je"]
+    assert len(calls["set"]) == 1
+    assert calls["set"][0] == {"status_19": {"label": "Friday"}}
 
 
 # ------------------------------------ Ops→Projects link (in-app)

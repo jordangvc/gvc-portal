@@ -671,11 +671,18 @@ def fetch_item_column_texts(mc, item_id: int, column_ids: list[str]) -> dict[str
     return out
 
 
+def _column_ids_named_in_error(err: BaseException, candidates: dict) -> list[str]:
+    """Column ids from `candidates` mentioned in a Monday API error string."""
+    msg = str(err)
+    return [cid for cid in candidates if cid and cid in msg]
+
+
 def _write_with_fallback(mc, board_id: int, group_id, name: str, values: dict,
                          *, item_id: Optional[int] = None) -> tuple[int, list[str]]:
     """
-    Create-or-update, retrying without the known-fragile columns if the first
-    attempt is rejected. Returns (item_id, dropped_column_ids).
+    Create-or-update, retrying without known-fragile columns — and without any
+    column Monday reports as a missing/invalid id — if the first attempt is
+    rejected. Returns (item_id, dropped_column_ids).
     """
     def _go(payload: dict) -> int:
         if item_id:
@@ -685,15 +692,23 @@ def _write_with_fallback(mc, board_id: int, group_id, name: str, values: dict,
 
     try:
         return _go(values), []
-    except Exception as first_err:  # noqa: BLE001 — retry without the fragile bits
-        fragile = [c for c in values if c in FRAGILE_COLUMNS]
-        if not fragile:
+    except Exception as first_err:  # noqa: BLE001 — retry without droppable bits
+        drop = [c for c in values if c in FRAGILE_COLUMNS]
+        # InvalidColumnIdException embeds the bad column_id; drop it so a stale
+        # JOBSTART_FIELDS target (e.g. deleted Ops open_questions) can't abort
+        # the whole handoff write.
+        for cid in _column_ids_named_in_error(first_err, values):
+            if cid not in drop:
+                drop.append(cid)
+        if not drop:
             raise
-        reduced = {k: v for k, v in values.items() if k not in FRAGILE_COLUMNS}
+        reduced = {k: v for k, v in values.items() if k not in set(drop)}
+        if not reduced and values:
+            raise
         print(f"[jobstart] write rejected on board {board_id} "
-              f"({type(first_err).__name__}); retrying without {fragile}",
+              f"({type(first_err).__name__}); retrying without {drop}",
               file=sys.stderr)
-        return _go(reduced), fragile
+        return _go(reduced), drop
 
 
 _MOVE_GROUP = """

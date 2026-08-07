@@ -208,6 +208,43 @@ def main() -> int:
           all(f["type"] in boards.JOBSTART_RENDER_TYPES for f in jf.packet_fields()))
 
 
+    # ---------------------------------------------------------------------------
+    # 9. Stale Monday column ids must not abort the whole handoff write
+    # ---------------------------------------------------------------------------
+
+    from adapters.monday import jobstart as mjs
+
+    writes = []
+    real_create = mjs._create_item
+
+    def fake_create(mc, board_id, group_id, name, values):
+        writes.append(sorted(values))
+        if "long_text_mkpzf3je" in values:
+            raise RuntimeError(
+                "Monday API error: [{'message': \"This column ID doesn't "
+                "exist for the board\", 'extensions': {'code': "
+                "'InvalidColumnIdException', 'error_data': "
+                "{'column_id': 'long_text_mkpzf3je'}}}]"
+            )
+        return 999
+
+    try:
+        mjs._create_item = fake_create  # type: ignore
+        item_id, dropped = mjs._write_with_fallback(
+            object(), boards.OPERATIONS_BOARD_ID, "new_group", "Test Job",
+            {"text_mkz4p9tk": "scaffold",
+             "long_text_mkpzf3je": {"text": "open Q"}},
+        )
+    finally:
+        mjs._create_item = real_create  # type: ignore
+
+    check("InvalidColumnId drops the stale column and retries",
+          item_id == 999 and dropped == ["long_text_mkpzf3je"],
+          {"item_id": item_id, "dropped": dropped, "writes": writes})
+    check("retry payload no longer includes the deleted column",
+          writes[-1] == ["text_mkz4p9tk"], writes)
+
+
     print(f"\n{PASS} passed, {len(FAIL)} failed")
     for f in FAIL:
         print(f"  FAIL: {f}")

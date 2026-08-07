@@ -113,6 +113,9 @@ JOBCHECK_COLUMNS: tuple[dict, ...] = (
     {"id": "text_mkz49r0m",    "label": "Lock Box",           "type": "text"},
     {"id": "text_mm14mhpm",    "label": "Shower Instructions", "type": "text"},
     {"id": "color_mm02xmc0",   "label": "Window type",        "type": "status"},
+    # Open questions — id verified when added (2026-08-03). If Monday deletes
+    # or recreates this column, Job Check hides it via live board meta (see
+    # columns_present_on_board) until the id below is updated.
     {"id": "long_text_mkpzf3je", "label": "Open questions for Ops", "type": "long_text"},
 )
 
