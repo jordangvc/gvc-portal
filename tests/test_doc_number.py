@@ -43,120 +43,135 @@ def check(name, cond, extra=""):
         FAIL.append(f"{name} {extra}".strip())
 
 
-# --- core / prefix -----------------------------------------------------------
 
-check("core from bare", core_number("2026-0804-001") == "2026-0804-001")
-check("core from EST-", core_number("EST-2026-0804-001") == "2026-0804-001")
-check("core from PRO-", core_number("pro-2026-0804-001") == "2026-0804-001")
-check("core from INV- Rev", core_number("INV-2026-0804-001 Rev 2") == "2026-0804-001")
-check("legacy C-005 is not spine", core_number("C-005") is None)
-check("is_spine bare", is_spine_number("2026-0804-001"))
-check("for_estimate", for_estimate("2026-0804-001") == "EST-2026-0804-001")
-check("for_project", for_project("EST-2026-0804-001") == "PRO-2026-0804-001")
-check("for_invoice", for_invoice("PRO-2026-0804-001") == "INV-2026-0804-001")
-check("for_invoice keeps Rev",
-      for_invoice("2026-0804-001 Rev 1") == "INV-2026-0804-001 Rev 1")
-check("legacy passthrough", for_invoice("GVC-2026-C-005") == "GVC-2026-C-005")
-check("monday cell is bare",
-      monday_estimate_cell("EST-2026-0804-001") == "2026-0804-001")
-check("search needles EST- → typed + core",
-      search_needles("EST-2026-0804-007") == ["EST-2026-0804-007", "2026-0804-007"])
-check("search needles PRO- → typed + core",
-      search_needles("PRO-2026-0804-007") == ["PRO-2026-0804-007", "2026-0804-007"])
-check("search needles bare is single",
-      search_needles("2026-0804-007") == ["2026-0804-007"])
-check("search needles empty", search_needles("  ") == [])
-check("search needles legacy passthrough",
-      search_needles("C-005") == ["C-005"])
-check("same core across kinds",
-      core_number(for_estimate("2026-0804-007"))
-      == core_number(for_project("2026-0804-007"))
-      == core_number(for_invoice("2026-0804-007"))
-      == "2026-0804-007")
+def main() -> int:
+    global PASS, FAIL
+    PASS = 0
+    FAIL = []
+    # --- core / prefix -----------------------------------------------------------
 
-# Invoice Find-the-Project must recognize prefixed spine numbers (r26 gap).
-_invoice_html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text(
-    encoding="utf-8")
-check("invoice looksLike accepts EST|PRO|INV",
-      "EST|PRO|INV" in _invoice_html and "looksLikeProjectNumber" in _invoice_html)
+    check("core from bare", core_number("2026-0804-001") == "2026-0804-001")
+    check("core from EST-", core_number("EST-2026-0804-001") == "2026-0804-001")
+    check("core from PRO-", core_number("pro-2026-0804-001") == "2026-0804-001")
+    check("core from INV- Rev", core_number("INV-2026-0804-001 Rev 2") == "2026-0804-001")
+    check("legacy C-005 is not spine", core_number("C-005") is None)
+    check("is_spine bare", is_spine_number("2026-0804-001"))
+    check("for_estimate", for_estimate("2026-0804-001") == "EST-2026-0804-001")
+    check("for_project", for_project("EST-2026-0804-001") == "PRO-2026-0804-001")
+    check("for_invoice", for_invoice("PRO-2026-0804-001") == "INV-2026-0804-001")
+    check("for_invoice keeps Rev",
+          for_invoice("2026-0804-001 Rev 1") == "INV-2026-0804-001 Rev 1")
+    check("legacy passthrough", for_invoice("GVC-2026-C-005") == "GVC-2026-C-005")
+    check("monday cell is bare",
+          monday_estimate_cell("EST-2026-0804-001") == "2026-0804-001")
+    check("search needles EST- → typed + core",
+          search_needles("EST-2026-0804-007") == ["EST-2026-0804-007", "2026-0804-007"])
+    check("search needles PRO- → typed + core",
+          search_needles("PRO-2026-0804-007") == ["PRO-2026-0804-007", "2026-0804-007"])
+    check("search needles bare is single",
+          search_needles("2026-0804-007") == ["2026-0804-007"])
+    check("search needles empty", search_needles("  ") == [])
+    check("search needles legacy passthrough",
+          search_needles("C-005") == ["C-005"])
+    check("same core across kinds",
+          core_number(for_estimate("2026-0804-007"))
+          == core_number(for_project("2026-0804-007"))
+          == core_number(for_invoice("2026-0804-007"))
+          == "2026-0804-007")
 
-# INV- autofill prefers project_number; bare estimate spine is enough when
-# Project # is missing (Look-up-&-fill path).
-check("INV from bid estimate spine",
-      for_invoice("2026-0804-009") == "INV-2026-0804-009")
-check("INV from EST- spine",
-      for_invoice("EST-2026-0804-009") == "INV-2026-0804-009")
+    # Invoice Find-the-Project must recognize prefixed spine numbers (r26 gap).
+    _invoice_html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text(
+        encoding="utf-8")
+    check("invoice looksLike accepts EST|PRO|INV",
+          "EST|PRO|INV" in _invoice_html and "looksLikeProjectNumber" in _invoice_html)
 
-# --- estimate number ---------------------------------------------------------
+    # INV- autofill prefers project_number; bare estimate spine is enough when
+    # Project # is missing (Look-up-&-fill path).
+    check("INV from bid estimate spine",
+          for_invoice("2026-0804-009") == "INV-2026-0804-009")
+    check("INV from EST- spine",
+          for_invoice("EST-2026-0804-009") == "INV-2026-0804-009")
 
-check("format_number is EST-",
-      format_number(date(2026, 8, 4), 3) == "EST-2026-0804-003")
-check("parse_counter EST-",
-      parse_counter("EST-2026-0804-003", prefix="2026-0804") == 3)
-check("parse_counter bare",
-      parse_counter("2026-0804-003", prefix="2026-0804") == 3)
-check("normalize bare→EST",
-      normalize_estimate_identifier("2026-0804-001") == "EST-2026-0804-001")
-check("ESTIMATE_NUMBER_RE accepts EST-",
-      bool(ESTIMATE_NUMBER_RE.match("EST-2026-0804-001")))
-check("ESTIMATE_NUMBER_RE accepts bare",
-      bool(ESTIMATE_NUMBER_RE.match("2026-0804-001")))
+    # --- estimate number ---------------------------------------------------------
 
-tmp = Path("/tmp/gvc-doc-number-test-out")
-tmp.mkdir(exist_ok=True)
-for p in tmp.glob("*.pdf"):
-    p.unlink()
-(tmp / "EST-2026-0804-001.pdf").write_bytes(b"%PDF")
-(tmp / "2026-0804-002.pdf").write_bytes(b"%PDF")
-nxt = next_estimate_number(output_dir=tmp, today=date(2026, 8, 4))
-check("next_estimate_number bumps past EST+bare",
-      nxt == "EST-2026-0804-003", nxt)
+    check("format_number is EST-",
+          format_number(date(2026, 8, 4), 3) == "EST-2026-0804-003")
+    check("parse_counter EST-",
+          parse_counter("EST-2026-0804-003", prefix="2026-0804") == 3)
+    check("parse_counter bare",
+          parse_counter("2026-0804-003", prefix="2026-0804") == 3)
+    check("normalize bare→EST",
+          normalize_estimate_identifier("2026-0804-001") == "EST-2026-0804-001")
+    check("ESTIMATE_NUMBER_RE accepts EST-",
+          bool(ESTIMATE_NUMBER_RE.match("EST-2026-0804-001")))
+    check("ESTIMATE_NUMBER_RE accepts bare",
+          bool(ESTIMATE_NUMBER_RE.match("2026-0804-001")))
 
-# --- invoice auto-assign -----------------------------------------------------
+    tmp = Path("/tmp/gvc-doc-number-test-out")
+    tmp.mkdir(exist_ok=True)
+    for p in tmp.glob("*.pdf"):
+        p.unlink()
+    (tmp / "EST-2026-0804-001.pdf").write_bytes(b"%PDF")
+    (tmp / "2026-0804-002.pdf").write_bytes(b"%PDF")
+    nxt = next_estimate_number(output_dir=tmp, today=date(2026, 8, 4))
+    check("next_estimate_number bumps past EST+bare",
+          nxt == "EST-2026-0804-003", nxt)
 
-payload = {
-    "client": {"name": "Acme", "billing_address": "1 Main",
-               "email": "a@example.com"},
-    "job": {"name": "Job", "project_number": "PRO-2026-0804-009"},
-    "invoice": {
-        "issue_date": "2026-08-04",
-        "payment_terms": "Net 30",
-        "line_items": [{"description": "Work", "amount": 100}],
-    },
-}
-ensure_invoice_identifier(payload)
-check("invoice auto INV- from PRO-",
-      payload["invoice"]["identifier"] == "INV-2026-0804-009",
-      payload["invoice"].get("identifier"))
+    # --- invoice auto-assign -----------------------------------------------------
 
-payload2 = {
-    "client": {"name": "Acme", "billing_address": "1 Main",
-               "email": "a@example.com"},
-    "job": {"name": "Job", "project_number": "PRO-2026-0804-009"},
-    "invoice": {
-        "identifier": "2026-0804-009",
-        "issue_date": "2026-08-04",
-        "payment_terms": "Net 30",
-        "line_items": [{"description": "Work", "amount": 100}],
-    },
-}
-validate(payload2)
-check("validate normalizes bare id to INV-",
-      payload2["invoice"]["identifier"] == "INV-2026-0804-009")
+    payload = {
+        "client": {"name": "Acme", "billing_address": "1 Main",
+                   "email": "a@example.com"},
+        "job": {"name": "Job", "project_number": "PRO-2026-0804-009"},
+        "invoice": {
+            "issue_date": "2026-08-04",
+            "payment_terms": "Net 30",
+            "line_items": [{"description": "Work", "amount": 100}],
+        },
+    }
+    ensure_invoice_identifier(payload)
+    check("invoice auto INV- from PRO-",
+          payload["invoice"]["identifier"] == "INV-2026-0804-009",
+          payload["invoice"].get("identifier"))
 
-# --- CO base strips prefixes -------------------------------------------------
+    payload2 = {
+        "client": {"name": "Acme", "billing_address": "1 Main",
+                   "email": "a@example.com"},
+        "job": {"name": "Job", "project_number": "PRO-2026-0804-009"},
+        "invoice": {
+            "identifier": "2026-0804-009",
+            "issue_date": "2026-08-04",
+            "payment_terms": "Net 30",
+            "line_items": [{"description": "Work", "amount": 100}],
+        },
+    }
+    validate(payload2)
+    check("validate normalizes bare id to INV-",
+          payload2["invoice"]["identifier"] == "INV-2026-0804-009")
 
-check("CO base strips EST-",
-      normalize_base_number("EST-2026-0804-001") == "2026-0804-001")
-check("CO base strips CO wrapper then prefix",
-      normalize_base_number("CO.2-PRO-2026-0804-001") == "2026-0804-001")
-check("CO base keeps legacy",
-      normalize_base_number("C-005") == "C-005")
-check("with_prefix unknown kind passthrough",
-      with_prefix("XYZ", "2026-0804-001") == "2026-0804-001")
+    # --- CO base strips prefixes -------------------------------------------------
+
+    check("CO base strips EST-",
+          normalize_base_number("EST-2026-0804-001") == "2026-0804-001")
+    check("CO base strips CO wrapper then prefix",
+          normalize_base_number("CO.2-PRO-2026-0804-001") == "2026-0804-001")
+    check("CO base keeps legacy",
+          normalize_base_number("C-005") == "C-005")
+    check("with_prefix unknown kind passthrough",
+          with_prefix("XYZ", "2026-0804-001") == "2026-0804-001")
 
 
-print(f"\n{PASS} passed, {len(FAIL)} failed")
-for f in FAIL:
-    print("FAIL:", f)
-sys.exit(1 if FAIL else 0)
+    print(f"\n{PASS} passed, {len(FAIL)} failed")
+    for f in FAIL:
+        print("FAIL:", f)
+    return 1 if FAIL else 0
+
+
+def test_doc_number_standalone():
+    """Pytest entry — keeps this file collectable and CI-gated."""
+    code = main()
+    assert code == 0, FAIL
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
