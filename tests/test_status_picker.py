@@ -101,7 +101,8 @@ def test_row_align_css() -> None:
     jc = (ROOT / "web" / "jobcheck.html").read_text(encoding="utf-8")
     check("date fields use dateFieldHtml / sp__date", "sp__date" in jc and "dateFieldHtml" in jc)
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
-    check("hub footer r43", ">r43<" in hub)
+    # Footer rN bumps every user-visible ship — assert the marker, not a pinned rev.
+    check("hub footer has Portal rN", "Portal" in hub and ">r" in hub and "</b>" in hub)
 
 
 if __name__ == "__main__":

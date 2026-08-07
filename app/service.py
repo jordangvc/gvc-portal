@@ -2191,6 +2191,33 @@ def ui_estimate_scopes_save(req: EstimateScopeCatalogRequest, request: Request) 
     return {"ok": True, "catalog": catalog, "info": scope_catalog.catalog_info()}
 
 
+@app.get("/ui/training", response_class=HTMLResponse)
+def ui_training(request: Request) -> HTMLResponse:
+    """
+    Portal & systems training: money spine, hub map, and role tracks
+    (including the GM / Donnie week-one loop). Progress is localStorage only.
+
+    `training` is a BASELINE grant so every signed-in employee can open it
+    without an admin tap. It carries no customer or financial data.
+    """
+    email = require_feature(request, "training")
+    activity.log_event("tool.open", actor=email, target="training")
+    path = WEB_DIR / "training.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    html = (
+        path.read_text(encoding="utf-8")
+        .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{EMAIL_JSON}}", json.dumps(email))
+    )
+    return HTMLResponse(html)
+
+
 @app.get("/ui/timeoff", response_class=HTMLResponse)
 def ui_timeoff(request: Request) -> HTMLResponse:
     """

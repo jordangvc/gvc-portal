@@ -244,7 +244,7 @@
       <h2>Invoice details</h2>
       <div class="grid">
         <div><label>Invoice number <span class="opt">(auto from project)</span></label><input name="identifier" placeholder="auto: INV-YYYY-MMDD-NNN" />
-          <div class="hint">Same core number as the estimate (<code>EST-…</code>) and project (<code>PRO-…</code>) — only the letters change. Auto-filled by “Look up &amp; fill” as <code>INV-…</code>.</div></div>
+          <div class="hint">Same core number as the estimate (<code>EST-…</code>) and project (<code>PRO-…</code>) — only the letters change. Filled by “Look up &amp; fill” or on Preview as <code>INV-…</code>.</div></div>
         <div><label>Issue date</label><input name="issue_date" type="date" required /></div>
         <div><label>Payment terms</label><input name="payment_terms" value="Net 30" /></div>
         <div><label>Due date <span class="opt">(blank = Net 30 auto)</span></label><input name="due_date" type="date" /></div>
@@ -857,7 +857,14 @@ async function run(mode) {
     }
     const wb = body.writeback || {};
     if (mode === "dry-run") {
-      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(data.invoice.identifier)}`;
+      // Surface the service-assigned INV-… (from Project # / soft-fill) in the
+      // field — same parity as estimate Preview filling EST-… (r52).
+      if (wb.identifier) {
+        setVal("identifier", wb.identifier);
+        if (data.invoice) data.invoice.identifier = wb.identifier;
+      }
+      const ident = wb.identifier || (data.invoice && data.invoice.identifier) || "";
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(ident)}`;
       $("#preview-frame").src = url;
       const coWrap = $("#co-previews");
       coWrap.innerHTML = "";
@@ -866,7 +873,10 @@ async function run(mode) {
       });
       $("#preview-card").classList.add("show");
       lastPreviewOk = true; $("#btn-accept").disabled = false;
-      setStatus("info", "✅ Preview ready below. Review, then click <strong>Accept &amp; Create Invoice</strong>.");
+      const idBit = ident
+        ? ` (invoice <strong>${ident}</strong>)`
+        : "";
+      setStatus("info", `✅ Preview ready below${idBit}. Review, then click <strong>Accept &amp; Create Invoice</strong>.`);
       $("#preview-card").scrollIntoView({ behavior: "smooth" });
     } else {
       lastPreviewOk = false; $("#btn-accept").disabled = true;
