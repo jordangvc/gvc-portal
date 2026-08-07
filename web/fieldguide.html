@@ -6518,9 +6518,27 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       var run = pickBestContinue(findBestLocalRun(), continueServerRuns);
       var titleEl = document.getElementById("continue-title");
       if (!run) {
+        if (continueHydrating || (alsoHydrate !== false && continueServerRuns === null)) {
+          if (titleEl) { titleEl.textContent = "Checking shared checklists…"; }
+          if (continueMeta) {
+            continueMeta.textContent = "Looking for an in-progress run on this crew.";
+          }
+          continueCard.hidden = false;
+          continueCard.classList.add("is-visible");
+          if (continueBtn) {
+            continueBtn.disabled = true;
+            continueBtn.textContent = "…";
+            continueBtn.onclick = null;
+          }
+          if (alsoHydrate !== false) { hydrateContinueFromServer(); }
+          return;
+        }
         continueCard.hidden = true;
         continueCard.classList.remove("is-visible");
-        if (alsoHydrate !== false) { hydrateContinueFromServer(); }
+        if (continueBtn) {
+          continueBtn.disabled = false;
+          continueBtn.textContent = "Resume";
+        }
         return;
       }
       var pname = run.procedure_name || procName(run.procedure) || run.procedure;
@@ -6536,6 +6554,8 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       continueCard.hidden = false;
       continueCard.classList.add("is-visible");
       if (continueBtn) {
+        continueBtn.disabled = false;
+        continueBtn.textContent = "Resume";
         continueBtn.onclick = function () {
           var map = activeMap();
           map[run.procedure] = run.run_id;

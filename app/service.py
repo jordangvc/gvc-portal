@@ -1290,7 +1290,10 @@ def ui_invoice_form(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        _cached_web_html("invoice.html"),
+        headers=_PRIVATE_HTML_CACHE_HEADERS,
+    )
 
 
 @app.get("/ui/billing", response_class=HTMLResponse)
@@ -1311,7 +1314,8 @@ def ui_billing_hub(request: Request) -> HTMLResponse:
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     return HTMLResponse(
-        path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email))
+        _cached_web_html("billing.html").replace("{{EMAIL}}", html_escape(email)),
+        headers=_PRIVATE_HTML_CACHE_HEADERS,
     )
 
 
@@ -1865,7 +1869,10 @@ def ui_estimate_form(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8"))
+    return HTMLResponse(
+        _cached_web_html("estimate.html"),
+        headers=_PRIVATE_HTML_CACHE_HEADERS,
+    )
 
 
 @app.post("/ui/api/estimate/from-takeoff")
@@ -2543,7 +2550,9 @@ def ui_change_order_form(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+    html = _cached_web_html("change-order.html").replace(
+        "{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/api/change-order/lookup")
@@ -3870,7 +3879,9 @@ def ui_jobstart_page(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+    html = _cached_web_html("jobstart.html").replace(
+        "{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/api/jobstart/bids")

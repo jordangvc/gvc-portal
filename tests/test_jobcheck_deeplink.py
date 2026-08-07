@@ -24,9 +24,26 @@ def test_jobcheck_boots_item_param():
     assert "bootJobFromUrl" in JOBCHECK
     assert 'params.get("item")' in JOBCHECK
     assert "parseMondayItemId" in JOBCHECK
-    # After boot, strip the query so Back doesn't re-open the same job forever.
-    assert 'history.replaceState' in JOBCHECK
-    assert 'loadJob(id)' in JOBCHECK or "loadJob(id)" in JOBCHECK
+    # Strip the query only AFTER a successful load so a failed open can retry.
+    assert "history.replaceState" in JOBCHECK
+    assert "loadJob(id)" in JOBCHECK or "loadJob(id)" in JOBCHECK
+
+
+def test_jobcheck_deeplink_does_not_wait_on_jobs_list():
+    """Hub deep-links must open /job/{id} without awaiting /jobs first."""
+    scripts = re.findall(r"<script(?![^>]*src)[^>]*>(.*?)</script>", JOBCHECK, re.S)
+    main = next((s for s in scripts if "bootJobFromUrl" in s), "")
+    assert main
+    # boot is no longer nested inside loadJobs.
+    load_jobs_fn = re.search(
+        r"async function loadJobs\(\)\s*\{(.*?)\n\}", main, re.S)
+    assert load_jobs_fn, "loadJobs missing"
+    assert "bootJobFromUrl" not in load_jobs_fn.group(1)
+    # Boot runs first; list is fire-and-forget afterward.
+    assert "await bootJobFromUrl()" in main
+    assert re.search(r"bootJobFromUrl\(\);\s*\n\s*loadJobs\(\)", main) or (
+        "loadJobs();" in main and main.index("await bootJobFromUrl()") < main.index("loadJobs()")
+    )
 
 
 def test_jobcheck_saveflash_no_yank_on_ok():
@@ -41,16 +58,18 @@ def test_jobcheck_warms_monday():
 def test_html_pages_use_private_cache_helper():
     assert "_cached_web_html" in SERVICE
     assert "_PRIVATE_HTML_CACHE_HEADERS" in SERVICE
-    assert 'private, max-age=300' in SERVICE
+    assert "private, max-age=300" in SERVICE
+    for name in ("estimate.html", "invoice.html", "change-order.html", "billing.html"):
+        assert f'_cached_web_html("{name}")' in SERVICE
 
 
 def test_jobcheck_js_parses():
     scripts = re.findall(r"<script(?![^>]*src)[^>]*>(.*?)</script>", JOBCHECK, re.S)
     assert scripts, "expected inline script"
-    # Main page logic is the first inline script; a later tag only mounts GvcTheme.
     main = next((s for s in scripts if "bootJobFromUrl" in s), "")
     assert main, "expected inline script with bootJobFromUrl"
     assert "await bootJobFromUrl()" in main
+    assert "return true" in main  # loadJob success signal for replaceState
 
 
 if __name__ == "__main__":
