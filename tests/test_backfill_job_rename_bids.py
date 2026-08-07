@@ -107,7 +107,8 @@ def test_build_plans_uses_location_and_customer_text():
 
     assert plans[0]["action"] == "rename"
     assert plans[0]["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Willow Creek"
+    )
     assert plans[0]["board"] == "bid_board"
     assert plans[0]["stage"] == "Accepted"
 
@@ -128,7 +129,8 @@ def test_build_plans_uses_location_json_before_geocoding():
 
     assert plans[0]["action"] == "rename"
     assert plans[0]["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Willow Creek"
+    )
     assert plans[0]["lookup_sources"] == ["monday_location"]
 
 
@@ -159,8 +161,25 @@ def test_build_plans_geocodes_incomplete_bid():
 
     assert plans[0]["action"] == "rename"
     assert plans[0]["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Willow Creek"
+    )
     assert "nominatim_tri_state" in plans[0]["lookup_sources"]
+
+
+def test_build_plans_residential_formats_customer_last_name():
+    plans = bids.build_plans([{
+        "item_id": 10,
+        "name": "9195 Silva",
+        "location": "9195 Silva Drive, Cincinnati, OH 45241",
+        "customer": "John Smith",
+        "project_type": "Residential",
+        "stage": "Accepted",
+    }])
+
+    assert plans[0]["action"] == "rename"
+    assert plans[0]["new_name"] == (
+        "9195 Silva Drive, Cincinnati, OH 45241 | John Smith | Smith residence"
+    )
 
 
 def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
@@ -183,7 +202,7 @@ def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
             "item_id": 12,
             "name": "1 Oak Street, Cincinnati, OH 45202 | Acme",
             "location": "",
-            "customer": "Acme",
+            "customer": "",
             "stage": "Estimate Sent",
         },
     ]
@@ -200,7 +219,7 @@ def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
     monkeypatch.setattr(bids.time, "sleep", sleeps.append)
     monday = object()
 
-    result = bids.run(apply=True, limit=None, mc=monday)
+    result = bids.run(apply=True, limit=None, mc=monday, geocode=False)
 
     assert result == 0
     assert [(write[1], write[2]) for write in writes] == [
@@ -208,9 +227,11 @@ def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
         (BID_BOARD_ID, 11),
     ]
     assert writes[0][3] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Willow Creek"
+    )
     assert writes[1][3] == (
-        "3776 Susanna, Lawrenceburg, IN 47025 | Martin")
+        "3776 Susanna, Lawrenceburg, IN 47025 | Martin | Martin"
+    )
     assert sleeps == [0.2]
 
 

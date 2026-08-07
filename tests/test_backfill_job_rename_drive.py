@@ -13,13 +13,22 @@ from scripts import backfill_job_rename_drive as script  # noqa: E402
 FOLDER_ID = "1AbCdEfGhIjKlMnOp"
 
 
+STANDARD = (
+    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+)
+STANDARD_SLUG = (
+    "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek Smith residence"
+)
+
+
 def _item(
     *,
     item_id: str = "101",
     name: str = "9195 Silva | Willow Creek",
     location: str = "9195 Silva Drive, Cincinnati, OH 45241",
     builder: str = "Willow Creek",
-    customer: str = "",
+    customer: str = "John Smith",
+    project_type: str = "Residential",
     gfolder: str = f"https://drive.google.com/drive/folders/{FOLDER_ID}",
     location_value: str = "",
     linked_bid_id: int | None = None,
@@ -33,6 +42,7 @@ def _item(
         {"id": script.PROJECT_BUILDER_COL, "text": builder},
         {"id": script.PROJECT_CUSTOMER_COL, "text": customer,
          "display_value": customer},
+        {"id": script.PROJECT_STATUS_COL, "text": project_type},
         {"id": script.PROJECTS_GFOLDER_COL, "text": "GFolder",
          "url": gfolder},
     ]
@@ -54,7 +64,8 @@ def _item(
 
 def test_shape_project_row_uses_location_builder_customer_and_gfolder():
     row = script.shape_project_row(
-        _item(builder="", customer="Willow Creek Homes"))
+        _item(builder="", customer="Willow Creek Homes",
+              project_type="Commercial"))
     assert row == {
         "item_id": 101,
         "name": "9195 Silva | Willow Creek",
@@ -68,6 +79,7 @@ def test_shape_project_row_uses_location_builder_customer_and_gfolder():
         },
         "builder": "",
         "customer": "Willow Creek Homes",
+        "project_type": "Commercial",
         "gfolder_url": (
             f"https://drive.google.com/drive/folders/{FOLDER_ID}"),
         "linked_bid_ids": [],
@@ -123,10 +135,8 @@ def test_plan_drive_rename_uses_drive_safe_slug_and_folder_id():
             location="9195 Silva Drive, Cincinnati, OH 45241"))
     assert plan["action"] == "rename"
     assert plan["folder_id"] == FOLDER_ID
-    assert plan["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
-    assert plan["new_slug"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek")
+    assert plan["new_name"] == STANDARD
+    assert plan["new_slug"] == STANDARD_SLUG
     assert "|" not in plan["new_slug"]
 
 
@@ -146,8 +156,7 @@ def test_plan_drive_rename_uses_location_json():
     plan = script.plan_drive_rename(row)
 
     assert plan["action"] == "rename"
-    assert plan["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plan["new_name"] == STANDARD
     assert plan["lookup_sources"] == ["monday_location"]
 
 
@@ -166,6 +175,7 @@ def test_plan_drive_rename_geocodes_incomplete_location():
 
     assert plan["action"] == "rename"
     assert "nominatim_tri_state" in plan["lookup_sources"]
+    assert plan["new_name"] == STANDARD
 
 
 def test_plan_drive_rename_uses_linked_bid_hint_before_geocoding():
@@ -182,8 +192,7 @@ def test_plan_drive_rename_uses_linked_bid_hint_before_geocoding():
     )
 
     assert plan["action"] == "rename"
-    assert plan["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plan["new_name"] == STANDARD
     assert "linked_or_drive" in plan["lookup_sources"]
 
 
@@ -195,10 +204,7 @@ def test_plan_drive_rename_skips_unresolvable_folder_url():
 
 
 def test_drive_names_match_after_pipe_is_sanitized():
-    assert script.drive_names_match(
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek",
-        "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek",
-    )
+    assert script.drive_names_match(STANDARD, STANDARD_SLUG)
 
 
 def test_plan_drive_rename_skips_equal_sanitized_names(monkeypatch):
@@ -209,8 +215,8 @@ def test_plan_drive_rename_skips_equal_sanitized_names(monkeypatch):
         "action": "rename",
         "ok": True,
         "item_id": 101,
-        "old_name": "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek",
-        "new_name": "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek",
+        "old_name": STANDARD,
+        "new_name": STANDARD_SLUG,
         "note": "",
         },
     )
@@ -256,10 +262,7 @@ def test_apply_renames_only_eligible_rows(monkeypatch):
     monkeypatch.setattr(script.time, "sleep", lambda _seconds: None)
 
     assert script.run(apply=True, limit=20, geocode=True) == 0
-    assert calls == [(
-        FOLDER_ID,
-        "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek",
-    )]
+    assert calls == [(FOLDER_ID, STANDARD_SLUG)]
 
 
 def test_dry_run_does_not_initialize_drive(monkeypatch):
@@ -301,7 +304,8 @@ def shape_project_row_for_plan(**overrides) -> dict:
             "value": "",
         },
         "builder": "Willow Creek",
-        "customer": "",
+        "customer": "John Smith",
+        "project_type": "Residential",
         "gfolder_url": (
             f"https://drive.google.com/drive/folders/{FOLDER_ID}"),
         "linked_bid_ids": [],
