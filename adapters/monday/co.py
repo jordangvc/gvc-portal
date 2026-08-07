@@ -45,6 +45,7 @@ from typing import Optional
 from adapters.monday import cache as monday_cache
 from adapters.monday.client import MondayClient
 from shared.boards import BID_BOARD_ID, OPERATIONS_BOARD_ID, PROJECTS_BOARD_ID, SUBITEMS_BOARD_ID
+from shared.doc_number import search_needles
 
 # Projects board columns we read (see monday/client.py for the wider map).
 P_COL_CUSTOMER_LINK = "connect_boards9"
@@ -341,7 +342,7 @@ def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
     }
     """ % P_COL_PROJECT_NUMBER
 
-    def _leg(column_id: str):
+    def _leg(column_id: str, value: str):
         # Fresh session per leg — requests.Session is not thread-safe.
         token = None
         try:
@@ -352,15 +353,21 @@ def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
         return local._query(query, {
             "boardId": [str(PROJECTS_BOARD_ID)],
             "columnId": column_id,
-            "value": q,
+            "value": value,
         })
 
+    # Name uses the typed string; Project # probes EST-/PRO-/INV-/bare so
+    # pasting EST-… still hits PRO-{core} cells (invoice/estimate parity).
+    needles = search_needles(q) or [q]
+    work: list[tuple[str, str]] = [("name", q)]
+    for needle in needles:
+        work.append((P_COL_PROJECT_NUMBER, needle))
+
     results: dict[int, dict] = {}
-    with ThreadPoolExecutor(max_workers=2) as pool:
-        futs = {pool.submit(_leg, col): col
-                for col in ("name", P_COL_PROJECT_NUMBER)}
+    with ThreadPoolExecutor(max_workers=min(4, len(work))) as pool:
+        futs = {pool.submit(_leg, col, val): (col, val) for col, val in work}
         for fut in as_completed(futs):
-            column_id = futs[fut]
+            column_id, _val = futs[fut]
             try:
                 data = fut.result()
             except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
