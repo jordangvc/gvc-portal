@@ -9,6 +9,7 @@ from typing import Optional
 
 import stripe
 
+from adapters.monday.client import MondayClient
 from shared.money import to_cents
 
 def upsert_stripe_customer(client_data: dict) -> stripe.Customer:
@@ -433,7 +434,6 @@ def _find_invoice_via_monday_ledger(identifier: str) -> Optional[dict]:
     if not (identifier or "").strip():
         return None
     try:
-        from adapters.monday.client import MondayClient
         row = MondayClient().find_invoice_row_by_document(identifier)
     except Exception as e:  # noqa: BLE001 — ledger is best-effort
         print(

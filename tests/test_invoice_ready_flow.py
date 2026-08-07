@@ -54,7 +54,20 @@ def test_worksheet_wieland_defaults_builder_supply():
     assert abs(sheet["proposed_invoice_total"] - 15444.0) < 1.0
 
 
+_STUB_KEYS = (
+    "adapters.monday.billing",
+    "adapters.monday.payroll",
+    "adapters.monday.client",
+)
+
+
 def _install_monday_stubs(fake_rows, fake_payroll, mc):
+    """Swap monday adapters for fakes; return a restore callable.
+
+    Earlier versions left stub modules in ``sys.modules`` and poisoned later
+    tests that expect the real ``adapters.monday.client.MondayClient``.
+    """
+    saved = {k: sys.modules.get(k) for k in _STUB_KEYS}
     billing = types.ModuleType("adapters.monday.billing")
     billing.fetch_ready_to_invoice = lambda _mc: fake_rows
     payroll_mod = types.ModuleType("adapters.monday.payroll")
@@ -68,6 +81,15 @@ def _install_monday_stubs(fake_rows, fake_payroll, mc):
     sys.modules["adapters.monday.billing"] = billing
     sys.modules["adapters.monday.payroll"] = payroll_mod
     sys.modules["adapters.monday.client"] = client_mod
+
+    def _restore() -> None:
+        for key, prior in saved.items():
+            if prior is None:
+                sys.modules.pop(key, None)
+            else:
+                sys.modules[key] = prior
+
+    return _restore
 
 
 def test_dry_run_zero_writes():
@@ -89,25 +111,31 @@ def test_dry_run_zero_writes():
         "row_count": 1,
     }
     mc = MagicMock()
-    _install_monday_stubs(fake_rows, fake_payroll, mc)
-    out = check_ready_to_invoice(dry_run=True, limit=5, mc=mc)
-    assert out["ok"] is True
-    assert out["dry_run"] is True
-    assert out["auto_send"] is False
-    assert out["checked"] == 1
-    assert out["worksheets"] == 1
-    assert out["labor_rate"] == 1.17
-    assert out["material_rate"] == 0.70
-    item = out["items"][0]
-    assert item["status"] == "would_stage"
-    assert item["model"] == "by_sheet"
-    assert item["proposed_total"] > 0
+    restore = _install_monday_stubs(fake_rows, fake_payroll, mc)
+    try:
+        out = check_ready_to_invoice(dry_run=True, limit=5, mc=mc)
+        assert out["ok"] is True
+        assert out["dry_run"] is True
+        assert out["auto_send"] is False
+        assert out["checked"] == 1
+        assert out["worksheets"] == 1
+        assert out["labor_rate"] == 1.17
+        assert out["material_rate"] == 0.70
+        item = out["items"][0]
+        assert item["status"] == "would_stage"
+        assert item["model"] == "by_sheet"
+        assert item["proposed_total"] > 0
+    finally:
+        restore()
 
 
 def test_skip_without_project_link():
     fake_rows = [{"item_id": 5, "name": "Orphan", "project_item_id": None}]
     mc = MagicMock()
-    _install_monday_stubs(fake_rows, {}, mc)
-    out = check_ready_to_invoice(dry_run=True, mc=mc)
-    assert out["skipped"] == 1
-    assert out["worksheets"] == 0
+    restore = _install_monday_stubs(fake_rows, {}, mc)
+    try:
+        out = check_ready_to_invoice(dry_run=True, mc=mc)
+        assert out["skipped"] == 1
+        assert out["worksheets"] == 0
+    finally:
+        restore()

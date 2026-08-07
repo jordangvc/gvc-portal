@@ -44,22 +44,22 @@ def test_preflight_uses_monday_ledger_when_search_misses(monkeypatch):
     )
     monkeypatch.setattr(si, "_find_invoice_by_identifier_metadata", lambda _id: None)
 
-    class FakeMC:
-        def find_invoice_row_by_document(self, identifier, board_id=None):  # noqa: ARG002
-            assert identifier == "INV-2026-0807-001"
-            return {
-                "item_id": 99,
-                "name": "Acme job",
-                "item_url": "https://monday.test/99",
-                "stripe_invoice_id": "in_ledger_1",
-            }
+    # Patch the helper on stripe_invoice itself — avoids sys.modules stub
+    # pollution from other tests that temporarily replace monday.client.
+    def _fake_ledger(identifier: str):
+        assert identifier == "INV-2026-0807-001"
+        return {
+            "id": "in_ledger_1",
+            "status": "open",
+            "hosted_invoice_url": "https://pay.stripe.test/in_ledger_1",
+            "amount_due": 10000,
+            "customer": "cus_old",
+            "monday_item_id": 99,
+            "monday_item_url": "https://monday.test/99",
+            "monday_item_name": "Acme job",
+        }
 
-    import adapters.monday.client as monday_client
-    monkeypatch.setattr(monday_client, "MondayClient", FakeMC)
-    monkeypatch.setattr(
-        si.stripe.Invoice, "retrieve",
-        lambda sid: _FakeInvoice(sid, customer="cus_old"),
-    )
+    monkeypatch.setattr(si, "_find_invoice_via_monday_ledger", _fake_ledger)
 
     report = si.preflight_stripe(_enriched())
     assert report["existing_invoice_with_identifier"]["id"] == "in_ledger_1"
