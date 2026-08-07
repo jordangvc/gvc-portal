@@ -104,7 +104,9 @@ def test_plan_project_item_commercial_uses_customer_as_job_title():
     )
 
 
-def test_plan_project_item_leaves_co_without_parent_incomplete():
+def test_plan_project_item_leaves_co_decision_to_shared_planner():
+    # Shared planner: CO without a standard parent → skip_incomplete
+    # (not skip_co — that override is Drive-folder specific).
     plan = script.plan_project_item(
         {
             "id": "789",

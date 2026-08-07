@@ -58,6 +58,28 @@ def test_list_unbilled_co_items_returns_only_open_top_level_cos():
     assert rows[1]["amount"] == 99.5
 
 
+def test_list_co_items_accepts_pro_est_inv_base():
+    """Job Start stamps PRO-…; CO cells store CO.n-{bare} — must still list."""
+    bare = "2026-0804-007"
+    items = [
+        _co_item(21, f"CO.1-{bare}", "Drafted", "100", "CO.1"),
+        _co_item(22, f"CO.2-{bare}", "Approved", "200", "CO.2"),
+    ]
+    for base in (f"PRO-{bare}", f"EST-{bare}", f"INV-{bare}", bare):
+        mc = _FakeMC(items)
+        rows = monday_co.list_co_items(mc, base)
+        assert [r["item_id"] for r in rows] == [21, 22], base
+        assert mc.queries[-1][1]["value"] == f"-{bare}", base
+
+
+def test_normalize_co_list_base_strips_prefixes():
+    assert monday_co.normalize_co_list_base("PRO-2026-0804-007") == "2026-0804-007"
+    assert monday_co.normalize_co_list_base("EST-2026-0804-007") == "2026-0804-007"
+    assert monday_co.normalize_co_list_base("CO.3-PRO-2026-0804-007") == "2026-0804-007"
+    assert monday_co.normalize_co_list_base("C-005") == "C-005"
+    assert monday_co.normalize_co_list_base("") == ""
+
+
 def test_mark_billed_item_sets_top_level_status():
     calls: list[tuple] = []
 

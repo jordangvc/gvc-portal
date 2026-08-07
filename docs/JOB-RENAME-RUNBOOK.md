@@ -103,7 +103,10 @@ Drive folder-safe name drops the pipes:
 
 `9195 Silva Drive, Cincinnati, OH 45241 Willow Creek Smith residence`
 
-Folder IDs stay the same so existing links keep working.
+`slug_for_path` allows up to **200** characters (Drive’s limit is 255). If a
+title is still longer, it keeps a street head + Job Title tail so two long
+commercial names don’t collapse to the same folder slug. Folder IDs stay the
+same so existing links keep working.
 
 ---
 
