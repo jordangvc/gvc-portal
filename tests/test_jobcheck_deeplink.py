@@ -47,9 +47,10 @@ def test_html_pages_use_private_cache_helper():
 def test_jobcheck_js_parses():
     scripts = re.findall(r"<script(?![^>]*src)[^>]*>(.*?)</script>", JOBCHECK, re.S)
     assert scripts, "expected inline script"
-    # Syntax check is done in the agent shell via node --check; here we just
-    # assert the deep-link call site is wired from loadJobs.
-    assert "await bootJobFromUrl()" in scripts[-1] or "bootJobFromUrl()" in scripts[-1]
+    # Main page logic is the first inline script; a later tag only mounts GvcTheme.
+    main = next((s for s in scripts if "bootJobFromUrl" in s), "")
+    assert main, "expected inline script with bootJobFromUrl"
+    assert "await bootJobFromUrl()" in main
 
 
 if __name__ == "__main__":
