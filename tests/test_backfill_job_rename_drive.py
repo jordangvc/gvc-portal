@@ -29,14 +29,6 @@ STANDARD_SLUG = (
 )
 
 
-STANDARD = (
-    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
-)
-STANDARD_SLUG = (
-    "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek Smith residence"
-)
-
-
 def _item(
     *,
     item_id: str = "101",
