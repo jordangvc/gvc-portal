@@ -1173,7 +1173,11 @@ class MondayClient:
                                      board_id: Optional[int] = None) -> Optional[dict]:
         """
         Find an existing Invoices-board row whose Document # equals `identifier`
-        (the UNIQUE reconciliation key). Returns {item_id, item_url, name} or None.
+        (the UNIQUE reconciliation key).
+
+        Returns {item_id, item_url, name, stripe_invoice_id} or None.
+        ``stripe_invoice_id`` may be empty when the ledger row predates writeback
+        or Stripe was skipped — callers must treat it as optional.
         """
         board_id = board_id or INVOICES_SENT_BOARD_ID
         ident = (identifier or "").strip()
@@ -1184,11 +1188,15 @@ class MondayClient:
           boards(ids: $boardId) {
             items_page(limit: 10, query_params: {
               rules: [{column_id: "%s", compare_value: $val, operator: contains_text}]}) {
-              items { id name column_values(ids: ["%s"]) { id text } }
+              items {
+                id
+                name
+                column_values(ids: ["%s", "%s"]) { id text }
+              }
             }
           }
         }
-        """ % (INV_COL_DOCUMENT, INV_COL_DOCUMENT)
+        """ % (INV_COL_DOCUMENT, INV_COL_DOCUMENT, INV_COL_STRIPE_INVOICE)
         data = self._query(query, {"boardId": [str(board_id)], "val": ident})
         low = ident.lower()
         for board in data.get("boards") or []:
@@ -1196,9 +1204,17 @@ class MondayClient:
                 cv = {c["id"]: (c.get("text") or "") for c in it.get("column_values") or []}
                 if (cv.get(INV_COL_DOCUMENT) or "").strip().lower() == low:
                     iid = int(it["id"])
-                    return {"item_id": iid, "name": it.get("name") or "",
-                            "item_url": (f"https://greenvalleycontractors.monday.com/boards/"
-                                         f"{board_id}/pulses/{iid}")}
+                    return {
+                        "item_id": iid,
+                        "name": it.get("name") or "",
+                        "item_url": (
+                            f"https://greenvalleycontractors.monday.com/boards/"
+                            f"{board_id}/pulses/{iid}"
+                        ),
+                        "stripe_invoice_id": (
+                            (cv.get(INV_COL_STRIPE_INVOICE) or "").strip() or None
+                        ),
+                    }
         return None
 
     # ---- Write: create/upsert an Invoices-board ledger row ----
