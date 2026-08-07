@@ -14,7 +14,6 @@ STANDARD = (
     "9761 Gertrude Lane, Cincinnati, OH 45231 | Jent Construction | "
     "Bryant residence"
 )
-SHORT = "9761 Gertrude | Jent Construction | Bryant residence"
 LOCATION_VALUE = json.dumps({
     "address": "9761 Gertrude Lane, Cincinnati, OH 45231",
 })
@@ -26,6 +25,8 @@ def _project(
     *,
     location: str = "",
     location_value: str = "",
+    customer: str = "Bryant",
+    project_type: str = "Residential",
 ) -> dict:
     location_column = {
         "id": ops.JOBSTART_P_COL_LOCATION,
@@ -38,6 +39,8 @@ def _project(
         "location": location,
         "location_value_json": location_value,
         "location_column": location_column,
+        "customer": customer,
+        "project_type": project_type,
     }
 
 
@@ -64,6 +67,13 @@ def test_list_project_names_pages_once_and_builds_id_index():
                 "id": ops.JOBSTART_P_COL_LOCATION,
                 "text": "",
                 "value": LOCATION_VALUE,
+            }, {
+                "id": ops.JOBSTART_P_COL_CUSTOMER,
+                "text": "Bryant",
+                "display_value": "Bryant",
+            }, {
+                "id": ops.COL_PROJECT_TYPE_STATUS,
+                "text": "Residential",
             }],
         }], cursor="next"),
         _page([{"id": "12", "name": "CO.1 - ignored"}]),
@@ -74,14 +84,18 @@ def test_list_project_names_pages_once_and_builds_id_index():
     assert projects == [_project(location_value=LOCATION_VALUE)]
     assert by_id == {11: STANDARD}
     assert [call["cursor"] for call in mc.calls] == [None, "next"]
-    assert mc.calls[0]["cols"] == [ops.JOBSTART_P_COL_LOCATION]
+    assert mc.calls[0]["cols"] == [
+        ops.JOBSTART_P_COL_LOCATION,
+        ops.JOBSTART_P_COL_CUSTOMER,
+        ops.COL_PROJECT_TYPE_STATUS,
+    ]
 
 
 def test_list_operations_items_reads_project_relation_and_honors_limit():
     mc = FakeMonday([_page([
         {
             "id": "21",
-            "name": SHORT,
+            "name": "9761 Gertrude | Jent Construction",
             "column_values": [{
                 "id": ops.OPS_PROJECT_LINK_COL,
                 "linked_item_ids": ["11"],
@@ -99,7 +113,7 @@ def test_list_operations_items_reads_project_relation_and_honors_limit():
 
     assert rows == [{
         "item_id": 21,
-        "name": SHORT,
+        "name": "9761 Gertrude | Jent Construction",
         "linked_project_ids": [11],
     }]
     assert mc.calls[0]["cols"] == [ops.OPS_PROJECT_LINK_COL]
@@ -108,7 +122,7 @@ def test_list_operations_items_reads_project_relation_and_honors_limit():
 def test_linked_operation_mirrors_current_standard_project_name():
     row = {
         "item_id": 21,
-        "name": SHORT,
+        "name": "9761 Gertrude | Jent Construction",
         "linked_project_ids": [11],
     }
 
@@ -126,7 +140,7 @@ def test_linked_operation_mirrors_current_standard_project_name():
 def test_unlinked_incomplete_operation_can_mirror_unique_standard_match():
     row = {
         "item_id": 22,
-        "name": SHORT,
+        "name": "9761 Gertrude | Jent Construction",
         "linked_project_ids": [],
     }
 
@@ -143,8 +157,7 @@ def test_unlinked_incomplete_operation_can_mirror_unique_standard_match():
 
 
 def test_linked_nonstandard_project_location_enriches_operation():
-    # Short 3-part (job title present) + Monday location JSON → full standard.
-    old_project_name = SHORT
+    old_project_name = "9761 Gertrude | Jent Construction"
     row = {
         "item_id": 22,
         "name": old_project_name,
@@ -166,9 +179,10 @@ def test_linked_nonstandard_project_location_enriches_operation():
 
 
 def test_unlinked_operation_geocodes_after_no_safe_project_match():
+    """Geocode alone cannot invent Job Title — stay incomplete."""
     row = {
         "item_id": 23,
-        "name": SHORT,
+        "name": "9761 Gertrude | Jent Construction",
         "linked_project_ids": [],
     }
 
@@ -186,9 +200,9 @@ def test_unlinked_operation_geocodes_after_no_safe_project_match():
         reverse_geocode_fn=lambda *_args: None,
     )
 
-    assert plan["action"] == "rename"
-    assert plan["new_name"] == STANDARD
+    assert plan["action"] == "skip_incomplete"
     assert plan["source"] == "ops_name_geocoded"
+    assert "job title" in (plan.get("note") or "").lower()
 
 
 def test_unlinked_operation_skips_when_no_safe_standard_match():
@@ -212,7 +226,7 @@ def test_unlinked_operation_skips_when_no_safe_standard_match():
 def test_unlinked_operation_skips_ambiguous_project_matches():
     row = {
         "item_id": 23,
-        "name": SHORT,
+        "name": "9761 Gertrude | Jent Construction",
         "linked_project_ids": [],
     }
     projects = [
@@ -240,7 +254,7 @@ def test_unlinked_operation_skips_ambiguous_project_matches():
 def test_co_rows_cascade_from_linked_project():
     row = {
         "item_id": 24,
-        "name": f"CO.1 - {SHORT}",
+        "name": "CO.1 - 9761 Gertrude | Jent Construction",
         "linked_project_ids": [11],
     }
 
@@ -256,24 +270,28 @@ def test_co_rows_cascade_from_linked_project():
 
 
 def test_co_rows_resolve_parent_from_enriched_projects_index():
-    old_parent = SHORT
+    old_parent = "9761 Gertrude | Jent Construction"
     row = {
         "item_id": 25,
         "name": f"CO.2 - {old_parent}",
         "linked_project_ids": [],
     }
+    project = _project(name=old_parent, location_value=LOCATION_VALUE)
     project_plan = ops.rename_enrich.plan_enriched_row(
         name=old_parent,
         location_value_json=LOCATION_VALUE,
+        customer=project["customer"],
         geocode=False,
+        **ops.rename_enrich.job_title_kwargs_from_monday(
+            status=project["project_type"],
+            customer=project["customer"],
+        ),
     )
-    assert project_plan["action"] == "rename"
-    assert project_plan["new_name"] == STANDARD
     parent_index = ops.rename_enrich.index_parent_titles([project_plan])
 
     plan = ops.plan_operation_item(
         row,
-        projects=[_project(name=old_parent, location_value=LOCATION_VALUE)],
+        projects=[project],
         project_names={11: old_parent},
         parent_index=parent_index,
         geocode=False,
@@ -307,7 +325,7 @@ def test_apply_writes_only_rename_plans_and_sleeps(monkeypatch):
             "item_id": 23,
             "new_name": (
                 "100 Main Street, Cincinnati, OH 45202 | Example Builder | "
-                "Office remodel"
+                "Acme Bank"
             ),
         },
         {
@@ -327,7 +345,7 @@ def test_apply_writes_only_rename_plans_and_sleeps(monkeypatch):
             ops.OPERATIONS_BOARD_ID,
             23,
             "100 Main Street, Cincinnati, OH 45202 | Example Builder | "
-            "Office remodel",
+            "Acme Bank",
         ),
     ]
     assert sleeps == [0.2]

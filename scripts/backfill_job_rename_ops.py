@@ -1,10 +1,12 @@
 """
-Bulk-rename Monday Operations titles to `Street, City, ST ZIP | Builder`.
+Bulk-rename Monday Operations titles to
+`Street, City, ST ZIP | Builder | Job Title`.
 
 Dry-run is the default. `--apply` writes; when both flags are supplied,
 `--dry-run` wins. Linked Projects titles remain authoritative; when a linked
-Project is not standard yet, its Monday location JSON and optional Nominatim
-lookup enrich the Operations title. CO rows cascade from their parent title.
+Project is not standard yet, its Monday location JSON, Job Title hints, and
+optional Nominatim lookup enrich the Operations title. CO rows cascade from
+their parent title.
 """
 from __future__ import annotations
 
@@ -16,10 +18,14 @@ from typing import Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from adapters.monday.client import MondayClient  # noqa: E402
+from adapters.monday.client import (  # noqa: E402
+    COL_PROJECT_TYPE_STATUS,
+    MondayClient,
+)
 from adapters.monday.rename import rename_item_name  # noqa: E402
 from shared.boards import (  # noqa: E402
     JOBSTART_OPS_COL_LINK_PROJECTS,
+    JOBSTART_P_COL_CUSTOMER,
     JOBSTART_P_COL_LOCATION,
     MORNING_COL_PROJECT_LINK,
     OPERATIONS_BOARD_ID,
@@ -43,8 +49,28 @@ def _items_page(data: dict) -> Optional[dict]:
     return boards[0].get("items_page") or {}
 
 
+def _project_column(item: dict, column_id: str) -> dict:
+    return next(
+        (
+            column
+            for column in (item.get("column_values") or [])
+            if column.get("id") == column_id
+        ),
+        {},
+    )
+
+
+def _project_column_text(item: dict, column_id: str) -> str:
+    column = _project_column(item, column_id)
+    for key in ("display_value", "text"):
+        raw = column.get(key)
+        if raw is not None and str(raw).strip():
+            return str(raw).strip()
+    return ""
+
+
 def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
-    """Page Projects once; include each row's raw location text/value."""
+    """Page Projects once; include location + Job Title hint columns."""
     query = """
     query ($boardId: [ID!], $cursor: String, $cols: [String!]) {
       boards(ids: $boardId) {
@@ -53,12 +79,22 @@ def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
           items {
             id
             name
-            column_values(ids: $cols) { id text value }
+            column_values(ids: $cols) {
+              id
+              text
+              value
+              ... on BoardRelationValue { display_value }
+            }
           }
         }
       }
     }
     """
+    project_cols = [
+        JOBSTART_P_COL_LOCATION,
+        JOBSTART_P_COL_CUSTOMER,
+        COL_PROJECT_TYPE_STATUS,
+    ]
     projects: list[dict] = []
     by_id: dict[int, str] = {}
     cursor: Optional[str] = None
@@ -66,7 +102,7 @@ def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
         page = _items_page(mc._query(query, {
             "boardId": [str(PROJECTS_BOARD_ID)],
             "cursor": cursor,
-            "cols": [JOBSTART_P_COL_LOCATION],
+            "cols": project_cols,
         }))
         if page is None:
             break
@@ -75,20 +111,17 @@ def list_project_names(mc) -> tuple[list[dict], dict[int, str]]:
             if not name or rename_plan.is_co_item_name(name):
                 continue
             item_id = int(item["id"])
-            location_column = next(
-                (
-                    column
-                    for column in (item.get("column_values") or [])
-                    if column.get("id") == JOBSTART_P_COL_LOCATION
-                ),
-                {},
-            )
+            location_column = _project_column(item, JOBSTART_P_COL_LOCATION)
             projects.append({
                 "id": item_id,
                 "name": name,
                 "location": (location_column.get("text") or "").strip(),
                 "location_value_json": location_column.get("value") or "",
                 "location_column": location_column,
+                "customer": _project_column_text(item, JOBSTART_P_COL_CUSTOMER),
+                "project_type": _project_column_text(
+                    item, COL_PROJECT_TYPE_STATUS,
+                ),
             })
             by_id[item_id] = name
         cursor = page.get("cursor")
@@ -172,11 +205,16 @@ def build_project_parent_index(
             location_text=project.get("location"),
             location_value_json=project.get("location_value_json"),
             location_column=project.get("location_column"),
+            customer=project.get("customer"),
             item_id=project.get("id"),
             board="projects",
             geocode=geocode,
             geocode_street_fn=geocode_street_fn,
             reverse_geocode_fn=reverse_geocode_fn,
+            **rename_enrich.job_title_kwargs_from_monday(
+                status=project.get("project_type") or "",
+                customer=project.get("customer") or "",
+            ),
         )
         for project in projects
     ]
@@ -193,16 +231,22 @@ def _enrich_from_project(
     reverse_geocode_fn,
 ) -> dict:
     """Plan an Ops title using its linked/matched Project's location facts."""
+    customer = project.get("customer") or ""
     return rename_enrich.plan_enriched_row(
         name=row_name,
         location_text=project.get("location"),
         location_value_json=project.get("location_value_json"),
         location_column=project.get("location_column"),
+        customer=customer,
         item_id=item_id,
         board="operations",
         geocode=geocode,
         geocode_street_fn=geocode_street_fn,
         reverse_geocode_fn=reverse_geocode_fn,
+        **rename_enrich.job_title_kwargs_from_monday(
+            status=project.get("project_type") or "",
+            customer=customer,
+        ),
     )
 
 
@@ -238,14 +282,20 @@ def plan_operation_item(
     if rename_plan.is_co_item_name(name):
         parent_name = linked_name if naming.is_standard(linked_name or "") else None
         if not parent_name and linked_project:
+            linked_customer = linked_project.get("customer") or ""
             project_plan = rename_enrich.plan_enriched_row(
                 name=linked_project.get("name") or "",
                 location_text=linked_project.get("location"),
                 location_value_json=linked_project.get("location_value_json"),
                 location_column=linked_project.get("location_column"),
+                customer=linked_customer,
                 geocode=geocode,
                 geocode_street_fn=geocode_street_fn,
                 reverse_geocode_fn=reverse_geocode_fn,
+                **rename_enrich.job_title_kwargs_from_monday(
+                    status=linked_project.get("project_type") or "",
+                    customer=linked_customer,
+                ),
             )
             if naming.is_standard(project_plan.get("new_name") or ""):
                 parent_name = project_plan["new_name"]

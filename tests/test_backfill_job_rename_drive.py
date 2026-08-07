@@ -21,13 +21,22 @@ STANDARD_SLUG = (
 SHORT = "9195 Silva | Willow Creek | Smith residence"
 
 
+STANDARD = (
+    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+)
+STANDARD_SLUG = (
+    "9195 Silva Drive, Cincinnati, OH 45241 Willow Creek Smith residence"
+)
+
+
 def _item(
     *,
     item_id: str = "101",
     name: str = SHORT,
     location: str = "9195 Silva Drive, Cincinnati, OH 45241",
     builder: str = "Willow Creek",
-    customer: str = "",
+    customer: str = "John Smith",
+    project_type: str = "Residential",
     gfolder: str = f"https://drive.google.com/drive/folders/{FOLDER_ID}",
     location_value: str = "",
     linked_bid_id: int | None = None,
@@ -41,6 +50,7 @@ def _item(
         {"id": script.PROJECT_BUILDER_COL, "text": builder},
         {"id": script.PROJECT_CUSTOMER_COL, "text": customer,
          "display_value": customer},
+        {"id": script.PROJECT_STATUS_COL, "text": project_type},
         {"id": script.PROJECTS_GFOLDER_COL, "text": "GFolder",
          "url": gfolder},
     ]
@@ -62,7 +72,8 @@ def _item(
 
 def test_shape_project_row_uses_location_builder_customer_and_gfolder():
     row = script.shape_project_row(
-        _item(builder="", customer="Willow Creek Homes"))
+        _item(builder="", customer="Willow Creek Homes",
+              project_type="Commercial"))
     assert row == {
         "item_id": 101,
         "name": SHORT,
@@ -76,6 +87,7 @@ def test_shape_project_row_uses_location_builder_customer_and_gfolder():
         },
         "builder": "",
         "customer": "Willow Creek Homes",
+        "project_type": "Commercial",
         "gfolder_url": (
             f"https://drive.google.com/drive/folders/{FOLDER_ID}"),
         "linked_bid_ids": [],
@@ -300,7 +312,8 @@ def shape_project_row_for_plan(**overrides) -> dict:
             "value": "",
         },
         "builder": "Willow Creek",
-        "customer": "",
+        "customer": "John Smith",
+        "project_type": "Residential",
         "gfolder_url": (
             f"https://drive.google.com/drive/folders/{FOLDER_ID}"),
         "linked_bid_ids": [],

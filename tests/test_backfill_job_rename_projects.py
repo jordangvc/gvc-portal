@@ -7,21 +7,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from adapters.monday.client import COL_BUILDER  # noqa: E402
+from adapters.monday.client import (  # noqa: E402
+    COL_BUILDER,
+    COL_PROJECT_TYPE_STATUS,
+)
 from scripts import backfill_job_rename_projects as script  # noqa: E402
 from shared.boards import (  # noqa: E402
     JOBSTART_P_COL_CUSTOMER,
     JOBSTART_P_COL_LOCATION,
     PROJECTS_BOARD_ID,
     PROJECTS_GFOLDER_COL,
-)
-
-
-STANDARD_SILVA = (
-    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
-)
-STANDARD_SUSANNA = (
-    "3776 Susanna, Lawrenceburg, IN 47025 | Martin | Martin residence"
 )
 
 
@@ -32,14 +27,15 @@ def _column(column_id: str, text: str, **extra) -> dict:
 def test_plan_project_item_uses_projects_columns_and_keeps_gfolder():
     item = {
         "id": "123",
-        "name": "9195 Silva | Willow Creek | Smith residence",
+        "name": "9195 Silva",
         "column_values": [
             _column(
                 JOBSTART_P_COL_LOCATION,
                 "9195 Silva Drive, Cincinnati, OH 45241",
             ),
             _column(COL_BUILDER, "Willow Creek"),
-            _column(JOBSTART_P_COL_CUSTOMER, "Fallback Customer"),
+            _column(COL_PROJECT_TYPE_STATUS, "Residential"),
+            _column(JOBSTART_P_COL_CUSTOMER, "John Smith"),
             _column(
                 PROJECTS_GFOLDER_COL,
                 "GFolder",
@@ -53,25 +49,25 @@ def test_plan_project_item_uses_projects_columns_and_keeps_gfolder():
     assert plan["action"] == "rename"
     assert plan["item_id"] == 123
     assert plan["board"] == "projects"
-    assert plan["new_name"] == STANDARD_SILVA
+    assert plan["new_name"] == (
+        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+    )
     assert plan["gfolder_url"] == (
         "https://drive.google.com/drive/folders/folder123"
     )
 
 
 def test_plan_project_item_uses_linked_customer_when_builder_is_empty():
-    # Job title lives in the third pipe segment; builder comes from Customer
-    # when the Builder column is blank (name still carries builder|title so
-    # the 3-part planner can complete).
     item = {
         "id": "456",
-        "name": "3776 Susanna | Martin | Martin residence",
+        "name": "3776 Susanna",
         "column_values": [
             _column(
                 JOBSTART_P_COL_LOCATION,
                 "3776 Susanna, Lawrenceburg, IN 47025",
             ),
             _column(COL_BUILDER, ""),
+            _column(COL_PROJECT_TYPE_STATUS, "Residential"),
             _column(JOBSTART_P_COL_CUSTOMER, "Martin"),
         ],
     }
@@ -79,16 +75,40 @@ def test_plan_project_item_uses_linked_customer_when_builder_is_empty():
     plan = script.plan_project_item(item)
 
     assert plan["action"] == "rename"
-    assert plan["new_name"] == STANDARD_SUSANNA
+    assert plan["new_name"] == (
+        "3776 Susanna, Lawrenceburg, IN 47025 | Martin | Martin residence"
+    )
 
 
-def test_plan_project_item_leaves_co_decision_to_shared_planner():
-    # Shared planner: CO without a standard parent → skip_incomplete
-    # (not skip_co — that override is Drive-folder specific).
+def test_plan_project_item_commercial_uses_customer_as_job_title():
+    item = {
+        "id": "457",
+        "name": "100 Main",
+        "column_values": [
+            _column(
+                JOBSTART_P_COL_LOCATION,
+                "100 Main Street, Cincinnati, OH 45202",
+            ),
+            _column(COL_BUILDER, "ABC Builders"),
+            _column(COL_PROJECT_TYPE_STATUS, "Commercial"),
+            _column(JOBSTART_P_COL_CUSTOMER, "First Financial Bank"),
+        ],
+    }
+
+    plan = script.plan_project_item(item)
+
+    assert plan["action"] == "rename"
+    assert plan["new_name"] == (
+        "100 Main Street, Cincinnati, OH 45202 | ABC Builders | "
+        "First Financial Bank"
+    )
+
+
+def test_plan_project_item_leaves_co_without_parent_incomplete():
     plan = script.plan_project_item(
         {
             "id": "789",
-            "name": "CO.1 - 9195 Silva | Willow Creek | Smith residence",
+            "name": "CO.1 - 9195 Silva | Willow Creek",
             "column_values": [],
         }
     )
