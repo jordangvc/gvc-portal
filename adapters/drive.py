@@ -64,17 +64,29 @@ def folder_id_from_url(url: str) -> Optional[str]:
     return None
 
 
-def slug_for_path(s: str, *, max_len: int = 80) -> str:
+def slug_for_path(s: str, *, max_len: int = 200) -> str:
     """
     Sanitize a string for use in a Drive folder/file name.
 
     Drive permits most characters, but we strip / \\ : * ? " < > | and
     collapse whitespace so the result is portable across filesystems too
     (in case a user downloads the PDF to a local machine).
+
+    Default ``max_len`` is 200 (Drive allows 255) so full 3-part job titles
+    ``Street, City, ST ZIP | Builder | Job Title`` usually fit. When a name
+    still overflows, keep a street head + Job Title tail so two long
+    commercial titles do not collide on the same truncated slug.
     """
-    s = re.sub(r"[\\/:*?\"<>|]", "", s)
+    s = re.sub(r"[\\/:*?\"<>|]", "", s or "")
     s = re.sub(r"\s+", " ", s).strip()
-    return s[:max_len]
+    if len(s) <= max_len:
+        return s
+    # Head keeps street # / city; tail keeps the distinguishing Job Title.
+    head = max(24, max_len // 3)
+    tail = max_len - head - 1  # one char for the ellipsis marker
+    if tail < 16:
+        return s[:max_len]
+    return f"{s[:head].rstrip()}…{s[-tail:].lstrip()}"
 
 
 def download_drive_file(
