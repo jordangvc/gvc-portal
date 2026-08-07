@@ -1193,6 +1193,19 @@ def ui_hub_payload(request: Request) -> dict:
         }
 
 
+@app.get("/ui/api/hub/refresh")
+def ui_hub_refresh(request: Request) -> dict:
+    """Light hub poll — badges / needs / queue only (skips activity + pins + nav)."""
+    email = require_ui_access(request)
+    from orchestrators import hub_flow
+    try:
+        return hub_flow.build_hub_refresh(email)
+    except Exception as e:  # noqa: BLE001
+        print(f"[hub] refresh error: {type(e).__name__}: {e}", file=sys.stderr)
+        return {"ok": False, "badges": {}, "needs": [], "needs_clear": False,
+                "summary": "", "metrics": [], "queue": {"rows": []}}
+
+
 class HubPinnedRequest(BaseModel):
     items: list[dict] = []
 

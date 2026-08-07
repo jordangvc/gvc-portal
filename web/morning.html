@@ -302,11 +302,8 @@
   </div>
 </div>
 
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
   (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -343,6 +340,7 @@ function projectCard(p) {
       ${p.relevance_reason ? `<div class="proj-why">${esc(p.relevance_reason)}</div>` : ""}
     </button>
     <div class="proj-actions">
+      <a class="proj-btn" href="/ui/jobcheck?item=${encodeURIComponent(p.item_id)}">Job Check</a>
       <a class="proj-btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open Monday</a>
       ${(p.gfolder_url || p.drive_url)
         ? `<a class="proj-btn" href="${esc(p.gfolder_url || p.drive_url)}" target="_blank" rel="noopener">Open Drive</a>`
@@ -449,7 +447,8 @@ function renderStops(stops) {
     <div class="stop ${s.completed ? "done" : ""}" data-id="${s.item_id}">
       <input type="checkbox" ${s.completed ? "checked" : ""} data-act="done" aria-label="Complete stop" />
       <div><div class="stop-name">${esc(s.name)}</div>
-        <div class="stop-meta">${esc(s.location || "No fixed time")}${s.hard_time ? " · " + esc(s.hard_time) : ""}</div></div>
+        <div class="stop-meta">${esc(s.location || "No fixed time")}${s.hard_time ? " · " + esc(s.hard_time) : ""}
+          · <a href="/ui/jobcheck?item=${encodeURIComponent(s.item_id)}">Job Check</a></div></div>
       <div style="display:flex;flex-direction:column;gap:4px">
         <button type="button" class="row-btn" data-act="up" ${i===0?"disabled":""}>↑</button>
         <button type="button" class="row-btn" data-act="down" ${i===stops.length-1?"disabled":""}>↓</button>

@@ -870,28 +870,24 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
     }
 
 
-def build_hub_payload(email: str) -> dict[str, Any]:
-    """
-    Single HubPayload for the signed-in user. Never raises for missing
-    integrations — always returns a renderable document.
+def _live_hub_slice(email: str) -> dict[str, Any]:
+    """Role + Monday enrichment + shaped needs/metrics/queue/badges.
+
+    Shared by the full hub payload and the light poll. Does NOT touch Cloud
+    Logging activity or pins — those are first-paint / rare-change data.
     """
     email = (email or "").strip().lower()
     feats = access.effective_features(email)
     role = hub_nav.resolve_role(feats)
     person = _person_record(email)
-    # Admin-stored override later; person.home_tool is reserved.
     home_override = (person.get("home_tool") or "").strip()
     name = hub_nav.display_name(email, person)
     title = (person.get("position") or "").strip() or hub_nav.ROLE_TITLE.get(role, "")
     now = datetime.now(_ET)
-    greeting = hub_nav.greeting_for(name, hour=now.hour)
-
     home_tool = home_override or hub_nav.ROLE_HOME_TOOL.get(role, "morning")
     home_href = hub_nav.home_tool_href(home_tool, role)
     home_tool_name = hub_nav.home_tool_label(home_tool)
 
-    # Fan out independent Monday/enrichment calls — serial stack was the
-    # main Hub first-paint wait for office/sales/owner (brief + billing + pulse).
     want_brief = "morning" in feats
     want_billing = role in ("owner", "office", "gm", "sales")
     want_pulse = (
@@ -900,7 +896,6 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     )
     want_gm = role == "gm" and "morning_gm" in feats
 
-    brief = billing = pulse = gm_view = None
     jobs: dict[str, Any] = {}
     with ThreadPoolExecutor(max_workers=4) as pool:
         futs = {}
@@ -936,6 +931,67 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     else:
         shaped = _build_field(email, brief)
 
+    q_link, q_href = _queue_link_for(role, home_href, home_tool_name)
+    return {
+        "email": email,
+        "feats": feats,
+        "role": role,
+        "person": person,
+        "name": name,
+        "title": title,
+        "now": now,
+        "home_tool": home_tool,
+        "home_href": home_href,
+        "home_tool_name": home_tool_name,
+        "shaped": shaped,
+        "q_link": q_link,
+        "q_href": q_href,
+    }
+
+
+def build_hub_refresh(email: str) -> dict[str, Any]:
+    """Light hub poll — live badges/needs/queue only (no activity / pins / nav).
+
+    Used by the hub's 60s / focus refresh so an idle home screen does not keep
+    re-querying Cloud Logging or rebuilding the rail.
+    """
+    live = _live_hub_slice(email)
+    shaped = live["shaped"]
+    return {
+        "ok": True,
+        "generated_at": live["now"].isoformat(),
+        "summary": shaped["summary"],
+        "needs": shaped["needs"],
+        "needs_clear": shaped["clear"],
+        "metrics": shaped["metrics"],
+        "queue": {
+            "title": hub_nav.ROLE_QUEUE_TITLE.get(live["role"], "Your queue"),
+            "link": live["q_link"],
+            "href": live["q_href"],
+            "rows": shaped["queue_rows"],
+        },
+        "badges": shaped["badges"],
+    }
+
+
+def build_hub_payload(email: str) -> dict[str, Any]:
+    """
+    Single HubPayload for the signed-in user. Never raises for missing
+    integrations — always returns a renderable document.
+    """
+    live = _live_hub_slice(email)
+    email = live["email"]
+    feats = live["feats"]
+    role = live["role"]
+    name = live["name"]
+    title = live["title"]
+    now = live["now"]
+    home_tool = live["home_tool"]
+    home_href = live["home_href"]
+    home_tool_name = live["home_tool_name"]
+    shaped = live["shaped"]
+    greeting = hub_nav.greeting_for(name, hour=now.hour)
+
     # Activity: recent portal events for this actor (best-effort).
     activity_rows: list[dict] = []
     try:
@@ -969,8 +1025,6 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         pinned = []
 
-    q_link, q_href = _queue_link_for(role, home_href, home_tool_name)
-
     return {
         "ok": True,
         "generated_at": now.isoformat(),
@@ -991,8 +1045,8 @@ def build_hub_payload(email: str) -> dict[str, Any]:
         "metrics": shaped["metrics"],
         "queue": {
             "title": hub_nav.ROLE_QUEUE_TITLE.get(role, "Your queue"),
-            "link": q_link,
-            "href": q_href,
+            "link": live["q_link"],
+            "href": live["q_href"],
             "rows": shaped["queue_rows"],
         },
         "pinned": pinned,

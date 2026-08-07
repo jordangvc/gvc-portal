@@ -109,13 +109,32 @@ def test_hub_payload_shape() -> None:
 def test_hub_brief_billing_parallel_contract() -> None:
     """Master #94 fans brief/billing/pulse/gm — keep the contract honest."""
     src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
-    chunk = src.split("def build_hub_payload")[1].split("def ")[0]
+    chunk = src.split("def _live_hub_slice")[1].split("def build_hub_refresh")[0]
     check("hub enrichment pool", "ThreadPoolExecutor(max_workers=4)" in chunk)
     check("submits morning brief", "pool.submit(_try_morning_brief" in chunk)
     check("submits billing", "pool.submit(_try_billing)" in chunk)
     check("submits owner pulse", "pool.submit(_try_owner_pulse" in chunk)
     check("submits gm view", "pool.submit(_try_gm_view" in chunk)
     check("as_completed gather", "as_completed" in chunk)
+    check("refresh helper exists", "def build_hub_refresh" in src)
+    check("refresh skips activity",
+          "activity_read" not in src.split("def build_hub_refresh")[1].split("def build_hub_payload")[0])
+
+
+def test_hub_refresh_shape() -> None:
+    os.environ["GVC_PORTAL_ALLOWED_EMAILS"] = "dev-bypass@localhost"
+    os.environ["GVC_GRANTS_BACKEND"] = "env"
+    from orchestrators import hub_flow
+
+    out = hub_flow.build_hub_refresh("dev-bypass@localhost")
+    check("refresh ok", out.get("ok") is True)
+    check("refresh badges", isinstance(out.get("badges"), dict))
+    check("refresh needs", isinstance(out.get("needs"), list))
+    check("refresh metrics", isinstance(out.get("metrics"), list))
+    check("refresh queue", isinstance((out.get("queue") or {}).get("rows"), list))
+    check("no activity key", "activity" not in out)
+    check("no nav key", "nav" not in out)
+    check("no pinned key", "pinned" not in out)
 
 
 def test_hub_files_and_route() -> None:
@@ -123,7 +142,12 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r61 footer", ">r61<" in hub)
+    check("r64 footer", ">r64<" in hub)
+    check("light refresh endpoint", "/ui/api/hub/refresh" in hub)
+    check("refresh debounce", "REFRESH_MIN_MS" in hub)
+    fetch_fn = hub.split("async function fetchPayload")[1].split("async function refreshBadges")[0]
+    check("first paint uses refresh", "/ui/api/hub/refresh" in fetch_fn)
+    check("first paint then full hub", 'fetch("/ui/api/hub"' in fetch_fn)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)
@@ -155,6 +179,7 @@ def test_hub_files_and_route() -> None:
     from app.service import app
     paths = {getattr(r, "path", None) for r in app.routes}
     check("/ui/api/hub route", "/ui/api/hub" in paths)
+    check("/ui/api/hub/refresh route", "/ui/api/hub/refresh" in paths)
     check("/ui/api/hub/pinned route", "/ui/api/hub/pinned" in paths)
     check("home_tool in PERSON_FIELDS",
           "home_tool" in __import__("shared.portal_store", fromlist=["PERSON_FIELDS"]).PERSON_FIELDS)

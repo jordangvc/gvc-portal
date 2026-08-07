@@ -233,11 +233,8 @@
   </div>
 </div>
 
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-
   const $ = s => document.querySelector(s);
   function setStatus(kind, msg) {
     const e = $("#status");
@@ -537,7 +534,9 @@ if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-togg
       return;
     }
     if (r.ok) {
-      setStatus("ok", `Recorded against <strong>${data.invoice || SELECTED.join(", ")}</strong>.` + stepsHtml(data.results));
+      setStatus("ok", `Recorded against <strong>${data.invoice || SELECTED.join(", ")}</strong>.` +
+        stepsHtml(data.results) +
+        `<div class="result-line" style="margin-top:8px">Next: <a href="/ui/billing">Billing Hub</a> · <a href="/ui/invoice">Invoice Generator</a> · <a href="/">hub</a>.</div>`);
     } else {
       const d = data.detail || {};
       setStatus("err", (d.detail || ("Not recorded (HTTP " + r.status + ").")) +

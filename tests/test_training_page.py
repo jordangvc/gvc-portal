@@ -38,3 +38,7 @@ def test_training_route_and_html_are_wired():
     assert "Builder | Job Title" in html
     assert "GM first week (Donnie)" in html
     assert "#operations" in html
+    assert 'href="/ui/takeoff"' in html
+    assert 'class="tr-path"' in html
+    # Hero money path is clickable (not inert <b> chips).
+    assert 'tr-path' in html and html.split('class="tr-path"')[1].split("</div>")[0].count("<a href=") >= 6

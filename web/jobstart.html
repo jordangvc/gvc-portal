@@ -279,11 +279,8 @@
   <div id="savestate"></div>
 </div>
 
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
   (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
@@ -646,10 +643,15 @@ function renderState() {
     const pdf = d.packet_url
       ? ` <a href="${esc(d.packet_url)}" target="_blank" rel="noopener">Open the packet in Drive</a>`
       : "";
+    const opsIds = (d.bid && d.bid.existing_ops_ids) || [];
+    const opsId = opsIds.length ? opsIds[0] : "";
+    const jcHref = opsId
+      ? `/ui/jobcheck?item=${encodeURIComponent(opsId)}`
+      : "/ui/jobcheck";
     html = `<div class="state accepted"><span class="lead">Accepted by ${esc(who(d.accepted_by)) || "Operations"}.</span>
       This job is live.${pdf}
       <div class="readonly-note" style="margin-top:8px">Next:
-        <a href="/ui/jobcheck">open Job Check</a> for field stages ·
+        <a href="${esc(jcHref)}">open Job Check</a> for field stages ·
         <a href="/ui/billing">Billing Hub</a> ·
         <a href="/">hub</a>.</div></div>`;
   } else {
@@ -884,11 +886,17 @@ function acceptJob() {
       return;
     }
     if (!warnings.length) {
-      showStatus("ok", `✔ <strong>Accepted.</strong> ${esc(made)}.<br>${links}`);
+      const jc = body.ops_id
+        ? ` <a href="/ui/jobcheck?item=${encodeURIComponent(body.ops_id)}">Open Job Check for this job</a>`
+        : ` <a href="/ui/jobcheck">Open Job Check</a>`;
+      showStatus("ok", `✔ <strong>Accepted.</strong> ${esc(made)}.<br>${links}<br>Next:${jc} · <a href="/">hub</a>`);
     } else {
+      const jc = body.ops_id
+        ? ` <a href="/ui/jobcheck?item=${encodeURIComponent(body.ops_id)}">Open Job Check</a>`
+        : "";
       showStatus("warn",
         `<strong>Accepted with warnings.</strong> ${esc(made)}.` +
-        `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${links}`);
+        `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${links}${jc}`);
     }
   });
 }

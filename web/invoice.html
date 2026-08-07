@@ -376,11 +376,8 @@
   </div><!-- /gvc-stack -->
 </main>
 
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
 
@@ -897,6 +894,7 @@ async function run(mode) {
         html += `<div class="result-line" style="margin-top:10px;color:#96763B">⚠️ ${wb.correction_hint || "This invoice number already exists in Stripe — re-running reuses it rather than changing it."}</div>`;
         html += `<div class="result-line"><button type="button" class="btn secondary small" id="btn-correct-inline">Correct / reissue this invoice…</button></div>`;
       }
+      html += `<div class="result-line">Next: <a href="/ui/billing">Billing Hub</a> · <a href="/ui/check">Paid by Check</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // invoice is now real (Stripe + ledger) — drop the draft
     }

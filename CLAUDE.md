@@ -11,6 +11,29 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Hub first-paint two-step load (r64) — BUILT 2026-08-07
+Cold hub open no longer waits on Cloud Logging activity + pins before showing
+live needs/metrics/queue. `web/hub.html` `fetchPayload` calls
+`/ui/api/hub/refresh` first (paint live slice, set `lastRefreshAt`), then
+`/ui/api/hub` to hydrate user/greeting/nav/activity/pinned. Focus refresh
+still debounced. Hub footer **r64**.
+
+## ⚡ Morning → Job Check deep links + more next-steps (r63) — BUILT 2026-08-07
+- Morning Brief project cards + route stops link **Job Check `?item=`** (Ops id).
+- CO finalize + Paid by Check success get Billing / hub next-step lines.
+- Continues the r62 hub-refresh / click-through pass. Hub footer **r63**.
+
+## ⚡ HUB light refresh + click-through polish (r62) — BUILT 2026-08-07
+Audit after Path strip (r61):
+- **Hub idle poll** no longer reloads full `/ui/api/hub` (Cloud Logging activity
+  + pins + nav) every 60s / focus — new `GET /ui/api/hub/refresh` returns
+  badges/needs/queue/metrics only; client debounces focus to 30s.
+- **Job Start accept → Job Check `?item=`** deep-links the Ops task (uses the
+  parallel boot already shipped).
+- **Invoice finalize** Next: Billing · Paid by Check · hub.
+- **Dedupe** duplicate `gvc-theme.js` loads on money/field pages (one mount).
+- Training money-path pills are real links. Hub footer **r62**.
+
 ## ✨ MONEY-SPINE Path + Takeoff launcher (r61) — BUILT 2026-08-07
 Jordan: get back to the hub after Takeoff, and click through Takeoff ↔ portal
 tools without hunting the rail every time.
