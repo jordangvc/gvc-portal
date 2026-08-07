@@ -11,6 +11,11 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — Continue card shared hydrate (r55) — BUILT 2026-08-07
+Continue-last-run now best-effort merges `GET /ui/api/fieldguide/runs` with
+localStorage so a second phone can see the crew's open checklist (offline still
+shows local). Hub **r55**.
+
 ## 📘 FIELD MANUAL — sync + flow harden (r54) — BUILT 2026-08-07
 Post-r53 audit loop (flow/speed):
 - **Checklist sync races fixed** — per-runId debounce timers; re-PUT if local

@@ -235,6 +235,11 @@ on `gvc-invoice-00133-hq4`. Hub **r36**.
 - Photo QC / morning-prep / CO-spotter coaches (Checklist coach LIVE; expand map).
 - Optional later: auto-tools deep dive.
 
+### Done 2026-08-07 — Continue card shared hydrate (r55)
+Home Continue merges open runs from `GET /ui/api/fieldguide/runs` with local
+(so crew phones see each other's in-progress checklists). Offline still uses
+local only. Hub **r55**.
+
 ### Done 2026-08-07 — sync + flow harden (r54)
 Audit loop after r53: per-run checklist sync timers + finish-only-on-success PUT;
 Job Check How-to/Coach `target=_blank` + dirty leave guards; real

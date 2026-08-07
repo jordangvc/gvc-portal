@@ -6428,7 +6428,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       applyHomeFilter();
     }
 
-    function findBestActiveRun() {
+    function findBestLocalRun() {
       var map = activeMap();
       var best = null;
       Object.keys(map).forEach(function (proc) {
@@ -6441,20 +6441,73 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       return best;
     }
 
-    function renderContinueCard() {
+    function candidateFromServerSummary(s) {
+      var local = localRun(s.run_id);
+      if (local && !local.done &&
+          String(local.updated_at || "") >= String(s.updated_at || "")) {
+        return local;
+      }
+      return {
+        run_id: s.run_id,
+        procedure: s.procedure,
+        procedure_name: s.procedure_name || (local && local.procedure_name) || "",
+        job_name: s.job_name || (local && local.job_name) || "",
+        checked: (local && local.checked) || [],
+        checked_count: s.checked_count,
+        updated_at: s.updated_at || "",
+        _needsFetch: true
+      };
+    }
+
+    function pickBestContinue(localBest, serverRuns) {
+      var best = localBest || null;
+      (serverRuns || []).forEach(function (s) {
+        if (!s || s.done) { return; }
+        var cand = candidateFromServerSummary(s);
+        if (!best || String(cand.updated_at || "") > String(best.updated_at || "")) {
+          best = cand;
+        }
+      });
+      return best;
+    }
+
+    var continueServerRuns = null;
+    var continueHydrating = false;
+
+    function hydrateContinueFromServer() {
+      if (continueHydrating) { return; }
+      if (typeof navigator !== "undefined" && navigator.onLine === false) { return; }
+      continueHydrating = true;
+      fetch("/ui/api/fieldguide/runs")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          continueServerRuns = (j && j.runs) || [];
+          renderContinueCard(false);
+        })
+        .catch(function () { /* offline — local Continue still works */ })
+        .then(function () { continueHydrating = false; });
+    }
+
+    function renderContinueCard(alsoHydrate) {
       if (!continueCard) { return; }
-      var run = findBestActiveRun();
+      var run = pickBestContinue(findBestLocalRun(), continueServerRuns);
       var titleEl = document.getElementById("continue-title");
       if (!run) {
         continueCard.hidden = true;
         continueCard.classList.remove("is-visible");
+        if (alsoHydrate !== false) { hydrateContinueFromServer(); }
         return;
       }
       var pname = run.procedure_name || procName(run.procedure) || run.procedure;
       var job = run.job_name || "No job attached";
-      var n = (run.checked || []).length;
+      var n = (run.checked_count != null)
+        ? run.checked_count
+        : (run.checked || []).length;
       if (titleEl) { titleEl.textContent = "Continue: " + pname; }
-      if (continueMeta) { continueMeta.textContent = job + " · " + n + " checked"; }
+      if (continueMeta) {
+        continueMeta.textContent = job + " · " + n + " checked" +
+          (run._needsFetch && !localRun(run.run_id) ? " · shared" : "");
+      }
       continueCard.hidden = false;
       continueCard.classList.add("is-visible");
       if (continueBtn) {
@@ -6462,12 +6515,16 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
           var map = activeMap();
           map[run.procedure] = run.run_id;
           lsSet(LS_ACTIVE, map);
+          if (run._needsFetch || !localRun(run.run_id)) {
+            resumeRun(run.run_id);
+            return;
+          }
           if (currentDoc !== run.procedure) { show(run.procedure, null, true); }
           applyChecks(run.procedure);
           renderBar();
-          if (!localRun(run.run_id)) { resumeRun(run.run_id); }
         };
       }
+      if (alsoHydrate !== false) { hydrateContinueFromServer(); }
     }
 
     try {
