@@ -1167,7 +1167,12 @@ async function searchBids(q) {
   }
   const rows = data.results || [];
   if (!rows.length) { note.textContent = `No bids matched “${q}”. Try fewer words, or paste the Monday URL.`; return; }
-  note.textContent = `${rows.length} match${rows.length === 1 ? "" : "es"} — pick the bid:`;
+  if (rows.length === 1) {
+    note.textContent = "Matched — loading…";
+    $("#search-results").innerHTML = "";
+    return loadBid(String(rows[0].item_id));
+  }
+  note.textContent = `${rows.length} matches — pick the bid:`;
   const list = $("#search-results");
   rows.forEach((row) => {
     const div = document.createElement("div");
