@@ -39,6 +39,7 @@ TOOL_GROUPS: tuple[tuple[str, tuple[tuple[str, str, str, bool], ...]], ...] = (
         ("Time Off", "timeoff", "/ui/timeoff", False),
     )),
     ("Company", (
+        ("Training", "training", "/ui/training", False),
         ("Admin", "admin", "/ui/admin", False),
     )),
 )
@@ -93,6 +94,7 @@ HOME_TOOL_LABELS: dict[str, str] = {
     "fieldguide": "Field Manual",
     "coi": "COI Generator",
     "timeoff": "Time Off",
+    "training": "Training",
     "admin": "Admin",
 }
 
