@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ JOB CHECK parallel deep-link + office HTML cache (r60) — BUILT 2026-08-07
+- **`?item=` opens immediately** — no longer waits on `/jobs` list; list loads
+  in parallel for Change-job. `replaceState` only after a successful load.
+- **Continue card** shows “Checking shared checklists…” while hydrating.
+- **Private HTML cache** extended to estimate / invoice / CO / billing /
+  jobstart. Hub **r60**.
+
 ## ⚡ JOB CHECK + FIELD FLOW harden (r57) — BUILT 2026-08-07
 Audit loop after Field Manual r55:
 - **Hub `?item=` deep-link works** — `/ui/jobcheck?item=<ops_id>` boots

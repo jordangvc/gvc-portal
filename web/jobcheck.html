@@ -346,35 +346,47 @@ async function loadJobs() {
     const body = await r.json();
     if (!r.ok || !body.ok) {
       const d = body.detail || body;
-      showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the job list.")}<br>${esc(d.advice || "")}`);
-      $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
+      /* Deep-link may already be showing the form — don't clobber with list errors. */
+      if (!detail) {
+        showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the job list.")}<br>${esc(d.advice || "")}`);
+        $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
+      }
       return;
     }
     jobs = body.jobs || [];
-    renderJobList();
-    await bootJobFromUrl();
+    if (!detail) { renderJobList(); }
   } catch (e) {
-    showStatus("err", `Network error — ${esc(e.message)}`);
-    $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
+    if (!detail) {
+      showStatus("err", `Network error — ${esc(e.message)}`);
+      $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
+    }
   }
 }
 
-/** Hub / morning deep-link: /ui/jobcheck?item=<monday_item_id> */
+/** Hub / morning deep-link: /ui/jobcheck?item=<monday_item_id>
+ *  Opens the job immediately — does NOT wait on the jobs list. */
 async function bootJobFromUrl() {
   const params = new URLSearchParams(location.search);
   const raw = (
     params.get("item") || params.get("item_id") || params.get("monday_item_id") || ""
   ).trim();
-  if (!raw) return;
+  if (!raw) return false;
   const id = parseMondayItemId(raw);
   if (!id) {
     showStatus("err", `That Job Check link doesn't look like a Monday item id (${esc(raw)}). Pick a job below.`);
-    return;
+    return false;
   }
-  try {
-    history.replaceState(null, "", "/ui/jobcheck");
-  } catch (_) { /* ignore */ }
-  await loadJob(id);
+  $("#pickcard").style.display = "none";
+  $("#ctxcard").style.display = "";
+  $("#ctx").innerHTML = `<div class="hint">Opening job…</div>`;
+  const ok = await loadJob(id);
+  if (ok) {
+    try { history.replaceState(null, "", "/ui/jobcheck"); } catch (_) { /* ignore */ }
+  } else {
+    $("#pickcard").style.display = "";
+    $("#ctxcard").style.display = "none";
+  }
+  return !!ok;
 }
 
 /* ---------- job detail + form ---------- */
@@ -703,15 +715,21 @@ function setValuesFrom(columns, valueOf) {
 
 async function loadJob(itemId) {
   hideStatus();
-  $("#joblist").innerHTML = `<div class="hint">Loading job…</div>`;
+  if (!detail) {
+    /* Keep pickcard hint only when we're still on the list path. */
+    const list = $("#joblist");
+    if (list && $("#pickcard") && $("#pickcard").style.display !== "none") {
+      list.innerHTML = `<div class="hint">Loading job…</div>`;
+    }
+  }
   try {
     const r = await fetch(`/ui/api/jobcheck/job/${itemId}`);
     const body = await r.json();
     if (!r.ok || !body.ok) {
       const d = body.detail || body;
       showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't load the job.")}<br>${esc(d.advice || "")}`);
-      renderJobList();
-      return;
+      if (jobs.length) renderJobList();
+      return false;
     }
     detail = body;
     setValuesFrom(detail.columns || [], (c) => c.value);
@@ -728,9 +746,11 @@ async function loadJob(itemId) {
     $("#savebar").classList.add("show");
     loadUpdates();
     window.scrollTo({ top: 0 });
+    return true;
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}`);
-    renderJobList();
+    if (jobs.length) renderJobList();
+    return false;
   }
 }
 
@@ -1080,7 +1100,14 @@ fetch("/ui/api/monday/warm", {
   method: "POST", credentials: "same-origin", keepalive: true,
 }).catch(() => {});
 checkHealth();
-loadJobs();
+/* Deep-link opens the job NOW; jobs list loads in parallel for Change-job. */
+(async () => {
+  const deep = await bootJobFromUrl();
+  loadJobs(); /* fire-and-forget; form already up when deep-linked */
+  if (!deep && $("#joblist")) {
+    $("#joblist").innerHTML = `<div class="hint">Loading active jobs…</div>`;
+  }
+})();
 </script>
 <script src="/ui/gvc-theme.js"></script>
 <script>
