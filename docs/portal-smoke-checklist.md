@@ -1,7 +1,7 @@
 # Portal smoke checklist (Andrea + Jake)
 
 **Portal:** https://portal.greenvalleycontractors.com  
-**Expect hub footer:** Portal **r52** (or newer). If you see older than r50, tell Jordan before deep-testing.  
+**Expect hub footer:** Portal **r53** (or newer). If you see older than r50, tell Jordan before deep-testing.  
 **Purpose:** Quick pass/fail on every live tool — catch “looks fine to us, broken for the office” early.  
 **Time:** ~20–30 minutes each. Do it on a phone *and* a laptop if you can (phone first for field tools).
 

@@ -167,7 +167,7 @@
     <span class="gvc-topbar-title">Paid by Check</span>
     <div class="gvc-topbar-right">
       <span class="gvc-topbar-user">{{EMAIL}}</span>
-<button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -233,8 +233,11 @@
   </div>
 </div>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
   const $ = s => document.querySelector(s);
   function setStatus(kind, msg) {
     const e = $("#status");

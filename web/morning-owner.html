@@ -39,7 +39,8 @@
   <a class="gvc-brand" href="/"><span class="gvc-mono">G</span><span class="gvc-wordmark">Green Valley Contractors</span></a>
   <span class="gvc-topbar-sep"></span><span class="gvc-topbar-title">Owner Pulse</span>
   <div class="gvc-topbar-right"><span class="gvc-topbar-user">{{EMAIL}}</span>
-    <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button> <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
+    <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
 </div></header>
 <main>
   <div><p class="gvc-eyebrow">Exception only</p><h1 class="gvc-h1">Owner Pulse</h1>
@@ -53,8 +54,11 @@
   <div class="card"><h2>Planning signals</h2><div id="plan" class="muted">None</div></div>
   <div class="card"><h2>Owner decisions</h2><div id="dec" class="muted">None waiting</div></div>
 </main>
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 async function load(){
   try {
