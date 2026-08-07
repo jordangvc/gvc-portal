@@ -2547,26 +2547,47 @@ def ui_change_order_form(request: Request) -> HTMLResponse:
 
 
 @app.get("/ui/api/change-order/lookup")
-def ui_change_order_lookup(request: Request, monday_url: str = "") -> dict:
+def ui_change_order_lookup(
+    request: Request,
+    monday_url: str = "",
+    project_number: str = "",
+) -> dict:
     """
-    Autofill helper: given a Monday Project item URL (or id), return the
-    client/job/site/estimate#/Drive-folder context + existing CO identifiers
-    (incl. `existing_cos` — the job's CO items with their status, so the form
-    can offer "Load for revision"), so the form fills itself from the single
-    source of truth. Read-only.
+    Autofill helper: given a Monday Project item URL/id OR a Project #,
+    return the client/job/site/estimate#/Drive-folder context + existing CO
+    identifiers (incl. `existing_cos` — the job's CO items with their status,
+    so the form can offer "Load for revision"). Read-only.
+
+    Prefer ``monday_url`` / item id when the caller already has one (skips
+    Project # probes). ``project_number`` uses find_project_by_number so a
+    typed PRO-/bare spine # does not pay for a full text search first.
     """
     require_feature(request, "change_order")
     item_id = _parse_monday_item_id(monday_url)
-    if not item_id:
+    pn = (project_number or "").strip()
+    if not item_id and not pn:
         raise HTTPException(
             status_code=422,
             detail={"ok": False, "code": "BAD_MONDAY_URL",
-                    "detail": "Couldn't find a Monday item id in that value.",
-                    "advice": "Paste the Project item's URL (it contains /pulses/<id>) "
-                              "or just the numeric item id."},
+                    "detail": "Couldn't find a Monday item id or Project #.",
+                    "advice": "Paste the Project item's URL (it contains /pulses/<id>), "
+                              "the numeric item id, or a Project # (e.g. PRO-2026-0807-001)."},
         )
     try:
-        ctx = monday_co.get_project_context(MondayClient(), item_id)
+        mc = MondayClient()
+        if not item_id and pn:
+            match = mc.find_project_by_number(pn)
+            if not match:
+                raise HTTPException(
+                    status_code=404,
+                    detail={"ok": False, "code": "PROJECT_NOT_FOUND",
+                            "detail": f"No project found with Project # '{pn}'.",
+                            "advice": "Try search by builder/address, or check the Projects board."},
+                )
+            item_id = int(match["item_id"])
+        ctx = monday_co.get_project_context(mc, item_id)
+    except HTTPException:
+        raise
     except MondayNotConfigured as e:
         raise HTTPException(
             status_code=503,

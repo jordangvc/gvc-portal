@@ -545,8 +545,9 @@ async function lookupFromMonday() {
   if (!q) { setLinkState("warn", "Enter a Monday Project URL (or item id) — or type a client, address, project #, or CO number to search."); return; }
   if (looksLikeMondayRef(q)) return loadProject(q);
   if (looksLikeCoNumber(q)) return loadForRevision(q);
-  // Spine / legacy Project # — same search path, but searchProjects auto-loads
-  // a single clear parent (parity with Invoice Find-the-Project).
+  // Spine / legacy Project # — resolve via find_project_by_number (cached),
+  // not a full text search. Saves one search RTT before loadProject.
+  if (looksLikeProjectNumber(q)) return loadProjectByNumber(q);
   return searchProjects(q);
 }
 
@@ -607,6 +608,24 @@ async function loadProject(ref) {
   let r;
   try { r = await fetch("/ui/api/change-order/lookup?monday_url=" + encodeURIComponent(ref)); }
   catch (e) { $("#btn-prefill").disabled = false; setLinkState("warn", "Network error during lookup: " + e.message); return; }
+  return applyProjectLookup(r);
+}
+
+async function loadProjectByNumber(pn) {
+  setLinkState("", "Looking up…");
+  $("#btn-prefill").disabled = true;
+  let r;
+  try {
+    r = await fetch("/ui/api/change-order/lookup?project_number=" + encodeURIComponent(pn));
+  } catch (e) {
+    $("#btn-prefill").disabled = false;
+    setLinkState("warn", "Network error during lookup: " + e.message);
+    return;
+  }
+  return applyProjectLookup(r);
+}
+
+async function applyProjectLookup(r) {
   $("#btn-prefill").disabled = false;
   if (r.status === 401) { location.reload(); return; }
   const body = await r.json().catch(() => ({}));
