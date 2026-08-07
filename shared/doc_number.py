@@ -99,13 +99,19 @@ def search_needles(value: Optional[str]) -> list[str]:
 
     Monday stores Bid Board Estimate # as bare core and Projects Project # as
     PRO-{core}. Pasting EST-/PRO-/INV-… must still hit those cells, so we
-    search both the typed string and the bare core when present.
+    return: typed string first (name search / caller q), then PRO-{core}
+    when spine (Projects column), then bare core. Deduped, empty dropped.
     """
     raw = (value or "").strip()
     if not raw:
         return []
     out: list[str] = []
-    for candidate in (raw, core_number(raw) or ""):
+    core = core_number(raw)
+    candidates = [raw]
+    if core:
+        candidates.append(for_project(raw))
+        candidates.append(core)
+    for candidate in candidates:
         if candidate and candidate not in out:
             out.append(candidate)
     return out

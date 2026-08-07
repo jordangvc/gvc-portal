@@ -1,7 +1,7 @@
 # Portal smoke checklist (Andrea + Jake)
 
 **Portal:** https://portal.greenvalleycontractors.com  
-**Expect hub footer:** Portal **r39** (or newer) · if you see older, tell Jordan before deep-testing.  
+**Expect hub footer:** Portal **r52** (or newer). If you see older than r50, tell Jordan before deep-testing.  
 **Purpose:** Quick pass/fail on every live tool — catch “looks fine to us, broken for the office” early.  
 **Time:** ~20–30 minutes each. Do it on a phone *and* a laptop if you can (phone first for field tools).
 
@@ -23,21 +23,22 @@ Reply to Jordan with: tool name · ✅ / ❌ / ⏭ skipped · one-line note if a
 
 | Person | Focus |
 |---|---|
-| **Andrea** | Money + office: Estimate, Billing Hub, Invoice, Change Order, Paid by Check, COI, Activity, Time Off |
-| **Jake** | Sales + handoff: Morning Brief, Takeoff → Estimate, Estimate (sales path), Job Start, Field Manual, Job Check (light) |
+| **Andrea** | Money + office: Hub home (billing needs), Estimate, Billing Hub, Invoice, Change Order, Paid by Check, COI, Activity, Time Off |
+| **Jake** | Sales + handoff: Hub home, Morning Brief, Takeoff → Estimate, Estimate, Job Start, Field Manual, Job Check (light) |
 | **Jordan** (optional) | Admin grants glance, Owner Pulse / GM Morning if you use them, Lien Watch (data still catch-up) |
 
 Overlap is fine — two ✅s on Estimate is better than one.
 
 ---
 
-## A — Everyone (2 min)
+## A — Everyone (2–3 min)
 
 | # | Check | Pass looks like |
 |---|---|---|
-| A1 | Sign in at the portal URL | Your email shows; hub tiles appear |
-| A2 | Hub loads on phone | Tiles readable; no horizontal scroll mess |
-| A3 | Sign out / sign back in | Comes back to hub without a dead end |
+| A1 | Sign in at the portal URL | Your email shows; **role home** loads (not a blank page) |
+| A2 | Hub home on phone | Needs / next actions readable; bottom dock usable; no horizontal scroll mess |
+| A3 | Theme toggle (if shown on hub) | Light ↔ dark sticks after refresh |
+| A4 | Sign out / sign back in | Comes back to hub without a dead end |
 
 ---
 
@@ -47,6 +48,8 @@ Overlap is fine — two ✅s on Estimate is better than one.
 - [ ] Search finds a known bid (builder name or street — not only the estimate #).
 - [ ] Load a bid → client / job fields prefill.
 - [ ] Add or edit one line → **Generate Preview** → PDF looks right in the iframe.
+- [ ] After Preview, **Estimate #** shows a real `EST-YYYY-MMDD-NNN` (not stuck blank).
+- [ ] Sticky Generate/Accept still reachable on phone while scrolling.
 - [ ] *(Optional, real work only)* Finalize → hello@ draft appears; Slack/QA notice if you normally get one.
 
 **Skip Finalize** unless you meant to send that estimate.
@@ -59,13 +62,15 @@ Overlap is fine — two ✅s on Estimate is better than one.
 - [ ] **Open invoice** (or equivalent) lands on Invoice with the job filled — not a blank form.
 
 ### B3 · Invoice Generator (`/ui/invoice`) — the Est→Inv path
-- [ ] Look up the same project from B2.
+- [ ] Look up the same project from B2 (or open via Billing Hub deep link).
 - [ ] **Estimate import** card appears when an estimate exists (“Add estimate lines” and/or “Add estimate total”).
 - [ ] Click one once → line(s) appear; button flips to Added / disables (no double-bill).
 - [ ] **Generate Preview** → amounts look sane.
+- [ ] Sticky Generate/Accept reachable on phone.
 - [ ] *(Optional, real bill only)* Accept → Stripe + billing draft path you already trust.
 
-**Do not Accept a test invoice** on a live customer unless Jordan OK’d a void/cleanup plan.
+**Do not Accept a test invoice** on a live customer unless Jordan OK’d a void/cleanup plan.  
+**Corrections** live inside Invoice (“Correct / reissue…”) — there is no separate Correct tile.
 
 ### B4 · Change Order (`/ui/change-order`)
 - [ ] Find a real project (URL or search).
@@ -75,7 +80,7 @@ Overlap is fine — two ✅s on Estimate is better than one.
 
 ### B5 · Paid by Check (`/ui/check`)
 - [ ] Upload a check or stub photo (can be a known already-paid one).
-- [ ] Extract fills editable fields; invoice picker is searchable.
+- [ ] Extract fills editable fields; invoice picker is searchable / scrollable.
 - [ ] If already deposited → clear “already deposited” style message (no double write).
 - [ ] *(Real deposit only)* Confirm & record → Stripe/Monday/Drive as usual.
 
@@ -109,8 +114,8 @@ Overlap is fine — two ✅s on Estimate is better than one.
 ### C3 · Estimate Generator (sales path)
 - [ ] Find an open bid by customer / street.
 - [ ] Prefill looks right (no reinventing the job name by hand).
-- [ ] Preview PDF once.
-- [ ] Same phone density check as Andrea: sticky Generate still usable.
+- [ ] Preview PDF once; Estimate # fills after Preview.
+- [ ] Sticky Generate still usable on phone.
 
 ### C4 · Job Start (`/ui/jobstart`) ⭐ highest value for you
 - [ ] Tile visible (if not → Jordan must grant `jobstart`).
@@ -126,11 +131,13 @@ Overlap is fine — two ✅s on Estimate is better than one.
 ### C5 · Field Manual (`/ui/fieldguide`)
 - [ ] Opens without a special grant (everyone should see it).
 - [ ] Plain / Full detail toggle works; a Component Index jump lands on the right section.
+- [ ] Theme toggle works (matches hub preference if you set one).
+- [ ] *(Optional)* Open **Coach** on a procedure you know — steps look useful, not empty fluff. Note which page if Coach feels generic.
 - [ ] Readable on phone.
 
 ### C6 · Job Check (`/ui/jobcheck`) — light pass only
 - [ ] Active jobs list loads; search finds a job.
-- [ ] Open one → status chips / fields show current Monday values.
+- [ ] Open one → **status picker** (tap-to-choose labels) shows current Monday values — not a broken blank form.
 - [ ] Change one harmless field (e.g. Notes) → **Save to Monday** → confirmed value sticks.
 - [ ] If the job needs a Projects link, the in-app link panel makes sense (or shows a clear need).
 - [ ] **Mark Ready to Invoice** — only tap if the job *is* ready; confirm it shows on Billing Hub for Andrea.
@@ -148,7 +155,7 @@ Skip deep Job Check if you’re slammed; one save is enough for this round.
 | Lien Watch | Banner says data catch-up / counsel — open once; don’t treat deadlines as gospel yet. |
 | Mark’s full Job Check pass | When he has bandwidth. |
 | Stripe online → Monday Paid | One-time: set `STRIPE_WEBHOOK_SECRET` (docs/DEPLOY-IN-BROWSER.md). `/health` → `stripe_webhook_secret_present`. |
-| P5 Ready-to-Invoice scheduler | Actions → **P5 activate ready-to-invoice** → `check` then `activate` (stays dry_run). See docs/P5-SPEC-invoice-consumer.md. |
+| P5 Ready-to-Invoice scheduler | Actions → **P5 activate ready-to-invoice** → `check` then `activate` (stays dry_run). Live staging only after gauntlet — see docs/P5-SPEC-invoice-consumer.md. |
 
 ---
 
@@ -157,7 +164,7 @@ Skip deep Job Check if you’re slammed; one save is enough for this round.
 ```
 Portal smoke — <name> — <date> — phone / laptop / both
 
-A Hub: 
+A Hub home: 
 B1 Estimate: 
 B2 Billing Hub: 
 B3 Invoice + estimate import: 
@@ -171,8 +178,8 @@ C1 Morning:
 C2 Takeoff→Estimate: 
 C3 Estimate (sales): 
 C4 Job Start: 
-C5 Field Manual: 
-C6 Job Check: 
+C5 Field Manual (+ coach/theme): 
+C6 Job Check (status picker): 
 
 Blockers / weirdness:
 1.
@@ -184,6 +191,6 @@ Use ✅ ❌ ⏭ and a few words. Screenshots welcome on ❌.
 
 ## Suggested first round
 
-1. **Jake:** C1 → C4 → C5 (Morning, Job Start, Field Manual). Add C3 if he has a bid handy.  
-2. **Andrea:** B2 → B3 → B1 (Billing Hub → Invoice import → Estimate preview). Add B4–B8 as time allows.  
+1. **Jake:** A (hub) → C1 → C4 → C5 (Morning, Job Start, Field Manual). Add C3 if he has a bid handy.  
+2. **Andrea:** A (hub) → B2 → B3 → B1 (Billing Hub → Invoice import → Estimate preview). Add B4–B8 as time allows.  
 3. Compare notes once — anything both hit is priority.

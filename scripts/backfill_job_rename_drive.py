@@ -1,9 +1,10 @@
 """
-Rename existing Drive job folders to the standard Projects job name.
+Rename existing Drive job folders to the standard Projects job name
+(Street, City, ST ZIP | Builder | Job Title).
 
 Missing city/state/ZIP is enriched from Monday location JSON, linked Bid
 locations, and (when still needed) Nominatim before the folder target is
-planned.
+planned. Job Title comes from Projects status + Customer.
 
 Safety:
   - Dry-run by default. ``--apply`` is required to write, and ``--dry-run``
@@ -38,6 +39,7 @@ from adapters.drive import (  # noqa: E402
     slug_for_path,
 )
 from adapters.monday.client import MondayClient  # noqa: E402
+from adapters.monday.client import COL_PROJECT_TYPE_STATUS  # noqa: E402
 from adapters.monday.search import P_COL_BUILDER as PROJECT_BUILDER_COL  # noqa: E402
 from adapters.monday.search import P_COL_LOCATION as PROJECT_LOCATION_COL  # noqa: E402
 from shared.boards import (  # noqa: E402
@@ -51,10 +53,12 @@ from subsystems.jobstart import location_lookup, rename_enrich, rename_plan  # n
 
 
 RENAME_SLEEP_SECONDS = 0.25
+PROJECT_STATUS_COL = COL_PROJECT_TYPE_STATUS
 _READ_COLUMNS = (
     PROJECT_LOCATION_COL,
     PROJECT_BUILDER_COL,
     PROJECT_CUSTOMER_COL,
+    PROJECT_STATUS_COL,
     PROJECTS_GFOLDER_COL,
     PROJECT_OPPORTUNITY_COL,
 )
@@ -121,6 +125,7 @@ def shape_project_row(item: dict) -> dict:
         "location_column": location_column,
         "builder": _column_text(columns.get(PROJECT_BUILDER_COL)),
         "customer": _column_text(columns.get(PROJECT_CUSTOMER_COL)),
+        "project_type": _column_text(columns.get(PROJECT_STATUS_COL)),
         "gfolder_url": _link_url(columns.get(PROJECTS_GFOLDER_COL)),
         "linked_bid_ids": _linked_ids(
             columns.get(PROJECT_OPPORTUNITY_COL)
@@ -235,6 +240,12 @@ def plan_drive_rename(
         for bid_id in (row.get("linked_bid_ids") or [])
         if (bid_hints or {}).get(int(bid_id))
     ]
+    customer = row.get("customer") or ""
+    title_kwargs = rename_enrich.job_title_kwargs_from_monday(
+        status=row.get("project_type") or "",
+        customer=customer,
+        job_title=row.get("job_title") or "",
+    )
     planned = rename_enrich.plan_enriched_row(
         name=row.get("name") or "",
         location_text=row.get("location") or None,
@@ -242,7 +253,7 @@ def plan_drive_rename(
         location_column=row.get("location_column"),
         extra_hints=extra_hints,
         builder=row.get("builder") or None,
-        customer=row.get("customer") or None,
+        customer=customer or None,
         item_id=row.get("item_id"),
         board="projects",
         gfolder_url=row.get("gfolder_url") or None,
@@ -251,6 +262,7 @@ def plan_drive_rename(
         ),
         geocode_street_fn=geocode_street_fn,
         reverse_geocode_fn=reverse_geocode_fn,
+        **title_kwargs,
     )
     if rename_plan.is_co_item_name(row.get("name") or ""):
         planned = {

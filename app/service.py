@@ -1463,7 +1463,12 @@ def ui_invoice_lookup(
     try:
         mc = MondayClient()
         target_id: Optional[int] = None
-        if pn:
+        # Prefer a concrete Projects item id when the caller already has one
+        # (Billing hub / search Load). Skipping find_project_by_number saves
+        # 1–3 Monday contains_text probes on the hot path.
+        if parsed_id:
+            target_id = int(parsed_id)
+        elif pn:
             match = mc.find_project_by_number(pn)
             if not match:
                 raise HTTPException(
@@ -1474,7 +1479,12 @@ def ui_invoice_lookup(
                 )
             target_id = int(match["item_id"])
         else:
-            target_id = int(parsed_id)  # type: ignore[arg-type]
+            raise HTTPException(
+                status_code=422,
+                detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
+                        "detail": "Enter a Project #, paste a Monday URL, or pick a search result.",
+                        "advice": "Search by builder, address, city, or Project #."},
+            )
         prefill = mc.build_invoice_prefill(target_id)
     except HTTPException:
         raise
@@ -2157,6 +2167,33 @@ def ui_estimate_scopes_save(req: EstimateScopeCatalogRequest, request: Request) 
     activity.log_event("estimate.scopes.save", actor=admin_email,
                        target=f"{n_trades} trades / {n_scopes} scopes", result="ok")
     return {"ok": True, "catalog": catalog, "info": scope_catalog.catalog_info()}
+
+
+@app.get("/ui/training", response_class=HTMLResponse)
+def ui_training(request: Request) -> HTMLResponse:
+    """
+    Portal & systems training: money spine, hub map, and role tracks
+    (including the GM / Donnie week-one loop). Progress is localStorage only.
+
+    `training` is a BASELINE grant so every signed-in employee can open it
+    without an admin tap. It carries no customer or financial data.
+    """
+    email = require_feature(request, "training")
+    activity.log_event("tool.open", actor=email, target="training")
+    path = WEB_DIR / "training.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    html = (
+        path.read_text(encoding="utf-8")
+        .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{EMAIL_JSON}}", json.dumps(email))
+    )
+    return HTMLResponse(html)
 
 
 @app.get("/ui/timeoff", response_class=HTMLResponse)

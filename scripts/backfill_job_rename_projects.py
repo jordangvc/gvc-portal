@@ -3,10 +3,11 @@ Plan or apply the GVC job-title standard on Monday's Projects board.
 
 Target title:
 
-    Street Number Name, City, ST ZIP | Builder
+    Street Number Name, City, ST ZIP | Builder | Job Title
 
 Looks up city/state/ZIP from Monday location JSON, linked Bid location, and
-(when still needed) OpenStreetMap Nominatim for the OH/IN/KY area. CO rows
+(when still needed) OpenStreetMap Nominatim for the OH/IN/KY area. Job Title
+comes from Projects status (Residential/Commercial) + Customer. CO rows
 cascade from their parent title — they are not skipped.
 
 Safety:
@@ -32,7 +33,11 @@ from typing import Callable, Optional
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from adapters.monday.client import COL_BUILDER, MondayClient  # noqa: E402
+from adapters.monday.client import (  # noqa: E402
+    COL_BUILDER,
+    COL_PROJECT_TYPE_STATUS,
+    MondayClient,
+)
 from adapters.monday.rename import rename_item_name  # noqa: E402
 from shared.boards import (  # noqa: E402
     BID_BOARD_ID,
@@ -50,6 +55,7 @@ PROJECT_COLUMN_IDS = (
     JOBSTART_P_COL_LOCATION,
     COL_BUILDER,
     JOBSTART_P_COL_CUSTOMER,
+    COL_PROJECT_TYPE_STATUS,
     PROJECTS_GFOLDER_COL,
     JOBSTART_P_COL_OPPORTUNITY,
 )
@@ -66,8 +72,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description=(
             "Plan or apply Projects-board titles as "
-            "'Street Number Name, City, ST ZIP | Builder'. "
-            "Looks up missing city/state/ZIP. Dry-run is the default."
+            "'Street Number Name, City, ST ZIP | Builder | Job Title'. "
+            "Looks up missing city/state/ZIP and Job Title hints. "
+            "Dry-run is the default."
         )
     )
     parser.add_argument(
@@ -192,6 +199,12 @@ def plan_project_item(
     if rename_plan.is_co_item_name(name) and parent_index is not None:
         parent_name = rename_enrich.resolve_parent_title(name, parent_index)
 
+    customer = _column_text(columns, JOBSTART_P_COL_CUSTOMER)
+    title_kwargs = rename_enrich.job_title_kwargs_from_monday(
+        status=_column_text(columns, COL_PROJECT_TYPE_STATUS),
+        customer=customer,
+    )
+
     return rename_enrich.plan_enriched_row(
         name=name,
         location_text=_column_text(columns, JOBSTART_P_COL_LOCATION),
@@ -199,7 +212,7 @@ def plan_project_item(
         location_column=loc_cv,
         extra_hints=extras,
         builder=_column_text(columns, COL_BUILDER),
-        customer=_column_text(columns, JOBSTART_P_COL_CUSTOMER),
+        customer=customer,
         parent_name=parent_name,
         item_id=int(item["id"]),
         board="projects",
@@ -207,6 +220,7 @@ def plan_project_item(
         geocode=geocode and not rename_plan.is_co_item_name(name),
         geocode_street_fn=geocode_street_fn,
         reverse_geocode_fn=reverse_geocode_fn,
+        **title_kwargs,
     )
 
 

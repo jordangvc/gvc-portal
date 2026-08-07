@@ -229,7 +229,7 @@
       <h2>Invoice details</h2>
       <div class="grid">
         <div><label>Invoice number <span class="opt">(auto from project)</span></label><input name="identifier" placeholder="auto: INV-YYYY-MMDD-NNN" />
-          <div class="hint">Same core number as the estimate (<code>EST-…</code>) and project (<code>PRO-…</code>) — only the letters change. Auto-filled by “Look up &amp; fill” as <code>INV-…</code>.</div></div>
+          <div class="hint">Same core number as the estimate (<code>EST-…</code>) and project (<code>PRO-…</code>) — only the letters change. Filled by “Look up &amp; fill” or on Preview as <code>INV-…</code>.</div></div>
         <div><label>Issue date</label><input name="issue_date" type="date" required /></div>
         <div><label>Payment terms</label><input name="payment_terms" value="Net 30" /></div>
         <div><label>Due date <span class="opt">(blank = Net 30 auto)</span></label><input name="due_date" type="date" /></div>
@@ -839,7 +839,14 @@ async function run(mode) {
     }
     const wb = body.writeback || {};
     if (mode === "dry-run") {
-      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(data.invoice.identifier)}`;
+      // Surface the service-assigned INV-… (from Project # / soft-fill) in the
+      // field — same parity as estimate Preview filling EST-… (r52).
+      if (wb.identifier) {
+        setVal("identifier", wb.identifier);
+        if (data.invoice) data.invoice.identifier = wb.identifier;
+      }
+      const ident = wb.identifier || (data.invoice && data.invoice.identifier) || "";
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(ident)}`;
       $("#preview-frame").src = url;
       const coWrap = $("#co-previews");
       coWrap.innerHTML = "";
@@ -848,7 +855,10 @@ async function run(mode) {
       });
       $("#preview-card").classList.add("show");
       lastPreviewOk = true; $("#btn-accept").disabled = false;
-      setStatus("info", "✅ Preview ready below. Review, then click <strong>Accept &amp; Create Invoice</strong>.");
+      const idBit = ident
+        ? ` (invoice <strong>${ident}</strong>)`
+        : "";
+      setStatus("info", `✅ Preview ready below${idBit}. Review, then click <strong>Accept &amp; Create Invoice</strong>.`);
       $("#preview-card").scrollIntoView({ behavior: "smooth" });
     } else {
       lastPreviewOk = false; $("#btn-accept").disabled = true;
@@ -1142,8 +1152,9 @@ async function searchProjects(q) {
 async function loadProjectFromLookup(row) {
   const pn = (row && (row.project_number || row.projectNumber) || "").trim();
   const itemId = String((row && (row.item_id || row.itemId || row.monday_item_id)) || "").trim();
-  if (pn) return lookupProjectByNumber(pn);
+  // Prefer item id — skips Project # re-search on Monday (1–3 probes).
   if (itemId) return lookupProjectByItemId(itemId);
+  if (pn) return lookupProjectByNumber(pn);
   $("#prefill-note").textContent = "That result has no Project # or Monday item id to load.";
 }
 
@@ -1229,7 +1240,8 @@ function bootInvoiceFromUrl() {
   //   ?monday_item_id=123  (or ?item_id=123)
   //   ?co=CO.1-2026-0603-004  (auto-add after project lookup + billable list load)
   //   ?q=builder+or+address
-  // Prefer Project #, then Monday item id, then free-text search.
+  // Prefer Monday Projects item id when present (skips Project # re-search).
+  // Fall back to Project #, then free-text search.
   const params = new URLSearchParams(location.search);
   const co = (params.get("co") || "").trim();
   if (co) pendingCoFromUrl = co;
@@ -1238,6 +1250,17 @@ function bootInvoiceFromUrl() {
     params.get("monday_item_id") || params.get("item_id") || ""
   ).trim();
   const q = (params.get("q") || "").trim();
+  if (mondayItemId) {
+    if (pn) {
+      const adv = $("#advanced-pn");
+      if (adv) adv.open = true;
+      const pnInput = $("#invoice-form").elements["project_number_lookup"];
+      if (pnInput) pnInput.value = pn;
+    }
+    if ($("#project-search")) $("#project-search").value = pn || mondayItemId;
+    lookupProjectByItemId(mondayItemId);
+    return;
+  }
   if (pn) {
     const adv = $("#advanced-pn");
     if (adv) adv.open = true;
@@ -1245,11 +1268,6 @@ function bootInvoiceFromUrl() {
     if (pnInput) pnInput.value = pn;
     if ($("#project-search")) $("#project-search").value = pn;
     lookupProjectByNumber(pn);
-    return;
-  }
-  if (mondayItemId) {
-    if ($("#project-search")) $("#project-search").value = mondayItemId;
-    lookupProjectByItemId(mondayItemId);
     return;
   }
   if (q) {
