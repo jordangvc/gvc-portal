@@ -64,12 +64,18 @@ def main() -> int:
     check("legacy passthrough", for_invoice("GVC-2026-C-005") == "GVC-2026-C-005")
     check("monday cell is bare",
           monday_estimate_cell("EST-2026-0804-001") == "2026-0804-001")
-    check("search needles EST- → typed + core",
-          search_needles("EST-2026-0804-007") == ["EST-2026-0804-007", "2026-0804-007"])
-    check("search needles PRO- → typed + core",
-          search_needles("PRO-2026-0804-007") == ["PRO-2026-0804-007", "2026-0804-007"])
-    check("search needles bare is single",
-          search_needles("2026-0804-007") == ["2026-0804-007"])
+    check("search needles EST- → typed + PRO- + core",
+          search_needles("EST-2026-0804-007")
+          == ["EST-2026-0804-007", "PRO-2026-0804-007", "2026-0804-007"])
+    check("search needles PRO- → typed + core (PRO- not duplicated)",
+          search_needles("PRO-2026-0804-007")
+          == ["PRO-2026-0804-007", "2026-0804-007"])
+    check("search needles INV- → typed + PRO- + core",
+          search_needles("INV-2026-0804-007")
+          == ["INV-2026-0804-007", "PRO-2026-0804-007", "2026-0804-007"])
+    check("search needles bare → PRO- + core",
+          search_needles("2026-0804-007")
+          == ["2026-0804-007", "PRO-2026-0804-007"])
     check("search needles empty", search_needles("  ") == [])
     check("search needles legacy passthrough",
           search_needles("C-005") == ["C-005"])
