@@ -86,23 +86,25 @@
   <div class="card">
     <h2>Job names — the standard</h2>
     <p>One format, everywhere — Monday, Drive, estimates, invoices, CRM, photos:</p>
-    <p><code>Street Number Name, City, ST ZIP | Builder</code></p>
+    <p><code>Street Number Name, City, ST ZIP | Builder | Job Title</code></p>
     <table>
       <tr><th>Right</th><th>Wrong</th></tr>
-      <tr><td><code>9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek</code></td>
-          <td><code>9195 Silva | Willow Creek</code> (missing city/state/ZIP)</td></tr>
-      <tr><td><code>3776 Susanna, Lawrenceburg, IN 47025 | Martin</code></td>
-          <td><code>3776 Susanna – Martin</code> (dash, no city)</td></tr>
-      <tr><td><code>CO_9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek</code></td>
+      <tr><td><code>9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence</code></td>
+          <td><code>9195 Silva | Willow Creek</code> (missing city/state/ZIP + Job Title)</td></tr>
+      <tr><td><code>100 Main Street, Cincinnati, OH 45202 | ABC Builders | First Financial Bank</code></td>
+          <td><code>3776 Susanna – Martin</code> (dash, no city, no Job Title)</td></tr>
+      <tr><td><code>CO_9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence</code></td>
           <td><code>9195 Silva Drive, Cincinnati OH 45241 - Willow Creek - New House</code></td></tr>
     </table>
-    <p style="margin-top:12px;">Pipe character, not a dash. <b>City, state and ZIP belong in the
-      name</b> — we work in three states and many share the same road names. Job type
-      ("New House", "Remodel") still stays in fields on the record. Prefixes we already use stay:
+    <p style="margin-top:12px;">Pipe character, not a dash. Exactly <b>three</b> parts.
+      <b>City, state and ZIP belong in the name</b> — we work in three states and many share
+      the same road names. <b>Job Title</b> is required: residential =
+      <code>{Last} residence</code>; commercial = the business / tenant name.
+      Job type ("New House", "Remodel") still stays in fields on the record. Prefixes we already use stay:
       <code>CO_</code>, <code>STU-</code>, <code>PL-</code>, <code>WAR-</code>.</p>
     <div class="note"><b>Job Start renames it for you.</b> It converts the bid's messy name to
-      the standard and shows you what it changed. If it can't work out the builder it will
-      say so and ask — it will never invent one.</div>
+      the standard and shows you what it changed. If it can't work out the builder or Job Title
+      it will say so and ask — it will never invent one.</div>
     <div class="note"><b>Old jobs still match.</b> Everything created before this standard has
       an old-style name. Job Start recognises those and <b>updates the existing project</b>
       instead of creating a second one, so you won't get duplicates during the switchover.</div>
