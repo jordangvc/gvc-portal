@@ -11,6 +11,44 @@ from typing import Callable, Optional
 from subsystems.jobstart import location_lookup, naming, rename_plan
 
 
+def job_title_kwargs_from_monday(
+    *,
+    status: str = "",
+    customer: str = "",
+    job_title: str = "",
+) -> dict:
+    """
+    PURE. Build plan_enriched_row kwargs for the required Job Title segment.
+
+    Projects stores project_type in the ``status`` column (Residential /
+    Commercial). Customer text supplies commercial ``business_name`` or a
+    residential last-name hint. An explicit ``job_title`` wins when present.
+    Never invents a title from empty inputs.
+    """
+    out: dict = {}
+    explicit = (job_title or "").strip()
+    if explicit:
+        out["job_title"] = explicit
+
+    project_type = (status or "").strip()
+    if project_type:
+        out["project_type"] = project_type
+
+    customer_text = (customer or "").strip()
+    if not customer_text or explicit:
+        return out
+
+    pt = project_type.lower()
+    if "comm" in pt:
+        out["business_name"] = customer_text
+    elif "res" in pt:
+        out["homeowner_last"] = customer_text.split()[-1]
+    else:
+        # Unknown type: prefer business_name (matches naming.format_job_title).
+        out["business_name"] = customer_text
+    return out
+
+
 def plan_enriched_row(
     *,
     name: str,

@@ -26,6 +26,8 @@ def _project(
     *,
     location: str = "",
     location_value: str = "",
+    customer: str = "Bryant",
+    project_type: str = "Residential",
 ) -> dict:
     location_column = {
         "id": ops.JOBSTART_P_COL_LOCATION,
@@ -38,6 +40,8 @@ def _project(
         "location": location,
         "location_value_json": location_value,
         "location_column": location_column,
+        "customer": customer,
+        "project_type": project_type,
     }
 
 
@@ -64,6 +68,13 @@ def test_list_project_names_pages_once_and_builds_id_index():
                 "id": ops.JOBSTART_P_COL_LOCATION,
                 "text": "",
                 "value": LOCATION_VALUE,
+            }, {
+                "id": ops.JOBSTART_P_COL_CUSTOMER,
+                "text": "Bryant",
+                "display_value": "Bryant",
+            }, {
+                "id": ops.COL_PROJECT_TYPE_STATUS,
+                "text": "Residential",
             }],
         }], cursor="next"),
         _page([{"id": "12", "name": "CO.1 - ignored"}]),
@@ -74,7 +85,11 @@ def test_list_project_names_pages_once_and_builds_id_index():
     assert projects == [_project(location_value=LOCATION_VALUE)]
     assert by_id == {11: STANDARD}
     assert [call["cursor"] for call in mc.calls] == [None, "next"]
-    assert mc.calls[0]["cols"] == [ops.JOBSTART_P_COL_LOCATION]
+    assert mc.calls[0]["cols"] == [
+        ops.JOBSTART_P_COL_LOCATION,
+        ops.JOBSTART_P_COL_CUSTOMER,
+        ops.COL_PROJECT_TYPE_STATUS,
+    ]
 
 
 def test_list_operations_items_reads_project_relation_and_honors_limit():

@@ -44,20 +44,25 @@ Read the dry-run output. Expect three buckets:
 | `skip_standard` | Already `Address \| Builder \| Job Title` with complete geo |
 | `skip_incomplete` | Still missing city/ZIP, builder, **or Job Title** — fix in Monday by hand |
 
-**Job Title is the new common gap.** Rows that already have
-`Street, City, ST ZIP | Builder` will show `skip_incomplete` / “Missing job title”
-until someone adds the third segment (or a residential person-like Customer
-lets the planner format `Last residence`).
+**Job Title hints are wired from Monday columns.** Projects `status`
+(Residential / Commercial) + Customer feed the planner:
+
+- Residential → `{Customer last name} residence`
+- Commercial → Customer text as the business / tenant name
+- Unknown type → Customer text as business name (still never invents from empty)
+
+Rows still show `skip_incomplete` / “Missing job title” when Customer (and
+status, for residential formatting) are empty — fill those in Monday, or append
+`| {Job Title}` by hand. Do **not** invent a commercial business name from the
+GC / Builder column.
 
 ### Phase B — Fill incomplete Job Titles in Monday
 
 For each `skip_incomplete` that only needs Job Title:
 
 1. Open the Bid / Project item.
-2. Append `| {Job Title}` using the residential / commercial rule above.
+2. Set Project type + Customer when known, **or** append `| {Job Title}` by hand.
 3. Re-run the dry-run for that board until the incomplete list is only true unknowns.
-
-Do **not** invent a commercial business name from the GC column.
 
 ### Phase C — Apply small batches (Projects → Ops → Bids → Drive)
 
@@ -98,7 +103,10 @@ Drive folder-safe name drops the pipes:
 
 `9195 Silva Drive, Cincinnati, OH 45241 Willow Creek Smith residence`
 
-Folder IDs stay the same so existing links keep working.
+`slug_for_path` allows up to **200** characters (Drive’s limit is 255). If a
+title is still longer, it keeps a street head + Job Title tail so two long
+commercial names don’t collapse to the same folder slug. Folder IDs stay the
+same so existing links keep working.
 
 ---
 
