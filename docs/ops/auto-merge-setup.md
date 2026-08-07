@@ -19,22 +19,16 @@ branch starts with `cursor/`:
 
 1. Same gate as deploy: `compileall` + `pytest`
 2. Squash-merge into `master` + delete the branch
+3. Explicitly dispatch **Deploy to Cloud Run** (GITHUB_TOKEN merges do not
+   fire push-triggered workflows — GitHub recursion guard)
 
 **Pause a PR:** mark it **Draft**, or add label `hold` / `do-not-merge`.
 
-## One click you may still need (Actions write)
+## Actions write — already OK on this repo
 
-If the merge job fails with a permission error (`Resource not accessible by
-integration` / cannot merge), GitHub Actions default workflow tokens are
-read-only. Fix once:
+Workflow runs show `Contents: write` for `GITHUB_TOKEN`. If a future merge job
+403s, flip **Settings → Actions → Workflow permissions → Read and write**.
 
-1. Open https://github.com/jordangvc/gvc-portal/settings/actions
-2. Under **Workflow permissions**, choose **Read and write permissions**
-3. Save
-4. Re-run the failed **Auto-merge cursor PRs** workflow (or push an empty
-   commit on the PR)
-
-No new secrets. Uses `GITHUB_TOKEN` only.
 
 ## Agent rules (so this keeps working)
 
