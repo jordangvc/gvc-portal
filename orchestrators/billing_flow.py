@@ -20,6 +20,7 @@ Routes (wired by integrator in app/service.py, not this module):
 from __future__ import annotations
 
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -60,52 +61,68 @@ def billing_hub_payload(mc=None) -> dict:
     Each queue item includes name, ids, builder/supervisor/location when
     available, status_labels, monday_url, and portal deep links
     (invoice_href / estimate_href / jobstart_href / primary_href).
+
+    The three Monday list fetches run in parallel (separate clients —
+    requests.Session is not thread-safe). Wall-clock ≈ max(queue) on cold.
     """
-    client = _client(mc)
     notes: list[str] = []
     queues = {
         "ready_to_invoice": [],
         "accepted_bids": [],
         "projects_billing": [],
     }
-
     ready_err = False
-    try:
-        raw_ready = monday_billing.fetch_ready_to_invoice(client)
-        queues["ready_to_invoice"] = [
-            bq.shape_ready_to_invoice(r) for r in (raw_ready or [])
-        ]
-    except Exception as exc:  # noqa: BLE001 — hub still loads other queues
-        ready_err = True
-        notes.append(
-            f"Couldn't load Ready to Invoice from Operations "
-            f"({type(exc).__name__}). Check Monday token / board access."
-        )
-        print(f"[billing] ready_to_invoice failed: {exc}", file=sys.stderr)
 
-    try:
-        raw_bids = monday_billing.fetch_accepted_bids(client)
-        queues["accepted_bids"] = [
-            bq.shape_accepted_bid(r) for r in (raw_bids or [])
-        ]
-    except Exception as exc:  # noqa: BLE001
-        notes.append(
-            f"Couldn't load Accepted bids ({type(exc).__name__}). "
-            "Job Start's Bid Board fetch may be unavailable."
-        )
-        print(f"[billing] accepted_bids failed: {exc}", file=sys.stderr)
+    # Injected `mc` (tests) is reused on every leg; live path gets one client
+    # per leg so parallel HTTP doesn't share a Session.
+    c_ready = _client(mc)
+    c_bids = mc if mc is not None else MondayClient()
+    c_proj = mc if mc is not None else MondayClient()
 
-    try:
-        raw_projects = monday_billing.fetch_projects_billing(client)
-        queues["projects_billing"] = [
-            bq.shape_project_billing(r) for r in (raw_projects or [])
-        ]
-    except Exception as exc:  # noqa: BLE001
-        notes.append(
-            f"Couldn't load Projects invoice-status list "
-            f"({type(exc).__name__}). Optional secondary queue skipped."
-        )
-        print(f"[billing] projects_billing failed: {exc}", file=sys.stderr)
+    def _load_ready():
+        raw = monday_billing.fetch_ready_to_invoice(c_ready)
+        return [bq.shape_ready_to_invoice(r) for r in (raw or [])]
+
+    def _load_bids():
+        raw = monday_billing.fetch_accepted_bids(c_bids)
+        return [bq.shape_accepted_bid(r) for r in (raw or [])]
+
+    def _load_projects():
+        raw = monday_billing.fetch_projects_billing(c_proj)
+        return [bq.shape_project_billing(r) for r in (raw or [])]
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        fut_ready = pool.submit(_load_ready)
+        fut_bids = pool.submit(_load_bids)
+        fut_proj = pool.submit(_load_projects)
+
+        try:
+            queues["ready_to_invoice"] = fut_ready.result()
+        except Exception as exc:  # noqa: BLE001 — hub still loads other queues
+            ready_err = True
+            notes.append(
+                f"Couldn't load Ready to Invoice from Operations "
+                f"({type(exc).__name__}). Check Monday token / board access."
+            )
+            print(f"[billing] ready_to_invoice failed: {exc}", file=sys.stderr)
+
+        try:
+            queues["accepted_bids"] = fut_bids.result()
+        except Exception as exc:  # noqa: BLE001
+            notes.append(
+                f"Couldn't load Accepted bids ({type(exc).__name__}). "
+                "Job Start's Bid Board fetch may be unavailable."
+            )
+            print(f"[billing] accepted_bids failed: {exc}", file=sys.stderr)
+
+        try:
+            queues["projects_billing"] = fut_proj.result()
+        except Exception as exc:  # noqa: BLE001
+            notes.append(
+                f"Couldn't load Projects invoice-status list "
+                f"({type(exc).__name__}). Optional secondary queue skipped."
+            )
+            print(f"[billing] projects_billing failed: {exc}", file=sys.stderr)
 
     if not queues["ready_to_invoice"] and not ready_err:
         notes.append(

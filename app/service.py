@@ -26,9 +26,10 @@ import os
 import re
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from html import escape as html_escape
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Any, Literal, Optional
 
 import stripe
 from dotenv import load_dotenv
@@ -186,43 +187,56 @@ portal_store.MISSING_STORE_HOOK = _grants_store_missing_alert
 
 def _warm_monday_caches() -> dict:
     """
-    Best-effort: force-refresh Job Start / Morning / Job Check list caches
-    and persist them to GCS so cold Cloud Run instances stay fast.
+    Best-effort: force-refresh Job Start / Morning / Job Check / Billing list
+    caches and persist them to GCS so cold Cloud Run instances stay fast.
+
+    Legs run in parallel with separate MondayClient sessions (Session is not
+    thread-safe). Accepted-bids is omitted — it derives from warm jobstart bids.
     """
     from adapters.monday import cache as monday_cache
+    from adapters.monday import billing as monday_billing
 
     warmed: list[str] = []
     errors: dict[str, str] = {}
-    try:
-        mc = MondayClient()
-    except Exception as e:  # noqa: BLE001 — warm is best-effort
-        msg = f"{type(e).__name__}: {e}"
-        print(f"[monday:warm] client init failed: {msg}", file=sys.stderr)
-        return {"ok": False, "warmed": [], "errors": {"client": msg},
-                "cache": monday_cache.stats()}
 
     # Always hit Monday (refresh), not the SWR get path — otherwise a fresh L1
     # would skip the write to durable L2 snapshots.
-    for key, factory in (
+    specs: list[tuple[str, Any]] = [
         ("list:jobstart:bids",
-         lambda: monday_jobstart._fetch_bids_uncached(mc)),
+         lambda mc: monday_jobstart._fetch_bids_uncached(mc)),
         ("list:morning:ops_items",
-         lambda: monday_morning._fetch_ops_items_uncached(mc)),
+         lambda mc: monday_morning._fetch_ops_items_uncached(mc)),
         ("list:jobcheck:active_jobs",
-         lambda: monday_jobcheck._fetch_active_jobs_uncached(mc)),
-    ):
+         lambda mc: monday_jobcheck._fetch_active_jobs_uncached(mc)),
+        ("list:billing:ready_to_invoice",
+         lambda mc: monday_billing._fetch_ready_to_invoice_uncached(mc)),
+        ("list:billing:projects_billing:75",
+         lambda mc: monday_billing._fetch_projects_billing_uncached(mc, limit=75)),
+    ]
+
+    def _warm_one(key: str, factory) -> tuple[str, Optional[str]]:
         try:
+            mc = MondayClient()
             monday_cache.refresh(
                 key,
-                factory,
+                lambda: factory(mc),
                 ttl=monday_cache.list_ttl(),
                 stale_ttl=monday_cache.stale_ttl(),
             )
-            warmed.append(key)
+            return key, None
         except Exception as e:  # noqa: BLE001 — keep warming the rest
             msg = f"{type(e).__name__}: {e}"
-            errors[key] = msg
             print(f"[monday:warm] {key} failed: {msg}", file=sys.stderr)
+            return key, msg
+
+    with ThreadPoolExecutor(max_workers=min(5, len(specs))) as pool:
+        futs = [pool.submit(_warm_one, key, factory) for key, factory in specs]
+        for fut in futs:
+            key, err = fut.result()
+            if err:
+                errors[key] = err
+            else:
+                warmed.append(key)
 
     return {
         "ok": not errors,
