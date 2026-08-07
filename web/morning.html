@@ -788,6 +788,9 @@ $("#updForm").addEventListener("submit", async (e) => {
 });
 
 load();
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(function () {});
 </script>
 <script src="/ui/gvc-theme.js"></script>
 <script>

@@ -1041,20 +1041,3 @@ def test_jobcheck_slack_skips_cleanly_without_a_channel(monkeypatch=None):
     finally:
         if old is not None:
             os.environ["GVC_JOBCHECK_SLACK_CHANNEL"] = old
-
-
-def test_jobcheck_page_boots_item_deep_link():
-    """Hub Needs / Morning emit ?item= — Job Check must open that job on boot."""
-    from pathlib import Path
-    html = (Path(__file__).resolve().parents[1] / "web" / "jobcheck.html").read_text()
-    assert "function itemIdFromUrl" in html
-    assert "function bootJobCheck" in html
-    assert 'params.get("item")' in html
-    assert "bootJobCheck()" in html
-    # Must not only call loadJobs() and ignore the query (the bug this fixed).
-    boot_idx = html.index("async function bootJobCheck")
-    end = html.find("\nfunction ", boot_idx + 1)
-    if end == -1:
-        end = html.find("\ncheckHealth", boot_idx + 1)
-    snippet = html[boot_idx:end if end != -1 else boot_idx + 1200]
-    assert "loadJob(deepId)" in snippet

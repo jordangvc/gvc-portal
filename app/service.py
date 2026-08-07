@@ -26,6 +26,7 @@ import os
 import re
 import sys
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from html import escape as html_escape
 from pathlib import Path
 from typing import Literal, Optional
@@ -97,6 +98,8 @@ from adapters.monday import jobstart as monday_jobstart
 from adapters.monday import morning as monday_morning
 from adapters.monday import jobcheck as monday_jobcheck
 from adapters.monday import search as monday_search
+from adapters.drive import DriveUploader
+from subsystems.estimate.revision import sidecar_filename
 from subsystems.invoice import correct as invoice_correct
 from adapters.stripe_invoice import preflight_stripe, void_stripe_invoice
 
@@ -1096,12 +1099,12 @@ def _portal_home_impl(request: Request) -> HTMLResponse:
     feats = sorted(access.effective_features(email))
     activity.log_event("hub.open", actor=email, target=",".join(feats) or "none")
     html = (
-        path.read_text(encoding="utf-8")
+        _cached_web_html("hub.html")
         .replace("{{EMAIL}}", html_escape(email))
         .replace("{{EMAIL_JSON}}", json.dumps(email))
         .replace("{{FEATURES_JSON}}", json.dumps(feats))
     )
-    return HTMLResponse(html)
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/api/hub")
@@ -1490,7 +1493,8 @@ def ui_invoice_lookup(
             status_code=422,
             detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
                     "detail": "Enter a Project #, paste a Monday URL, or pick a search result.",
-                    "advice": "Search by builder, address, city, or Project # (e.g. C-005)."},
+                    "advice": "Search by builder, address, city, or Project # "
+                              "(e.g. PRO-2026-0807-001 or 2026-0807-001)."},
         )
     try:
         mc = MondayClient()
@@ -1533,10 +1537,11 @@ def ui_invoice_lookup(
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Confirm the project exists on the Projects board."},
         )
-    # ---- Estimate $ import shortcut (opt-in, additive to `prefill`) ----
-    # Never blocks the lookup: a Drive hiccup or a project with no linked
-    # estimate just degrades to "not available" on the import card. Mirrors
-    # ui_estimate_lookup's revision-sidecar load (same sidecar file) below.
+    # ---- Estimate $ import + billable COs (parallel, both best-effort) ----
+    # Drive sidecar and Monday CO list are independent I/O. Running them
+    # together saves one RTT on the hot path; the UI used to await lookup
+    # then hit /billable-cos serially. Bundle COs in this response so the
+    # form can skip that second round-trip (refresh still uses /billable-cos).
     bid_snapshot = prefill.pop("_bid_snapshot", {}) or {}
     prefill_project_number = (prefill.get("job") or {}).get("project_number")
     est_no = None
@@ -1544,18 +1549,43 @@ def ui_invoice_lookup(
         est_no = for_estimate(prefill_project_number)
     elif bid_snapshot.get("estimate_number"):
         est_no = for_estimate(bid_snapshot["estimate_number"])
+    co_base = (prefill_project_number or pn or "").strip()
+
     sidecar = None
-    if est_no:
+    change_orders: list = []
+
+    def _load_estimate_sidecar() -> Optional[dict]:
+        if not est_no:
+            return None
         try:
-            from subsystems.estimate.revision import sidecar_filename
-            from adapters.drive import DriveUploader
             uploader = DriveUploader()
             hit = uploader.find_file_anywhere(sidecar_filename(est_no))
             if hit:
-                sidecar = uploader.download_json(hit["id"])
-        except Exception as e:  # noqa: BLE001 — the import shortcut is best-effort
+                return uploader.download_json(hit["id"])
+        except Exception as e:  # noqa: BLE001 — import shortcut is best-effort
             print(f"[ui:invoice-lookup] estimate sidecar load failed (non-fatal): {e}",
                   file=sys.stderr)
+        return None
+
+    def _load_billable_cos() -> list:
+        if not co_base:
+            return []
+        try:
+            return list(monday_co.list_unbilled_co_items(mc, co_base) or [])
+        except Exception as e:  # noqa: BLE001 — picker degrades empty, not fatal
+            print(f"[ui:invoice-lookup] billable COs load failed (non-fatal): {e}",
+                  file=sys.stderr)
+            return []
+
+    if est_no or co_base:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_sc = pool.submit(_load_estimate_sidecar) if est_no else None
+            fut_co = pool.submit(_load_billable_cos) if co_base else None
+            if fut_sc is not None:
+                sidecar = fut_sc.result()
+            if fut_co is not None:
+                change_orders = fut_co.result()
+
     prefill["estimate_import"] = invoice_estimate_import.build_estimate_import(
         estimate_number=est_no,
         monday_total=bid_snapshot.get("monday_total_raw"),
@@ -1595,8 +1625,9 @@ def ui_invoice_lookup(
         "invoice.lookup", actor=email,
         target=pn or str(parsed_id or ""),
         result="ok",
+        billable_cos=len(change_orders),
     )
-    return {"ok": True, "prefill": prefill}
+    return {"ok": True, "prefill": prefill, "change_orders": change_orders}
 
 
 @app.get("/ui/api/invoice/search")
@@ -2265,17 +2296,25 @@ def ui_timeoff(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
-_fieldguide_template_cache: tuple[float, str] | None = None
+_web_html_cache: dict[str, tuple[float, str]] = {}
+
+
+def _cached_web_html(name: str) -> str:
+    """Read a web/*.html file once per process; invalidate on mtime change."""
+    path = WEB_DIR / name
+    mtime = path.stat().st_mtime
+    hit = _web_html_cache.get(name)
+    if hit is None or hit[0] != mtime:
+        _web_html_cache[name] = (mtime, path.read_text(encoding="utf-8"))
+    return _web_html_cache[name][1]
+
+
+_PRIVATE_HTML_CACHE_HEADERS = {"Cache-Control": "private, max-age=300"}
 
 
 def _fieldguide_html_template() -> str:
     """Read fieldguide.html once per process (invalidate on mtime change)."""
-    global _fieldguide_template_cache
-    path = WEB_DIR / "fieldguide.html"
-    mtime = path.stat().st_mtime
-    if _fieldguide_template_cache is None or _fieldguide_template_cache[0] != mtime:
-        _fieldguide_template_cache = (mtime, path.read_text(encoding="utf-8"))
-    return _fieldguide_template_cache[1]
+    return _cached_web_html("fieldguide.html")
 
 
 @app.get("/ui/fieldguide", response_class=HTMLResponse)
@@ -2302,10 +2341,7 @@ def ui_fieldguide(request: Request) -> HTMLResponse:
     html = _fieldguide_html_template().replace("{{EMAIL}}", html_escape(email))
     # Personalized (email inject) → private browser cache only. Short TTL so
     # deploys show up without a hard refresh; fonts/CSS carry the long cache.
-    return HTMLResponse(
-        html,
-        headers={"Cache-Control": "private, max-age=300"},
-    )
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 # ---------------------------------------------------------------------------
@@ -2972,7 +3008,8 @@ def _serve_morning_html(name: str, email: str) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+    html = _cached_web_html(name).replace("{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/morning", response_class=HTMLResponse)
@@ -3417,7 +3454,8 @@ def ui_jobcheck_page(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+    html = _cached_web_html("jobcheck.html").replace("{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/api/jobcheck/jobs")
