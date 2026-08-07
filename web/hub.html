@@ -126,7 +126,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r61</b> · Aug 7, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r62</b> · Aug 7, 2026</span>
         </div>
       </div>
     </div>
@@ -184,6 +184,8 @@
   const EMAIL = {{EMAIL_JSON}};
   const RECENT_KEY = "gvc_hub_recent_v1";
   const BADGE_MS = 60 * 1000;
+  const REFRESH_MIN_MS = 30 * 1000;
+  let lastRefreshAt = 0;
 
   let payload = null;
   let drawerOpen = false;
@@ -776,19 +778,24 @@
     renderAll();
   }
 
-  async function refreshBadges() {
+  async function refreshBadges(force) {
     if (wantDemo) return;
+    const now = Date.now();
+    if (!force && lastRefreshAt && (now - lastRefreshAt) < REFRESH_MIN_MS) return;
+    lastRefreshAt = now;
     try {
-      const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
+      // Light poll — badges/needs/queue only. Full /ui/api/hub re-hits Cloud
+      // Logging activity on every tick; that made an idle hub feel heavy.
+      const res = await fetch("/ui/api/hub/refresh", { credentials: "same-origin" });
       if (!res.ok) return;
       const next = await res.json();
+      if (next.ok === false && !next.badges && !(next.needs || []).length) return;
       payload.badges = next.badges || {};
       payload.needs = next.needs || payload.needs;
       payload.needs_clear = next.needs_clear;
       payload.summary = next.summary || payload.summary;
       payload.metrics = next.metrics || payload.metrics;
       payload.queue = next.queue || payload.queue;
-      payload.pinned = next.pinned || payload.pinned;
       renderUserChrome();
       renderNav($("railnav"), $("railsearch").value);
       renderNav($("drawernav"), $("drawersearch").value);
@@ -804,6 +811,7 @@
   wireChrome();
   fetchPayload()
     .then(() => {
+      lastRefreshAt = Date.now();
       if (wantDemo) {
         payload = demoPayload();
         renderAll();
@@ -819,8 +827,8 @@
       if (wrap) wrap.hidden = true;
     });
 
-  setInterval(refreshBadges, BADGE_MS);
-  window.addEventListener("focus", refreshBadges);
+  setInterval(() => refreshBadges(false), BADGE_MS);
+  window.addEventListener("focus", () => refreshBadges(false));
 
   fetch("/ui/api/monday/warm", {
     method: "POST", credentials: "same-origin", keepalive: true

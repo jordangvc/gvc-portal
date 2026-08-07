@@ -11,11 +11,13 @@
     margin: var(--gvc-space-4) 0 var(--gvc-space-6);
     font-size: var(--gvc-fs-small); color: var(--gvc-muted);
   }
-  .tr-path b {
+  .tr-path b,
+  .tr-path a {
     background: var(--gvc-surface); border: 1px solid var(--gvc-line);
     border-radius: 999px; padding: 4px 10px; color: var(--gvc-ink);
-    font-weight: 600;
+    font-weight: 600; text-decoration: none;
   }
+  .tr-path a:hover { border-color: var(--gvc-green); color: var(--gvc-green-dark); }
   .tr-path span { opacity: .55; }
   .tr-role {
     display: inline-flex; align-items: center; gap: 8px;
@@ -104,13 +106,13 @@
     How work becomes cash at GVC. Every tool sits on this spine:
   </div>
   <div class="tr-path" aria-label="Money path">
-    <b>Takeoff</b><span>→</span>
-    <b>Estimate</b><span>→</span>
-    <b>Job Start</b><span>→</span>
-    <b>Job Check</b><span>→</span>
-    <b>Change Orders</b><span>→</span>
-    <b>Invoice</b><span>→</span>
-    <b>Paid</b>
+    <a href="/ui/takeoff">Takeoff</a><span>→</span>
+    <a href="/ui/estimate">Estimate</a><span>→</span>
+    <a href="/ui/jobstart">Job Start</a><span>→</span>
+    <a href="/ui/jobcheck">Job Check</a><span>→</span>
+    <a href="/ui/change-order">Change Orders</a><span>→</span>
+    <a href="/ui/invoice">Invoice</a><span>→</span>
+    <a href="/ui/check">Paid</a>
   </div>
 
   <p class="tr-progress" id="progress">—</p>
