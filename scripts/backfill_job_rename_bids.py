@@ -152,17 +152,24 @@ def build_plans(
     """Look up missing location facts, then plan each eligible Bid row."""
     plans: list[dict] = []
     for row in rows:
+        customer = row.get("customer") or ""
+        title_kwargs = rename_enrich.job_title_kwargs_from_monday(
+            status=row.get("project_type") or "",
+            customer=customer,
+            job_title=row.get("job_title") or "",
+        )
         plan = rename_enrich.plan_enriched_row(
             name=row["name"],
             location_text=row.get("location"),
             location_value_json=row.get("location_value_json"),
             location_column=row.get("location_column"),
-            customer=row.get("customer"),
+            customer=customer,
             item_id=row["item_id"],
             board="bid_board",
             geocode=geocode,
             geocode_street_fn=geocode_street_fn,
             reverse_geocode_fn=reverse_geocode_fn,
+            **title_kwargs,
         )
         plan["stage"] = row.get("stage") or ""
         plans.append(plan)
