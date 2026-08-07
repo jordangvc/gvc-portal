@@ -84,9 +84,23 @@ def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
         "project_number": None,
     })
     assert item["invoice_href"] == (
-        "/ui/invoice?monday_item_id=20&q=No%20number%20yet"
+        "/ui/invoice?monday_item_id=20"
     )
-    assert "monday_item_id" in item["note"]
+    assert "linked Projects item" in item["note"]
+
+
+def test_shape_ready_to_invoice_ops_only_uses_search_q():
+    """Ops pulse must NOT become monday_item_id — invoice lookup is Projects-only."""
+    item = bq.shape_ready_to_invoice({
+        "item_id": 10,
+        "name": "Ops only job",
+        "url": "https://monday.example/10",
+        "project_item_id": None,
+        "project_number": None,
+    })
+    assert item["invoice_href"] == "/ui/invoice?q=Ops%20only%20job"
+    assert "monday_item_id" not in item["invoice_href"]
+    assert "No Projects link" in item["note"]
 
 
 def test_shape_accepted_bid_needs_handoff():
