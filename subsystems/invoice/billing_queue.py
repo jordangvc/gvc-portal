@@ -44,18 +44,20 @@ def shape_ready_to_invoice(row: dict) -> dict:
     """
     Ops Ready-to-Invoice row → hub card.
 
-    Primary CTA opens the invoice form (project # when known, else the
-    linked Projects monday_item_id, else the Ops item id as a last resort).
+    Primary CTA opens the invoice form via Project # and/or the linked
+    Projects monday_item_id. Never passes the Ops item id as monday_item_id
+    — invoice lookup builds prefills from the Projects board only.
     """
     project_number = _clean(row.get("project_number"))
     project_item_id = row.get("project_item_id")
     ops_item_id = row.get("item_id")
-    # Prefer Projects item for monday_item_id — that's what invoice lookup resolves.
-    monday_for_invoice = project_item_id or ops_item_id
+    job_q = _clean(row.get("name")) or _clean(row.get("project_name"))
+    # Projects board id only — Ops pulses 404 / empty-prefill on invoice lookup.
+    monday_for_invoice = project_item_id or None
     href = invoice_href(
         project_number=project_number,
         monday_item_id=monday_for_invoice,
-        q=_clean(row.get("name")) or _clean(row.get("project_name")),
+        q=None if (project_number or monday_for_invoice) else job_q,
     )
     status_labels = [s for s in (
         _clean(row.get("billable")) and f"Billable: {row.get('billable')}",
@@ -63,6 +65,15 @@ def shape_ready_to_invoice(row: dict) -> dict:
         _clean(row.get("project_status")),
         _clean(row.get("ready_date")) and f"Ready {row.get('ready_date')}",
     ) if s]
+    if project_number:
+        note = "Project # known — invoice form will look it up."
+    elif monday_for_invoice:
+        note = "Opens invoice from the linked Projects item."
+    else:
+        note = (
+            "No Projects link yet — opens invoice search with the job name. "
+            "Link the Ops task to Projects so one-tap invoice works."
+        )
     return {
         "kind": "ready_to_invoice",
         "name": _clean(row.get("name")) or "(unnamed)",
@@ -84,12 +95,7 @@ def shape_ready_to_invoice(row: dict) -> dict:
         "jobstart_href": None,
         "primary_href": href,
         "primary_label": "Open invoice",
-        "note": (
-            "Project # known — invoice form will look it up."
-            if project_number else
-            "No Project # yet — opens invoice with monday_item_id "
-            "(invoice page may need a small update to auto-load from that)."
-        ),
+        "note": note,
     }
 
 

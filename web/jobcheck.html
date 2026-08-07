@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Job Check</title>
+<script>
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
   /* Job Check page — behavior/layout only. Brand tokens + topbar come from gvc.css. */
@@ -68,11 +82,14 @@
     gap: 8px; flex-wrap: wrap; }
   .field > label, .field-label-row > label { font-size: var(--gvc-fs-small); font-weight: 700;
     text-transform: uppercase; letter-spacing: .03em; color: var(--gvc-muted); }
+  .fieldguide-links { display: inline-flex; align-items: center; gap: 2px; flex-shrink: 0; }
   .field .howto { font-size: var(--gvc-fs-caption); font-weight: 600; text-transform: none;
     letter-spacing: 0; color: var(--gvc-green-dark); text-decoration: underline;
     min-height: 40px; min-width: 40px; display: inline-flex; align-items: center;
     justify-content: center; padding: 4px 10px; flex-shrink: 0; }
   .field .howto:hover { color: var(--gvc-green); }
+  .field .howto.coach { color: var(--gvc-muted); text-decoration: none; }
+  .field .howto.coach:hover { color: var(--gvc-green-dark); text-decoration: underline; }
   .field.dirty > .field-label-row > label::after,
   .field.dirty > label::after,
   .field.dirty .sp__label::after { content: " •"; color: var(--gvc-gold-dark); }
@@ -157,6 +174,7 @@
     <span class="gvc-topbar-title">Job Check</span>
     <div class="gvc-topbar-right">
       <div id="health">Checking service…</div>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -237,12 +255,23 @@
   </div>
 </div>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script src="/ui/gvc-status-picker.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
   (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+
+function fieldguideLinks(anchor) {
+  const a = esc(anchor);
+  /* Open in a new tab so mid-edit Job Check values are never lost. */
+  return `<span class="fieldguide-links">` +
+    `<a class="howto" href="/ui/fieldguide${a}" target="_blank" rel="noopener">How-to</a>` +
+    `<a class="howto coach" href="/ui/fieldguide?coach=1${a}" target="_blank" rel="noopener">Coach</a>` +
+    `</span>`;
+}
 
 let jobs = [];             // dropdown rows
 let detail = null;         // current job detail payload
@@ -278,7 +307,10 @@ function renderJobList() {
     ? hits.map(jobButton).join("")
     : `<div class="hint">No active job matches "${esc(q)}".</div>`;
   document.querySelectorAll("#joblist .jobbtn").forEach((b) =>
-    b.addEventListener("click", () => loadJob(+b.dataset.id)));
+    b.addEventListener("click", () => {
+      if (!confirmLeaveDirty("Switch jobs")) return;
+      loadJob(+b.dataset.id);
+    }));
 }
 
 async function loadJobs() {
@@ -373,9 +405,7 @@ function fieldHtml(col) {
   } else {
     control = `<input type="text" data-col="${esc(key)}" value="${esc(v || "")}"${disabled ? " disabled" : ""} />`;
   }
-  const howto = col.fieldguide_anchor
-    ? `<a class="howto" href="/ui/fieldguide${esc(col.fieldguide_anchor)}" target="_self">How-to</a>`
-    : "";
+  const howto = col.fieldguide_anchor ? fieldguideLinks(col.fieldguide_anchor) : "";
   // Status + date own their mono-kicker label inside .sp. Other types keep the field label.
   if (col.type === "status" || col.type === "date") {
     const howtoRow = howto
@@ -395,6 +425,24 @@ function isDirty(key) {
   const a = baseline[key] ?? "";
   const b = current[key] ?? "";
   return String(a) !== String(b);
+}
+
+function dirtyCount() {
+  if (!detail) return 0;
+  let n = 0;
+  (detail.columns || []).forEach((c) => {
+    if (c.writable === false) return;
+    if (isDirty(fieldKey(c))) n++;
+  });
+  return n;
+}
+
+function confirmLeaveDirty(action) {
+  const n = dirtyCount();
+  if (!n) return true;
+  return window.confirm(
+    `You have ${n} unsaved change${n === 1 ? "" : "s"} on this job. ${action} anyway?`
+  );
 }
 
 function refreshDirtyUi() {
@@ -681,6 +729,7 @@ function applyPhotoReady(pr) {
 }
 
 function backToList() {
+  if (!confirmLeaveDirty("Leave this job")) return;
   detail = null;
   $("#ctxcard").style.display = "none";
   $("#formcard").style.display = "none";
@@ -974,6 +1023,11 @@ $("#linkinput").addEventListener("keydown", (e) => {
     e.preventDefault();
     $("#linkbtn").click();
   }
+});
+window.addEventListener("beforeunload", (e) => {
+  if (!dirtyCount()) return;
+  e.preventDefault();
+  e.returnValue = "";
 });
 checkHealth();
 loadJobs();

@@ -25,6 +25,7 @@ def test_curated_procedures_present():
         "framing", "hang", "scrape", "finish", "level5-skim", "cleanout",
         "act", "firestop", "preboard-walk", "ratedwalls", "changeorder",
         "stock-drywall", "qc-walk", "jobstart-firstday",
+        "closeout-rhythm", "scaffold-lifts", "job-conditions", "window-returns",
     }
     assert required <= set(fg_coach.PROCEDURE_COACH.keys())
     for proc_id, entry in fg_coach.PROCEDURE_COACH.items():
