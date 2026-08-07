@@ -8,6 +8,7 @@ role-shaped zeros and a clear or soft summary line.
 from __future__ import annotations
 
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -889,15 +890,40 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     home_href = hub_nav.home_tool_href(home_tool, role)
     home_tool_name = hub_nav.home_tool_label(home_tool)
 
-    brief = _try_morning_brief(email) if "morning" in feats else None
-    # Bid/invoice queues feed owner, office, gm, and sales homes.
-    billing = _try_billing() if role in ("owner", "office", "gm", "sales") else None
-    pulse = None
-    if role == "owner" and ("morning_owner" in feats or email in access.superadmin_emails()):
-        pulse = _try_owner_pulse(email)
-    gm_view = None
-    if role == "gm" and "morning_gm" in feats:
-        gm_view = _try_gm_view(email)
+    # Fan out independent Monday/enrichment calls — serial stack was the
+    # main Hub first-paint wait for office/sales/owner (brief + billing + pulse).
+    want_brief = "morning" in feats
+    want_billing = role in ("owner", "office", "gm", "sales")
+    want_pulse = (
+        role == "owner"
+        and ("morning_owner" in feats or email in access.superadmin_emails())
+    )
+    want_gm = role == "gm" and "morning_gm" in feats
+
+    brief = billing = pulse = gm_view = None
+    jobs: dict[str, Any] = {}
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        futs = {}
+        if want_brief:
+            futs[pool.submit(_try_morning_brief, email)] = "brief"
+        if want_billing:
+            futs[pool.submit(_try_billing)] = "billing"
+        if want_pulse:
+            futs[pool.submit(_try_owner_pulse, email)] = "pulse"
+        if want_gm:
+            futs[pool.submit(_try_gm_view, email)] = "gm_view"
+        for fut in as_completed(futs):
+            key = futs[fut]
+            try:
+                jobs[key] = fut.result()
+            except Exception as exc:  # noqa: BLE001 — _try_* already soft-fails
+                print(f"[hub] parallel {key} failed: {type(exc).__name__}: {exc}",
+                      file=sys.stderr)
+                jobs[key] = None
+    brief = jobs.get("brief")
+    billing = jobs.get("billing")
+    pulse = jobs.get("pulse")
+    gm_view = jobs.get("gm_view")
 
     if role == "owner":
         shaped = _build_owner(email, pulse, billing, brief)
