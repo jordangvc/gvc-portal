@@ -175,7 +175,7 @@
       <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
         <div><label>Search — or Monday Project URL</label>
           <input id="project-search" name="project_search" autocomplete="off"
-            placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, C-005…" /></div>
+            placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, PRO-2026-…" /></div>
         <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
       </div>
       <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
@@ -184,7 +184,7 @@
         <summary style="cursor:pointer;font-size:var(--gvc-fs-caption);color:var(--gvc-muted);font-weight:600;">Advanced: Project # only</summary>
         <div class="grid" style="grid-template-columns: 1fr auto; align-items: end; margin-top:8px;">
           <div><label>Project # <span class="opt">(Projects board)</span></label>
-            <input name="project_number_lookup" placeholder="C-005 or MV-001" /></div>
+            <input name="project_number_lookup" placeholder="PRO-2026-0807-001 or 2026-0807-001" /></div>
           <div><button type="button" class="btn secondary small" id="btn-prefill-pn">Look up Project #</button></div>
         </div>
       </details>
@@ -1234,8 +1234,15 @@ async function applyLookupResponse(r, label) {
     (m.url ? " (<a href='" + escapeHtml(m.url) + "' target='_blank' rel='noopener'>open project</a>)" : "") +
     ". " + escapeHtml(notes);
   const basePn = ((prefill.job && prefill.job.project_number) || label || "").trim();
-  if (basePn && typeof loadBillableCos === "function") {
-    await loadBillableCos(basePn);
+  if (basePn) {
+    // Lookup now bundles unbilled COs (parallel with Drive sidecar). Prefer
+    // that payload so we skip a second /billable-cos round-trip. Refresh /
+    // re-load still uses loadBillableCos().
+    if (Array.isArray(body.change_orders)) {
+      renderBillableCos(body.change_orders);
+    } else if (typeof loadBillableCos === "function") {
+      await loadBillableCos(basePn);
+    }
     const coDeepLink = pendingCoFromUrl;
     if (coDeepLink) {
       pendingCoFromUrl = null;
