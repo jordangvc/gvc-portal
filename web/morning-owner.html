@@ -90,6 +90,9 @@ async function load(){
   }
 }
 load();
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(function () {});
 </script>
 </body>
 </html>

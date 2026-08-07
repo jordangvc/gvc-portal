@@ -121,6 +121,14 @@
   }
   #tradesection h2 { margin-top: 0; }
   #dirtycount { font-size: var(--gvc-fs-small); color: var(--gvc-muted); white-space: nowrap; }
+  #saveflash {
+    flex: 1 1 8rem; font-size: var(--gvc-fs-small); line-height: 1.3; min-width: 0;
+    display: none;
+  }
+  #saveflash.show { display: block; }
+  #saveflash.ok { color: var(--gvc-green-dark, var(--gvc-green)); font-weight: 600; }
+  #saveflash.err { color: #8B1E1E; font-weight: 600; }
+  #saveflash.warn { color: var(--gvc-gold-dark); font-weight: 600; }
 
   #linkpanel { margin: 12px 0 16px; padding: 12px 14px; border-radius: var(--gvc-r);
     background: var(--warn-bg); border: 1px solid var(--warn-line); display: none; }
@@ -251,6 +259,7 @@
 <div class="savebar" id="savebar">
   <div class="inner">
     <span id="dirtycount">No changes yet</span>
+    <span id="saveflash" aria-live="polite"></span>
     <button class="btn gold" id="save" type="button" disabled>Save to Monday</button>
   </div>
 </div>
@@ -283,9 +292,26 @@ function showStatus(kind, html) {
   const el = $("#status");
   el.className = "show " + kind;
   el.innerHTML = html;
+  const flash = $("#saveflash");
+  const onForm = !!(detail && $("#savebar") && $("#savebar").classList.contains("show"));
+  if (flash && onForm && (kind === "ok" || kind === "err" || kind === "warn")) {
+    const tmp = document.createElement("div");
+    tmp.innerHTML = html;
+    flash.textContent = (tmp.textContent || "").replace(/\s+/g, " ").trim();
+    flash.className = "show " + kind;
+    /* Success stays on the chips — don't yank the phone to the top status. */
+    if (kind === "ok") return;
+  } else if (flash) {
+    flash.className = "";
+    flash.textContent = "";
+  }
   el.scrollIntoView({ block: "nearest" });
 }
-function hideStatus() { $("#status").className = ""; }
+function hideStatus() {
+  $("#status").className = "";
+  const flash = $("#saveflash");
+  if (flash) { flash.className = ""; flash.textContent = ""; }
+}
 
 /* ---------- job list ---------- */
 
@@ -325,10 +351,29 @@ async function loadJobs() {
     }
     jobs = body.jobs || [];
     renderJobList();
+    await bootJobFromUrl();
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}`);
     $("#joblist").innerHTML = `<div class="hint">Job list unavailable.</div>`;
   }
+}
+
+/** Hub / morning deep-link: /ui/jobcheck?item=<monday_item_id> */
+async function bootJobFromUrl() {
+  const params = new URLSearchParams(location.search);
+  const raw = (
+    params.get("item") || params.get("item_id") || params.get("monday_item_id") || ""
+  ).trim();
+  if (!raw) return;
+  const id = parseMondayItemId(raw);
+  if (!id) {
+    showStatus("err", `That Job Check link doesn't look like a Monday item id (${esc(raw)}). Pick a job below.`);
+    return;
+  }
+  try {
+    history.replaceState(null, "", "/ui/jobcheck");
+  } catch (_) { /* ignore */ }
+  await loadJob(id);
 }
 
 /* ---------- job detail + form ---------- */
@@ -1029,6 +1074,10 @@ window.addEventListener("beforeunload", (e) => {
   e.preventDefault();
   e.returnValue = "";
 });
+/* Warm Monday snapshot for this page's job list (Hub also warms; belt+suspenders). */
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(() => {});
 checkHealth();
 loadJobs();
 </script>

@@ -89,6 +89,12 @@
   * { box-sizing: border-box; }
   body { margin:0; background:var(--bg); color:var(--ink); font-family:var(--sans); font-size:16px; line-height:1.55; -webkit-text-size-adjust:100%; }
 
+  /* Sticky stack height — JS syncStickyOffsets() updates these when the
+     controlbar wraps on a narrow phone. */
+  :root {
+    --fm-controlbar-h: 58px;
+    --fm-sticky-stack: 120px;
+  }
 
   /* ---------- control bar (back + detail level) ---------- */
   .controlbar {
@@ -180,7 +186,7 @@
 
   /* ---------- checklist run bar (per-job, resumable) ---------- */
   .runbar {
-    display:none; position:sticky; top:58px; z-index:29;
+    display:none; position:sticky; top:var(--fm-controlbar-h); z-index:29;
     background:var(--green-soft); border-bottom:1px solid var(--line);
     padding:9px 16px; gap:10px; align-items:center; flex-wrap:wrap;
   }
@@ -339,7 +345,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   .continue-card .cc-btn:focus-visible { outline:2px solid var(--gold); outline-offset:2px; }
 
   .home-toolbar {
-    position:sticky; top:58px; z-index:20; background:var(--bg);
+    position:sticky; top:var(--fm-controlbar-h); z-index:20; background:var(--bg);
     padding:12px 0 14px; margin:0 0 8px;
     border-bottom:1px solid var(--line-soft);
   }
@@ -416,16 +422,16 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   .plainwords p b { color:var(--ink); }
 
   .block { margin-bottom:26px; }
-  h3 { font-family:var(--serif); font-size:19px; letter-spacing:-.005em; margin:0 0 4px; font-weight:700; line-height:1.2; padding-bottom:7px; border-bottom:2px solid var(--line); scroll-margin-top:80px; }
+  h3 { font-family:var(--serif); font-size:19px; letter-spacing:-.005em; margin:0 0 4px; font-weight:700; line-height:1.2; padding-bottom:7px; border-bottom:2px solid var(--line); scroll-margin-top:calc(var(--fm-sticky-stack) + 16px); }
   h3 + .sub { margin:8px 0 13px; color:var(--muted); font-size:14.5px; }
   h3 + ul, h3 + ol, h3 + .note, h3 + .table-wrap, h3 + .expert { margin-top:13px; }
-  h4 { font-size:15px; margin:19px 0 8px; font-weight:700; color:var(--green-deep); scroll-margin-top:80px; }
+  h4 { font-size:15px; margin:19px 0 8px; font-weight:700; color:var(--green-deep); scroll-margin-top:calc(var(--fm-sticky-stack) + 16px); }
 
   /* ---------- expert layer ---------- */
   .expert {
     background:var(--expert-soft); border:1px solid var(--line);
     border-left:4px solid var(--expert); border-radius:10px;
-    padding:16px 17px; margin:16px 0; scroll-margin-top:80px;
+    padding:16px 17px; margin:16px 0; scroll-margin-top:calc(var(--fm-sticky-stack) + 16px);
   }
   .expert > .tag {
     font-family:var(--mono); font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
@@ -5631,6 +5637,24 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     /* Defined below; referenced by show() which is declared first. */
     var onDocShown = function () {};
 
+    function syncStickyOffsets() {
+      var cb = document.querySelector(".controlbar");
+      var h = (cb && cb.offsetHeight) || 58;
+      document.documentElement.style.setProperty("--fm-controlbar-h", h + "px");
+      var rb = document.querySelector(".runbar");
+      var rh = 0;
+      if (rb && body.classList.contains("in-proc")) {
+        var disp = window.getComputedStyle(rb).display;
+        if (disp !== "none") { rh = rb.offsetHeight || 0; }
+      }
+      document.documentElement.style.setProperty("--fm-sticky-stack", (h + rh) + "px");
+    }
+    window.addEventListener("resize", syncStickyOffsets);
+    if (window.ResizeObserver) {
+      var cbEl = document.querySelector(".controlbar");
+      if (cbEl) { new ResizeObserver(syncStickyOffsets).observe(cbEl); }
+    }
+
     /* ---------- view switching ---------- */
     function show(id, anchor, push) {
       var target = document.getElementById(id);
@@ -5641,6 +5665,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       body.classList.toggle("in-proc", NON_PROC.indexOf(target.id) === -1);
       currentDoc = target.id;
       onDocShown(target.id);
+      syncStickyOffsets();
 
       var hash = "#" + target.id + (anchor ? "/" + anchor : "");
       if (push) {
