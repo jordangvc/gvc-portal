@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 🔁 AUTO-MERGE cursor/* PRs — BUILT 2026-08-07
+Jordan: stop hunting PRs / clicking Merge when agents ship. Repo settings flipped
+(Allow auto-merge + delete branch on merge). Workflow
+`.github/workflows/auto-merge-cursor-prs.yml` squash-merges ready non-draft
+`cursor/*` → `master` after compileall+pytest; master push still auto-deploys.
+Hold = draft or label `hold`/`do-not-merge`. Runbook: `docs/ops/auto-merge-setup.md`.
+If merge job 403s: Settings → Actions → Workflow permissions → Read and write.
+
 ## ⚡ Hub first-paint two-step load (r64) — BUILT 2026-08-07
 Cold hub open no longer waits on Cloud Logging activity + pins before showing
 live needs/metrics/queue. `web/hub.html` `fetchPayload` calls
