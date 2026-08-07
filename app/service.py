@@ -26,7 +26,7 @@ import os
 import re
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from html import escape as html_escape
 from pathlib import Path
 from typing import Literal, Optional
@@ -94,6 +94,7 @@ from orchestrators import billing_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
+from adapters.monday import billing as monday_billing
 from adapters.monday import jobstart as monday_jobstart
 from adapters.monday import morning as monday_morning
 from adapters.monday import jobcheck as monday_jobcheck
@@ -189,15 +190,15 @@ portal_store.MISSING_STORE_HOOK = _grants_store_missing_alert
 
 def _warm_monday_caches() -> dict:
     """
-    Best-effort: force-refresh Job Start / Morning / Job Check list caches
-    and persist them to GCS so cold Cloud Run instances stay fast.
+    Best-effort: force-refresh Job Start / Morning / Job Check / Billing list
+    caches and persist them to GCS so cold Cloud Run instances stay fast.
     """
     from adapters.monday import cache as monday_cache
 
     warmed: list[str] = []
     errors: dict[str, str] = {}
     try:
-        mc = MondayClient()
+        MondayClient()  # fail fast if token/config missing
     except Exception as e:  # noqa: BLE001 — warm is best-effort
         msg = f"{type(e).__name__}: {e}"
         print(f"[monday:warm] client init failed: {msg}", file=sys.stderr)
@@ -205,15 +206,37 @@ def _warm_monday_caches() -> dict:
                 "cache": monday_cache.stats()}
 
     # Always hit Monday (refresh), not the SWR get path — otherwise a fresh L1
-    # would skip the write to durable L2 snapshots.
-    for key, factory in (
-        ("list:jobstart:bids",
-         lambda: monday_jobstart._fetch_bids_uncached(mc)),
-        ("list:morning:ops_items",
-         lambda: monday_morning._fetch_ops_items_uncached(mc)),
-        ("list:jobcheck:active_jobs",
-         lambda: monday_jobcheck._fetch_active_jobs_uncached(mc)),
-    ):
+    # would skip the write to durable L2 snapshots. Own client per key so the
+    # parallel refresh can't share a non-thread-safe session.
+    def _factory_jobstart():
+        return monday_jobstart._fetch_bids_uncached(MondayClient())
+
+    def _factory_morning():
+        return monday_morning._fetch_ops_items_uncached(MondayClient())
+
+    def _factory_jobcheck():
+        return monday_jobcheck._fetch_active_jobs_uncached(MondayClient())
+
+    def _factory_billing_ready():
+        return monday_billing._fetch_ready_to_invoice_uncached(MondayClient())
+
+    def _factory_billing_bids():
+        return monday_billing._fetch_accepted_bids_uncached(MondayClient())
+
+    def _factory_billing_projects():
+        return monday_billing._fetch_projects_billing_uncached(
+            MondayClient(), limit=75)
+
+    jobs = (
+        ("list:jobstart:bids", _factory_jobstart),
+        ("list:morning:ops_items", _factory_morning),
+        ("list:jobcheck:active_jobs", _factory_jobcheck),
+        ("list:billing:ready_to_invoice", _factory_billing_ready),
+        ("list:billing:accepted_bids", _factory_billing_bids),
+        ("list:billing:projects_billing:75", _factory_billing_projects),
+    )
+
+    def _refresh_one(key: str, factory) -> tuple[str, Optional[str]]:
         try:
             monday_cache.refresh(
                 key,
@@ -221,11 +244,20 @@ def _warm_monday_caches() -> dict:
                 ttl=monday_cache.list_ttl(),
                 stale_ttl=monday_cache.stale_ttl(),
             )
-            warmed.append(key)
+            return key, None
         except Exception as e:  # noqa: BLE001 — keep warming the rest
             msg = f"{type(e).__name__}: {e}"
-            errors[key] = msg
             print(f"[monday:warm] {key} failed: {msg}", file=sys.stderr)
+            return key, msg
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futs = [pool.submit(_refresh_one, key, factory) for key, factory in jobs]
+        for fut in as_completed(futs):
+            key, err = fut.result()
+            if err:
+                errors[key] = err
+            else:
+                warmed.append(key)
 
     return {
         "ok": not errors,
