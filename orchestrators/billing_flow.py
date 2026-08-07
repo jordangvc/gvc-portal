@@ -20,7 +20,7 @@ Routes (wired by integrator in app/service.py, not this module):
 from __future__ import annotations
 
 import sys
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -61,9 +61,6 @@ def billing_hub_payload(mc=None) -> dict:
     Each queue item includes name, ids, builder/supervisor/location when
     available, status_labels, monday_url, and portal deep links
     (invoice_href / estimate_href / jobstart_href / primary_href).
-
-    The three Monday list fetches run in parallel (separate clients —
-    requests.Session is not thread-safe). Wall-clock ≈ max(queue) on cold.
     """
     notes: list[str] = []
     queues = {
@@ -73,56 +70,69 @@ def billing_hub_payload(mc=None) -> dict:
     }
     ready_err = False
 
-    # Injected `mc` (tests) is reused on every leg; live path gets one client
-    # per leg so parallel HTTP doesn't share a Session.
-    c_ready = _client(mc)
-    c_bids = mc if mc is not None else MondayClient()
-    c_proj = mc if mc is not None else MondayClient()
-
-    def _load_ready():
-        raw = monday_billing.fetch_ready_to_invoice(c_ready)
+    # Injected clients (tests) stay serial so fakes need not be thread-safe.
+    # Live path fans the three Monday walks out — Hub + Billing Hub first paint.
+    def _load_ready(client: Any) -> list:
+        raw = monday_billing.fetch_ready_to_invoice(client)
         return [bq.shape_ready_to_invoice(r) for r in (raw or [])]
 
-    def _load_bids():
-        raw = monday_billing.fetch_accepted_bids(c_bids)
+    def _load_bids(client: Any) -> list:
+        raw = monday_billing.fetch_accepted_bids(client)
         return [bq.shape_accepted_bid(r) for r in (raw or [])]
 
-    def _load_projects():
-        raw = monday_billing.fetch_projects_billing(c_proj)
+    def _load_projects(client: Any) -> list:
+        raw = monday_billing.fetch_projects_billing(client)
         return [bq.shape_project_billing(r) for r in (raw or [])]
 
-    with ThreadPoolExecutor(max_workers=3) as pool:
-        fut_ready = pool.submit(_load_ready)
-        fut_bids = pool.submit(_load_bids)
-        fut_proj = pool.submit(_load_projects)
+    note_by_key = {
+        "ready_to_invoice": (
+            "Couldn't load Ready to Invoice from Operations "
+            "({err}). Check Monday token / board access."
+        ),
+        "accepted_bids": (
+            "Couldn't load Accepted bids ({err}). "
+            "Job Start's Bid Board fetch may be unavailable."
+        ),
+        "projects_billing": (
+            "Couldn't load Projects invoice-status list "
+            "({err}). Optional secondary queue skipped."
+        ),
+    }
+    loaders = {
+        "ready_to_invoice": _load_ready,
+        "accepted_bids": _load_bids,
+        "projects_billing": _load_projects,
+    }
 
+    def _run_one(key: str, client: Any) -> tuple[str, list, Optional[Exception]]:
         try:
-            queues["ready_to_invoice"] = fut_ready.result()
-        except Exception as exc:  # noqa: BLE001 — hub still loads other queues
+            return key, loaders[key](client), None
+        except Exception as exc:  # noqa: BLE001
+            print(f"[billing] {key} failed: {exc}", file=sys.stderr)
+            return key, [], exc
+
+    results: list[tuple[str, list, Optional[Exception]]]
+    if mc is not None:
+        # Injected clients (tests) stay serial — fakes need not be thread-safe.
+        client = _client(mc)
+        results = [_run_one(k, client) for k in loaders]
+    else:
+        # Live: three Monday walks in parallel (own client each).
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futs = [
+                pool.submit(_run_one, key, MondayClient())
+                for key in loaders
+            ]
+            results = [fut.result() for fut in as_completed(futs)]
+
+    for key, rows, exc in results:
+        queues[key] = rows
+        if exc is None:
+            continue
+        err = f"{type(exc).__name__}"
+        notes.append(note_by_key[key].format(err=err))
+        if key == "ready_to_invoice":
             ready_err = True
-            notes.append(
-                f"Couldn't load Ready to Invoice from Operations "
-                f"({type(exc).__name__}). Check Monday token / board access."
-            )
-            print(f"[billing] ready_to_invoice failed: {exc}", file=sys.stderr)
-
-        try:
-            queues["accepted_bids"] = fut_bids.result()
-        except Exception as exc:  # noqa: BLE001
-            notes.append(
-                f"Couldn't load Accepted bids ({type(exc).__name__}). "
-                "Job Start's Bid Board fetch may be unavailable."
-            )
-            print(f"[billing] accepted_bids failed: {exc}", file=sys.stderr)
-
-        try:
-            queues["projects_billing"] = fut_proj.result()
-        except Exception as exc:  # noqa: BLE001
-            notes.append(
-                f"Couldn't load Projects invoice-status list "
-                f"({type(exc).__name__}). Optional secondary queue skipped."
-            )
-            print(f"[billing] projects_billing failed: {exc}", file=sys.stderr)
 
     if not queues["ready_to_invoice"] and not ready_err:
         notes.append(

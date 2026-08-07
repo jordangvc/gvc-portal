@@ -26,10 +26,10 @@ import os
 import re
 import sys
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from html import escape as html_escape
 from pathlib import Path
-from typing import Any, Literal, Optional
+from typing import Literal, Optional
 
 import stripe
 from dotenv import load_dotenv
@@ -94,10 +94,13 @@ from orchestrators import billing_flow
 from subsystems.coi import template as coi_template
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
+from adapters.monday import billing as monday_billing
 from adapters.monday import jobstart as monday_jobstart
 from adapters.monday import morning as monday_morning
 from adapters.monday import jobcheck as monday_jobcheck
 from adapters.monday import search as monday_search
+from adapters.drive import DriveUploader
+from subsystems.estimate.revision import sidecar_filename
 from subsystems.invoice import correct as invoice_correct
 from adapters.stripe_invoice import preflight_stripe, void_stripe_invoice
 
@@ -189,37 +192,55 @@ def _warm_monday_caches() -> dict:
     """
     Best-effort: force-refresh Job Start / Morning / Job Check / Billing list
     caches and persist them to GCS so cold Cloud Run instances stay fast.
-
-    Legs run in parallel with separate MondayClient sessions (Session is not
-    thread-safe). Accepted-bids is omitted — it derives from warm jobstart bids.
     """
     from adapters.monday import cache as monday_cache
-    from adapters.monday import billing as monday_billing
 
     warmed: list[str] = []
     errors: dict[str, str] = {}
+    try:
+        MondayClient()  # fail fast if token/config missing
+    except Exception as e:  # noqa: BLE001 — warm is best-effort
+        msg = f"{type(e).__name__}: {e}"
+        print(f"[monday:warm] client init failed: {msg}", file=sys.stderr)
+        return {"ok": False, "warmed": [], "errors": {"client": msg},
+                "cache": monday_cache.stats()}
 
     # Always hit Monday (refresh), not the SWR get path — otherwise a fresh L1
-    # would skip the write to durable L2 snapshots.
-    specs: list[tuple[str, Any]] = [
-        ("list:jobstart:bids",
-         lambda mc: monday_jobstart._fetch_bids_uncached(mc)),
-        ("list:morning:ops_items",
-         lambda mc: monday_morning._fetch_ops_items_uncached(mc)),
-        ("list:jobcheck:active_jobs",
-         lambda mc: monday_jobcheck._fetch_active_jobs_uncached(mc)),
-        ("list:billing:ready_to_invoice",
-         lambda mc: monday_billing._fetch_ready_to_invoice_uncached(mc)),
-        ("list:billing:projects_billing:75",
-         lambda mc: monday_billing._fetch_projects_billing_uncached(mc, limit=75)),
-    ]
+    # would skip the write to durable L2 snapshots. Own client per key so the
+    # parallel refresh can't share a non-thread-safe session.
+    def _factory_jobstart():
+        return monday_jobstart._fetch_bids_uncached(MondayClient())
 
-    def _warm_one(key: str, factory) -> tuple[str, Optional[str]]:
+    def _factory_morning():
+        return monday_morning._fetch_ops_items_uncached(MondayClient())
+
+    def _factory_jobcheck():
+        return monday_jobcheck._fetch_active_jobs_uncached(MondayClient())
+
+    def _factory_billing_ready():
+        return monday_billing._fetch_ready_to_invoice_uncached(MondayClient())
+
+    def _factory_billing_bids():
+        return monday_billing._fetch_accepted_bids_uncached(MondayClient())
+
+    def _factory_billing_projects():
+        return monday_billing._fetch_projects_billing_uncached(
+            MondayClient(), limit=75)
+
+    jobs = (
+        ("list:jobstart:bids", _factory_jobstart),
+        ("list:morning:ops_items", _factory_morning),
+        ("list:jobcheck:active_jobs", _factory_jobcheck),
+        ("list:billing:ready_to_invoice", _factory_billing_ready),
+        ("list:billing:accepted_bids", _factory_billing_bids),
+        ("list:billing:projects_billing:75", _factory_billing_projects),
+    )
+
+    def _refresh_one(key: str, factory) -> tuple[str, Optional[str]]:
         try:
-            mc = MondayClient()
             monday_cache.refresh(
                 key,
-                lambda: factory(mc),
+                factory,
                 ttl=monday_cache.list_ttl(),
                 stale_ttl=monday_cache.stale_ttl(),
             )
@@ -229,9 +250,9 @@ def _warm_monday_caches() -> dict:
             print(f"[monday:warm] {key} failed: {msg}", file=sys.stderr)
             return key, msg
 
-    with ThreadPoolExecutor(max_workers=min(5, len(specs))) as pool:
-        futs = [pool.submit(_warm_one, key, factory) for key, factory in specs]
-        for fut in futs:
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        futs = [pool.submit(_refresh_one, key, factory) for key, factory in jobs]
+        for fut in as_completed(futs):
             key, err = fut.result()
             if err:
                 errors[key] = err
@@ -1504,7 +1525,8 @@ def ui_invoice_lookup(
             status_code=422,
             detail={"ok": False, "code": "BAD_PROJECT_NUMBER",
                     "detail": "Enter a Project #, paste a Monday URL, or pick a search result.",
-                    "advice": "Search by builder, address, city, or Project # (e.g. C-005)."},
+                    "advice": "Search by builder, address, city, or Project # "
+                              "(e.g. PRO-2026-0807-001 or 2026-0807-001)."},
         )
     try:
         mc = MondayClient()
@@ -1547,10 +1569,11 @@ def ui_invoice_lookup(
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Confirm the project exists on the Projects board."},
         )
-    # ---- Estimate $ import shortcut (opt-in, additive to `prefill`) ----
-    # Never blocks the lookup: a Drive hiccup or a project with no linked
-    # estimate just degrades to "not available" on the import card. Mirrors
-    # ui_estimate_lookup's revision-sidecar load (same sidecar file) below.
+    # ---- Estimate $ import + billable COs (parallel, both best-effort) ----
+    # Drive sidecar and Monday CO list are independent I/O. Running them
+    # together saves one RTT on the hot path; the UI used to await lookup
+    # then hit /billable-cos serially. Bundle COs in this response so the
+    # form can skip that second round-trip (refresh still uses /billable-cos).
     bid_snapshot = prefill.pop("_bid_snapshot", {}) or {}
     prefill_project_number = (prefill.get("job") or {}).get("project_number")
     est_no = None
@@ -1558,18 +1581,43 @@ def ui_invoice_lookup(
         est_no = for_estimate(prefill_project_number)
     elif bid_snapshot.get("estimate_number"):
         est_no = for_estimate(bid_snapshot["estimate_number"])
+    co_base = (prefill_project_number or pn or "").strip()
+
     sidecar = None
-    if est_no:
+    change_orders: list = []
+
+    def _load_estimate_sidecar() -> Optional[dict]:
+        if not est_no:
+            return None
         try:
-            from subsystems.estimate.revision import sidecar_filename
-            from adapters.drive import DriveUploader
             uploader = DriveUploader()
             hit = uploader.find_file_anywhere(sidecar_filename(est_no))
             if hit:
-                sidecar = uploader.download_json(hit["id"])
-        except Exception as e:  # noqa: BLE001 — the import shortcut is best-effort
+                return uploader.download_json(hit["id"])
+        except Exception as e:  # noqa: BLE001 — import shortcut is best-effort
             print(f"[ui:invoice-lookup] estimate sidecar load failed (non-fatal): {e}",
                   file=sys.stderr)
+        return None
+
+    def _load_billable_cos() -> list:
+        if not co_base:
+            return []
+        try:
+            return list(monday_co.list_unbilled_co_items(mc, co_base) or [])
+        except Exception as e:  # noqa: BLE001 — picker degrades empty, not fatal
+            print(f"[ui:invoice-lookup] billable COs load failed (non-fatal): {e}",
+                  file=sys.stderr)
+            return []
+
+    if est_no or co_base:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_sc = pool.submit(_load_estimate_sidecar) if est_no else None
+            fut_co = pool.submit(_load_billable_cos) if co_base else None
+            if fut_sc is not None:
+                sidecar = fut_sc.result()
+            if fut_co is not None:
+                change_orders = fut_co.result()
+
     prefill["estimate_import"] = invoice_estimate_import.build_estimate_import(
         estimate_number=est_no,
         monday_total=bid_snapshot.get("monday_total_raw"),
@@ -1609,8 +1657,9 @@ def ui_invoice_lookup(
         "invoice.lookup", actor=email,
         target=pn or str(parsed_id or ""),
         result="ok",
+        billable_cos=len(change_orders),
     )
-    return {"ok": True, "prefill": prefill}
+    return {"ok": True, "prefill": prefill, "change_orders": change_orders}
 
 
 @app.get("/ui/api/invoice/search")
@@ -2498,26 +2547,47 @@ def ui_change_order_form(request: Request) -> HTMLResponse:
 
 
 @app.get("/ui/api/change-order/lookup")
-def ui_change_order_lookup(request: Request, monday_url: str = "") -> dict:
+def ui_change_order_lookup(
+    request: Request,
+    monday_url: str = "",
+    project_number: str = "",
+) -> dict:
     """
-    Autofill helper: given a Monday Project item URL (or id), return the
-    client/job/site/estimate#/Drive-folder context + existing CO identifiers
-    (incl. `existing_cos` — the job's CO items with their status, so the form
-    can offer "Load for revision"), so the form fills itself from the single
-    source of truth. Read-only.
+    Autofill helper: given a Monday Project item URL/id OR a Project #,
+    return the client/job/site/estimate#/Drive-folder context + existing CO
+    identifiers (incl. `existing_cos` — the job's CO items with their status,
+    so the form can offer "Load for revision"). Read-only.
+
+    Prefer ``monday_url`` / item id when the caller already has one (skips
+    Project # probes). ``project_number`` uses find_project_by_number so a
+    typed PRO-/bare spine # does not pay for a full text search first.
     """
     require_feature(request, "change_order")
     item_id = _parse_monday_item_id(monday_url)
-    if not item_id:
+    pn = (project_number or "").strip()
+    if not item_id and not pn:
         raise HTTPException(
             status_code=422,
             detail={"ok": False, "code": "BAD_MONDAY_URL",
-                    "detail": "Couldn't find a Monday item id in that value.",
-                    "advice": "Paste the Project item's URL (it contains /pulses/<id>) "
-                              "or just the numeric item id."},
+                    "detail": "Couldn't find a Monday item id or Project #.",
+                    "advice": "Paste the Project item's URL (it contains /pulses/<id>), "
+                              "the numeric item id, or a Project # (e.g. PRO-2026-0807-001)."},
         )
     try:
-        ctx = monday_co.get_project_context(MondayClient(), item_id)
+        mc = MondayClient()
+        if not item_id and pn:
+            match = mc.find_project_by_number(pn)
+            if not match:
+                raise HTTPException(
+                    status_code=404,
+                    detail={"ok": False, "code": "PROJECT_NOT_FOUND",
+                            "detail": f"No project found with Project # '{pn}'.",
+                            "advice": "Try search by builder/address, or check the Projects board."},
+                )
+            item_id = int(match["item_id"])
+        ctx = monday_co.get_project_context(mc, item_id)
+    except HTTPException:
+        raise
     except MondayNotConfigured as e:
         raise HTTPException(
             status_code=503,

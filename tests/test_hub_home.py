@@ -102,11 +102,15 @@ def test_hub_payload_shape() -> None:
 
 
 def test_hub_brief_billing_parallel_contract() -> None:
+    """Master #94 fans brief/billing/pulse/gm — keep the contract honest."""
     src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
     chunk = src.split("def build_hub_payload")[1].split("def ")[0]
-    check("hub brief∥billing pool", "ThreadPoolExecutor(max_workers=2)" in chunk)
+    check("hub enrichment pool", "ThreadPoolExecutor(max_workers=4)" in chunk)
     check("submits morning brief", "pool.submit(_try_morning_brief" in chunk)
     check("submits billing", "pool.submit(_try_billing)" in chunk)
+    check("submits owner pulse", "pool.submit(_try_owner_pulse" in chunk)
+    check("submits gm view", "pool.submit(_try_gm_view" in chunk)
+    check("as_completed gather", "as_completed" in chunk)
 
 
 def test_hub_files_and_route() -> None:
@@ -114,7 +118,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r61 footer", ">r61<" in hub)
+    check("r59 footer", ">r59<" in hub)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)
