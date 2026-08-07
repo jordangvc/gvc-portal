@@ -474,6 +474,26 @@ def test_billing_hub_payload_shapes_queues():
         bf.monday_billing.fetch_projects_billing = orig_proj
 
 
+def test_billing_hub_payload_runs_queue_fetches_in_parallel():
+    """Source contract: three queue legs submit via ThreadPoolExecutor."""
+    src = (Path(__file__).resolve().parents[1] / "orchestrators" / "billing_flow.py").read_text()
+    chunk = src.split("def billing_hub_payload")[1].split("def _rich_search_available")[0]
+    assert "ThreadPoolExecutor(max_workers=3)" in chunk
+    assert "as_completed" in chunk
+    assert "loaders" in chunk
+    assert '_run_one' in chunk
+
+
+def test_warm_monday_includes_billing_keys():
+    src = (Path(__file__).resolve().parents[1] / "app" / "service.py").read_text()
+    chunk = src.split("def _warm_monday_caches")[1].split("def require_api_key")[0]
+    assert "list:billing:ready_to_invoice" in chunk
+    assert "list:billing:accepted_bids" in chunk
+    assert "list:billing:projects_billing:75" in chunk
+    assert "ThreadPoolExecutor" in chunk
+    assert "as_completed" in chunk
+
+
 def test_billing_hub_payload_survives_partial_failures():
     def boom(mc):
         raise RuntimeError("ops board unavailable")

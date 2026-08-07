@@ -101,6 +101,18 @@ def test_hub_payload_shape() -> None:
           payload.get("needs_clear") is False)
 
 
+def test_hub_brief_billing_parallel_contract() -> None:
+    """Master #94 fans brief/billing/pulse/gm — keep the contract honest."""
+    src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
+    chunk = src.split("def build_hub_payload")[1].split("def ")[0]
+    check("hub enrichment pool", "ThreadPoolExecutor(max_workers=4)" in chunk)
+    check("submits morning brief", "pool.submit(_try_morning_brief" in chunk)
+    check("submits billing", "pool.submit(_try_billing)" in chunk)
+    check("submits owner pulse", "pool.submit(_try_owner_pulse" in chunk)
+    check("submits gm view", "pool.submit(_try_gm_view" in chunk)
+    check("as_completed gather", "as_completed" in chunk)
+
+
 def test_hub_files_and_route() -> None:
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
@@ -293,6 +305,7 @@ if __name__ == "__main__":
     test_hub_nav_roles()
     test_hub_pins_validate()
     test_hub_payload_shape()
+    test_hub_brief_billing_parallel_contract()
     test_hub_files_and_route()
     test_need_urgent_flag()
     test_office_queue_ids_and_handoffs()
