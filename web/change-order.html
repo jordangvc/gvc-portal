@@ -483,6 +483,7 @@ async function run(mode) {
           html += `<div class="result-line">💰 <a href="${escapeHtml(billUrl)}" class="btn gold small">Bill this CO</a></div>`;
         }
       }
+      html += `<div class="result-line">Next: <a href="/ui/billing">Billing Hub</a> · <a href="/ui/jobcheck">Job Check</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // CO is now real (in Monday) — drop the draft
     }

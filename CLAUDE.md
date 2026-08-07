@@ -11,6 +11,11 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Morning → Job Check deep links + more next-steps (r63) — BUILT 2026-08-07
+- Morning Brief project cards + route stops link **Job Check `?item=`** (Ops id).
+- CO finalize + Paid by Check success get Billing / hub next-step lines.
+- Continues the r62 hub-refresh / click-through pass. Hub footer **r63**.
+
 ## ⚡ HUB light refresh + click-through polish (r62) — BUILT 2026-08-07
 Audit after Path strip (r61):
 - **Hub idle poll** no longer reloads full `/ui/api/hub` (Cloud Logging activity
