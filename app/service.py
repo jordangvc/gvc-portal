@@ -1096,12 +1096,12 @@ def _portal_home_impl(request: Request) -> HTMLResponse:
     feats = sorted(access.effective_features(email))
     activity.log_event("hub.open", actor=email, target=",".join(feats) or "none")
     html = (
-        path.read_text(encoding="utf-8")
+        _cached_web_html("hub.html")
         .replace("{{EMAIL}}", html_escape(email))
         .replace("{{EMAIL_JSON}}", json.dumps(email))
         .replace("{{FEATURES_JSON}}", json.dumps(feats))
     )
-    return HTMLResponse(html)
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/api/hub")
@@ -2265,17 +2265,25 @@ def ui_timeoff(request: Request) -> HTMLResponse:
     return HTMLResponse(html)
 
 
-_fieldguide_template_cache: tuple[float, str] | None = None
+_web_html_cache: dict[str, tuple[float, str]] = {}
+
+
+def _cached_web_html(name: str) -> str:
+    """Read a web/*.html file once per process; invalidate on mtime change."""
+    path = WEB_DIR / name
+    mtime = path.stat().st_mtime
+    hit = _web_html_cache.get(name)
+    if hit is None or hit[0] != mtime:
+        _web_html_cache[name] = (mtime, path.read_text(encoding="utf-8"))
+    return _web_html_cache[name][1]
+
+
+_PRIVATE_HTML_CACHE_HEADERS = {"Cache-Control": "private, max-age=300"}
 
 
 def _fieldguide_html_template() -> str:
     """Read fieldguide.html once per process (invalidate on mtime change)."""
-    global _fieldguide_template_cache
-    path = WEB_DIR / "fieldguide.html"
-    mtime = path.stat().st_mtime
-    if _fieldguide_template_cache is None or _fieldguide_template_cache[0] != mtime:
-        _fieldguide_template_cache = (mtime, path.read_text(encoding="utf-8"))
-    return _fieldguide_template_cache[1]
+    return _cached_web_html("fieldguide.html")
 
 
 @app.get("/ui/fieldguide", response_class=HTMLResponse)
@@ -2302,10 +2310,7 @@ def ui_fieldguide(request: Request) -> HTMLResponse:
     html = _fieldguide_html_template().replace("{{EMAIL}}", html_escape(email))
     # Personalized (email inject) → private browser cache only. Short TTL so
     # deploys show up without a hard refresh; fonts/CSS carry the long cache.
-    return HTMLResponse(
-        html,
-        headers={"Cache-Control": "private, max-age=300"},
-    )
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 # ---------------------------------------------------------------------------
@@ -2972,7 +2977,8 @@ def _serve_morning_html(name: str, email: str) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+    html = _cached_web_html(name).replace("{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/morning", response_class=HTMLResponse)
@@ -3417,7 +3423,8 @@ def ui_jobcheck_page(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)))
+    html = _cached_web_html("jobcheck.html").replace("{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/api/jobcheck/jobs")
