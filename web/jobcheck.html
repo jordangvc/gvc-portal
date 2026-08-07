@@ -975,8 +975,34 @@ $("#linkinput").addEventListener("keydown", (e) => {
     $("#linkbtn").click();
   }
 });
+function itemIdFromUrl() {
+  // Hub Needs / Morning / Owner Pulse deep-link here as /ui/jobcheck?item=<id>
+  // (also accept item_id for parity with Job Start / Invoice).
+  const params = new URLSearchParams(location.search);
+  const raw = (params.get("item") || params.get("item_id") || "").trim();
+  if (!raw) return null;
+  const id = parseInt(raw, 10);
+  return Number.isFinite(id) && id > 0 ? id : null;
+}
+
+async function bootJobCheck() {
+  const deepId = itemIdFromUrl();
+  if (!deepId) {
+    await loadJobs();
+    return;
+  }
+  // Open the linked job immediately so crew don't re-search. Prefetch the
+  // list in parallel so Back still has rows ready.
+  const listP = loadJobs();
+  try {
+    await loadJob(deepId);
+  } finally {
+    await listP;
+  }
+}
+
 checkHealth();
-loadJobs();
+bootJobCheck();
 </script>
 </body>
 </html>
