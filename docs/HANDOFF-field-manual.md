@@ -159,16 +159,11 @@ The check that catches it:
 python -c "import re,xml.etree.ElementTree as ET,pathlib; s=pathlib.Path('web/fieldguide.html').read_text(encoding='utf8'); [ET.fromstring(v) for v in re.findall(r'<svg\b.*?</svg>', s, re.S)]; print('all SVGs well-formed')"
 ```
 
-### Fonts are inlined, and that was on purpose
+### Fonts — externalized (r53)
 
-Montserrat 600/700 + Lato 400/700, base64 woff2, latin subset — 82KB raw,
-110KB encoded, in the page's own `<style>`. **Not** served from a route, because
-`/ui/gvc.css` was uncommitted work in another session at the time and a page
-carrying its own faces cannot break on a route that doesn't exist yet.
-
-When the `gvc.css` migration reaches this page: **lift the `@font-face` block
-into `gvc.css` verbatim and delete it from here.** Every other page gets the
-faces for free and the manual stops carrying 110KB.
+Montserrat 600/700 + Lato 400/700 live as woff2 under `web/fonts/`, referenced
+from `web/gvc.css` via `/ui/fonts/{name}` (allowlisted + `Cache-Control: immutable`).
+Base64 faces are gone from CSS — that alone cut ~110KB off the stylesheet.
 
 ---
 
@@ -204,14 +199,11 @@ and aborts without writing if it isn't).
    compliance documents: a wrong one documents non-compliance, so they want
    careful drafting and a real review, not a fast pass.
 
-3. **Who owns `gvc.css`, and can dark mode go in it?** ✅ STARTED 2026-08-06 (r52).
+3. **Who owns `gvc.css`, and can dark mode go in it?** ✅ DONE 2026-08-07 (r53).
    Jordan said yes to dark mode and asked for a **toggle** (OS preference as default,
-   control to override, remembered per person). `web/gvc.css` already had emerald
-   `data-theme=light|dark` token remaps; what was missing was the remembered toggle
-   + FOUC-safe boot. Shipped: `web/gvc-theme.js` + `GET /ui/gvc-theme.js`, wired on
-   **Hub + Field Manual** first (Auto → Light → Dark cycle, key `gvc-theme`). Other
-   pages still hardcode light until opted in. Remaining: roll the script onto the
-   rest of `web/*.html`.
+   control to override, remembered per person). Shipped: `web/gvc-theme.js` +
+   `GET /ui/gvc-theme.js` (Auto → Light → Dark, key `gvc-theme`), FOUC boot + script
+   on **all** portal `web/*.html` pages. Fonts live in `web/fonts/` via `/ui/fonts/`.
 
 4. **Trade review** of Cabinets / Doors / FRP / Tectum by someone who installs
    them daily.
@@ -239,10 +231,17 @@ Text/Skim, RFI Field, Talking to the GC, Ops Lead, Receiving & Freight, Scaffold
 on `gvc-invoice-00133-hq4`. Hub **r36**.
 
 ### Still queued
-- A few remaining diagrams (Z-furring, tall-wall levers, tile edges) + photos.
-- Roll `gvc-theme.js` onto remaining `web/*.html` pages (Hub + Field Manual done, r52).
-- Photo QC / morning-prep / CO-spotter coaches (Checklist coach LIVE).
+- Photos for key assemblies; more diagram coverage as needed.
+- Photo QC / morning-prep / CO-spotter coaches (Checklist coach LIVE; expand map).
 - Optional later: auto-tools deep dive.
+
+### Done 2026-08-07 — UX + speed slice (r53)
+- **Home**: procedure search, role chips (laborer/hanger/finisher/ACT/lead/ops), Continue-last-checklist card; Plain default when level unset; footer tells the shared-run truth.
+- **Job Check → Coach**: How-to row gains Coach → `/ui/fieldguide?coach=1#…`; Field Manual opens coach once from `?coach=1`. Anchors include `date1`→`#closeout-rhythm`, `notes7`→`#qc-walk`.
+- **Speed (offline-safe)**: `.doc { content-visibility:auto }` (monolith kept — no network-split procedures); Monday warm on Field Manual open; mtime-cached fieldguide HTML template in `app/service.py`.
+- **Fonts externalized**: Montserrat/Lato woff2 in `web/fonts/`, served `GET /ui/fonts/{name}` (allowlist + immutable cache); base64 stripped from `gvc.css` (~87KB).
+- **Theme rollup**: FOUC boot + `gvc-theme.js` on all portal `web/*.html` pages.
+- **+3 diagrams** (Z-furring `#sys-zfur`, tall-wall `#sys-tall`, ACT tile edges `#act-tile`) → **14** total SVGs. Hub **r53**.
 
 ### Done 2026-08-06 — systems slice (r52)
 - **Theme toggle** (`web/gvc-theme.js`): OS default + remembered Auto/Light/Dark on Hub + Field Manual.

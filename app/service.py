@@ -1051,6 +1051,38 @@ def portal_stylesheet() -> Response:
                     headers={"Cache-Control": "public, max-age=3600"})
 
 
+_UI_FONT_ALLOWLIST = frozenset({
+    "montserrat-600.woff2",
+    "montserrat-700.woff2",
+    "lato-400.woff2",
+    "lato-700.woff2",
+})
+
+
+@app.get("/ui/fonts/{name}")
+def portal_font(name: str) -> Response:
+    """
+    Embedded portal faces (Montserrat + Lato) extracted from gvc.css for cache
+    efficiency. Ungated like the stylesheet — no secrets. Long immutable cache
+    is safe because filenames change only when the font bytes change.
+    """
+    if name not in _UI_FONT_ALLOWLIST:
+        raise HTTPException(status_code=404, detail="Not found")
+    path = WEB_DIR / "fonts" / name
+    if not path.is_file():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/fonts/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_bytes(),
+        media_type="font/woff2",
+        headers={"Cache-Control": "public, max-age=31536000, immutable"},
+    )
+
+
 def _portal_home_impl(request: Request) -> HTMLResponse:
     email = require_ui_access(request)
     path = WEB_DIR / "hub.html"
@@ -2188,8 +2220,25 @@ def ui_timeoff(request: Request) -> HTMLResponse:
             'Ask an admin to set <code>GVC_TIMEOFF_FORM_URL</code> to the Google Form '
             'embed URL.</p></div>'
         )
-    html = path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email)).replace("{{FORM_IFRAME}}", body)
+    html = (
+        path.read_text(encoding="utf-8")
+        .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{FORM_IFRAME}}", body)
+    )
     return HTMLResponse(html)
+
+
+_fieldguide_template_cache: tuple[float, str] | None = None
+
+
+def _fieldguide_html_template() -> str:
+    """Read fieldguide.html once per process (invalidate on mtime change)."""
+    global _fieldguide_template_cache
+    path = WEB_DIR / "fieldguide.html"
+    mtime = path.stat().st_mtime
+    if _fieldguide_template_cache is None or _fieldguide_template_cache[0] != mtime:
+        _fieldguide_template_cache = (mtime, path.read_text(encoding="utf-8"))
+    return _fieldguide_template_cache[1]
 
 
 @app.get("/ui/fieldguide", response_class=HTMLResponse)
@@ -2206,15 +2255,14 @@ def ui_fieldguide(request: Request) -> HTMLResponse:
     """
     email = require_feature(request, "fieldguide")
     activity.log_event("tool.open", actor=email, target="fieldguide")
-    path = WEB_DIR / "fieldguide.html"
-    if not path.exists():
+    if not (WEB_DIR / "fieldguide.html").exists():
         raise HTTPException(
             status_code=500,
             detail={"ok": False, "code": "UI_MISSING",
-                    "detail": f"{path} not found in the deployed image.",
+                    "detail": f"{WEB_DIR / 'fieldguide.html'} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    html = path.read_text(encoding="utf-8").replace("{{EMAIL}}", html_escape(email))
+    html = _fieldguide_html_template().replace("{{EMAIL}}", html_escape(email))
     return HTMLResponse(html)
 
 

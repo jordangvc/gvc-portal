@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — UX + speed (r53) — BUILT 2026-08-07
+Home search + role chips + Continue-last-run; Job Check Coach deep-link
+(`?coach=1`); content-visibility + Monday warm + fieldguide HTML mtime cache
+(offline monolith kept); fonts → `web/fonts/` + `/ui/fonts/`; theme FOUC on all
+portal pages; +3 diagrams (Z-fur / tall-wall / ACT tile) → **14** SVGs. Hub **r53**.
+TESTS: `test_portal_fonts` + jobcheck anchors + fieldguide coach/jobs gate;
+SVGs XML-ok; fieldguide JS `node --check` clean. NOT DEPLOYED until merge → Actions.
+
 ## 📘 FIELD MANUAL — theme + jobs gate + coach + diagrams (r52) — BUILT 2026-08-06
 Systems slice on the Field Manual track:
 - **Theme toggle** — `web/gvc-theme.js` + `GET /ui/gvc-theme.js`; OS default +
