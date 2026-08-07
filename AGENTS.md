@@ -14,6 +14,14 @@ anything else obvious":
 4. Prefer shipping several small high-value "portal owns this instead of Monday"
    gaps over one oversized redesign.
 
+### Auto-merge (portal owns landing on `master`)
+
+Ready (non-draft) PRs from `cursor/*` → `master` are squash-merged by
+`.github/workflows/auto-merge-cursor-prs.yml` after `compileall` + `pytest`.
+Master push then triggers Cloud Run deploy. Do **not** create those PRs as
+drafts. To pause auto-merge on one PR: keep it draft or add label `hold` /
+`do-not-merge`. Setup notes: `docs/ops/auto-merge-setup.md`.
+
 ## Repository layout (package structure, 2026-06)
 
 Code is layered. Imports flow **one direction**: `app → orchestrators → subsystems/adapters → shared`.
