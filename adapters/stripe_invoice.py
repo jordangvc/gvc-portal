@@ -364,6 +364,21 @@ def preflight_stripe(enriched: dict) -> dict:
         found = _find_invoice_by_identifier_metadata(identifier)
         if found:
             report["existing_invoice_with_identifier"] = found
+            report["existing_invoice_source"] = "stripe_search"
+            cust_id = report["customer"]["id"]
+            report["existing_invoice_email_mismatch"] = (
+                not cust_id or found.get("customer") != cust_id
+            )
+
+    # Strongly-consistent fallback. Stripe Search is eventually consistent and
+    # can miss a just-created invoice on a quick Correct/re-run. The Monday
+    # Invoices ledger stores Document # → stripe_invoice_id on every live run;
+    # retrieve that id directly so reuse still wins without waiting on search.
+    if report["existing_invoice_with_identifier"] is None:
+        found = _find_invoice_via_monday_ledger(identifier)
+        if found:
+            report["existing_invoice_with_identifier"] = found
+            report["existing_invoice_source"] = "monday_ledger"
             cust_id = report["customer"]["id"]
             report["existing_invoice_email_mismatch"] = (
                 not cust_id or found.get("customer") != cust_id
@@ -406,6 +421,50 @@ def _find_invoice_by_identifier_metadata(identifier: str) -> Optional[dict]:
             "customer": getattr(inv, "customer", None),
         }
     return None
+
+
+def _find_invoice_via_monday_ledger(identifier: str) -> Optional[dict]:
+    """
+    Find an invoice via Monday Invoices Document # → stripe_invoice_id → retrieve.
+
+    Strongly consistent (unlike Stripe Search). GRACEFUL: Monday unconfigured,
+    missing ledger row, empty Stripe id, retrieve failure, or zombie → None.
+    """
+    if not (identifier or "").strip():
+        return None
+    try:
+        from adapters.monday.client import MondayClient
+        row = MondayClient().find_invoice_row_by_document(identifier)
+    except Exception as e:  # noqa: BLE001 — ledger is best-effort
+        print(
+            f"[preflight] Monday ledger lookup skipped: "
+            f"{type(e).__name__}: {e}",
+            file=sys.stderr,
+        )
+        return None
+    sid = (row or {}).get("stripe_invoice_id") or ""
+    if not sid:
+        return None
+    try:
+        inv = stripe.Invoice.retrieve(sid)
+    except Exception as e:  # noqa: BLE001
+        print(
+            f"[preflight] Monday ledger Stripe retrieve skipped for {sid}: "
+            f"{type(e).__name__}: {e}",
+            file=sys.stderr,
+        )
+        return None
+    md = inv.metadata
+    if md and getattr(md, "gvc_status", None) == "zombie_replaced":
+        return None
+    return {
+        "id": inv.id,
+        "status": inv.status,
+        "hosted_invoice_url": inv.hosted_invoice_url,
+        "amount_due": inv.amount_due,
+        "customer": getattr(inv, "customer", None),
+        "monday_item_id": (row or {}).get("item_id"),
+    }
 
 
 # Ranking for pick_current_invoice: the invoice a payment should land on.

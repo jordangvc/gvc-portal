@@ -84,9 +84,23 @@ def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
         "project_number": None,
     })
     assert item["invoice_href"] == (
-        "/ui/invoice?monday_item_id=20&q=No%20number%20yet"
+        "/ui/invoice?monday_item_id=20"
     )
-    assert "monday_item_id" in item["note"]
+    assert "linked Projects item" in item["note"]
+
+
+def test_shape_ready_to_invoice_ops_only_uses_search_q():
+    """Ops pulse must NOT become monday_item_id — invoice lookup is Projects-only."""
+    item = bq.shape_ready_to_invoice({
+        "item_id": 10,
+        "name": "Ops only job",
+        "url": "https://monday.example/10",
+        "project_item_id": None,
+        "project_number": None,
+    })
+    assert item["invoice_href"] == "/ui/invoice?q=Ops%20only%20job"
+    assert "monday_item_id" not in item["invoice_href"]
+    assert "No Projects link" in item["note"]
 
 
 def test_shape_accepted_bid_needs_handoff():
@@ -509,7 +523,10 @@ def test_invoice_page_boots_monday_item_id_deep_link():
     assert "lookupProjectByItemId" in html
     # boot order: project_number first, then monday item id, then q
     boot_idx = html.index("function bootInvoiceFromUrl")
-    snippet = html[boot_idx:boot_idx + 900]
+    # bootInvoiceFromUrl grew (project_number / q / monday paths) — don't truncate
+    # before the monday_item_id branch.
+    end = html.find("\nfunction ", boot_idx + 1)
+    snippet = html[boot_idx: end if end != -1 else boot_idx + 4000]
     assert 'params.get("monday_item_id")' in snippet
     assert "lookupProjectByItemId(mondayItemId)" in snippet
 

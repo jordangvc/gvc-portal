@@ -11,6 +11,31 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — Continue card shared hydrate (r55) — BUILT 2026-08-07
+Continue-last-run now best-effort merges `GET /ui/api/fieldguide/runs` with
+localStorage so a second phone can see the crew's open checklist (offline still
+shows local). Hub **r55**.
+
+## 📘 FIELD MANUAL — sync + flow harden (r54) — BUILT 2026-08-07
+Post-r53 audit loop (flow/speed):
+- **Checklist sync races fixed** — per-runId debounce timers; re-PUT if local
+  `updated_at` advanced in-flight; Finish only clears active after successful PUT.
+- **Device Reset** scoped to the current procedure (not every mark on the phone).
+- **Job Check leave guard** — How-to/Coach open in a new tab; dirty confirm on
+  job switch / back / beforeunload.
+- **Real content-visibility** (no `display:none` on inactive `.doc`); private
+  `Cache-Control: max-age=300` on `/ui/fieldguide`.
+- **Coach map** +4 Job Check ops anchors: closeout-rhythm, scaffold-lifts,
+  job-conditions, window-returns. Hub **r54**.
+
+## 📘 FIELD MANUAL — UX + speed (r53) — BUILT 2026-08-07
+Home search + role chips + Continue-last-run; Job Check Coach deep-link
+(`?coach=1`); content-visibility + Monday warm + fieldguide HTML mtime cache
+(offline monolith kept); fonts → `web/fonts/` + `/ui/fonts/`; theme FOUC on all
+portal pages; +3 diagrams (Z-fur / tall-wall / ACT tile) → **14** SVGs. Hub **r53**.
+TESTS: `test_portal_fonts` + jobcheck anchors + fieldguide coach/jobs gate;
+SVGs XML-ok; fieldguide JS `node --check` clean. NOT DEPLOYED until merge → Actions.
+
 ## 📘 FIELD MANUAL — theme + jobs gate + coach + diagrams (r52) — BUILT 2026-08-06
 Systems slice on the Field Manual track:
 - **Theme toggle** — `web/gvc-theme.js` + `GET /ui/gvc-theme.js`; OS default +

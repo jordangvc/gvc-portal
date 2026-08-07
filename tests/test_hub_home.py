@@ -42,13 +42,17 @@ def test_hub_nav_roles() -> None:
     check("sales home estimate", hub_nav.ROLE_HOME_TOOL["sales"] == "estimate")
     check("gm queue title", "Huddle" in hub_nav.ROLE_QUEUE_TITLE["gm"])
 
-    groups = hub_nav.groups_for_client({"morning", "jobcheck", "fieldguide", "timeoff"})
+    groups = hub_nav.groups_for_client(
+        {"morning", "jobcheck", "fieldguide", "timeoff", "training"})
     names = [g["name"] for g in groups]
     check("Today group first", names[0] == "Today")
     morning = next(t for g in groups for t in g["tools"] if t["feature"] == "morning")
     estimate = next(t for g in groups for t in g["tools"] if t["feature"] == "estimate")
+    training = next(t for g in groups for t in g["tools"] if t["feature"] == "training")
     check("granted morning", morning["granted"] is True)
     check("dim estimate", estimate["granted"] is False)
+    check("training on hub", training["granted"] is True)
+    check("training href", training["href"] == "/ui/training")
 
 
 def test_hub_pins_validate() -> None:
@@ -102,7 +106,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r52 footer", ">r52<" in hub)
+    check("r56 footer", ">r56<" in hub)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)

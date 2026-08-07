@@ -1,10 +1,24 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Change Order</title>
 <!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<script>
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
 
@@ -128,6 +142,7 @@
     <div class="gvc-topbar-right">
       <div id="health">Checking service…</div>
       <span class="gvc-topbar-sep"></span>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -249,8 +264,11 @@
   </div><!-- /gvc-stack -->
 </main>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
 
@@ -526,6 +544,8 @@ async function lookupFromMonday() {
   if (!q) { setLinkState("warn", "Enter a Monday Project URL (or item id) — or type a client, address, project #, or CO number to search."); return; }
   if (looksLikeMondayRef(q)) return loadProject(q);
   if (looksLikeCoNumber(q)) return loadForRevision(q);
+  // Spine / legacy Project # — same search path, but searchProjects auto-loads
+  // a single clear parent (parity with Invoice Find-the-Project).
   return searchProjects(q);
 }
 
@@ -544,6 +564,21 @@ async function searchProjects(q) {
   }
   const rows = data.results || [];
   if (!rows.length) { setLinkState("warn", `No projects matched “${escapeHtml(q)}”. Try fewer words, or paste the Monday URL.`); return; }
+
+  const parents = rows.filter((row) => !looksLikeCoNumber(row.project_number || ""));
+  const cosOnly = rows.filter((row) => looksLikeCoNumber(row.project_number || ""));
+  // One clear parent (CO noise ok) → load it. One CO and no parent → revision.
+  if (parents.length === 1) {
+    setLinkState("ok", "Matched — loading…");
+    $("#search-results").innerHTML = "";
+    return loadProject(String(parents[0].item_id));
+  }
+  if (parents.length === 0 && cosOnly.length === 1) {
+    setLinkState("ok", "Matched CO — loading for revision…");
+    $("#search-results").innerHTML = "";
+    return loadForRevision(cosOnly[0].project_number);
+  }
+
   setLinkState("ok", `${rows.length} match${rows.length === 1 ? "" : "es"} — pick one:`);
   const list = $("#search-results");
   rows.forEach((row) => {
