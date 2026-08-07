@@ -233,11 +233,8 @@
   </div>
 </div>
 
-<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
-if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-
   const $ = s => document.querySelector(s);
   function setStatus(kind, msg) {
     const e = $("#status");
