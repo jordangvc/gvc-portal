@@ -8,6 +8,7 @@ role-shaped zeros and a clear or soft summary line.
 from __future__ import annotations
 
 import sys
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -889,9 +890,24 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     home_href = hub_nav.home_tool_href(home_tool, role)
     home_tool_name = hub_nav.home_tool_label(home_tool)
 
-    brief = _try_morning_brief(email) if "morning" in feats else None
-    # Bid/invoice queues feed owner, office, gm, and sales homes.
-    billing = _try_billing() if role in ("owner", "office", "gm", "sales") else None
+    # Morning brief and billing queues are independent Monday/GCS work.
+    # Office/owner/gm/sales pay for both — run them together so hub TTI is
+    # ≈ max(brief, billing) instead of sum.
+    want_brief = "morning" in feats
+    want_billing = role in ("owner", "office", "gm", "sales")
+    brief: Optional[dict] = None
+    billing: Optional[dict] = None
+    if want_brief and want_billing:
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_brief = pool.submit(_try_morning_brief, email)
+            fut_billing = pool.submit(_try_billing)
+            brief = fut_brief.result()
+            billing = fut_billing.result()
+    elif want_brief:
+        brief = _try_morning_brief(email)
+    elif want_billing:
+        billing = _try_billing()
+
     pulse = None
     if role == "owner" and ("morning_owner" in feats or email in access.superadmin_emails()):
         pulse = _try_owner_pulse(email)
