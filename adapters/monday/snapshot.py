@@ -120,7 +120,17 @@ def load(key: str) -> Optional[tuple[Any, float]]:
     serve day-old board data forever if the warm job dies.
     """
     if _LOAD_HOOK is not None:
-        return _LOAD_HOOK(key)
+        hit = _LOAD_HOOK(key)
+        if hit is None:
+            return None
+        value, written_at_f = hit
+        try:
+            written_at_f = float(written_at_f)
+        except (TypeError, ValueError):
+            return None
+        if (time.time() - written_at_f) > max_age():
+            return None
+        return value, written_at_f
 
     try:
         blob = _blob(object_name(key))
