@@ -1,10 +1,25 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Estimate Generator</title>
 <!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
 
@@ -131,6 +146,7 @@
     <div class="gvc-topbar-right">
       <div id="health">Checking service…</div>
       <span class="gvc-topbar-sep"></span>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -338,8 +354,11 @@
   </div><!-- /gvc-stack -->
 </main>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
 
@@ -1167,7 +1186,12 @@ async function searchBids(q) {
   }
   const rows = data.results || [];
   if (!rows.length) { note.textContent = `No bids matched “${q}”. Try fewer words, or paste the Monday URL.`; return; }
-  note.textContent = `${rows.length} match${rows.length === 1 ? "" : "es"} — pick the bid:`;
+  if (rows.length === 1) {
+    note.textContent = "Matched — loading…";
+    $("#search-results").innerHTML = "";
+    return loadBid(String(rows[0].item_id));
+  }
+  note.textContent = `${rows.length} matches — pick the bid:`;
   const list = $("#search-results");
   rows.forEach((row) => {
     const div = document.createElement("div");
@@ -1459,6 +1483,10 @@ if (new URLSearchParams(window.location.search).get("takeoff") === "1") {
     $("#takeoff-json").focus({ preventScroll: true });
   });
 }
+</script>
+<script src="/ui/gvc-theme.js"></script>
+<script>
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
 </body>
 </html>

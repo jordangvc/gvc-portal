@@ -1,9 +1,23 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Portal — Admin</title>
+<script>
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
 <link rel="stylesheet" href="/ui/gvc.css" />
 <style>
   /* Page-local admin widgets — tokens from gvc.css only. */
@@ -84,6 +98,7 @@
     <span class="gvc-topbar-title">Admin</span>
     <div class="gvc-topbar-right">
       <span class="gvc-topbar-user">{{EMAIL}}</span>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
       <a class="gvc-signout" href="/auth/logout">Sign out</a>
     </div>
   </div>
@@ -152,8 +167,11 @@
   </div>
 </main>
 
+<script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 const $ = (s, el=document) => el.querySelector(s);
 const $$ = (s, el=document) => [...el.querySelectorAll(s)];
 

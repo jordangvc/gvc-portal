@@ -149,7 +149,7 @@ JOBCHECK_PROJECTS_TRADE_COLUMNS: tuple[dict, ...] = (
 
 # Field Manual deep-links for Job Check trade status chips — Projects column id
 # → anchor in web/fieldguide.html. Only columns with a clear matching procedure
-# we will stand behind (no orphan Completeness/Notes links).
+# we will stand behind.
 JOBCHECK_FIELDGUIDE_ANCHORS: dict[str, str] = {
     "color_mkza9z7c": "#framing",
     "status_19": "#hang",  # Projects only — Ops status_19 is Scheduled Day
@@ -161,6 +161,8 @@ JOBCHECK_FIELDGUIDE_ANCHORS: dict[str, str] = {
     "dup__of_sanded": "#level5-skim",       # Text/Skim — not a free Level 5
     "color_mkza855s": "#finish",
     "color8": "#cleanout",
+    "date1": "#closeout-rhythm",
+    "notes7": "#qc-walk",
 }
 
 # Ops logistics columns → Field Manual (separate map so Scheduled Day never
