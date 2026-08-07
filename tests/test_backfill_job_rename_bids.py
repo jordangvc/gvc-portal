@@ -11,6 +11,14 @@ from scripts import backfill_job_rename_bids as bids
 from shared.boards import BID_BOARD_ID
 
 
+STANDARD_SILVA = (
+    "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek | Smith residence"
+)
+STANDARD_SUSANNA = (
+    "3776 Susanna, Lawrenceburg, IN 47025 | Martin | Martin residence"
+)
+
+
 def _column(column_id: str, text: str, **extra) -> dict:
     return {"id": column_id, "text": text, **extra}
 
@@ -33,21 +41,21 @@ def test_fetch_pages_skips_dead_and_prioritizes_accepted_won():
                 "items": [
                     {
                         "id": "1",
-                        "name": "100 Main | Open Builder",
+                        "name": "100 Main | Open Builder | Open remodel",
                         "column_values": [
                             _column(bids.JOBSTART_BID_STAGE_COL, "Estimate Sent"),
                         ],
                     },
                     {
                         "id": "2",
-                        "name": "200 Main | Lost Builder",
+                        "name": "200 Main | Lost Builder | Lost remodel",
                         "column_values": [
                             _column(bids.JOBSTART_BID_STAGE_COL, "Project Lost"),
                         ],
                     },
                     {
                         "id": "3",
-                        "name": "300 Main | Accepted Builder",
+                        "name": "300 Main | Accepted Builder | Accepted remodel",
                         "column_values": [
                             _column(
                                 bids.JOBSTART_BID_LOCATION_COL,
@@ -71,7 +79,7 @@ def test_fetch_pages_skips_dead_and_prioritizes_accepted_won():
                 "cursor": None,
                 "items": [{
                     "id": "4",
-                    "name": "400 Main | Won Builder",
+                    "name": "400 Main | Won Builder | Won remodel",
                     "column_values": [
                         _column(bids.JOBSTART_BID_STAGE_COL, "Won Deal"),
                     ],
@@ -97,17 +105,18 @@ def test_fetch_pages_skips_dead_and_prioritizes_accepted_won():
 
 
 def test_build_plans_uses_location_and_customer_text():
+    # Job title must already be in the title (or supplied via planner kwargs);
+    # the bid script reads name + location + customer only.
     plans = bids.build_plans([{
         "item_id": 10,
-        "name": "9195 Silva",
+        "name": "9195 Silva | Willow Creek | Smith residence",
         "location": "9195 Silva Drive, Cincinnati, OH 45241",
         "customer": "Willow Creek",
         "stage": "Accepted",
     }])
 
     assert plans[0]["action"] == "rename"
-    assert plans[0]["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plans[0]["new_name"] == STANDARD_SILVA
     assert plans[0]["board"] == "bid_board"
     assert plans[0]["stage"] == "Accepted"
 
@@ -115,7 +124,7 @@ def test_build_plans_uses_location_and_customer_text():
 def test_build_plans_uses_location_json_before_geocoding():
     plans = bids.build_plans([{
         "item_id": 10,
-        "name": "9195 Silva | Willow Creek",
+        "name": "9195 Silva | Willow Creek | Smith residence",
         "location": "",
         "location_value_json": json.dumps({
             "lat": "39.246",
@@ -127,8 +136,7 @@ def test_build_plans_uses_location_json_before_geocoding():
     }])
 
     assert plans[0]["action"] == "rename"
-    assert plans[0]["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plans[0]["new_name"] == STANDARD_SILVA
     assert plans[0]["lookup_sources"] == ["monday_location"]
 
 
@@ -147,7 +155,7 @@ def test_build_plans_geocodes_incomplete_bid():
     plans = bids.build_plans(
         [{
             "item_id": 10,
-            "name": "9195 Silva | Willow Creek",
+            "name": "9195 Silva | Willow Creek | Smith residence",
             "location": "",
             "location_value_json": "",
             "customer": "Willow Creek",
@@ -158,8 +166,7 @@ def test_build_plans_geocodes_incomplete_bid():
     )
 
     assert plans[0]["action"] == "rename"
-    assert plans[0]["new_name"] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
+    assert plans[0]["new_name"] == STANDARD_SILVA
     assert "nominatim_tri_state" in plans[0]["lookup_sources"]
 
 
@@ -167,21 +174,24 @@ def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
     rows = [
         {
             "item_id": 10,
-            "name": "9195 Silva",
+            "name": "9195 Silva | Willow Creek | Smith residence",
             "location": "9195 Silva Drive, Cincinnati, OH 45241",
             "customer": "Willow Creek",
             "stage": "Accepted",
         },
         {
             "item_id": 11,
-            "name": "3776 Susanna",
+            "name": "3776 Susanna | Martin | Martin residence",
             "location": "3776 Susanna, Lawrenceburg, IN 47025",
             "customer": "Martin",
             "stage": "Won",
         },
         {
+            # already 3-part standard — skip_standard, not written
             "item_id": 12,
-            "name": "1 Oak Street, Cincinnati, OH 45202 | Acme",
+            "name": (
+                "1 Oak Street, Cincinnati, OH 45202 | Acme | Office remodel"
+            ),
             "location": "",
             "customer": "Acme",
             "stage": "Estimate Sent",
@@ -207,10 +217,8 @@ def test_apply_renames_candidates_and_waits_between_writes(monkeypatch):
         (BID_BOARD_ID, 10),
         (BID_BOARD_ID, 11),
     ]
-    assert writes[0][3] == (
-        "9195 Silva Drive, Cincinnati, OH 45241 | Willow Creek")
-    assert writes[1][3] == (
-        "3776 Susanna, Lawrenceburg, IN 47025 | Martin")
+    assert writes[0][3] == STANDARD_SILVA
+    assert writes[1][3] == STANDARD_SUSANNA
     assert sleeps == [0.2]
 
 

@@ -42,17 +42,7 @@ jobs:
       - name: Pytest (gate)
         env:
           PYTHONPATH: ${{ github.workspace }}
-        run: |
-          # Bulk-rename backfill + location-enrich tests track an older
-          # skip_incomplete naming policy and are fixed in a follow-up.
-          # Everything else — including previously uncollectable standalone
-          # scripts — must stay green before deploy.
-          pytest -q --tb=line \
-            --ignore=tests/test_backfill_job_rename_bids.py \
-            --ignore=tests/test_backfill_job_rename_drive.py \
-            --ignore=tests/test_backfill_job_rename_ops.py \
-            --ignore=tests/test_backfill_job_rename_projects.py \
-            --ignore=tests/test_location_lookup.py
+        run: pytest -q --tb=line
 
   deploy:
     needs: test
