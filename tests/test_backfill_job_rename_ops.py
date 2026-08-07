@@ -178,6 +178,28 @@ def test_linked_nonstandard_project_location_enriches_operation():
     assert plan["lookup_sources"] == ["monday_location"]
 
 
+def test_linked_nonstandard_project_prefers_planned_parent_index():
+    """Ops mirrors the Projects plan when Monday's Projects title is still short."""
+    old_project_name = "9761 Gertrude | Jent Construction"
+    row = {
+        "item_id": 22,
+        "name": "9761 Gertrude | Different Street Spelling",
+        "linked_project_ids": [11],
+    }
+
+    plan = ops.plan_operation_item(
+        row,
+        projects=[_project(name=old_project_name, location_value=LOCATION_VALUE)],
+        project_names={11: old_project_name},
+        parent_index={old_project_name: STANDARD},
+        geocode=False,
+    )
+
+    assert plan["action"] == "rename"
+    assert plan["new_name"] == STANDARD
+    assert plan["source"] == "linked_project_planned"
+
+
 def test_unlinked_operation_geocodes_after_no_safe_project_match():
     """Geocode alone cannot invent Job Title — stay incomplete."""
     row = {
