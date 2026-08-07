@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
 
@@ -829,10 +830,24 @@ class MondayClient:
         Prefers an exact PRO-/core match on a non-CO parent; skips top-level
         ``CO.{n}-…`` items when ranking so a bare-core contains hit does not
         adopt a change-order pulse.
+
+        Short-TTL cached (search TTL) — Billing/Invoice deep links often hit
+        the same Project # twice in one sitting.
         """
         raw = (project_number or "").strip()
         if not raw:
             return None
+        cache_key = (
+            "find:project_by_number:"
+            + (for_project(raw) if is_spine_number(raw) else raw).lower()
+        )
+        return monday_cache.get_or_set(
+            cache_key,
+            lambda: self._find_project_by_number_uncached(raw),
+            ttl=monday_cache.search_ttl(),
+        )
+
+    def _find_project_by_number_uncached(self, raw: str) -> Optional[dict]:
         needles = search_needles(raw) or [raw]
         query = """
         query ($boardId: [ID!], $val: CompareValue!, $col: [String!]) {
@@ -844,16 +859,37 @@ class MondayClient:
           }
         }
         """ % COL_PROJECT_NUMBER
-        seen: set[int] = set()
-        candidates: list[dict] = []
-        for needle in needles:
-            data = self._query(query, {
+
+        def _probe(needle: str) -> list[dict]:
+            # Fresh client per thread — requests.Session is not thread-safe.
+            token = None
+            try:
+                token = self.session.headers.get("Authorization")
+            except Exception:  # noqa: BLE001
+                token = None
+            local = MondayClient(token=token) if token else MondayClient()
+            data = local._query(query, {
                 "boardId": [str(PROJECTS_BOARD_ID)],
                 "val": needle,
                 "col": [COL_PROJECT_NUMBER],
             })
+            out: list[dict] = []
             for board in data.get("boards") or []:
-                for it in (board.get("items_page") or {}).get("items") or []:
+                out.extend((board.get("items_page") or {}).get("items") or [])
+            return out
+
+        seen: set[int] = set()
+        candidates: list[dict] = []
+        with ThreadPoolExecutor(max_workers=min(4, max(1, len(needles)))) as pool:
+            futs = {pool.submit(_probe, n): n for n in needles}
+            for fut in as_completed(futs):
+                try:
+                    items = fut.result()
+                except Exception as exc:  # noqa: BLE001 — one needle fail ≠ total fail
+                    print(f"[monday] find_project_by_number needle "
+                          f"{futs[fut]!r} failed: {exc}", file=sys.stderr)
+                    continue
+                for it in items:
                     try:
                         iid = int(it["id"])
                     except (TypeError, ValueError, KeyError):
@@ -884,8 +920,6 @@ class MondayClient:
             cell_core = (core_number(text) or "").lower()
             return bool(want_core and cell_core == want_core)
 
-        # Exact match on a parent project wins; then any exact (incl. CO);
-        # then first non-CO contains-hit; last resort first candidate.
         for it in candidates:
             if not _is_co_row(it) and _exact(it):
                 return {"item_id": int(it["id"]), "name": it.get("name") or ""}
