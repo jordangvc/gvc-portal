@@ -329,6 +329,18 @@ def plan_operation_item(
                 geocode=False,
             )
             return {**plan, "source": "linked_project"}
+        # Prefer the Projects planner's proposed standard title over re-parsing
+        # the Ops row (keeps Ops aligned when Projects is still short/stale).
+        planned_parent = (parent_index or {}).get(linked_name or "")
+        if planned_parent and naming.is_standard(planned_parent):
+            plan = rename_enrich.plan_enriched_row(
+                name=name,
+                linked_project_name=planned_parent,
+                item_id=item_id,
+                board="operations",
+                geocode=False,
+            )
+            return {**plan, "source": "linked_project_planned"}
         if linked_project:
             plan = _enrich_from_project(
                 row_name=name,
@@ -381,6 +393,26 @@ def plan_operation_item(
             return {
                 **mirrored,
                 "source": "matched_project",
+                "match_project_id": int(hit["id"]),
+                "match_score": hit["score"],
+            }
+
+        planned_match = (parent_index or {}).get(hit.get("name") or "")
+        if planned_match and naming.is_standard(planned_match):
+            mirrored = rename_enrich.plan_enriched_row(
+                name=name,
+                linked_project_name=planned_match,
+                item_id=item_id,
+                board="operations",
+                geocode=False,
+            )
+            mirrored["note"] = (
+                f"Mirror planned Projects title for match {hit['id']} "
+                f"(score {hit['score']:.2f})."
+            )
+            return {
+                **mirrored,
+                "source": "matched_project_planned",
                 "match_project_id": int(hit["id"]),
                 "match_score": hit["score"],
             }
