@@ -36,11 +36,14 @@ import os
 #   morning_ops = Operations Team (huddle attendance), morning_gm = General
 #   Manager run sheet, morning_owner = Owner Pulse (exception-only). Keyed to
 #   portal grants — never hard-coded names (Donnie/Jordan/etc.).
+# `training` = Portal & systems training (Donnie GM track + money spine),
+#   added 2026-08-07. Baseline — no customer/financial data; every provisioned
+#   user can open their own checklist.
 FEATURES: tuple[str, ...] = (
     "morning", "morning_ops", "morning_gm", "morning_owner",
     "estimate", "change_order", "invoice", "check",
     "coi", "lien", "jobcheck", "jobstart", "takeoff", "timeoff", "fieldguide",
-    "activity", "admin",
+    "training", "activity", "admin",
 )
 ALL_FEATURES = frozenset(FEATURES)
 # Baseline = every provisioned store user gets this without an explicit grant.
@@ -48,7 +51,9 @@ ALL_FEATURES = frozenset(FEATURES)
 # and the whole point is that a crew member can reach it in one tap.
 # `morning` is baseline for the same reason: every employee gets their private
 # daily brief; role personalization is server-side, not a separate grant.
-BASELINE = frozenset({"timeoff", "fieldguide", "morning"})
+# `training` is baseline so Donnie (and every role) can open the guide without
+# a separate grant tap.
+BASELINE = frozenset({"timeoff", "fieldguide", "morning", "training"})
 WILDCARD = "*"
 
 # Backward-compatible implications: when a tool graduates to its own feature,
@@ -90,7 +95,7 @@ FEATURE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Day", ("morning", "morning_ops", "morning_gm", "morning_owner")),
     ("Field", ("jobcheck", "jobstart", "takeoff", "lien", "fieldguide")),
     ("Money", ("estimate", "change_order", "invoice", "check", "coi")),
-    ("Admin", ("activity", "admin", "timeoff")),
+    ("Admin", ("activity", "admin", "timeoff", "training")),
 )
 
 
