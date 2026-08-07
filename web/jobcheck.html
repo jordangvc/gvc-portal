@@ -266,9 +266,10 @@ const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
 
 function fieldguideLinks(anchor) {
   const a = esc(anchor);
+  /* Open in a new tab so mid-edit Job Check values are never lost. */
   return `<span class="fieldguide-links">` +
-    `<a class="howto" href="/ui/fieldguide${a}" target="_self">How-to</a>` +
-    `<a class="howto coach" href="/ui/fieldguide?coach=1${a}" target="_self">Coach</a>` +
+    `<a class="howto" href="/ui/fieldguide${a}" target="_blank" rel="noopener">How-to</a>` +
+    `<a class="howto coach" href="/ui/fieldguide?coach=1${a}" target="_blank" rel="noopener">Coach</a>` +
     `</span>`;
 }
 
@@ -306,7 +307,10 @@ function renderJobList() {
     ? hits.map(jobButton).join("")
     : `<div class="hint">No active job matches "${esc(q)}".</div>`;
   document.querySelectorAll("#joblist .jobbtn").forEach((b) =>
-    b.addEventListener("click", () => loadJob(+b.dataset.id)));
+    b.addEventListener("click", () => {
+      if (!confirmLeaveDirty("Switch jobs")) return;
+      loadJob(+b.dataset.id);
+    }));
 }
 
 async function loadJobs() {
@@ -421,6 +425,24 @@ function isDirty(key) {
   const a = baseline[key] ?? "";
   const b = current[key] ?? "";
   return String(a) !== String(b);
+}
+
+function dirtyCount() {
+  if (!detail) return 0;
+  let n = 0;
+  (detail.columns || []).forEach((c) => {
+    if (c.writable === false) return;
+    if (isDirty(fieldKey(c))) n++;
+  });
+  return n;
+}
+
+function confirmLeaveDirty(action) {
+  const n = dirtyCount();
+  if (!n) return true;
+  return window.confirm(
+    `You have ${n} unsaved change${n === 1 ? "" : "s"} on this job. ${action} anyway?`
+  );
 }
 
 function refreshDirtyUi() {
@@ -707,6 +729,7 @@ function applyPhotoReady(pr) {
 }
 
 function backToList() {
+  if (!confirmLeaveDirty("Leave this job")) return;
   detail = null;
   $("#ctxcard").style.display = "none";
   $("#formcard").style.display = "none";
@@ -1000,6 +1023,11 @@ $("#linkinput").addEventListener("keydown", (e) => {
     e.preventDefault();
     $("#linkbtn").click();
   }
+});
+window.addEventListener("beforeunload", (e) => {
+  if (!dirtyCount()) return;
+  e.preventDefault();
+  e.returnValue = "";
 });
 checkHealth();
 loadJobs();

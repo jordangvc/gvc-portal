@@ -235,6 +235,13 @@ on `gvc-invoice-00133-hq4`. Hub **r36**.
 - Photo QC / morning-prep / CO-spotter coaches (Checklist coach LIVE; expand map).
 - Optional later: auto-tools deep dive.
 
+### Done 2026-08-07 — sync + flow harden (r54)
+Audit loop after r53: per-run checklist sync timers + finish-only-on-success PUT;
+Job Check How-to/Coach `target=_blank` + dirty leave guards; real
+`content-visibility` (inactive docs not `display:none`); private 5‑min cache on
+`/ui/fieldguide`; coach entries for closeout / scaffold / job-conditions /
+window-returns. Hub **r54**.
+
 ### Done 2026-08-07 — UX + speed slice (r53)
 - **Home**: procedure search, role chips (laborer/hanger/finisher/ACT/lead/ops), Continue-last-checklist card; Plain default when level unset; footer tells the shared-run truth.
 - **Job Check → Coach**: How-to row gains Coach → `/ui/fieldguide?coach=1#…`; Field Manual opens coach once from `?coach=1`. Anchors include `date1`→`#closeout-rhythm`, `notes7`→`#qc-walk`.

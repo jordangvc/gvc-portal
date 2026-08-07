@@ -11,6 +11,18 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 📘 FIELD MANUAL — sync + flow harden (r54) — BUILT 2026-08-07
+Post-r53 audit loop (flow/speed):
+- **Checklist sync races fixed** — per-runId debounce timers; re-PUT if local
+  `updated_at` advanced in-flight; Finish only clears active after successful PUT.
+- **Device Reset** scoped to the current procedure (not every mark on the phone).
+- **Job Check leave guard** — How-to/Coach open in a new tab; dirty confirm on
+  job switch / back / beforeunload.
+- **Real content-visibility** (no `display:none` on inactive `.doc`); private
+  `Cache-Control: max-age=300` on `/ui/fieldguide`.
+- **Coach map** +4 Job Check ops anchors: closeout-rhythm, scaffold-lifts,
+  job-conditions, window-returns. Hub **r54**.
+
 ## 📘 FIELD MANUAL — UX + speed (r53) — BUILT 2026-08-07
 Home search + role chips + Continue-last-run; Job Check Coach deep-link
 (`?coach=1`); content-visibility + Monday warm + fieldguide HTML mtime cache

@@ -380,8 +380,27 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
   .home-empty.is-visible { display:block; }
 
   /* ---------- doc views ---------- */
-  .doc { display:none; content-visibility:auto; contain-intrinsic-size:800px; }
-  .doc.active { display:block; content-visibility:visible; }
+  .doc {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 800px;
+  }
+  /* Prefer content-visibility over display:none so inactive procedures skip
+     layout/paint while staying in the DOM (checkboxes + coach keep working). */
+  .doc:not(.active) {
+    content-visibility: hidden;
+    contain-intrinsic-size: 0 0;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    border: 0 !important;
+    visibility: hidden;
+  }
+  .doc.active {
+    content-visibility: visible;
+    visibility: visible;
+  }
 
   .doc-head { margin-bottom:20px; display:flex; flex-direction:column; gap:8px; }
   .doc-head .stage-line { font-family:var(--mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--green); font-weight:600; }
@@ -5850,7 +5869,9 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     }
 
     /* ---------- sync ---------- */
-    var syncTimer = null;
+    /* Per-runId timers so switching procedures cannot cancel another run's flush. */
+    var syncTimers = {};
+    var syncInFlight = {};
 
     function saveRunLocal(run) {
       run.updated_at = new Date().toISOString();
@@ -5860,14 +5881,28 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
     function queueSync(run, immediate) {
       run._pending = true;
+      lsSet(LS_RUN + run.run_id, run);
       renderSyncChip(run);
-      if (syncTimer) { clearTimeout(syncTimer); }
-      syncTimer = setTimeout(function () { pushRun(run.run_id); }, immediate ? 0 : 900);
+      var id = run.run_id;
+      if (syncTimers[id]) { clearTimeout(syncTimers[id]); }
+      syncTimers[id] = setTimeout(function () {
+        delete syncTimers[id];
+        pushRun(id);
+      }, immediate ? 0 : 900);
     }
 
     function pushRun(runId) {
       var run = localRun(runId);
-      if (!run) return Promise.resolve();
+      if (!run) return Promise.resolve(true);
+      /* Coalesce: mark requeue and let the in-flight PUT finish, then push again. */
+      if (syncInFlight[runId]) {
+        run._requeue = true;
+        run._pending = true;
+        lsSet(LS_RUN + runId, run);
+        return Promise.resolve(false);
+      }
+      var sentAt = run.updated_at;
+      syncInFlight[runId] = true;
       var bodyJson = {
         payload: {
           job_id: run.job_id || "",
@@ -5888,24 +5923,46 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         if (!r.ok) { throw new Error("HTTP " + r.status); }
         return r.json();
       }).then(function (j) {
+        delete syncInFlight[runId];
         var cur = localRun(runId) || run;
-        cur._pending = false; cur._syncErr = false; cur._synced = true;
-        // A stale response means somebody else is further along — take theirs.
+        /* A stale response means somebody else is further along — take theirs. */
         if (j && j.stale && j.run) {
           cur.checked = j.run.checked || [];
           cur.note = j.run.note || "";
+          cur.done = !!j.run.done;
           cur.updated_at = j.run.updated_at;
+          cur._pending = false;
+          cur._syncErr = false;
+          cur._synced = true;
+          delete cur._requeue;
           lsSet(LS_RUN + runId, cur);
-          if (currentDoc === cur.procedure) { applyChecks(currentDoc); }
-        } else {
-          lsSet(LS_RUN + runId, cur);
+          if (currentDoc === cur.procedure) { applyChecks(currentDoc); renderBar(); }
+          return true;
         }
+        /* Local edits landed while this PUT was in flight — push again. */
+        if (cur.updated_at !== sentAt || cur._requeue) {
+          delete cur._requeue;
+          cur._pending = true;
+          cur._syncErr = false;
+          lsSet(LS_RUN + runId, cur);
+          if (currentDoc === cur.procedure) { renderSyncChip(cur); }
+          return pushRun(runId);
+        }
+        cur._pending = false;
+        cur._syncErr = false;
+        cur._synced = true;
+        lsSet(LS_RUN + runId, cur);
         if (currentDoc === cur.procedure) { renderBar(); }
+        return true;
       }).catch(function () {
+        delete syncInFlight[runId];
         var cur = localRun(runId) || run;
-        cur._pending = false; cur._syncErr = true; cur._synced = false;
+        cur._pending = false;
+        cur._syncErr = true;
+        cur._synced = false;
         lsSet(LS_RUN + runId, cur);
         if (currentDoc === cur.procedure) { renderSyncChip(cur); }
+        return false;
       });
     }
 
@@ -5942,8 +5999,15 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         saveRunLocal(run); queueSync(run, true); renderBar();
         return;
       }
-      boxes.forEach(function (b) { b.checked = false; });
-      lsSet(CHECK_KEY, {});
+      /* Device-only: clear THIS procedure's marks, not every page. */
+      if (!window.confirm("Clear check marks on this procedure (this phone only)?")) { return; }
+      var on = lsGet(CHECK_KEY, {}) || {};
+      if (Array.isArray(on)) { on = {}; }
+      boxesFor(currentDoc).forEach(function (b) {
+        b.checked = false;
+        delete on[b.dataset.k];
+      });
+      lsSet(CHECK_KEY, on);
     });
 
     /* ---------- the start / resume sheet ---------- */
@@ -6141,7 +6205,15 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       if (!window.confirm(msg)) { return; }
       run.done = true;
       saveRunLocal(run);
-      pushRun(runId).then(function () {
+      /* Cancel debounce and flush now; only leave the run after a successful PUT. */
+      if (syncTimers[runId]) { clearTimeout(syncTimers[runId]); delete syncTimers[runId]; }
+      pushRun(runId).then(function (ok) {
+        var cur = localRun(runId);
+        if (!ok || !cur || cur._syncErr || cur._pending) {
+          renderBar();
+          window.alert("Couldn't save the finished checklist — check signal and tap Finish again. Your marks are still on this phone.");
+          return;
+        }
         var map = activeMap(); delete map[currentDoc]; lsSet(LS_ACTIVE, map);
         applyChecks(currentDoc); renderBar();
         if (typeof renderContinueCard === "function") { renderContinueCard(); }

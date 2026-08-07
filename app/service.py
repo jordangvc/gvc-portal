@@ -2263,19 +2263,21 @@ def ui_fieldguide(request: Request) -> HTMLResponse:
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
     html = _fieldguide_html_template().replace("{{EMAIL}}", html_escape(email))
-    return HTMLResponse(html)
+    # Personalized (email inject) → private browser cache only. Short TTL so
+    # deploys show up without a hard refresh; fonts/CSS carry the long cache.
+    return HTMLResponse(
+        html,
+        headers={"Cache-Control": "private, max-age=300"},
+    )
 
 
 # ---------------------------------------------------------------------------
 # Field Manual CHECKLIST RUNS — a crew member starts a procedure checklist
 # against a specific job, works it, and anyone on the crew can resume it.
 #
-# Gated by `fieldguide`, which is a BASELINE grant — so every signed-in employee
-# can start and resume runs with no provisioning. That deliberately also exposes
-# the active-job list (names/addresses) to everyone signed in; it is not
-# confidential information and crews need it to pick their job. Flagged for
-# Jordan rather than assumed: if that should be narrower, gate the /jobs route
-# on `jobcheck` instead and have crew pick from a text field.
+# Page + runs stay on baseline `fieldguide`. The active-job list
+# (`GET /ui/api/fieldguide/jobs`) requires `jobcheck` — without it the sheet
+# offers a typed job label + "Start without a job".
 #
 # NO MONDAY WRITEBACK by design — Job Check remains the only writer of the
 # Projects-board stage columns. See subsystems/fieldguide/runs.py.
