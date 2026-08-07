@@ -195,6 +195,7 @@
 </header>
 
 <main class="gvc-shell">
+  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Projects</p>
     <h1 class="gvc-h1">Job Start</h1>
@@ -646,7 +647,11 @@ function renderState() {
       ? ` <a href="${esc(d.packet_url)}" target="_blank" rel="noopener">Open the packet in Drive</a>`
       : "";
     html = `<div class="state accepted"><span class="lead">Accepted by ${esc(who(d.accepted_by)) || "Operations"}.</span>
-      This job is live.${pdf}</div>`;
+      This job is live.${pdf}
+      <div class="readonly-note" style="margin-top:8px">Next:
+        <a href="/ui/jobcheck">open Job Check</a> for field stages ·
+        <a href="/ui/billing">Billing Hub</a> ·
+        <a href="/">hub</a>.</div></div>`;
   } else {
     html = `<div class="state draft"><span class="lead">Draft.</span>
       Nobody has been notified yet — it saves as you type.</div>`;
@@ -985,8 +990,10 @@ if (!bootJobStartFromUrl()) {
 }
 </script>
 <script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
 <script>
   if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+  if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "jobstart"); }
 </script>
 </body>
 </html>

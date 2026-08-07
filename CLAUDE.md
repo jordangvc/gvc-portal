@@ -11,6 +11,20 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ MONEY-SPINE Path + Takeoff launcher (r61) — BUILT 2026-08-07
+Jordan: get back to the hub after Takeoff, and click through Takeoff ↔ portal
+tools without hunting the rail every time.
+- Hub **Takeoff** → `/ui/takeoff` (portal launcher, not a bare Netlify dump).
+  Brand + **Back to hub**; Open Takeoff app (new tab, `?return=`/`from=portal`);
+  Import into Estimate; site-map of the money path.
+- Shared **Path** strip on Takeoff / Estimate / Job Start / Job Check / Billing:
+  Hub › Takeoff › Estimate › Job Start › Job Check › Billing (`web/gvc-flow.js`,
+  `shared/flow_nav.py`).
+- Next-step CTAs: estimate finalize → Job Start; Job Start accepted → Job Check.
+- Training + smoke checklist + integration contract updated. Hub footer **r61**.
+  NOT DEPLOYED. Smoke: hub Takeoff → launcher → Open app (portal tab stays) →
+  Path jump to Estimate.
+
 ## ⚡ JOB CHECK parallel deep-link + office HTML cache (r60) — BUILT 2026-08-07
 - **`?item=` opens immediately** — no longer waits on `/jobs` list; list loads
   in parallel for Change-job. `replaceState` only after a successful load.

@@ -107,7 +107,8 @@ Overlap is fine — two ✅s on Estimate is better than one.
 - [ ] On phone: readable without pinching.
 
 ### C2 · Takeoff → Estimate
-- [ ] Hub **Takeoff** tile opens https://gvctakeoff.netlify.app/v2.html.
+- [ ] Hub **Takeoff** opens `/ui/takeoff` (portal launcher) with Path strip + Back to hub.
+- [ ] From that page, **Open Takeoff app** opens https://gvctakeoff.netlify.app/v2.html in a new tab (portal tab stays).
 - [ ] *(When you have a takeoff ready)* Export for Portal → draft shows up in Estimate Generator (or the path you were shown).
 - [ ] If export isn’t ready today → ⏭ skip and note it.
 

@@ -153,6 +153,7 @@
 </header>
 
 <main class="gvc-shell gvc-moneyform">
+  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Estimating</p>
     <h1 class="gvc-h1">Estimate Generator</h1>
@@ -186,6 +187,13 @@
   <details class="soft-fold" id="takeoff-import-card">
     <summary>Import from Takeoff</summary>
     <div class="fold-body">
+      <p class="hint" style="margin:0 0 10px;">
+        Prefer <a href="/ui/takeoff">Takeoff in the portal</a> (opens the app, keeps a path back),
+        then Export / Send to Portal Queue and import here.
+        <a id="open-takeoff-from-estimate" href="https://gvctakeoff.netlify.app/v2.html"
+           target="_blank" rel="noopener noreferrer">Open Takeoff app</a>
+        · <a href="/ui/jobstart">Job Start</a> after the bid is won.
+      </p>
       <div class="grid">
         <div>
           <label for="takeoff-file">Takeoff JSON file <span class="opt">(optional)</span></label>
@@ -586,6 +594,7 @@ async function run(mode) {
       if (wb.monday_item_url) html += `<div class="result-line">📋 <a href="${wb.monday_item_url}" target="_blank" rel="noopener">Monday item</a> — Stage set to "Sent to Client"${wb.monday_item_created ? " (new item created)" : ""}</div>`;
       if (wb.monday_status) html += `<div class="result-line" style="color:#96763B">⚠️ Monday: ${wb.monday_status}</div>`;
       html += `<div class="result-line">#estimates Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
+      html += `<div class="result-line">Next: when the bid is won, <a href="/ui/jobstart">open Job Start</a> to hand it to Ops · <a href="/ui/takeoff">Takeoff</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // estimate is now real (in Monday) — drop the draft
     }
@@ -1485,8 +1494,14 @@ if (new URLSearchParams(window.location.search).get("takeoff") === "1") {
 }
 </script>
 <script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
 <script>
   if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+  if (window.GvcFlow) {
+    window.GvcFlow.mount(document.getElementById("gvc-flow"), "estimate");
+    const a = document.getElementById("open-takeoff-from-estimate");
+    if (a) a.href = window.GvcFlow.takeoffAppUrl();
+  }
 </script>
 </body>
 </html>

@@ -19,7 +19,9 @@ TOOL_GROUPS: tuple[tuple[str, tuple[tuple[str, str, str, bool], ...]], ...] = (
         ("Activity", "activity", "/ui/activity", False),
     )),
     ("Estimating & bids", (
-        ("Takeoff", "takeoff", "https://gvctakeoff.netlify.app/v2.html", True),
+        # Portal launcher (/ui/takeoff) — Netlify app opens from that page so
+        # the rail never dumps people off-domain without a path back to hub.
+        ("Takeoff", "takeoff", "/ui/takeoff", False),
         ("Estimate Generator", "estimate", "/ui/estimate", False),
         ("Change Order", "change_order", "/ui/change-order", False),
         ("Job Start", "jobstart", "/ui/jobstart", False),

@@ -125,3 +125,16 @@ outbox entry is no longer `queued`. The RTDB rules must include
 is unchanged: the poller only upserts `portal/estimate-drafts.json` — it never
 finalizes, never creates a Gmail draft, never sends. Optional Slack notice per
 staged draft via `GVC_TAKEOFF_OUTBOX_SLACK=1` (default off).
+
+## 2026-08-07 — Portal nav: `/ui/takeoff` launcher + money-spine Path strip
+
+Hub **Takeoff** now points at **`/ui/takeoff`** (portal page, `external: false`),
+not straight at Netlify. That page keeps GVC chrome (brand → hub), a **Path**
+strip (Hub › Takeoff › Estimate › Job Start › Job Check › Billing), and CTAs:
+Open Takeoff app (new tab, with `?return=<portal>/&from=portal` for a future
+Takeoff-side back link) · Import into Estimate (`/ui/estimate?takeoff=1`) ·
+Back to hub. The same Path strip mounts on Estimate / Job Start / Job Check /
+Billing so the money spine is one click between tools. Shared helpers:
+`shared/flow_nav.py`, `web/gvc-flow.js`. Takeoff app still owns measure/export;
+portal still owns draft staging. When Takeoff adds an in-app "Back to Portal"
+control, honor the `return` query param (default `https://portal.greenvalleycontractors.com/`).

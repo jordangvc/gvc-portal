@@ -54,6 +54,11 @@ def test_hub_nav_roles() -> None:
     check("training on hub", training["granted"] is True)
     check("training href", training["href"] == "/ui/training")
 
+    takeoff = next(t for g in hub_nav.groups_for_client({"takeoff"}) for t in g["tools"]
+                   if t["feature"] == "takeoff")
+    check("takeoff portal launcher", takeoff["href"] == "/ui/takeoff")
+    check("takeoff not external", takeoff["external"] is False)
+
 
 def test_hub_pins_validate() -> None:
     from subsystems.hub import pinned as hub_pins
@@ -118,7 +123,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r59 footer", ">r59<" in hub)
+    check("r61 footer", ">r61<" in hub)
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)

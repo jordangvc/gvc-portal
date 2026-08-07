@@ -648,6 +648,39 @@ a:hover{ color:var(--gvc-green-dark); }
 .gvc-chip--warn{ color:#7A5F2E; background:var(--gvc-warn-tint); border-color:#E0CDA9; }
 .gvc-chiprow{ display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
 
+/* ---------- money-spine Path strip (GvcFlow) ---------- */
+.gvc-flow{
+  display:flex; flex-wrap:wrap; align-items:center; gap:8px 12px;
+  margin:0 0 var(--gvc-space-4);
+  padding:10px 12px;
+  background:var(--gvc-tint-sand);
+  border:1px solid var(--gvc-line);
+  border-radius:var(--gvc-r);
+}
+.gvc-flow__label{
+  font-size:var(--gvc-fs-micro); font-weight:700; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--gvc-muted); flex-shrink:0;
+}
+.gvc-flow__track{
+  display:flex; flex-wrap:wrap; align-items:center; gap:2px 0; min-width:0;
+}
+.gvc-flow__step{
+  font-size:var(--gvc-fs-caption); font-weight:600; color:var(--gvc-green-dark);
+  text-decoration:none; padding:6px 8px; border-radius:var(--gvc-r-sm);
+  min-height:40px; display:inline-flex; align-items:center;
+}
+a.gvc-flow__step:hover{ background:var(--gvc-surface); text-decoration:underline; }
+.gvc-flow__step.is-current{
+  background:var(--gvc-green); color:#fff; font-weight:700;
+}
+.gvc-flow__sep{
+  color:var(--gvc-muted); padding:0 2px; font-weight:600; user-select:none;
+}
+@media (max-width:720px){
+  .gvc-flow{ padding:8px 10px; }
+  .gvc-flow__step{ min-height:44px; }
+}
+
 /* status select (Job Check) — closed control carries Monday's board hex inline */
 .gvc-selectwrap{ position:relative; display:block; width:100%; }
 .gvc-select--status{ font-weight:700; padding-right:42px; }
