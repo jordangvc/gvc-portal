@@ -113,6 +113,7 @@
 </header>
 
 <main class="gvc-shell">
+  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
   <div class="gvc-page-hd">
     <p class="gvc-eyebrow">Invoicing</p>
     <h1 class="gvc-h1">Billing</h1>
@@ -458,8 +459,10 @@ loadHub();
 loadActivity();
 </script>
 <script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
 <script>
   if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+  if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "billing"); }
 </script>
 </body>
 </html>

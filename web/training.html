@@ -188,7 +188,7 @@ const MODULES = [
       "Billing Hub → Invoice Generator → customer pays (Stripe or Paid by Check).",
     ],
     links: [
-      { href: "https://gvctakeoff.netlify.app/v2.html", label: "Takeoff", external: true },
+      { href: "/ui/takeoff", label: "Takeoff" },
       { href: "/ui/estimate", label: "Estimate", feature: "estimate" },
       { href: "/ui/jobstart", label: "Job Start", feature: "jobstart" },
       { href: "/ui/jobcheck", label: "Job Check", feature: "jobcheck" },
@@ -201,11 +201,14 @@ const MODULES = [
     need: ["takeoff"],
     why: "Measure → numbers. Portal picks up an Export / Send to Portal Queue into Estimate drafts.",
     steps: [
-      "Open Takeoff (opens in a new tab).",
+      "Open Takeoff from the portal (keeps a path back to the hub).",
       "Open a named draft and walk Estimate → Customer.",
       "Prefer Send to Portal Queue; clipboard Export is the fallback.",
     ],
-    links: [{ href: "https://gvctakeoff.netlify.app/v2.html", label: "Open Takeoff", external: true }],
+    links: [
+      { href: "/ui/takeoff", label: "Open Takeoff" },
+      { href: "/ui/estimate?takeoff=1", label: "Import into Estimate", feature: "estimate" },
+    ],
   },
   {
     id: "estimate",

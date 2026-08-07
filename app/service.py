@@ -1259,6 +1259,27 @@ def portal_command_js() -> Response:
     )
 
 
+@app.get("/ui/gvc-flow.js")
+def portal_flow_js() -> Response:
+    """
+    Money-spine Path strip (web/gvc-flow.js). Ungated like gvc.css —
+    no secrets; short cache so deploys show up.
+    """
+    path = WEB_DIR / "gvc-flow.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_text(encoding="utf-8"),
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @app.get("/ui/gvc-status-picker.js")
 def portal_status_picker_js() -> Response:
     """Grouped status picker for Job Check (web/gvc-status-picker.js)."""
@@ -2296,6 +2317,29 @@ def ui_training(request: Request) -> HTMLResponse:
         .replace("{{EMAIL_JSON}}", json.dumps(email))
     )
     return HTMLResponse(html)
+
+
+@app.get("/ui/takeoff", response_class=HTMLResponse)
+def ui_takeoff_page(request: Request) -> HTMLResponse:
+    """
+    Takeoff launcher — stays on the portal so the hub rail never dumps people
+    onto Netlify with no Path back. CTA opens the Takeoff app in a new tab;
+    Import deep-links Estimate (`?takeoff=1`).
+    """
+    email = require_feature(request, "takeoff")
+    activity.log_event("tool.open", actor=email, target="takeoff")
+    path = WEB_DIR / "takeoff.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return HTMLResponse(
+        _cached_web_html("takeoff.html").replace("{{EMAIL}}", html_escape(email)),
+        headers=_PRIVATE_HTML_CACHE_HEADERS,
+    )
 
 
 @app.get("/ui/timeoff", response_class=HTMLResponse)

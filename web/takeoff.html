@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="emerald">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>GVC Portal — Takeoff</title>
+<script>
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
+<link rel="stylesheet" href="/ui/gvc.css" />
+<style>
+  .tk-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:var(--gvc-space-4); }
+  .tk-map { margin:0; padding-left:1.15rem; color:var(--gvc-ink-soft); line-height:1.55; }
+  .tk-map li { margin:0.35rem 0; }
+  .tk-map a { color:var(--gvc-green-dark); font-weight:600; }
+</style>
+</head>
+<body>
+
+<header class="gvc-topbar">
+  <div class="gvc-topbar-in">
+    <a class="gvc-brand" href="/" title="Back to the GVC Portal home">
+      <span class="gvc-mono">G</span>
+      <span class="gvc-wordmark">Green Valley Contractors</span>
+    </a>
+    <span class="gvc-topbar-sep"></span>
+    <span class="gvc-topbar-title">Takeoff</span>
+    <div class="gvc-topbar-right">
+      <span class="gvc-topbar-user">{{EMAIL}}</span>
+      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
+      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+    </div>
+  </div>
+</header>
+
+<main class="gvc-shell">
+  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
+
+  <div class="gvc-page-hd">
+    <p class="gvc-eyebrow">Estimating &amp; bids</p>
+    <h1 class="gvc-h1">Takeoff</h1>
+    <p class="gvc-sub">Measure the job in the Takeoff app, then bring numbers back here for the estimate. This page stays in the portal so you can always return to the hub.</p>
+  </div>
+
+  <div class="gvc-card">
+    <div class="gvc-card-hd">
+      <span class="gvc-card-title">Open the Takeoff app</span>
+    </div>
+    <p class="gvc-help" style="margin:0 0 var(--gvc-space-3);">
+      Takeoff runs on its own site (new tab). Keep this portal tab — or use the brand mark / Path strip anytime to get back to the hub.
+    </p>
+    <div class="tk-actions">
+      <a class="gvc-btn gvc-btn--gold" id="open-takeoff" href="https://gvctakeoff.netlify.app/v2.html"
+         target="_blank" rel="noopener noreferrer">Open Takeoff app</a>
+      <a class="gvc-btn gvc-btn--ghost" href="/ui/estimate?takeoff=1">Import into Estimate</a>
+      <a class="gvc-btn gvc-btn--ghost" href="/">Back to hub</a>
+    </div>
+  </div>
+
+  <div class="gvc-card" style="margin-top:var(--gvc-space-4);">
+    <div class="gvc-card-hd">
+      <span class="gvc-card-title">How the money path clicks through</span>
+    </div>
+    <ol class="tk-map">
+      <li><strong>Takeoff</strong> — measure boards / scope; Export or Send to Portal Queue.</li>
+      <li><a href="/ui/estimate?takeoff=1">Estimate Generator</a> — import JSON or resume the staged draft; preview; Accept → hello@ draft.</li>
+      <li><a href="/ui/jobstart">Job Start</a> — when the bid is won, hand the packet to Ops (Ops accepts).</li>
+      <li><a href="/ui/jobcheck">Job Check</a> — field stages on the live job; Mark Ready to Invoice when billing can start.</li>
+      <li><a href="/ui/billing">Billing Hub</a> — ready queue → Invoice Generator / Paid by Check.</li>
+    </ol>
+    <p class="gvc-help" style="margin:var(--gvc-space-3) 0 0;">
+      Use the <strong>Path</strong> strip at the top of each of these pages to jump without hunting the hub rail.
+    </p>
+  </div>
+</main>
+
+<script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
+<script src="/ui/gvc-command.js"></script>
+<script>
+(function () {
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+  if (window.GvcFlow) {
+    window.GvcFlow.mount(document.getElementById("gvc-flow"), "takeoff");
+    var a = document.getElementById("open-takeoff");
+    if (a) a.href = window.GvcFlow.takeoffAppUrl();
+  }
+})();
+</script>
+</body>
+</html>
