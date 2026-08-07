@@ -84,6 +84,34 @@ def allowlisted_columns() -> list[dict]:
     return _gate_column_entries(boards.JOBCHECK_COLUMNS, board=BOARD_OPS)
 
 
+def columns_present_on_board(entries: list[dict], meta: dict) -> list[dict]:
+    """
+    Keep allowlist entries whose column id exists in live board metadata.
+
+    Monday's columns(ids:…) omits unknown ids instead of erroring, so absence
+    means the column was deleted or renamed on the board. Stale config ids
+    must not be offered as editable — Save would hit InvalidColumnIdException
+    (seen live 2026-08-07 for Ops `long_text_mkpzf3je` / Open questions).
+    """
+    if not meta:
+        # Empty meta usually means the board read failed entirely — keep the
+        # allowlist so the form can still render; the write path will surface
+        # real Monday errors. Only drop when meta is a non-empty partial set.
+        return list(entries)
+    return [c for c in entries if c.get("id") in meta]
+
+
+def missing_board_column_message(entry: dict, col_id: str) -> str:
+    """Human-readable failure when a submitted column is gone from Monday."""
+    label = (entry or {}).get("label") or col_id
+    board = (entry or {}).get("board") or BOARD_OPS
+    board_name = "Operations" if board == BOARD_OPS else "Projects"
+    return (f"Column '{label}' ({col_id}) is not on the {board_name} board "
+            f"anymore — it was deleted or renamed on Monday. Update "
+            f"shared/boards.py (JOBCHECK_COLUMNS / trade columns) with the "
+            f"new column id, or remove the stale entry.")
+
+
 def allowlisted_projects_trade_columns() -> list[dict]:
     """
     Projects-board trade statuses (phase-2 slice 1). Same hard-exclusion gate
@@ -309,6 +337,9 @@ def get_job_detail(item_id: int) -> Optional[dict]:
     project_item_id = ginfo.get("project_item_id")
     project_link_error = ginfo.get("error")
 
+    # Hide Ops columns Monday no longer has (stale JOBCHECK_COLUMNS ids).
+    ops_cols = columns_present_on_board(ops_cols, meta)
+
     trade_values: dict = {}
     trade_meta: dict = {}
     if project_item_id and trade_ids:
@@ -323,6 +354,8 @@ def get_job_detail(item_id: int) -> Optional[dict]:
             trade_meta = pmeta_fut.result()
         if pitem is not None:
             trade_values = pitem.get("values") or {}
+        # Same gate for Projects trade columns when we successfully read meta.
+        trade_cols = columns_present_on_board(trade_cols, trade_meta)
 
     form_columns = []
     for c in ops_cols:
@@ -424,6 +457,7 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
             status_labels[field_key(BOARD_OPS, cid)] = labels
 
     before_trade: dict = {}
+    trade_meta: dict = {}
     if project_item_id and trade_ids:
         trade_meta = mj.get_board_columns(mc, trade_ids, boards.PROJECTS_BOARD_ID)
         for cid, m in trade_meta.items():
@@ -442,16 +476,26 @@ def save_job_check(item_id: int, values: dict, actor: str) -> dict:
 
     # Split shaped values by board; map back to bare Monday column ids for the
     # mutation, but keep field keys in written/failures for the UI.
+    # Columns absent from live board meta are rejected here (clear message)
+    # and never sent to Monday — avoids InvalidColumnIdException aborting a
+    # batch that also contains good columns.
     ops_shaped: dict[str, Any] = {}
     proj_shaped: dict[str, Any] = {}
     ops_key_by_col: dict[str, str] = {}
     proj_key_by_col: dict[str, str] = {}
     for key, api_value in shaped.items():
         board, col_id = parse_value_key(key)
+        entry = accepted.get(key) or {}
         if board == BOARD_PROJECTS:
+            if trade_meta and col_id not in trade_meta:
+                failures[key] = missing_board_column_message(entry, col_id)
+                continue
             proj_shaped[col_id] = api_value
             proj_key_by_col[col_id] = field_key(BOARD_PROJECTS, col_id)
         else:
+            if ops_meta and col_id not in ops_meta:
+                failures[key] = missing_board_column_message(entry, col_id)
+                continue
             ops_shaped[col_id] = api_value
             ops_key_by_col[col_id] = key  # preserve bare vs ops: prefix
 
