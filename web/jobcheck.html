@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Job Check</title>
 <script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
   try {
     var k = "gvc-theme", v = localStorage.getItem(k);
@@ -1031,6 +1032,10 @@ window.addEventListener("beforeunload", (e) => {
 });
 checkHealth();
 loadJobs();
+</script>
+<script src="/ui/gvc-theme.js"></script>
+<script>
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
 </body>
 </html>

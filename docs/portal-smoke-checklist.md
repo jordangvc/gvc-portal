@@ -37,7 +37,7 @@ Overlap is fine — two ✅s on Estimate is better than one.
 |---|---|---|
 | A1 | Sign in at the portal URL | Your email shows; **role home** loads (not a blank page) |
 | A2 | Hub home on phone | Needs / next actions readable; bottom dock usable; no horizontal scroll mess |
-| A3 | Theme toggle (if shown on hub) | Light ↔ dark sticks after refresh |
+| A3 | Theme toggle on hub **or** Estimate / Job Check | Light ↔ Auto ↔ Dark sticks after refresh on the next page too |
 | A4 | Sign out / sign back in | Comes back to hub without a dead end |
 
 ---
