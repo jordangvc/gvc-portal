@@ -35,23 +35,36 @@ COLD_PATH_BUDGET = {
     },
     "office_hub": {
         "min_graphql": 5,
-        "typical_graphql": "6 + 2×unique_morning_cards",
-        "shape": "morning brief ∥ billing (owner also ∥ pulse)",
+        "typical_graphql": "5–6+ (no GFolder)",
+        "shape": "morning brief ∥ billing (owner also ∥ pulse); hub skips GFolder",
         "html_blocks_on_monday": False,
         "api_blocks_live_paint": True,
         "notes": (
-            "Morning _attach_gfolder_urls is SERIAL: 2 GraphQL per unique Ops card. "
-            "Job Check + Morning use separate Ops cache keys → duplicate full walks when both cold. "
-            "Boot used to call /hub/refresh then /hub (2× Monday); first paint is now /hub only."
+            "Hub build_employee_brief(attach_gfolder=False) — Open Drive is Morning-only. "
+            "Morning page still attaches GFolder in PARALLEL (2 GraphQL × unique Ops cards). "
+            "Job Check list reshapes Morning Ops cache (no second Ops pagination when boards match). "
+            "Boot is /hub only; warm runs AFTER first paint (not concurrent)."
         ),
     },
-    "jobcheck_list": {
-        "min_graphql": 1,
-        "typical_graphql": "1–P pages",
-        "shape": "serial Ops pagination",
+    "billing_search": {
+        "min_graphql": 9,
+        "typical_graphql": "9–14 (projects∥bids)",
+        "shape": "rich projects (5–7 legs) ∥ rich bids (4 legs)",
         "html_blocks_on_monday": False,
         "api_blocks_live_paint": True,
-        "notes": "Same Operations board as Morning, different cache key.",
+        "notes": "Wall time should be max(projects, bids), not sum — search_billing parallelizes.",
+    },
+    "jobcheck_list": {
+        "min_graphql": 0,
+        "typical_graphql": "0 when Morning warm; else 1–P (fat Morning walk)",
+        "shape": "reshape of list:morning:ops_items (same board default)",
+        "html_blocks_on_monday": False,
+        "api_blocks_live_paint": True,
+        "notes": (
+            "Job Check no longer paginates Ops separately when "
+            "JOBCHECK_BOARD_ID == MORNING_BOARD_ID. Cold Job-Check-only still "
+            "pays one fat Morning walk."
+        ),
     },
     "jobcheck_detail": {
         "min_graphql": 3,

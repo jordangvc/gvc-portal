@@ -11,11 +11,21 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## ✨ FIELD GUIDE CATALOG ↔ SHELL WIRING (r73) — BUILT 2026-08-08
+## ✨ FIELD GUIDE CATALOG ↔ SHELL WIRING (r74) — BUILT 2026-08-08
 Procedure API returns rendered HTML; Field Manual injects catalog `.nextpath`
-on spine docs (hang/scrape/finish/… were dead-ends). Coach merges catalog
-related/next into related. hang/scrape steps re-synced from HTML. OSS reuse
-map: `docs/OSS-REUSE-MAP.md`. Hub **r73**.
+on spine docs (hang/scrape/finish/… were dead-ends). Home search also queries
+`/ui/api/fieldguide/search` for synonym hits beyond tile text. Coach merges
+catalog related/next into related. hang/scrape steps re-synced from HTML. OSS
+reuse map: `docs/OSS-REUSE-MAP.md`. Hub **r74**.
+
+## ⚡ Monday critical-path perf (r73) — BUILT 2026-08-08
+Evidence-backed: live paint waits on Monday JSON, not HTML/bundles. Fixes:
+hub skips morning GFolder attach (2×N GraphQL the hub never showed); Morning
+GFolder attach parallelized; billing rich search projects∥bids; warm derives
+`accepted_bids` from jobstart (no second Bid walk); Path pages warm **after**
+first paint; Job Check Ops list derives from Morning Ops walk (no second
+pagination). Repeatable audit: `docs/ops/perf-audit.md` +
+`scripts/measure_monday_paths.py`. Hub **r73**.
 
 ## ✨ FIELD GUIDE JOB-CHECK SPINE (r71) — BUILT 2026-08-08
 Catalog now covers the drywall Job Check spine end-to-end:

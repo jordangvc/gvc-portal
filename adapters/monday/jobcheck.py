@@ -37,6 +37,7 @@ from shared.boards import (
     JOBCHECK_BOARD_ID,
     JOBCHECK_SKIP_GROUP_IDS,
     JOBSTART_BID_PROJECT_LINK_COL,
+    MORNING_BOARD_ID,
     OPERATIONS_BOARD_ID,
     PROJECTS_BOARD_ID,
     PROJECTS_GFOLDER_COL,
@@ -108,6 +109,10 @@ def fetch_active_jobs(mc) -> list[dict]:
 
     Short-TTL cached (see adapters/monday/cache.py) — Job Check + Field Guide
     both hit this on every page open, and the UI searches client-side.
+
+    When Morning and Job Check share the same board (default), the uncached
+    path reshapes Morning's Ops walk — one GraphQL pagination serves both
+    tools (same pattern as billing accepted_bids ← jobstart bids).
     """
     return monday_cache.get_or_set_swr(
         "list:jobcheck:active_jobs",
@@ -117,7 +122,45 @@ def fetch_active_jobs(mc) -> list[dict]:
     )
 
 
+def shape_active_job_from_morning_row(row: dict) -> Optional[dict]:
+    """
+    Morning Ops row → Job Check picker keys. Membership already filtered by
+    Morning; this only renames fields the Job Check UI expects.
+    """
+    if not row or not row.get("item_id"):
+        return None
+    return {
+        "item_id": int(row["item_id"]),
+        "name": row.get("name") or "",
+        "url": row.get("url") or _item_url(row["item_id"]),
+        "group_id": row.get("group_id"),
+        "group_title": row.get("group_title"),
+        # Morning stores the linked Projects display under project_name.
+        "project_number": row.get("project_name"),
+        "location": row.get("location"),
+        "deal_stage": row.get("project_status"),
+    }
+
+
+def _ops_list_cache_keys() -> tuple[str, ...]:
+    """Caches that share the active Ops membership set."""
+    return ("list:jobcheck:active_jobs", "list:morning:ops_items")
+
+
 def _fetch_active_jobs_uncached(mc) -> list[dict]:
+    # Same board as Morning (default) → reshape Morning's fat walk. Divergent
+    # env overrides keep the lean Job Check pagination so neither tool sees
+    # the wrong board.
+    if int(JOBCHECK_BOARD_ID) == int(MORNING_BOARD_ID):
+        from adapters.monday import morning as monday_morning
+        rows = monday_morning.fetch_ops_items(mc)
+        out: list[dict] = []
+        for row in rows or []:
+            shaped = shape_active_job_from_morning_row(row)
+            if shaped is not None:
+                out.append(shaped)
+        return out
+
     col_ids = json.dumps([CONTEXT_COL_PROJECT_LINK, CONTEXT_COL_LOCATION,
                           CONTEXT_COL_PROJECT_STATUS])
     query = """
@@ -375,6 +418,7 @@ def move_ops_item_to_ready_to_invoice(
 
     monday_cache.invalidate(
         "list:jobcheck:active_jobs",
+        "list:morning:ops_items",
         "list:billing:ready_to_invoice",
     )
     out["ok"] = True
@@ -406,7 +450,7 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any],
     try:
         mc._query(_MUTATION, {**variables, "values": json.dumps(values)})
         if bid == JOBCHECK_BOARD_ID:
-            monday_cache.invalidate("list:jobcheck:active_jobs")
+            monday_cache.invalidate("list:jobcheck:active_jobs", "list:morning:ops_items")
         return {"written": sorted(values), "failed": {}}
     except Exception as batch_err:  # noqa: BLE001 — fall through to per-column
         batch_msg = f"{type(batch_err).__name__}: {batch_err}"
@@ -423,7 +467,7 @@ def set_item_columns(mc, item_id: int, values: dict[str, Any],
     if not written and not failed:
         failed["_batch"] = batch_msg
     if written and bid == JOBCHECK_BOARD_ID:
-        monday_cache.invalidate("list:jobcheck:active_jobs")
+        monday_cache.invalidate("list:jobcheck:active_jobs", "list:morning:ops_items")
     return {"written": sorted(written), "failed": failed}
 
 
@@ -712,7 +756,7 @@ def set_ops_project_link_if_empty(mc, ops_item_id: int,
         return {"ok": False, "written": False, "skipped": False,
                 "project_item_id": int(project_item_id),
                 "error": f"write failed: {type(e).__name__}: {e}"}
-    monday_cache.invalidate("list:jobcheck:active_jobs")
+    monday_cache.invalidate("list:jobcheck:active_jobs", "list:morning:ops_items")
     return {"ok": True, "written": True, "skipped": False,
             "project_item_id": int(project_item_id)}
 

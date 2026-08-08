@@ -39,11 +39,15 @@ def test_jobcheck_deeplink_does_not_wait_on_jobs_list():
         r"async function loadJobs\(\)\s*\{(.*?)\n\}", main, re.S)
     assert load_jobs_fn, "loadJobs missing"
     assert "bootJobFromUrl" not in load_jobs_fn.group(1)
-    # Boot runs first; list is fire-and-forget afterward.
+    # Boot runs first; list is fire-and-forget afterward (may be loadJobs() or
+    # Promise.resolve(loadJobs()).finally(...) for deferred warm).
     assert "await bootJobFromUrl()" in main
-    assert re.search(r"bootJobFromUrl\(\);\s*\n\s*loadJobs\(\)", main) or (
-        "loadJobs();" in main and main.index("await bootJobFromUrl()") < main.index("loadJobs()")
-    )
+    boot_idx = main.index("await bootJobFromUrl()")
+    # Prefer the boot IIFE call site, not the function definition.
+    boot_tail = main[boot_idx:]
+    assert "loadJobs()" in boot_tail
+    assert "await loadJobs()" not in boot_tail
+    assert boot_tail.index("loadJobs()") < 400  # near the boot call, not a later helper
 
 
 def test_jobcheck_saveflash_no_yank_on_ok():

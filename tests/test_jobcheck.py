@@ -229,6 +229,79 @@ def test_normalize_job_keeps_active_and_maps_columns():
     assert str(mj.JOBCHECK_BOARD_ID) in row["url"]
 
 
+def test_shape_active_job_from_morning_row():
+    shaped = mj.shape_active_job_from_morning_row({
+        "item_id": 42,
+        "name": "Ops task",
+        "url": "https://monday.example/42",
+        "group_id": "topics",
+        "group_title": "Active",
+        "project_name": "9761 Gertrude | Builder",
+        "location": "Cincinnati OH",
+        "project_status": "In Progress",
+        "stage": "Hanging",
+    })
+    assert shaped == {
+        "item_id": 42,
+        "name": "Ops task",
+        "url": "https://monday.example/42",
+        "group_id": "topics",
+        "group_title": "Active",
+        "project_number": "9761 Gertrude | Builder",
+        "location": "Cincinnati OH",
+        "deal_stage": "In Progress",
+    }
+    assert mj.shape_active_job_from_morning_row({}) is None
+
+
+def test_fetch_active_jobs_uncached_reshapes_morning_when_same_board():
+    """Default: Job Check list is a reshape of Morning Ops — no 2nd walk."""
+    calls = {"morning": 0, "query": 0}
+
+    class _MC:
+        def _query(self, *a, **k):
+            calls["query"] += 1
+            raise AssertionError("lean Job Check walk must not run")
+
+    morning_rows = [{
+        "item_id": 7,
+        "name": "From morning",
+        "url": "u",
+        "group_id": "topics",
+        "group_title": "Active",
+        "project_name": "PN",
+        "location": "Loc",
+        "project_status": "Active",
+    }]
+
+    import adapters.monday.morning as mm
+    orig = mm.fetch_ops_items
+
+    def fake_fetch(mc):
+        calls["morning"] += 1
+        return morning_rows
+
+    mm.fetch_ops_items = fake_fetch
+    try:
+        out = mj._fetch_active_jobs_uncached(_MC())
+    finally:
+        mm.fetch_ops_items = orig
+    assert calls["morning"] == 1
+    assert calls["query"] == 0
+    assert out[0]["item_id"] == 7
+    assert out[0]["project_number"] == "PN"
+    assert out[0]["deal_stage"] == "Active"
+
+
+def test_ops_writes_invalidate_morning_and_jobcheck_caches():
+    src = (Path(__file__).resolve().parents[1] / "adapters" / "monday" /
+           "jobcheck.py").read_text(encoding="utf-8")
+    assert 'invalidate("list:jobcheck:active_jobs", "list:morning:ops_items")' in src
+    move_chunk = src.split("def move_ops_item_to_ready_to_invoice")[1].split(
+        "def set_item_columns")[0]
+    assert "list:morning:ops_items" in move_chunk
+
+
 def test_normalize_job_skips_finished_and_lost():
     # Completed Tasks and the office's invoicing queue are hidden from the crew.
     assert mj._normalize_job(_raw_item(group="new_group",
@@ -1141,3 +1214,15 @@ def test_jobcheck_slack_skips_cleanly_without_a_channel(monkeypatch=None):
     finally:
         if old is not None:
             os.environ["GVC_JOBCHECK_SLACK_CHANNEL"] = old
+
+
+def test_jobcheck_photo_blocked_guidance_in_ui():
+    """Blocked photos must name the next step (link panel / office GFolder)."""
+    from pathlib import Path
+    body = (Path(__file__).resolve().parents[1] / "web" / "jobcheck.html").read_text(
+        encoding="utf-8")
+    assert "photolinkfix" in body
+    assert "Link Projects item" in body
+    assert "GFolder Link" in body
+    assert "has_project_link" in body
+    assert "linkpanel" in body and "scrollIntoView" in body

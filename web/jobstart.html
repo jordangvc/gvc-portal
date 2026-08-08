@@ -1068,18 +1068,19 @@ function bootJobStartFromUrl() {
   return true;
 }
 
-/* Warm Monday snapshot for accepted-bids list (Hub also warms; belt+suspenders). */
-fetch("/ui/api/monday/warm", {
-  method: "POST", credentials: "same-origin", keepalive: true,
-}).catch(() => {});
 checkHealth();
-/* Deep-link opens the packet NOW; bids list loads in parallel for Change bid. */
+/* Deep-link opens the packet NOW; bids list loads in parallel for Change bid.
+   Warm AFTER bids fetch settles — avoids racing the Bid Board walk. */
 (async () => {
   const deep = bootJobStartFromUrl();
   if (!deep && $("#bidlist")) {
     $("#bidlist").innerHTML = `<div class="hint">Loading accepted bids…</div>`;
   }
-  loadBids(); /* fire-and-forget when deep-linked */
+  Promise.resolve(loadBids()).finally(() => {
+    fetch("/ui/api/monday/warm", {
+      method: "POST", credentials: "same-origin", keepalive: true,
+    }).catch(() => {});
+  });
 })();
 </script>
 <script src="/ui/gvc-theme.js"></script>
