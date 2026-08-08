@@ -591,7 +591,11 @@ async function run(mode) {
       if (wb.monday_item_url) html += `<div class="result-line">📋 <a href="${wb.monday_item_url}" target="_blank" rel="noopener">Monday item</a> — Stage set to "Sent to Client"${wb.monday_item_created ? " (new item created)" : ""}</div>`;
       if (wb.monday_status) html += `<div class="result-line" style="color:#96763B">⚠️ Monday: ${wb.monday_status}</div>`;
       html += `<div class="result-line">#estimates Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
-      html += `<div class="result-line">Next: when the bid is won, <a href="/ui/jobstart">open Job Start</a> to hand it to Ops · <a href="/ui/takeoff">Takeoff</a> · <a href="/">hub</a>.</div>`;
+      const bidId = wb.monday_item_id || val("job_monday_item_id") || "";
+      const jobStartHref = bidId
+        ? `/ui/jobstart?bid=${encodeURIComponent(String(bidId))}`
+        : "/ui/jobstart";
+      html += `<div class="result-line">Next: when the bid is won, <a href="${jobStartHref}">open Job Start</a> to hand it to Ops · <a href="/ui/takeoff">Takeoff</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // estimate is now real (in Monday) — drop the draft
     }
@@ -1489,6 +1493,10 @@ if (new URLSearchParams(window.location.search).get("takeoff") === "1") {
     $("#takeoff-json").focus({ preventScroll: true });
   });
 }
+/* Warm Monday snapshot for Find-the-Bid (Hub also warms; Path can skip Hub). */
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(() => {});
 </script>
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>

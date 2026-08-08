@@ -33,7 +33,7 @@ from typing import Literal, Optional
 
 import stripe
 from dotenv import load_dotenv
-from fastapi import FastAPI, File, Form, Header, HTTPException, Request, UploadFile
+from fastapi import FastAPI, File, Form, Header, HTTPException, Query, Request, UploadFile
 from fastapi.exception_handlers import http_exception_handler
 from fastapi.responses import FileResponse, HTMLResponse, RedirectResponse, Response
 from pydantic import BaseModel, Field
@@ -3996,11 +3996,16 @@ def ui_jobstart_bids(request: Request) -> dict:
 
 
 @app.get("/ui/api/jobstart/bid/{bid_id}")
-def ui_jobstart_bid(bid_id: int, request: Request) -> dict:
+def ui_jobstart_bid(bid_id: int, request: Request,
+                    lite: bool = Query(
+                        False,
+                        description="Skip Drive scope/estimate ingest for first paint",
+                    )) -> dict:
     """One bid's context, packet spec, prefilled values and gate state."""
     actor = require_feature(request, "jobstart")
     try:
-        detail = jobstart_flow.get_handoff_detail(bid_id, actor)
+        detail = jobstart_flow.get_handoff_detail(
+            bid_id, actor, include_drive=not lite)
     except MondayNotConfigured as e:
         raise HTTPException(
             status_code=503,

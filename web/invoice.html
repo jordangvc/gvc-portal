@@ -156,6 +156,7 @@
     </div>
   </div>
 </header>
+<nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
 
 <main class="gvc-shell gvc-moneyform">
   <div class="gvc-page-hd">
@@ -1614,10 +1615,16 @@ if ($("#client_no_email")) {
 checkHealth();
 refreshDrafts();
 bootInvoiceFromUrl();
+/* Warm Monday for Find-the-Project (Path can skip Hub). */
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(() => {});
 </script>
 <script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
 <script>
   if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+  if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "invoice"); }
 </script>
 </body>
 </html>

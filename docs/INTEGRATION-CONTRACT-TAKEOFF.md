@@ -130,7 +130,7 @@ staged draft via `GVC_TAKEOFF_OUTBOX_SLACK=1` (default off).
 
 Hub **Takeoff** now points at **`/ui/takeoff`** (portal page, `external: false`),
 not straight at Netlify. That page keeps GVC chrome (brand → hub), a **Path**
-strip (Hub › Takeoff › Estimate › Job Start › Job Check › Billing), and CTAs:
+strip (Hub › Takeoff › Estimate › Job Start › Job Check › Billing › Invoice), and CTAs:
 Open Takeoff app (new tab, with `?return=<portal>/&from=portal` for a future
 Takeoff-side back link) · Import into Estimate (`/ui/estimate?takeoff=1`) ·
 Back to hub. The same Path strip mounts on Estimate / Job Start / Job Check /

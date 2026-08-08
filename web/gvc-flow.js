@@ -13,6 +13,7 @@
     { id: "jobstart", label: "Job Start", href: "/ui/jobstart" },
     { id: "jobcheck", label: "Job Check", href: "/ui/jobcheck" },
     { id: "billing", label: "Billing", href: "/ui/billing" },
+    { id: "invoice", label: "Invoice", href: "/ui/invoice" },
   ];
 
   var TAKEOFF_APP = "https://gvctakeoff.netlify.app/v2.html";

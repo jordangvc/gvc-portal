@@ -451,6 +451,10 @@ $("#billing-q").addEventListener("keydown", (e) => {
 });
 $("#act-filter").addEventListener("input", () => renderActivity($("#act-filter").value));
 
+/* Warm Monday snapshot for queues / search (Hub also warms; Path can skip Hub). */
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(() => {});
 checkHealth();
 loadHub();
 loadActivity();

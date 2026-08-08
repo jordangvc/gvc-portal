@@ -24,8 +24,9 @@ def test_flow_nav_spine() -> None:
     ids = flow_nav.spine_ids()
     check("spine starts hub", ids[0] == "hub")
     check("spine has takeoff", "takeoff" in ids)
-    check("spine ends billing", ids[-1] == "billing")
-    check("six steps", len(ids) == 6)
+    check("spine ends invoice", ids[-1] == "invoice")
+    check("seven steps", len(ids) == 7)
+    check("billing before invoice", ids.index("billing") < ids.index("invoice"))
 
     steps = flow_nav.spine_steps()
     takeoff = next(s for s in steps if s["id"] == "takeoff")
@@ -61,6 +62,7 @@ def test_takeoff_page_and_flow_js_on_disk() -> None:
         ("jobstart.html", "jobstart"),
         ("jobcheck.html", "jobcheck"),
         ("billing.html", "billing"),
+        ("invoice.html", "invoice"),
     ):
         body = (web / page).read_text(encoding="utf-8")
         check(f"{page} has path host", 'id="gvc-flow"' in body)
@@ -79,8 +81,31 @@ def test_takeoff_route_registers() -> None:
     check("/ui/gvc-flow.js route", "/ui/gvc-flow.js" in paths)
 
 
+def test_jobstart_boot_warms_and_parallels_list() -> None:
+    """Deep-link ?bid= must not block Change-bid list warm (Job Check parity)."""
+    body = (ROOT / "web" / "jobstart.html").read_text(encoding="utf-8")
+    check("jobstart warms monday", '/ui/api/monday/warm' in body)
+    check("jobstart boot loads bids always", "loadBids()" in body)
+    check("deep bid keepStatus", "keepStatus" in body and "bootJobStartFromUrl" in body)
+    check("lite first paint", "?lite=1" in body and "hydrateDriveSources" in body)
+    check("drive_pending banner", "drive_pending" in body)
+    for page in ("billing.html", "estimate.html"):
+        html = (ROOT / "web" / page).read_text(encoding="utf-8")
+        check(f"{page} warms monday", '/ui/api/monday/warm' in html)
+
+
+def test_estimate_finalize_deeplinks_jobstart_bid() -> None:
+    body = (ROOT / "web" / "estimate.html").read_text(encoding="utf-8")
+    check(
+        "finalize next uses jobstart?bid=",
+        "/ui/jobstart?bid=" in body and "monday_item_id" in body,
+    )
+
+
 if __name__ == "__main__":
     test_flow_nav_spine()
     test_takeoff_page_and_flow_js_on_disk()
     test_takeoff_route_registers()
+    test_jobstart_boot_warms_and_parallels_list()
+    test_estimate_finalize_deeplinks_jobstart_bid()
     print("all ok")

@@ -568,13 +568,20 @@ def list_open_handoffs() -> dict:
             "required_keys": required_keys()}
 
 
-def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
+def get_handoff_detail(bid_id: int, actor: str = "", *,
+                       include_drive: bool = True) -> Optional[dict]:
     """
     Everything the page needs for one bid: read-only context, the packet spec
     with live status labels, prefilled values (saved packet wins over bid
     prefill), and the handoff state — including whether THIS person may accept
     it. None when the bid doesn't exist.
+
+    ``include_drive=False`` (lite / first paint) skips scope-review + estimate
+    Drive walks so the form opens from Monday/draft immediately; the client
+    then re-fetches with Drive on and hydrates empty fields.
     """
+    from concurrent.futures import ThreadPoolExecutor
+
     from adapters.monday.client import MondayClient
     from adapters.monday import jobstart as mj
     from subsystems.jobstart import drafts
@@ -604,8 +611,19 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
     # prior builder packets > Bid Board columns.
     # Every automatic source is best-effort: the page must still open when Drive
     # or Monday is unreachable, just with less prefilled.
-    scope_values, scope_info = _scope_review_values(bid)
-    estimate_values, estimate_info = _estimate_values(bid)
+    if include_drive:
+        # Scope review + estimate sidecar are independent Drive walks — run
+        # together so a slow Completed Plans list doesn't serialize behind the
+        # sidecar search (and vice versa).
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            fut_scope = pool.submit(_scope_review_values, bid)
+            fut_est = pool.submit(_estimate_values, bid)
+            scope_values, scope_info = fut_scope.result()
+            estimate_values, estimate_info = fut_est.result()
+    else:
+        scope_values, scope_info = {}, {"found": False, "pending": True}
+        estimate_values, estimate_info = {}, {"found": False, "pending": True}
+
     update_values = _update_values(bid)
 
     values, sources = ingest.merge(
@@ -721,6 +739,7 @@ def get_handoff_detail(bid_id: int, actor: str = "") -> Optional[dict]:
         "sources": sources,
         "scope_review": scope_info,
         "estimate": estimate_info,
+        "drive_pending": not include_drive,
         "status": status,
         "editable": status in drafts.EDITABLE_STATUSES,
         "can_send": not missing and status in drafts.EDITABLE_STATUSES,
