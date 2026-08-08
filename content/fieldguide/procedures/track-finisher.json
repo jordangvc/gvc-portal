@@ -1,0 +1,137 @@
+{
+  "id": "track-finisher",
+  "slug": "track-finisher",
+  "title": "Track: Finisher",
+  "short_answer": "Job Check now has Taped → 2nd Bed → 3rd Coat → Sanded → Text/Skim for a reason.",
+  "summary": "Job Check now has Taped → 2nd Bed → 3rd Coat → Sanded → Text/Skim for a reason.",
+  "plain_words": "Job Check now has Taped → 2nd Bed → 3rd Coat → Sanded → Text/Skim for a reason. Your track is honesty about which coat you are actually on, and never sanding what you should have scraped.",
+  "when_to_use": [
+    "Onboarding / progression for the track: finisher",
+    "Choosing what to study next on the phone"
+  ],
+  "prerequisites": [
+    "Start with Your First Week if you are new"
+  ],
+  "trade_id": "drywall",
+  "category_id": "production-finishes",
+  "template": "reference",
+  "stage_line": "Training · finisher path",
+  "role_tags": [
+    "finisher",
+    "crew",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Scraping + Finishing Drywall (levels + mud choice in Ful",
+      "body": "Scraping + Finishing Drywall (levels + mud choice in Full detail)",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Safety Orientation silica / vacuum sanding",
+      "body": "Safety Orientation silica / vacuum sanding",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "QC Walk + Drywall Touch-Up",
+      "body": "QC Walk + Drywall Touch-Up",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Painting handoff (primer / sheen traps)",
+      "body": "Painting handoff (primer / sheen traps)",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Punch List Cadence",
+      "body": "Punch List Cadence",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Graduation: coats match Job Check; no skip-scrape habit;",
+      "body": "Graduation: coats match Job Check; no skip-scrape habit; Level 5 only when specified",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "track-finisher-q1",
+      "prompt": "Track: Finisher: linked procedures practiced to standard",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip foundations",
+      "wrong": "Jump to production without safety/drawings/dont",
+      "right": "Follow the track order",
+      "why": "Expensive habits form in week one"
+    },
+    {
+      "title": "Track without Job Check",
+      "wrong": "Study the guide but never write honest stages",
+      "right": "Pair each skill with Job Check truth",
+      "why": "Training without documentation is theater"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "painting",
+    "punch-cadence",
+    "safety-orient"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "scrape",
+      "label": "Scraping",
+      "why": "Prep before tape"
+    },
+    {
+      "procedure_id": "finish",
+      "label": "Tape & Finish",
+      "why": "Primary skill"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Honest pass/fail"
+    },
+    {
+      "procedure_id": "touchup-drywall",
+      "label": "Drywall Touch-Up",
+      "why": "Punch skill"
+    }
+  ],
+  "search_tags": [
+    "finisher",
+    "taper",
+    "mud track"
+  ],
+  "synonyms": [
+    "finisher track",
+    "taper path",
+    "finishing path"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated role track from Field Guide HTML shell."
+  }
+}

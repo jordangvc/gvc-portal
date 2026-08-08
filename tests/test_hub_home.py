@@ -217,7 +217,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r98 footer", ">r98<" in hub)
+    check("r99 footer", ">r99<" in hub)
     check("boot json placeholder", "{{HUB_BOOT_JSON}}" in hub or "HUB_BOOT" in hub)
     check("instant shell paint", "paintInstantShell" in hub)
     check("quick actions", "hub-quick" in hub or "quickactions" in hub)

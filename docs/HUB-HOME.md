@@ -7,7 +7,7 @@ tools live in a left rail (desktop) or drawer + bottom bar (phone).
 `orchestrators/hub_flow.py` · `subsystems/hub/pinned.py` · `GET /ui/api/hub` ·
 `PUT /ui/api/hub/pinned`
 
-Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r98**.
+Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r99**.
 
 ## Fast first paint (r90+)
 
@@ -90,4 +90,4 @@ bucket is missing (in-session only; toast says so). Queue rows have ★ pin.
 - Richer Activity shared with Owner Pulse as adapters land
 - AR money-at-risk sort when billing exposes due amounts
 - Optional: cache-only `/hub/refresh` when L1/L2 Monday snapshots are fresh
-- Field Guide leftovers: role tracks, glossary/sources, cabinets (large)
+- Field Guide leftovers: glossary/sources/index, cabinets (large HTML)

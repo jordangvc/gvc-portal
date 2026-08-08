@@ -1,0 +1,137 @@
+{
+  "id": "track-lead",
+  "slug": "track-lead",
+  "title": "Track: Lead / Foreman",
+  "short_answer": "If you are new to leading at GVC, complete this track even if you already know drywall.",
+  "summary": "If you are new to leading at GVC, complete this track even if you already know drywall.",
+  "plain_words": "If you are new to leading at GVC, complete this track even if you already know drywall. The portal habits and CO discipline are company-specific.",
+  "when_to_use": [
+    "Onboarding / progression for the track: lead / foreman",
+    "Choosing what to study next on the phone"
+  ],
+  "prerequisites": [
+    "Start with Your First Week if you are new"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-leadership",
+  "template": "reference",
+  "stage_line": "Training · lead path",
+  "role_tags": [
+    "lead",
+    "foreman"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Lead Carpenter Day + Morning Prep & Huddle + Escalation",
+      "body": "Lead Carpenter Day + Morning Prep & Huddle + Escalation Ladder",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Portal Tools + Job Start → First Day + Job Check habit",
+      "body": "Portal Tools + Job Start → First Day + Job Check habit",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Spotting a Change Order + QC Walk + Don't Do This",
+      "body": "Spotting a Change Order + QC Walk + Don't Do This",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Fire Walls & Shaftwall + Firestopping in Full detail",
+      "body": "Fire Walls & Shaftwall + Firestopping in Full detail",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Run one job day end-to-end: brief → QC → Job Check → clo",
+      "body": "Run one job day end-to-end: brief → QC → Job Check → closeout photos",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Teach one procedure to a helper in Plain mode",
+      "body": "Teach one procedure to a helper in Plain mode",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "track-lead-q1",
+      "prompt": "Track: Lead / Foreman: linked procedures practiced to standard",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip foundations",
+      "wrong": "Jump to production without safety/drawings/dont",
+      "right": "Follow the track order",
+      "why": "Expensive habits form in week one"
+    },
+    {
+      "title": "Track without Job Check",
+      "wrong": "Study the guide but never write honest stages",
+      "right": "Pair each skill with Job Check truth",
+      "why": "Training without documentation is theater"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "portal-field-tools",
+    "jobstart-firstday",
+    "changeorder",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "lead-day",
+      "label": "Lead Day",
+      "why": "Daily ownership"
+    },
+    {
+      "procedure_id": "morning-rhythm",
+      "label": "Morning Rhythm",
+      "why": "Start the day"
+    },
+    {
+      "procedure_id": "escalate",
+      "label": "Escalate",
+      "why": "Authority ladder"
+    },
+    {
+      "procedure_id": "ops-lead",
+      "label": "Ops Lead Playbook",
+      "why": "Multi-job ownership"
+    }
+  ],
+  "search_tags": [
+    "lead track",
+    "foreman track",
+    "crew lead"
+  ],
+  "synonyms": [
+    "lead path",
+    "foreman path",
+    "lead carpenter track"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated role track from Field Guide HTML shell."
+  }
+}

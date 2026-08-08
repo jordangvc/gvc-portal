@@ -1,0 +1,136 @@
+{
+  "id": "track-act",
+  "slug": "track-act",
+  "title": "Track: ACT Installer",
+  "short_answer": "Ceilings fail in public.",
+  "summary": "Ceilings fail in public.",
+  "plain_words": "Ceilings fail in public. Equal borders and structure-only hangers are the whole game. Read Acoustical Ceilings in Plain first; Full detail when the grid face or seismic note is unfamiliar.",
+  "when_to_use": [
+    "Onboarding / progression for the track: act installer",
+    "Choosing what to study next on the phone"
+  ],
+  "prerequisites": [
+    "Start with Your First Week if you are new"
+  ],
+  "trade_id": "act",
+  "category_id": "act-ceilings",
+  "template": "reference",
+  "stage_line": "Training · ACT path",
+  "role_tags": [
+    "act",
+    "crew",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Reading Drawings (RCP + reflected notes)",
+      "body": "Reading Drawings (RCP + reflected notes)",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Acoustical Ceilings",
+      "body": "layout, wire, tile edges",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Tectum when the job has direct-attach panels",
+      "body": "Tectum when the job has direct-attach panels",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Clean-Out after grid/tile",
+      "body": "Clean-Out after grid/tile",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Don't Do This",
+      "body": "wires on duct, dirty borders",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Graduation: level grid, equal borders, no duct hangers,",
+      "body": "Graduation: level grid, equal borders, no duct hangers, clean gloves on tile",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "track-act-q1",
+      "prompt": "Track: ACT Installer: linked procedures practiced to standard",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip foundations",
+      "wrong": "Jump to production without safety/drawings/dont",
+      "right": "Follow the track order",
+      "why": "Expensive habits form in week one"
+    },
+    {
+      "title": "Track without Job Check",
+      "wrong": "Study the guide but never write honest stages",
+      "right": "Pair each skill with Job Check truth",
+      "why": "Training without documentation is theater"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "cleanout",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "act",
+      "label": "ACT Ceilings",
+      "why": "Primary skill"
+    },
+    {
+      "procedure_id": "tectum",
+      "label": "Tectum",
+      "why": "Related acoustic panels"
+    },
+    {
+      "procedure_id": "drawings",
+      "label": "Reading Drawings",
+      "why": "RCP and layout"
+    },
+    {
+      "procedure_id": "skill-ladder",
+      "label": "Skill Ladder",
+      "why": "Progression"
+    }
+  ],
+  "search_tags": [
+    "act track",
+    "ceiling track",
+    "grid track"
+  ],
+  "synonyms": [
+    "act path",
+    "ceiling tile track",
+    "grid path"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated role track from Field Guide HTML shell."
+  }
+}

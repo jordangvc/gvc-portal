@@ -33,7 +33,9 @@
         "board-count-check",
         "plywood-backing",
         "abuse-board",
-        "material-feedback"
+        "material-feedback",
+        "track-hanger",
+        "track-finisher"
       ],
       "search_tags": [
         "drywall",
@@ -78,7 +80,9 @@
         "frp",
         "doors",
         "gc-talk",
-        "ops-lead"
+        "ops-lead",
+        "track-laborer",
+        "track-lead"
       ],
       "search_tags": [
         "ops",
@@ -102,7 +106,8 @@
       "icon": "act",
       "procedure_ids": [
         "act",
-        "tectum"
+        "tectum",
+        "track-act"
       ],
       "search_tags": [
         "act",
@@ -163,7 +168,8 @@
       "procedure_ids": [
         "onboard-week1",
         "morning-rhythm",
-        "skill-ladder"
+        "skill-ladder",
+        "track-laborer"
       ],
       "order": 0.25
     },
@@ -183,7 +189,8 @@
         "level5-skim",
         "cleanout",
         "plywood-backing",
-        "sound-walls"
+        "sound-walls",
+        "track-hanger"
       ],
       "order": 1
     },
@@ -220,7 +227,8 @@
       "summary": "CT / ACT grid layout, hanger wire, and tile — level and even borders.",
       "procedure_ids": [
         "act",
-        "tectum"
+        "tectum",
+        "track-act"
       ],
       "order": 4
     },
@@ -265,7 +273,8 @@
       "summary": "Prime and paint the plane — sheen, flashing, and handoff from drywall.",
       "procedure_ids": [
         "painting",
-        "ceiling-finish"
+        "ceiling-finish",
+        "track-finisher"
       ],
       "order": 7
     },
@@ -346,7 +355,8 @@
         "escalate",
         "lead-day",
         "gc-talk",
-        "ops-lead"
+        "ops-lead",
+        "track-lead"
       ],
       "order": 9
     },
@@ -586,6 +596,11 @@
     "plywood backing": "plywood-backing",
     "abuse board": "abuse-board",
     "impact board": "abuse-board",
-    "material return": "material-feedback"
+    "material return": "material-feedback",
+    "laborer track": "track-laborer",
+    "hanger track": "track-hanger",
+    "finisher track": "track-finisher",
+    "act track": "track-act",
+    "lead track": "track-lead"
   }
 }

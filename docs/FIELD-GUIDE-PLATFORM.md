@@ -33,8 +33,9 @@ ACT / firestop / rated / safety / CO / touch-up as before;
 materials + leadership batch (r98): **cement-board**, **receiving**,
 **sound-walls**, **gc-talk**, **ops-lead**, **ceiling-finish**,
 **board-count-check**, **plywood-backing**, **abuse-board**,
-**material-feedback** (**55** approved procedures; link audit clean).
-Leftover shell: role tracks, glossary/sources, cabinets.
+**material-feedback**; role tracks (r99): **track-laborer**, **track-hanger**,
+**track-finisher**, **track-act**, **track-lead** (**60** approved procedures;
+link audit clean). Leftover shell: glossary/sources/index, cabinets.
 
 Coach: catalog-only procedure ids synthesize checklist steps from catalog
 `steps` (no home-tile FALLBACK).

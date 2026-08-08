@@ -1,0 +1,137 @@
+{
+  "id": "track-laborer",
+  "slug": "track-laborer",
+  "title": "Track: Laborer / Helper",
+  "short_answer": "Your job is to make the skilled trades faster without creating new mess.",
+  "summary": "Your job is to make the skilled trades faster without creating new mess.",
+  "plain_words": "Your job is to make the skilled trades faster without creating new mess. Stock to the work, keep paths clear, scrape what you are shown, and ask before you guess on rated walls or extras.",
+  "when_to_use": [
+    "Onboarding / progression for the track: laborer / helper",
+    "Choosing what to study next on the phone"
+  ],
+  "prerequisites": [
+    "Start with Your First Week if you are new"
+  ],
+  "trade_id": "ops",
+  "category_id": "onboarding",
+  "template": "reference",
+  "stage_line": "Training · laborer path",
+  "role_tags": [
+    "laborer",
+    "crew"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Safety Orientation + Don't Do This",
+      "body": "Safety Orientation + Don't Do This",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Stocking Any Material + Stocking Drywall (body mechanics",
+      "body": "Stocking Any Material + Stocking Drywall (body mechanics, floor load)",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Scraping",
+      "body": "why it is its own Job Check stage",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Clean-Out Between Stages",
+      "body": "Clean-Out Between Stages",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Shadow a Pre-Board Walk and a QC Walk once each",
+      "body": "Shadow a Pre-Board Walk and a QC Walk once each",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Graduation signal: lead trusts you to stock a room and s",
+      "body": "Graduation signal: lead trusts you to stock a room and scrape without creating sanding debt",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "track-laborer-q1",
+      "prompt": "Track: Laborer / Helper: linked procedures practiced to standard",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip foundations",
+      "wrong": "Jump to production without safety/drawings/dont",
+      "right": "Follow the track order",
+      "why": "Expensive habits form in week one"
+    },
+    {
+      "title": "Track without Job Check",
+      "wrong": "Study the guide but never write honest stages",
+      "right": "Pair each skill with Job Check truth",
+      "why": "Training without documentation is theater"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "onboard-week1",
+    "safety-orient",
+    "dont",
+    "cleanout"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "stock-general",
+      "label": "Stock General",
+      "why": "Core laborer skill"
+    },
+    {
+      "procedure_id": "stock-drywall",
+      "label": "Stock Drywall",
+      "why": "Board without wrecking it"
+    },
+    {
+      "procedure_id": "scrape",
+      "label": "Scraping",
+      "why": "Early production skill"
+    },
+    {
+      "procedure_id": "skill-ladder",
+      "label": "Skill Ladder",
+      "why": "How to move up"
+    }
+  ],
+  "search_tags": [
+    "laborer",
+    "helper",
+    "stocking track"
+  ],
+  "synonyms": [
+    "laborer track",
+    "helper path",
+    "stocking path"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated role track from Field Guide HTML shell."
+  }
+}
