@@ -75,7 +75,8 @@ def test_shape_ready_to_invoice_with_project_number():
         "/ui/invoice?project_number=C-100&monday_item_id=20&ops_ready=10"
     )
     assert item["primary_href"] == item["invoice_href"]
-    assert item["primary_label"] == "Open invoice"
+    assert item["primary_label"] == "Open invoice · $15,442.83"
+    assert item["jobcheck_href"] == "/ui/jobcheck?item=10"
     assert item["builder"] == "Zicka"
     assert item["proposed_total"] == 15442.83
     assert item["model"] == "by_sheet"
@@ -95,11 +96,13 @@ def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
     assert item["invoice_href"] == (
         "/ui/invoice?monday_item_id=20&ops_ready=10"
     )
+    assert item["primary_href"] == item["invoice_href"]
+    assert item["primary_label"] == "Open invoice"
     assert "linked Projects item" in item["note"]
 
 
 def test_shape_ready_to_invoice_ops_only_uses_search_q():
-    """Ops pulse must NOT become monday_item_id — invoice lookup is Projects-only."""
+    """Unlinked Ready row → Link Projects on Job Check (not Invoice search dead-end)."""
     item = bq.shape_ready_to_invoice({
         "item_id": 10,
         "name": "Ops only job",
@@ -111,6 +114,10 @@ def test_shape_ready_to_invoice_ops_only_uses_search_q():
         "/ui/invoice?q=Ops%20only%20job&ops_ready=10"
     )
     assert "monday_item_id" not in item["invoice_href"]
+    assert item["primary_href"] == "/ui/jobcheck?item=10"
+    assert item["primary_label"] == "Link Projects"
+    assert item["jobcheck_href"] == "/ui/jobcheck?item=10"
+    assert "Link" in item["note"] or "link" in item["note"]
     assert "No Projects link" in item["note"]
 
 
@@ -542,6 +549,60 @@ def test_billing_hub_payload_survives_partial_failures():
         bf.monday_billing.fetch_projects_billing = orig_proj
 
 
+def test_invoice_page_boots_monday_item_id_deep_link():
+    """Billing Hub emits ?monday_item_id= — Invoice must consume it on boot."""
+    html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text()
+    assert "monday_item_id" in html
+    assert "lookupProjectByItemId" in html
+    # boot order: project_number first, then monday item id, then q
+    boot_idx = html.index("function bootInvoiceFromUrl")
+    # bootInvoiceFromUrl grew (project_number / q / monday paths) — don't truncate
+    # before the monday_item_id branch.
+    end = html.find("\nfunction ", boot_idx + 1)
+    snippet = html[boot_idx: end if end != -1 else boot_idx + 4000]
+    assert 'params.get("monday_item_id")' in snippet
+    assert "lookupProjectByItemId(mondayItemId)" in snippet
+    assert 'params.get("ops_ready")' in snippet
+    assert "applyReadyWorksheet" in snippet
+
+
+def test_invoice_page_surfaces_ready_worksheet_errors():
+    html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text()
+    assert "NO_PROJECT_LINK" in html
+    assert "Open Job Check" in html
+    assert "Costed just now from Payroll" in html
+    assert "Ready worksheet unavailable" in html or "worksheet unavailable" in html.lower()
+
+
+def test_billing_page_shows_jobcheck_secondary():
+    html = (Path(__file__).resolve().parents[1] / "web" / "billing.html").read_text()
+    assert "jobcheck_href" in html
+    assert "Job Check" in html
+
+
+def test_ready_to_invoice_fallback_is_group_scoped_not_full_board():
+    """Filter failure must use groups(ids:) — never page the whole Ops board."""
+    src = Path(mb.__file__).read_text(encoding="utf-8")
+    assert "_fetch_ready_to_invoice_by_group" in src
+    assert "groups(ids: $groupIds)" in src
+    assert "returning empty queue" in src
+    # Guard against reintroducing the full-board walk fallback.
+    assert "_fetch_ready_to_invoice_by_walk" not in src
+    assert "falling back to full board walk" not in src
+
+
+def test_billing_page_shows_proposed_total():
+    html = (Path(__file__).resolve().parents[1] / "web" / "billing.html").read_text()
+    assert "proposed_total" in html
+    assert "Proposed" in html
+
+
+def test_jobstart_page_boots_bid_deep_link():
+    html = (Path(__file__).resolve().parents[1] / "web" / "jobstart.html").read_text()
+    assert "function bootJobStartFromUrl" in html
+    assert 'params.get("bid")' in html
+
+
 # ----------------------------------------------------------------- runner
 
 def _run_all():
@@ -561,33 +622,3 @@ def _run_all():
 
 if __name__ == "__main__":
     sys.exit(0 if _run_all() else 1)
-
-
-def test_invoice_page_boots_monday_item_id_deep_link():
-    """Billing Hub emits ?monday_item_id= — Invoice must consume it on boot."""
-    html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text()
-    assert "monday_item_id" in html
-    assert "lookupProjectByItemId" in html
-    # boot order: project_number first, then monday item id, then q
-    boot_idx = html.index("function bootInvoiceFromUrl")
-    # bootInvoiceFromUrl grew (project_number / q / monday paths) — don't truncate
-    # before the monday_item_id branch.
-    end = html.find("\nfunction ", boot_idx + 1)
-    snippet = html[boot_idx: end if end != -1 else boot_idx + 4000]
-    assert 'params.get("monday_item_id")' in snippet
-    assert "lookupProjectByItemId(mondayItemId)" in snippet
-    assert 'params.get("ops_ready")' in snippet
-    assert "applyReadyWorksheet" in snippet
-
-
-def test_billing_page_shows_proposed_total():
-    html = (Path(__file__).resolve().parents[1] / "web" / "billing.html").read_text()
-    assert "proposed_total" in html
-    assert "Proposed" in html
-
-
-def test_jobstart_page_boots_bid_deep_link():
-    html = (Path(__file__).resolve().parents[1] / "web" / "jobstart.html").read_text()
-    assert "function bootJobStartFromUrl" in html
-    assert 'params.get("bid")' in html
-

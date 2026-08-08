@@ -1287,35 +1287,77 @@ function formHasMeaningfulLines() {
 }
 
 async function applyReadyWorksheet(opsId) {
-  // P5 staged costing → editable lines. Never overwrites lines the user typed.
+  // P5 costing → editable lines (staged or computed on demand). Never
+  // overwrites lines the user already typed.
   if (!opsId || formHasMeaningfulLines()) return;
+  const note = $("#prefill-note");
+  if (note) {
+    note.textContent = "Loading Ready worksheet (Payroll + Operations)…";
+  }
   try {
     const r = await fetch(
       "/ui/api/invoice/ready-worksheet?ops_item_id=" + encodeURIComponent(opsId)
     );
-    const body = await r.json();
-    if (!r.ok || !body.ok) return;
+    const body = await r.json().catch(() => ({}));
+    const err = (!r.ok || body.ok === false)
+      ? (body.detail && typeof body.detail === "object" ? body.detail : body)
+      : null;
+    if (err) {
+      if (!note) return;
+      const detail = String(err.detail || err.message || "Ready worksheet unavailable.");
+      const advice = String(err.advice || "");
+      const code = String(err.code || "");
+      let msg = detail;
+      if (code === "NO_PROJECT_LINK") {
+        msg = detail || "Link Projects on Job Check first, then reopen Invoice.";
+      }
+      note.textContent = "";
+      note.appendChild(document.createTextNode(msg));
+      if (advice) note.appendChild(document.createTextNode(" " + advice));
+      const href = err.jobcheck_href;
+      if (href) {
+        note.appendChild(document.createTextNode(" "));
+        const a = document.createElement("a");
+        a.href = String(href);
+        a.textContent = "Open Job Check →";
+        note.appendChild(a);
+      }
+      return;
+    }
     const lines = body.line_items || [];
-    if (!lines.length) return;
+    if (!lines.length) {
+      if (note) {
+        note.textContent =
+          "Ready worksheet has no costed lines yet — check Payroll hours for this job.";
+      }
+      return;
+    }
     lineItemsEl.innerHTML = "";
     lines.forEach((li) => addLineItem({
       description: li.description,
       amount: li.amount,
       detail: li.detail || "",
     }));
-    const note = $("#prefill-note");
     if (note) {
       const total = body.proposed_total != null
         ? Number(body.proposed_total).toLocaleString("en-US", {
             style: "currency", currency: "USD",
           })
         : "";
+      const src = String(body.source || "");
+      const srcLabel = src === "computed"
+        ? "Costed just now from Payroll"
+        : (src === "staged"
+          ? "Staged Ready-to-Invoice worksheet loaded"
+          : "Ready worksheet loaded");
       note.textContent =
-        "Staged Ready-to-Invoice worksheet loaded" +
+        srcLabel +
         (total ? ` (${total})` : "") +
         " — edit before Accept & Create. Never auto-sent.";
     }
-  } catch (_e) { /* optional prefill */ }
+  } catch (_e) {
+    if (note) note.textContent = "Could not load Ready worksheet — fill lines by hand.";
+  }
 }
 
 function bootInvoiceFromUrl() {

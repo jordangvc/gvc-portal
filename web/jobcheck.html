@@ -223,6 +223,10 @@
   <div class="card" id="readycard" style="display:none;">
     <h2>Ready for billing</h2>
     <button class="btn ready" id="readybtn" type="button">Mark Ready to Invoice</button>
+    <div class="btnrow" id="readyactions" style="display:none; margin-top:10px; gap:8px; flex-wrap:wrap;">
+      <a class="btn secondary" id="readyinv" href="/ui/invoice" style="display:none;">Open Invoice</a>
+      <a class="btn secondary" id="readybill" href="/ui/billing" style="display:none;">Open Billing Hub</a>
+    </div>
     <div class="hint" id="readyhint">Moves this job into Monday’s Ready to Invoice group so it shows up on Billing Hub. Does not run on Save — only when you tap this.</div>
   </div>
 
@@ -760,7 +764,33 @@ function fullCompletionValue() {
 
 function refreshReadyHint() {
   const hint = $("#readyhint");
+  const btn = $("#readybtn");
+  const actions = $("#readyactions");
+  const inv = $("#readyinv");
+  const bill = $("#readybill");
   if (!hint) return;
+  const already = !!(detail && detail.job && detail.job.already_ready);
+  if (already) {
+    if (btn) btn.style.display = "none";
+    if (actions) actions.style.display = "flex";
+    if (inv) {
+      const href = (detail.job.invoice_href || "").trim()
+        || (`/ui/invoice?ops_ready=${encodeURIComponent(detail.job.item_id)}`);
+      inv.href = href;
+      inv.style.display = "";
+    }
+    if (bill) {
+      bill.href = (detail.job.billing_href || "/ui/billing");
+      bill.style.display = "";
+    }
+    hint.textContent =
+      "Already in Ready to Invoice — open Invoice (costed lines) or Billing Hub. Mark Ready is hidden.";
+    return;
+  }
+  if (btn) btn.style.display = "";
+  if (actions) actions.style.display = "none";
+  if (inv) inv.style.display = "none";
+  if (bill) bill.style.display = "none";
   const hasFull = !!(fullCompletionValue() || "").toString().trim();
   hint.textContent = hasFull
     ? "Moves this job into Monday’s Ready to Invoice group so it shows up on Billing Hub. Does not run on Save — only when you tap this."
@@ -868,18 +898,30 @@ async function markReadyToInvoice() {
     const body = await r.json().catch(() => ({}));
     if (!r.ok || !body.ok) {
       const d = body.detail || body;
+      const inv = d.invoice_href
+        ? ` · <a href="${esc(d.invoice_href)}">Open Invoice</a>` : "";
       showStatus("err",
-        `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "Couldn't mark ready.")}` +
-        (d.billing_href ? `<br><a href="${esc(d.billing_href)}">Open Billing Hub</a>` : ""));
+        `<strong>${esc(d.code || d.error || "ERROR")}</strong> — ${esc(d.detail || "Couldn't mark ready.")}` +
+        (d.billing_href ? `<br><a href="${esc(d.billing_href)}">Open Billing Hub</a>` : "") +
+        inv);
+      if ((d.error || d.code) === "ALREADY_READY" && detail?.job) {
+        detail.job.already_ready = true;
+        detail.job.billing_href = d.billing_href || "/ui/billing";
+        detail.job.invoice_href = d.invoice_href
+          || `/ui/invoice?ops_ready=${encodeURIComponent(detail.job.item_id)}`;
+        refreshReadyHint();
+      }
       return;
     }
     const warn = (body.warnings || []).length
       ? `<br><span class="hint">${esc(body.warnings.join(" "))}</span>` : "";
     const bill = body.billing_href || "/ui/billing";
+    const inv = body.invoice_href
+      ? ` · <a href="${esc(body.invoice_href)}">Open Invoice</a>` : "";
     showStatus("ok",
       `✔ Marked Ready to Invoice` +
       (body.ready_date ? ` (${esc(body.ready_date)})` : "") +
-      `. <a href="${esc(bill)}">Open Billing Hub</a>` +
+      `. <a href="${esc(bill)}">Open Billing Hub</a>` + inv +
       (body.monday_url ? ` · <a href="${esc(body.monday_url)}" target="_blank" rel="noopener">Monday</a>` : "") +
       warn);
     await loadJobs();
@@ -888,7 +930,7 @@ async function markReadyToInvoice() {
     showStatus("ok",
       `✔ Marked Ready to Invoice` +
       (body.ready_date ? ` (${esc(body.ready_date)})` : "") +
-      `. <a href="${esc(bill)}">Open Billing Hub</a>` + warn);
+      `. <a href="${esc(bill)}">Open Billing Hub</a>` + inv + warn);
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}`);
   } finally {

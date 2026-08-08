@@ -11,7 +11,12 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from adapters.monday import jobcheck as monday_jobcheck
+from adapters.monday import payroll as monday_payroll
+from adapters.monday.billing import fetch_ready_to_invoice
+from adapters.monday.client import MondayClient
 from shared import pricing as gvc_pricing
+from subsystems.invoice import ready_stage
 
 SF_PER_BOARD_DEFAULT = 48.0
 
@@ -82,6 +87,85 @@ def build_item_worksheet(row: dict, payroll: dict) -> dict:
     )
 
 
+def ensure_ready_worksheet(
+    ops_item_id: int,
+    *,
+    persist: bool = True,
+    mc: Optional[Any] = None,
+) -> dict:
+    """
+    Load a staged Ready worksheet, or compute + stage one on demand.
+
+    Used by Invoice ``?ops_ready=`` so opening a Ready card without a prior
+    scheduler/Billing pass still prefills editable lines. Never Stripe,
+    never auto-send.
+    """
+    ops_item_id = int(ops_item_id)
+    existing = ready_stage.get_worksheet(ops_item_id)
+    if existing and (existing.get("status") or "") != "consumed":
+        return {
+            "ok": True,
+            "source": "staged",
+            "ops_item_id": ops_item_id,
+            "worksheet": existing,
+            "line_items": ready_stage.worksheet_to_line_items(existing),
+            "proposed_total": existing.get("proposed_invoice_total"),
+            "model": (existing.get("pricing") or {}).get("model"),
+            "price_label": (existing.get("pricing") or {}).get("price_label"),
+            "auto_send": False,
+        }
+
+    client = mc or MondayClient()
+    item = monday_jobcheck.get_item_values(client, ops_item_id, [])
+    if item is None:
+        return {
+            "ok": False,
+            "code": "OPS_ITEM_NOT_FOUND",
+            "detail": f"Operations item {ops_item_id} not found.",
+            "advice": "Confirm the Ops item id from Billing / Monday.",
+            "auto_send": False,
+        }
+
+    ginfo = monday_jobcheck.get_linked_project_gfolder(client, ops_item_id)
+    pid = ginfo.get("project_item_id")
+    if not pid:
+        return {
+            "ok": False,
+            "code": "NO_PROJECT_LINK",
+            "detail": (
+                f"Ops item {ops_item_id} has no Projects link — "
+                "can't pull Payroll or cost a worksheet."
+            ),
+            "advice": "Open Job Check for this item and Link Projects, then retry.",
+            "jobcheck_href": f"/ui/jobcheck?item={ops_item_id}",
+            "auto_send": False,
+        }
+
+    payroll = monday_payroll.fetch_payroll_for_project(client, int(pid))
+    sheet = build_item_worksheet({
+        "item_id": ops_item_id,
+        "name": item.get("name") or "",
+        "project_item_id": int(pid),
+        "builder": None,
+        "url": item.get("url"),
+    }, payroll)
+    if persist:
+        sheet = ready_stage.save_worksheet(
+            ops_item_id, sheet, actor="invoice:ready-worksheet")
+    return {
+        "ok": True,
+        "source": "computed",
+        "ops_item_id": ops_item_id,
+        "worksheet": sheet,
+        "line_items": ready_stage.worksheet_to_line_items(sheet),
+        "proposed_total": sheet.get("proposed_invoice_total"),
+        "model": (sheet.get("pricing") or {}).get("model"),
+        "price_label": (sheet.get("pricing") or {}).get("price_label"),
+        "auto_send": False,
+        "persist": persist,
+    }
+
+
 def check_ready_to_invoice(
     *,
     dry_run: bool = True,
@@ -89,10 +173,6 @@ def check_ready_to_invoice(
     mc: Optional[Any] = None,
 ) -> dict:
     """Sweep Ready-to-Invoice group and build worksheets. Never auto-sends."""
-    from adapters.monday.billing import fetch_ready_to_invoice
-    from adapters.monday.client import MondayClient
-    from adapters.monday import payroll as monday_payroll
-
     limit = max(1, min(int(limit or 20), 100))
     client = mc or MondayClient()
 

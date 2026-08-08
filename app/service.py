@@ -1904,33 +1904,52 @@ def ui_invoice_customer_search(request: Request, q: str = "") -> dict:
 @app.get("/ui/api/invoice/ready-worksheet")
 def ui_invoice_ready_worksheet(request: Request, ops_item_id: int) -> dict:
     """
-    P5 staged costing worksheet for an Operations Ready-to-Invoice item.
+    P5 costing worksheet for an Operations Ready-to-Invoice item.
 
     Used by /ui/invoice?ops_ready=… to prefill editable line items after the
-    project lookup. Never creates Stripe invoices and never auto-sends.
+    project lookup. Loads a staged worksheet when present; otherwise computes
+    from Payroll + company rates and stages it (memory/GCS). Never creates
+    Stripe invoices and never auto-sends.
     """
     require_feature(request, "invoice")
-    from subsystems.invoice import ready_stage
-    sheet = ready_stage.get_worksheet(ops_item_id)
-    if not sheet:
+    from orchestrators.invoice_ready_flow import ensure_ready_worksheet
+
+    if not ops_item_id:
         raise HTTPException(
-            status_code=404,
-            detail={"ok": False, "code": "WORKSHEET_NOT_FOUND",
-                    "detail": f"No staged worksheet for Ops item {ops_item_id}.",
-                    "advice": "Run the Ready-to-Invoice sweep (live mode) first, "
-                              "or enter line items by hand."},
+            status_code=422,
+            detail={"ok": False, "code": "BAD_INPUT",
+                    "detail": "ops_item_id is required."},
         )
-    lines = ready_stage.worksheet_to_line_items(sheet)
-    return {
-        "ok": True,
-        "ops_item_id": int(ops_item_id),
-        "worksheet": sheet,
-        "line_items": lines,
-        "proposed_total": sheet.get("proposed_invoice_total"),
-        "model": (sheet.get("pricing") or {}).get("model"),
-        "price_label": (sheet.get("pricing") or {}).get("price_label"),
-        "auto_send": False,
-    }
+    try:
+        out = ensure_ready_worksheet(int(ops_item_id), persist=True)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "READY_WORKSHEET_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Enter line items by hand, or retry after Monday is healthy."},
+        )
+    if not out.get("ok"):
+        code = out.get("code") or "WORKSHEET_UNAVAILABLE"
+        status = 404 if code in ("OPS_ITEM_NOT_FOUND", "NO_PROJECT_LINK",
+                                 "WORKSHEET_NOT_FOUND") else 422
+        raise HTTPException(
+            status_code=status,
+            detail={
+                "ok": False,
+                "code": code,
+                "detail": out.get("detail") or "Worksheet unavailable.",
+                "advice": out.get("advice") or "Enter line items by hand.",
+                "jobcheck_href": out.get("jobcheck_href"),
+            },
+        )
+    return out
 
 
 @app.get("/ui/api/invoice/drafts")
@@ -3923,10 +3942,11 @@ def ui_jobcheck_ready_to_invoice(item_id: int, request: Request) -> dict:
             status_code=status,
             detail={"ok": False, "code": code,
                     "detail": out.get("detail") or "Couldn't mark ready to invoice.",
-                    "advice": ("Open Billing Hub if it's already ready; otherwise "
-                               "retry or move the group in Monday."),
+                    "advice": ("Open Billing Hub or Invoice if it's already ready; "
+                               "otherwise retry or move the group in Monday."),
                     "monday_url": out.get("monday_url"),
-                    "billing_href": out.get("billing_href") or "/ui/billing"},
+                    "billing_href": out.get("billing_href") or "/ui/billing",
+                    "invoice_href": out.get("invoice_href")},
         )
     return out
 
