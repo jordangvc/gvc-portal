@@ -138,7 +138,7 @@ Shallow: home → procedure → next procedure. No orphan pages: `next_steps` + 
 2. Diagram assets under `content/fieldguide/diagrams/` with caption contract
 3. Stale-content job: flag `last_reviewed` older than `review_cycle_days`
 
-**Done (r71–r81):** Job Check spine + gates + Ops logistics + ACT + firestop +
+**Done (r71–r82):** Job Check spine + gates + Ops logistics + ACT + firestop +
 safety-orient in catalog; offline-baked `.nextpath`; shell sync inject from
 catalog cards; bake script; alias map; next_steps link audit.
 
