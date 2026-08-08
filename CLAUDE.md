@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Job Start progressive Drive paint (r68) — BUILT 2026-08-07
+Opening a bid no longer waits on Drive before the form appears.
+`GET /ui/api/jobstart/bid/{id}?lite=1` returns Monday + draft first
+(`drive_pending`); the page paints, then hydrates scope review / estimate
+sidecar without clobbering fields the user already typed. Full fetch also
+runs scope + estimate Drive walks in parallel. Hub **r68**.
+
 ## ⚡ Invoice on money Path (r67) — BUILT 2026-08-07
 Path strip is now Hub › Takeoff › Estimate › Job Start › Job Check › Billing ›
 **Invoice**. `web/invoice.html` mounts the strip + Monday warm so Billing →
