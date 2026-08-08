@@ -1,0 +1,795 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC — Form reference (Estimate / Change Order / Invoice)</title>
+
+<!-- ORDER MATTERS. gvc-ui.css carries the tokens; gvc-forms.css uses them. -->
+<link rel="stylesheet" href="gvc-ui.css">
+<link rel="stylesheet" href="gvc-forms.css">
+
+<style>
+  /* Page-local only — do NOT copy this block into the app. */
+  html, body { margin: 0; padding: 0; }
+</style>
+</head>
+
+<!--
+  ============================================================================
+  HOW TO USE THIS FILE  (read this before you write a line of code)
+  ============================================================================
+
+  This is the finished design for all three generator forms. It is plain HTML
+  and vanilla JS on purpose so it renders correctly with zero interpretation.
+
+  DO:
+    - Copy the markup below, class names intact, into your components.
+    - Link gvc-ui.css and gvc-forms.css. Delete competing styles.
+    - Keep the element order inside each block.
+
+  DO NOT:
+    - Re-derive these screens from a description or a screenshot.
+    - Swap a class for a utility-class equivalent "that looks the same".
+    - Add a helper paragraph under a field. Hints live in the placeholder.
+    - Introduce a <select>. Every choice in this system is a visible option.
+
+  THE FIVE THINGS THAT KEEP REGRESSING — check these first every time:
+    1. TOPBAR. .gvc-topbar is 56px on #0d2e21, and .gvc-path is 32px on
+       #154230 directly under it. Two bars, both full-bleed, no gap, no
+       shadow, no border between them except the path's own dividers.
+    2. ONE PRIMARY BUTTON per screen, and it lives in .gvc-actionbar — never
+       in the topbar, never twice.
+    3. NO HELPER TEXT under fields. .gvc-label + placeholder. That is all.
+    4. TOTALS ARE DERIVED. Never a typed total. Compute from visible rows.
+    5. PILLS. Anything interactive is border-radius: var(--radius-full).
+       Panels are 22px. The document preview is 6px because it is paper.
+  ============================================================================
+-->
+
+<body>
+<div class="gvc-page">
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TOP CHROME — copy this block verbatim into the app shell.
+       It is identical on every screen. If it differs anywhere, that screen
+       is wrong, not this file.
+       ══════════════════════════════════════════════════════════════════════ -->
+  <header class="gvc-topbar">
+    <div class="gvc-topbar-row">
+      <div class="gvc-brand">
+        <div class="gvc-brand-mark">G</div>
+        <div class="gvc-brand-name">Green Valley</div>
+      </div>
+
+      <nav class="gvc-appnav" aria-label="Generators">
+        <button class="gvc-app is-on" data-app="estimate" aria-current="page">Estimate</button>
+        <button class="gvc-app" data-app="change">Change Order</button>
+        <button class="gvc-app" data-app="invoice">Invoice</button>
+      </nav>
+
+      <div class="gvc-topbar-spacer"></div>
+
+      <div class="gvc-saved"><span class="gvc-saved-dot"></span><span>Autosaved 12s ago</span></div>
+      <div class="gvc-avatar">JS</div>
+    </div>
+
+    <div class="gvc-path">
+      <div class="gvc-path-row">
+        <div class="gvc-path-step">Hub</div>
+        <div class="gvc-path-step">Takeoff</div>
+        <div class="gvc-path-step is-here" data-path="estimate">Estimate</div>
+        <div class="gvc-path-step">Job Start</div>
+        <div class="gvc-path-step">Job Check</div>
+        <div class="gvc-path-step" data-path="change">CO</div>
+        <div class="gvc-path-step">Billing</div>
+        <div class="gvc-path-step" data-path="invoice">Invoice</div>
+        <div class="gvc-path-step">Check</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="gvc-shell">
+    <main class="gvc-form-col">
+
+      <div class="gvc-head">
+        <div class="gvc-kicker-row">
+          <span class="gvc-kicker" id="kicker">Estimating</span>
+          <span class="gvc-rule"></span>
+        </div>
+        <h1 class="gvc-h1" id="title">Estimate Generator</h1>
+        <p class="gvc-blurb" id="blurb">Build a bid from a Monday Bid Board link or from scratch. The document on the right is what the customer sees.</p>
+      </div>
+
+      <!-- STAGE RAIL — five stages, current is gold, completed is green tick -->
+      <div class="gvc-stages" id="stages"></div>
+
+      <!-- ═══════════════ STAGE 1 — FIND ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="find">
+
+        <div class="gvc-panel-dark">
+          <div class="gvc-h2" id="findTitle" style="margin-bottom:4px">Find the bid</div>
+          <div style="font-size:13px; color:#9db3a6; margin-bottom:16px">Paste a Monday link, or type a name, address, or number.</div>
+
+          <div class="gvc-search-row">
+            <input class="gvc-search" id="q" placeholder="Maxwell &middot; 300 Tiger Blvd &middot; 2026-0615-002">
+            <button class="gvc-btn gvc-btn-primary" id="lookup" style="height:52px">Look up &amp; fill</button>
+          </div>
+
+          <div class="gvc-chips" style="margin-top:14px">
+            <button class="gvc-chip-dark">Import from Takeoff</button>
+            <button class="gvc-chip-dark">Start from scratch</button>
+            <button class="gvc-chip-dark">Scan a plan set</button>
+          </div>
+
+          <!-- success confirmation, hidden until a lookup returns -->
+          <div id="foundBox" class="gvc-pop" hidden
+               style="margin-top:16px; background:#0d2e21; border:1px solid var(--color-accent); border-radius:16px; padding:14px 16px; display:flex; align-items:center; gap:12px">
+            <span style="width:26px; height:26px; border-radius:9999px; background:var(--color-accent); color:#0d2e21; font-weight:900; font-size:13px; display:grid; place-items:center; flex-shrink:0">&check;</span>
+            <span style="min-width:0">
+              <span style="display:block; font-size:13.5px; font-weight:700">Matched — fields filled</span>
+              <span style="display:block; font-size:12px; color:#9db3a6; margin-top:1px">Maxwell Construction — 300 Tiger Blvd, Lawrenceburg, IN 47025</span>
+            </span>
+          </div>
+        </div>
+
+        <div>
+          <div class="gvc-panel-head">
+            <h2 class="gvc-h2">Pick up where someone left off</h2>
+            <span class="gvc-rule"></span>
+            <span style="font-size:11.5px; color:var(--color-text-faint)">3 in progress</span>
+          </div>
+
+          <!-- Job names follow the standard: address, city, ST ZIP | Builder | Job Title -->
+          <div class="gvc-rows">
+            <div class="gvc-row">
+              <div class="gvc-person-av">JW</div>
+              <div class="gvc-row-body">
+                <div class="gvc-row-title">1 Country Lane, Brookville, OH 45309 | Brexton Construction | Brookhaven residence</div>
+                <div class="gvc-row-meta">18 hrs ago &middot; jake@</div>
+              </div>
+              <button class="gvc-btn gvc-btn-outline gvc-btn-sm">Resume</button>
+            </div>
+            <div class="gvc-row">
+              <div class="gvc-person-av">JW</div>
+              <div class="gvc-row-body">
+                <div class="gvc-row-title">2411 Alexandria Pike, Highland Heights, KY 41076 | Hanna Design Group | AutoZone #11053</div>
+                <div class="gvc-row-meta">19 hrs ago &middot; jake@</div>
+              </div>
+              <button class="gvc-btn gvc-btn-outline gvc-btn-sm">Resume</button>
+            </div>
+            <div class="gvc-row">
+              <div class="gvc-person-av">JW</div>
+              <div class="gvc-row-body">
+                <div class="gvc-row-title">4175 Gray Street, West Harrison, IN 47060 | Metze Custom Homes | Payne residence</div>
+                <div class="gvc-row-meta">19 hrs ago &middot; jake@</div>
+              </div>
+              <span class="gvc-badge">Synced</span>
+              <button class="gvc-btn gvc-btn-outline gvc-btn-sm">Resume</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ STAGE 2 — WHO ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="who" hidden>
+
+        <div class="gvc-panel">
+          <div class="gvc-panel-head">
+            <h2 class="gvc-h2">Who it's for</h2>
+            <span class="gvc-rule"></span>
+            <button class="gvc-btn gvc-btn-outline gvc-btn-sm">Directory</button>
+          </div>
+
+          <div class="gvc-grid-2">
+            <label class="gvc-field">
+              <span class="gvc-label">Client</span>
+              <input class="gvc-input" value="Maxwell Construction" placeholder="Maxwell Construction">
+            </label>
+            <label class="gvc-field">
+              <span class="gvc-label">Attn</span>
+              <input class="gvc-input" value="Dave Sehlhorst" placeholder="Dave Sehlhorst">
+            </label>
+          </div>
+
+          <!-- Recipients are CHIPS. Not a textarea of comma-separated addresses. -->
+          <div style="margin-top:15px">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:7px">
+              <span class="gvc-label" style="margin:0">Sends to</span>
+              <span style="font-size:11px; color:#8b9089">2 recipients</span>
+            </div>
+            <div class="gvc-chipfield" id="chipfield">
+              <span class="gvc-email">dave@maxwellconstruction.com <button class="gvc-email-x" aria-label="Remove">&times;</button></span>
+              <span class="gvc-email">ap@maxwellconstruction.com <button class="gvc-email-x" aria-label="Remove">&times;</button></span>
+              <input class="gvc-chipfield-input" id="emailInput" placeholder="add an email, press Enter">
+            </div>
+          </div>
+
+          <!-- A real toggle. The old form used a checkbox with a paragraph under it. -->
+          <button class="gvc-toggle" data-toggle>
+            <span class="gvc-toggle-track"><span class="gvc-toggle-knob"></span></span>
+            <span style="text-align:left">
+              <span class="gvc-toggle-title">Customer has no email</span>
+              <span class="gvc-toggle-sub">Print, mail, or hand-deliver. Nothing goes to the customer.</span>
+            </span>
+          </button>
+        </div>
+
+        <!-- Salesperson picker was a <select>. Now it is three cards. -->
+        <div class="gvc-panel">
+          <div class="gvc-panel-head">
+            <h2 class="gvc-h2">Your bid contact</h2>
+            <span class="gvc-rule"></span>
+          </div>
+          <div class="gvc-people" data-radio>
+            <button class="gvc-person is-on">
+              <span class="gvc-person-av">JS</span>
+              <span style="flex:1; min-width:0">
+                <span class="gvc-person-name">John Smith</span>
+                <span class="gvc-person-meta">(812) 290-1093</span>
+              </span>
+              <span class="gvc-person-check">&check;</span>
+            </button>
+            <button class="gvc-person">
+              <span class="gvc-person-av">JW</span>
+              <span style="flex:1; min-width:0">
+                <span class="gvc-person-name">Jake Weiland</span>
+                <span class="gvc-person-meta">(812) 537-2200</span>
+              </span>
+            </button>
+            <button class="gvc-person">
+              <span class="gvc-person-av">AR</span>
+              <span style="flex:1; min-width:0">
+                <span class="gvc-person-name">Andrea Ruiz</span>
+                <span class="gvc-person-meta">(513) 490-8811</span>
+              </span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ STAGE 3 — JOB & SCOPE (estimate) ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="scope" hidden>
+
+        <div class="gvc-panel">
+          <div class="gvc-panel-head">
+            <h2 class="gvc-h2">The job</h2>
+            <span class="gvc-rule"></span>
+          </div>
+          <label class="gvc-field">
+            <span class="gvc-label">Project name</span>
+            <input class="gvc-input" value="Lawrenceburg Admin Bldg Reno &amp; Addition">
+          </label>
+          <label class="gvc-field">
+            <span class="gvc-label">Job location</span>
+            <input class="gvc-input" value="300 Tiger Blvd, Lawrenceburg, IN 47025">
+          </label>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:15px">
+            <span class="gvc-label" style="margin:0">Type</span>
+            <div class="gvc-chips" data-radio>
+              <button class="gvc-chip">Residential</button>
+              <button class="gvc-chip is-on">Commercial</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scope was a column of checkboxes. Now: priced tap targets. -->
+        <div class="gvc-panel">
+          <div class="gvc-panel-head" style="margin-bottom:5px">
+            <h2 class="gvc-h2">Scope</h2>
+            <span class="gvc-rule"></span>
+            <span style="font-size:11.5px; font-weight:700; color:var(--color-accent-ink)">1 selected</span>
+          </div>
+          <p class="gvc-panel-note">Tap to add. Each one drops a priced line into the estimate.</p>
+
+          <div class="gvc-tiles">
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Drywall</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">1/2" Board</span>
+              <span class="gvc-tile-price">$6,400.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Drywall</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">5/8" Board</span>
+              <span class="gvc-tile-price">$8,200.00</span>
+            </button>
+            <button class="gvc-tile is-on">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Drywall</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">Hang and Finish</span>
+              <span class="gvc-tile-price">$18,300.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Framing</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">Light Gauge Metal &amp; Blocking</span>
+              <span class="gvc-tile-price">$9,750.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">ACT</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">Acoustic Ceiling Systems</span>
+              <span class="gvc-tile-price">$12,400.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Insulation</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">Sound Attenuation</span>
+              <span class="gvc-tile-price">$3,100.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">FRP</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">FRP Panels</span>
+              <span class="gvc-tile-price">$2,450.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Doors</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">Door &amp; Hardware Install</span>
+              <span class="gvc-tile-price">$5,600.00</span>
+            </button>
+            <button class="gvc-tile">
+              <span class="gvc-tile-top"><span class="gvc-tile-group">Tectum</span><span class="gvc-tile-check">&check;</span></span>
+              <span class="gvc-tile-label">Tectum Panels</span>
+              <span class="gvc-tile-price">$4,300.00</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ STAGE 3 ALT — THE CHANGE (change order) ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="change" hidden>
+        <div class="gvc-panel">
+          <div class="gvc-panel-head">
+            <h2 class="gvc-h2">What changed</h2>
+            <span class="gvc-rule"></span>
+            <span style="font-family:var(--font-mono); font-size:11.5px; color:var(--color-accent-ink)">CO.1-2026-0603-004</span>
+          </div>
+          <p class="gvc-panel-note">This text prints on the CO and lands in the approval email.</p>
+          <label class="gvc-field">
+            <span class="gvc-label">Title</span>
+            <input class="gvc-input" value="Added soffit framing &amp; finish at lobby bulkhead">
+          </label>
+          <label class="gvc-field">
+            <span class="gvc-label">Description</span>
+            <textarea class="gvc-textarea" rows="3">Add framing, board, and Level 5 finish to the new lobby soffit not shown on the bid set. T&amp;M per the current Standard Rate Sheet.</textarea>
+          </label>
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:15px">
+            <span class="gvc-label" style="margin:0">Directed by</span>
+            <div class="gvc-chips" data-radio>
+              <button class="gvc-chip is-on">Owner-directed</button>
+              <button class="gvc-chip">Field condition</button>
+              <button class="gvc-chip">Design revision</button>
+              <button class="gvc-chip">Backcharge</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ STAGE 3 ALT — JOB & TERMS (invoice) ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="terms" hidden>
+        <div class="gvc-panel">
+          <div class="gvc-panel-head">
+            <h2 class="gvc-h2">Invoice type</h2>
+            <span class="gvc-rule"></span>
+          </div>
+          <div class="gvc-chips" data-radio id="invTypes" style="margin-bottom:16px">
+            <button class="gvc-chip is-on">Standard</button>
+            <button class="gvc-chip" data-progress>Progress (pay app)</button>
+            <button class="gvc-chip">Final</button>
+          </div>
+
+          <!-- AIA block only exists when Progress is chosen. Do not always render it. -->
+          <div id="aia" class="gvc-pop" hidden
+               style="background:var(--color-accent-soft); border:1px solid var(--color-accent); border-radius:18px; padding:15px; margin-bottom:16px">
+            <div class="gvc-label" style="color:var(--color-accent-ink); margin-bottom:11px">AIA pay application</div>
+            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+              <span style="display:inline-flex; align-items:center; gap:9px">
+                <span style="font-size:12.5px; font-weight:700; color:var(--color-accent-ink)">Pay app #</span>
+                <span class="gvc-stepper" style="height:40px; border-color:var(--color-accent)">
+                  <button type="button">&minus;</button><span class="gvc-stepper-val">1</span><button type="button">+</button>
+                </span>
+              </span>
+              <span style="display:inline-flex; align-items:center; gap:9px">
+                <span style="font-size:12.5px; font-weight:700; color:var(--color-accent-ink)">Retainage</span>
+                <div class="gvc-chips" data-radio>
+                  <button class="gvc-chip is-on" style="height:34px; padding:0 13px; font-family:var(--font-mono)">0%</button>
+                  <button class="gvc-chip" style="height:34px; padding:0 13px; font-family:var(--font-mono)">5%</button>
+                  <button class="gvc-chip" style="height:34px; padding:0 13px; font-family:var(--font-mono)">10%</button>
+                </div>
+              </span>
+            </div>
+            <div style="margin-top:12px; padding-top:11px; border-top:1px solid #dcc9a3; font-size:12px; color:var(--color-accent-ink)">G702 / G703 pull from the workbook in the job's Drive folder — no re-keying.</div>
+          </div>
+
+          <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap">
+            <span class="gvc-label" style="margin:0">Terms</span>
+            <div class="gvc-chips" data-radio>
+              <button class="gvc-chip">Due on receipt</button>
+              <button class="gvc-chip">Net 15</button>
+              <button class="gvc-chip is-on">Net 30</button>
+              <button class="gvc-chip">Net 60</button>
+            </div>
+          </div>
+          <div style="margin-top:12px; font-size:12.5px; color:var(--color-text-faint)">Due Sep 7, 2026.</div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ STAGE 4 — LINES ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="lines" hidden>
+        <div class="gvc-panel-head" style="margin-bottom:0">
+          <h2 class="gvc-h2">Line items</h2>
+          <span class="gvc-rule"></span>
+          <span style="font-size:11.5px; color:var(--color-text-faint)">2 lines</span>
+        </div>
+
+        <div class="gvc-line">
+          <div class="gvc-line-top">
+            <div style="flex:1; min-width:0">
+              <input class="gvc-line-desc" value="Drywall Hang and Finish" placeholder="Description">
+              <input class="gvc-line-detail" value='5/8" gypsum board at all new partitions; Level 5 finish.' placeholder="Add a detail line…">
+            </div>
+            <button class="gvc-x" aria-label="Remove line">&times;</button>
+          </div>
+          <div class="gvc-line-controls">
+            <span class="gvc-money"><span class="gvc-money-sign">$</span><input class="gvc-money-input" value="18300.00" inputmode="decimal"></span>
+            <span class="gvc-stepper"><button type="button">&minus;</button><span class="gvc-stepper-val">1</span><button type="button">+</button></span>
+            <button class="gvc-chip" style="height:34px; padding:0 14px; font-size:12px">Make optional</button>
+            <span class="gvc-line-total">$18,300.00</span>
+          </div>
+        </div>
+
+        <!-- optional add-on: gold border, and it does NOT count toward the main total -->
+        <div class="gvc-line is-optional">
+          <div class="gvc-line-top">
+            <div style="flex:1; min-width:0">
+              <input class="gvc-line-desc" value="Acoustic Ceiling Systems" placeholder="Description">
+              <input class="gvc-line-detail" value="Grid and tile at corridor 104." placeholder="Add a detail line…">
+            </div>
+            <button class="gvc-x" aria-label="Remove line">&times;</button>
+          </div>
+          <div class="gvc-line-controls">
+            <span class="gvc-money"><span class="gvc-money-sign">$</span><input class="gvc-money-input" value="12400.00" inputmode="decimal"></span>
+            <span class="gvc-stepper"><button type="button">&minus;</button><span class="gvc-stepper-val">1</span><button type="button">+</button></span>
+            <button class="gvc-chip is-on" style="height:34px; padding:0 14px; font-size:12px">Optional add-on</button>
+            <span class="gvc-line-total">$12,400.00</span>
+          </div>
+        </div>
+
+        <button class="gvc-add">+ Add line item</button>
+
+        <!-- EMPTY STATE — render this instead of the lines when there are none -->
+        <div class="gvc-empty" hidden>
+          <div class="gvc-empty-title">Nothing on the estimate yet</div>
+          <div class="gvc-empty-sub">Pick a scope, or add a line by hand.</div>
+          <button class="gvc-btn" style="height:44px; background:var(--color-primary); color:var(--color-text-inverse)">Choose scopes</button>
+        </div>
+
+        <div class="gvc-panel" style="margin-top:4px">
+          <div class="gvc-label">Notes on the estimate</div>
+          <textarea class="gvc-textarea" rows="3" placeholder="Anything the customer should read before the number.">Price holds 30 days. Excludes painting and final clean.</textarea>
+        </div>
+      </section>
+
+      <!-- ═══════════════ STAGE 5 — REVIEW ═══════════════ -->
+      <section class="gvc-stack gvc-enter" data-stage="send" hidden>
+
+        <div class="gvc-panel-dark">
+          <div class="gvc-actionbar-label" style="margin-bottom:9px">Ready to send</div>
+          <div style="font-family:var(--font-mono); font-size:clamp(34px,6vw,52px); font-weight:700; letter-spacing:-.035em; font-variant-numeric:tabular-nums; line-height:1">$18,300.00</div>
+          <div style="font-size:13px; color:#9db3a6; margin-top:7px">Main scope $18,300.00 &middot; Options $12,400.00</div>
+        </div>
+
+        <!-- Each row states a fact. A failing row turns burgundy and offers Fix,
+             which JUMPS TO THE STAGE THAT OWNS THE FIELD. -->
+        <div class="gvc-rows">
+          <div class="gvc-row">
+            <span class="gvc-row-dot">&check;</span>
+            <span class="gvc-row-body">
+              <span class="gvc-row-title">Client</span>
+              <span class="gvc-row-meta">Maxwell Construction</span>
+            </span>
+          </div>
+          <div class="gvc-row">
+            <span class="gvc-row-dot">&check;</span>
+            <span class="gvc-row-body">
+              <span class="gvc-row-title">Recipients</span>
+              <span class="gvc-row-meta">dave@maxwellconstruction.com, ap@maxwellconstruction.com</span>
+            </span>
+          </div>
+          <div class="gvc-row is-bad">
+            <span class="gvc-row-dot">!</span>
+            <span class="gvc-row-body">
+              <span class="gvc-row-title">Project</span>
+              <span class="gvc-row-meta">Not set</span>
+            </span>
+            <button class="gvc-btn gvc-btn-sm" style="background:transparent; border:1px solid var(--color-danger); color:var(--color-danger)">Fix</button>
+          </div>
+          <div class="gvc-row">
+            <span class="gvc-row-dot">&check;</span>
+            <span class="gvc-row-body">
+              <span class="gvc-row-title">Lines</span>
+              <span class="gvc-row-meta">2 lines &middot; $18,300.00</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="gvc-panel">
+          <div class="gvc-label">What happens on Accept</div>
+          <div style="display:flex; flex-direction:column; gap:9px; margin-top:11px">
+            <div style="display:flex; align-items:center; gap:11px">
+              <span style="width:22px; height:22px; border-radius:9999px; background:var(--color-primary-soft); color:var(--color-primary); font-family:var(--font-mono); font-size:11px; font-weight:800; display:grid; place-items:center; flex-shrink:0">1</span>
+              <span style="font-size:13.5px; line-height:1.4">PDF filed to the job Drive folder</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px">
+              <span style="width:22px; height:22px; border-radius:9999px; background:var(--color-primary-soft); color:var(--color-primary); font-family:var(--font-mono); font-size:11px; font-weight:800; display:grid; place-items:center; flex-shrink:0">2</span>
+              <span style="font-size:13.5px; line-height:1.4">Draft created in hello@ — not sent</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px">
+              <span style="width:22px; height:22px; border-radius:9999px; background:var(--color-primary-soft); color:var(--color-primary); font-family:var(--font-mono); font-size:11px; font-weight:800; display:grid; place-items:center; flex-shrink:0">3</span>
+              <span style="font-size:13.5px; line-height:1.4">Posted to #bids in Slack</span>
+            </div>
+          </div>
+          <div style="margin-top:14px; padding-top:13px; border-top:1px solid var(--color-divider); font-size:12.5px; color:var(--color-text-faint)">Nothing emails until someone clicks Send in the draft.</div>
+        </div>
+      </section>
+
+      <!-- ═══════════════ TERMINAL — ACCEPTED ═══════════════
+           Accept MUST land somewhere. A no-op primary is the single most
+           common bug in this app. -->
+      <section class="gvc-stack gvc-enter" data-stage="accepted" hidden>
+        <div class="gvc-panel-dark">
+          <div style="display:flex; align-items:center; gap:13px; margin-bottom:16px">
+            <span class="gvc-pop" style="width:38px; height:38px; border-radius:9999px; background:var(--color-accent); color:#0d2e21; font-size:19px; font-weight:900; display:grid; place-items:center; flex-shrink:0">&check;</span>
+            <span>
+              <span style="display:block; font-family:var(--font-display); font-weight:800; font-size:clamp(20px,3vw,26px); letter-spacing:-.025em">Estimate accepted</span>
+              <span style="display:block; font-family:var(--font-mono); font-size:12.5px; color:var(--color-accent); margin-top:3px">EST-2026-0808-001 &middot; $18,300.00</span>
+            </span>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:10px">
+            <div style="display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:14px; background:#0d2e21; border:1px solid #2c5a45">
+              <span style="width:20px; height:20px; border-radius:9999px; background:var(--color-accent); color:#0d2e21; font-size:10px; font-weight:900; display:grid; place-items:center; flex-shrink:0">&check;</span>
+              <span style="font-size:13.5px; line-height:1.4">PDF filed to the job Drive folder</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:14px; background:#0d2e21; border:1px solid #2c5a45">
+              <span style="width:20px; height:20px; border-radius:9999px; background:var(--color-accent); color:#0d2e21; font-size:10px; font-weight:900; display:grid; place-items:center; flex-shrink:0">&check;</span>
+              <span style="font-size:13.5px; line-height:1.4">Draft created in hello@ — not sent</span>
+            </div>
+            <div style="display:flex; align-items:center; gap:11px; padding:11px 14px; border-radius:14px; background:#0d2e21; border:1px solid #2c5a45">
+              <span style="width:20px; height:20px; border-radius:9999px; background:var(--color-accent); color:#0d2e21; font-size:10px; font-weight:900; display:grid; place-items:center; flex-shrink:0">&check;</span>
+              <span style="font-size:13.5px; line-height:1.4">Posted to #bids in Slack</span>
+            </div>
+          </div>
+          <div style="margin-top:15px; padding-top:13px; border-top:1px solid #2c5a45; font-size:12.5px; color:#9db3a6">The draft is waiting in the inbox. Nothing has been emailed.</div>
+        </div>
+        <div style="display:flex; gap:9px; flex-wrap:wrap">
+          <button class="gvc-btn gvc-btn-primary" id="openDraft">Open the draft</button>
+          <button class="gvc-btn gvc-btn-outline" data-goto="find">Start another</button>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- ══════════════════════════════════════════════════════════════════════
+         LIVE DOCUMENT — updates as the form is filled. Hidden under 1080px.
+         ══════════════════════════════════════════════════════════════════════ -->
+    <aside class="gvc-doc-col">
+      <div class="gvc-doc-sticky">
+        <div class="gvc-kicker-row" style="margin-bottom:11px">
+          <span class="gvc-kicker" style="font-size:10px">Live preview</span>
+          <span class="gvc-rule"></span>
+          <span class="gvc-saved-dot"></span>
+        </div>
+
+        <div class="gvc-doc">
+          <div class="gvc-doc-head">
+            <div>
+              <div class="gvc-doc-brand">GREEN VALLEY</div>
+              <div class="gvc-doc-sub">Contractors</div>
+            </div>
+            <div style="text-align:right">
+              <div class="gvc-doc-type">Estimate</div>
+              <div class="gvc-doc-num">EST-2026-0808-001</div>
+            </div>
+          </div>
+
+          <div class="gvc-doc-parties">
+            <div>
+              <div class="gvc-doc-cap">Prepared for</div>
+              <div class="gvc-doc-strong">Maxwell Construction</div>
+              <div class="gvc-doc-soft">Attn: Dave Sehlhorst</div>
+            </div>
+            <div>
+              <div class="gvc-doc-cap">Project</div>
+              <div class="gvc-doc-strong">Lawrenceburg Admin Bldg Reno &amp; Addition</div>
+              <div class="gvc-doc-soft">300 Tiger Blvd, Lawrenceburg, IN 47025</div>
+            </div>
+          </div>
+
+          <div style="padding:11px 0 0">
+            <div class="gvc-doc-line">
+              <div style="min-width:0">
+                <div class="gvc-doc-strong">Drywall Hang and Finish</div>
+                <div class="gvc-doc-soft">5/8" gypsum board at all new partitions; Level 5 finish.</div>
+              </div>
+              <div class="gvc-doc-amt">$18,300.00</div>
+            </div>
+            <div class="gvc-doc-line">
+              <div style="min-width:0">
+                <div class="gvc-doc-strong">Option — Acoustic Ceiling Systems</div>
+                <div class="gvc-doc-soft">Grid and tile at corridor 104.</div>
+              </div>
+              <div class="gvc-doc-amt">$12,400.00</div>
+            </div>
+
+            <div class="gvc-doc-total">
+              <div class="gvc-doc-total-cap">Main scope</div>
+              <div class="gvc-doc-total-amt">$18,300.00</div>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; padding-top:7px">
+              <div style="font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--color-accent-ink); font-weight:700">With options</div>
+              <div style="font-family:var(--font-mono); font-size:12.5px; font-weight:700; color:var(--color-accent-ink); font-variant-numeric:tabular-nums">$30,700.00</div>
+            </div>
+          </div>
+
+          <div class="gvc-doc-notes">Price holds 30 days. Excludes painting and final clean.</div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       STICKY ACTION BAR — the ONLY primary button on the page.
+       The running total lives here so it is never off screen on a phone.
+       ══════════════════════════════════════════════════════════════════════ -->
+  <div class="gvc-actionbar">
+    <div class="gvc-actionbar-row">
+      <div style="min-width:0; flex:1">
+        <div class="gvc-actionbar-label" id="barLabel">Estimate total</div>
+        <div style="display:flex; align-items:baseline; gap:9px; flex-wrap:wrap">
+          <span class="gvc-actionbar-total" id="barTotal">$18,300.00</span>
+          <span class="gvc-actionbar-sub" id="barSub">with options $30,700.00</span>
+        </div>
+      </div>
+      <div style="display:flex; gap:8px; align-items:center; flex-shrink:0">
+        <button class="gvc-btn gvc-btn-ghost-dark" id="back" hidden>Back</button>
+        <button class="gvc-btn gvc-btn-primary" id="next">Continue</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================================
+   Reference behavior. This is deliberately tiny and framework-free — it exists
+   so the states are demonstrable, not to be copied as production code.
+   The three behaviors that MUST survive the port are marked ★.
+   ========================================================================== */
+
+const APPS = {
+  estimate: { kicker:'Estimating', title:'Estimate Generator', find:'Find the bid',
+    blurb:'Build a bid from a Monday Bid Board link or from scratch. The document on the right is what the customer sees.',
+    stages:['Find','Who','Job & scope','Lines','Review'], third:'scope', bar:'Estimate total' },
+  change: { kicker:'Projects', title:'Change Order', find:'Find the project',
+    blurb:'Create or revise a change order against a live project. Preview, then Accept to file it and draft the email.',
+    stages:['Find','Who','The change','Breakdown','Review'], third:'change', bar:'Change order total' },
+  invoice: { kicker:'Billing', title:'Invoice Generator', find:'Find the project',
+    blurb:'Bill a project. Preview the PDF, then Accept to open it in Stripe and draft the email in billing@.',
+    stages:['Find','Who','Job & terms','Lines','Review'], third:'terms', bar:'Invoice total' }
+};
+
+let app = 'estimate';
+let step = 0;
+
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+
+function stageIds() {
+  return ['find', 'who', APPS[app].third, 'lines', 'send'];
+}
+
+function render() {
+  const cfg = APPS[app];
+  $('#kicker').textContent = cfg.kicker;
+  $('#title').textContent = cfg.title;
+  $('#blurb').textContent = cfg.blurb;
+  $('#findTitle').textContent = cfg.find;
+  $('#barLabel').textContent = cfg.bar;
+
+  $$('.gvc-app').forEach(b => {
+    const on = b.dataset.app === app;
+    b.classList.toggle('is-on', on);
+    if (on) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
+  });
+  $$('.gvc-path-step').forEach(s => s.classList.toggle('is-here', s.dataset.path === app));
+
+  // stage rail
+  $('#stages').innerHTML = cfg.stages.map((label, i) => {
+    const on = i === step, done = i < step;
+    return '<button class="gvc-stage' + (on ? ' is-on' : done ? ' is-done' : '') + '" data-step="' + i + '">' +
+      '<span class="gvc-stage-num">' + (done ? '✓' : (i + 1)) + '</span>' +
+      '<span style="white-space:nowrap">' + label + '</span></button>';
+  }).join('');
+  $$('.gvc-stage').forEach(b => b.onclick = () => { step = +b.dataset.step; render(); });
+
+  const showing = accepted ? 'accepted' : stageIds()[step];
+  $$('section[data-stage]').forEach(s => { s.hidden = s.dataset.stage !== showing; });
+
+  $('#back').hidden = step === 0 || accepted;
+  const btn = $('#next');
+  btn.textContent = accepted ? 'Start another' : step === 4 ? 'Accept & draft in hello@' : 'Continue';
+  $('#barSub').textContent = accepted ? 'EST-2026-0808-001' : 'with options $30,700.00';
+}
+
+let accepted = false;
+
+$('#next').onclick = () => {
+  if (accepted) { accepted = false; step = 0; return render(); }
+  if (step < 4) { step++; return render(); }
+  // ★ 1 — Accept is never a no-op. In-flight label, then a terminal state.
+  const btn = $('#next');
+  btn.textContent = 'Filing…';
+  btn.className = 'gvc-btn gvc-btn-busy';
+  setTimeout(() => { accepted = true; btn.className = 'gvc-btn gvc-btn-primary'; render(); }, 900);
+};
+$('#back').onclick = () => { step = Math.max(0, step - 1); render(); };
+$$('[data-goto]').forEach(b => b.onclick = () => { accepted = false; step = 0; render(); });
+$$('.gvc-app').forEach(b => b.onclick = () => { app = b.dataset.app; step = 0; accepted = false; render(); });
+
+// ★ 2 — every simulated external hop gets a visible in-flight + settled state
+$('#openDraft').onclick = e => {
+  const b = e.currentTarget;
+  if (b.classList.contains('gvc-btn-done')) return;
+  b.textContent = 'Opening hello@…';
+  b.className = 'gvc-btn gvc-btn-busy';
+  setTimeout(() => { b.textContent = 'Draft open in hello@ — nothing sent'; b.className = 'gvc-btn gvc-btn-done'; }, 700);
+};
+
+$('#lookup').onclick = e => {
+  const b = e.currentTarget;
+  b.textContent = 'Looking…';
+  setTimeout(() => { b.textContent = 'Look up & fill'; $('#foundBox').hidden = false; }, 550);
+};
+
+// ★ 3 — [data-radio] groups are single-select. Tiles and toggles are multi.
+$$('[data-radio]').forEach(g => {
+  g.addEventListener('click', e => {
+    const t = e.target.closest('.gvc-chip, .gvc-person');
+    if (!t || !g.contains(t)) return;
+    g.querySelectorAll('.gvc-chip, .gvc-person').forEach(x => {
+      x.classList.remove('is-on');
+      const c = x.querySelector('.gvc-person-check');
+      if (c) c.remove();
+    });
+    t.classList.add('is-on');
+    if (t.classList.contains('gvc-person')) {
+      const c = document.createElement('span');
+      c.className = 'gvc-person-check';
+      c.innerHTML = '&check;';
+      t.appendChild(c);
+    }
+    if (g.id === 'invTypes') $('#aia').hidden = !t.hasAttribute('data-progress');
+  });
+});
+
+$$('.gvc-tile').forEach(t => t.onclick = () => t.classList.toggle('is-on'));
+$$('[data-toggle]').forEach(t => t.onclick = () => t.classList.toggle('is-on'));
+$$('.gvc-email-x').forEach(x => x.onclick = e => e.currentTarget.closest('.gvc-email').remove());
+
+$('#emailInput').addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || !e.target.value.trim()) return;
+  e.preventDefault();
+  const s = document.createElement('span');
+  s.className = 'gvc-email';
+  s.innerHTML = e.target.value.trim() + ' <button class="gvc-email-x" aria-label="Remove">&times;</button>';
+  s.querySelector('.gvc-email-x').onclick = ev => ev.currentTarget.closest('.gvc-email').remove();
+  $('#chipfield').insertBefore(s, e.target);
+  e.target.value = '';
+});
+
+$$('.gvc-stepper').forEach(s => {
+  const val = s.querySelector('.gvc-stepper-val');
+  const [dec, inc] = s.querySelectorAll('button');
+  dec.onclick = () => val.textContent = Math.max(1, +val.textContent - 1);
+  inc.onclick = () => val.textContent = +val.textContent + 1;
+});
+
+render();
+</script>
+</body>
+</html>
