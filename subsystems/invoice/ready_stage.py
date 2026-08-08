@@ -105,7 +105,22 @@ def worksheet_to_line_items(sheet: dict) -> list[dict]:
 
 
 def summary_from_sheet(sheet: dict) -> dict:
-    """PURE. Compact fields for Billing Hub cards / API."""
+    """PURE. Compact fields for Billing Hub cards / API.
+
+    Consumed worksheets omit proposed_total so Billing doesn't keep showing
+    a dollar that already went out.
+    """
+    if (sheet.get("status") or "") == "consumed":
+        return {
+            "proposed_total": None,
+            "model": None,
+            "price_label": None,
+            "staged_at": sheet.get("staged_at"),
+            "consumed_at": sheet.get("consumed_at"),
+            "job_name": sheet.get("job_name"),
+            "auto_send": False,
+            "status": "consumed",
+        }
     priced = dict(sheet.get("pricing") or {})
     return {
         "proposed_total": sheet.get("proposed_invoice_total"),
@@ -114,6 +129,7 @@ def summary_from_sheet(sheet: dict) -> dict:
         "staged_at": sheet.get("staged_at"),
         "job_name": sheet.get("job_name"),
         "auto_send": False,
+        "status": sheet.get("status") or "staged_worksheet",
     }
 
 
@@ -216,6 +232,45 @@ def get_summaries(ops_item_ids: list[Any]) -> dict[str, dict]:
         if sheet:
             out[key] = summary_from_sheet(sheet)
     return out
+
+
+def mark_consumed(ops_item_id: Any, *,
+                  actor: str = "invoice:finalize") -> Optional[dict]:
+    """
+    Mark a staged worksheet consumed after invoice finalize (or drop it).
+
+    Soft-fail: returns None when nothing was stored. Prefer keeping a
+    consumed marker so Billing Hub can hide proposed $ without resurrecting
+    the card's staged note.
+    """
+    key = worksheet_key(ops_item_id)
+    existing = get_worksheet(ops_item_id)
+    if not existing:
+        return None
+    stamped = dict(existing)
+    stamped["status"] = "consumed"
+    stamped["consumed_at"] = _now_iso()
+    stamped["consumed_by"] = actor
+    try:
+        from google.api_core.exceptions import PreconditionFailed
+
+        doc, gen = _read()
+        worksheets = dict(doc.get("worksheets") or {})
+        worksheets[key] = stamped
+        try:
+            _write({"version": DOC_VERSION, "worksheets": worksheets},
+                   if_generation_match=gen)
+        except PreconditionFailed:
+            doc, gen = _read()
+            worksheets = dict(doc.get("worksheets") or {})
+            worksheets[key] = stamped
+            _write({"version": DOC_VERSION, "worksheets": worksheets},
+                   if_generation_match=gen)
+    except Exception as exc:  # noqa: BLE001
+        print(f"[ready_stage] consume GCS skipped ({type(exc).__name__}: {exc})",
+              flush=True)
+    _MEMORY[key] = stamped
+    return stamped
 
 
 def clear_memory_for_tests() -> None:

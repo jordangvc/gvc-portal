@@ -191,6 +191,7 @@
       </details>
       <!-- carry-through from the matched project (Projects board = source of truth) -->
       <input type="hidden" name="job_monday_item_id" />
+      <input type="hidden" name="job_ops_item_id" />
       <input type="hidden" name="job_monday_job_type" />
       <input type="hidden" name="job_project_type" />
       <input type="hidden" name="job_project_number" />
@@ -720,6 +721,10 @@ function collectData() {
   // links the ledger row to the project, sets the Monday Job Type, and lets the
   // server file the PDF in the project's own Invoice/ folder.
   if (val("job_monday_item_id")) { const pid = parseInt(val("job_monday_item_id"), 10); if (!isNaN(pid)) job.monday_item_id = pid; }
+  if (val("job_ops_item_id")) {
+    const oid = parseInt(val("job_ops_item_id"), 10);
+    if (!isNaN(oid)) job.ops_item_id = oid;
+  }
   if (val("job_monday_job_type")) job.monday_job_type = val("job_monday_job_type");
   if (val("job_project_type")) job.project_type = val("job_project_type");
   if (val("job_project_number")) job.project_number = val("job_project_number");
@@ -1326,6 +1331,7 @@ function bootInvoiceFromUrl() {
   const co = (params.get("co") || "").trim();
   if (co) pendingCoFromUrl = co;
   pendingOpsReadyId = (params.get("ops_ready") || "").trim();
+  if (pendingOpsReadyId) setVal("job_ops_item_id", pendingOpsReadyId);
   const pn = (params.get("project_number") || "").trim();
   const mondayItemId = (
     params.get("monday_item_id") || params.get("item_id") || ""

@@ -352,6 +352,92 @@ mutation ($itemId: ID!, $groupId: String!) {
 }
 """
 
+_MUTATION_CREATE_LABELS = """
+mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
+  change_multiple_column_values(
+    board_id: $boardId,
+    item_id: $itemId,
+    column_values: $values,
+    create_labels_if_missing: true
+  ) { id }
+}
+"""
+
+# Ops Scheduled Day (status_19) → Invoiced after Billing → Invoice finalize.
+# Completed Tasks group id matches JOBCHECK_SKIP_GROUP_IDS ("new_group").
+OPS_COL_SCHEDULED_DAY = "status_19"
+OPS_COMPLETED_GROUP_ID = "new_group"
+OPS_INVOICED_LABEL = "Invoiced"
+
+
+def stamp_ops_invoiced(mc, item_id: int, *,
+                       current_group_id: Optional[str] = None) -> dict:
+    """
+    After a human finalizes an invoice opened from Ready-to-Invoice:
+      1. Stamp Ops Scheduled Day (status_19) = Invoiced
+      2. Move the item out of Ready to Invoice → Completed Tasks
+
+    Idempotent / best-effort. Never creates/deletes items. Never raises to
+    the invoice flow — callers treat failures as non-fatal.
+    """
+    out: dict = {
+        "ok": False,
+        "status_written": False,
+        "group_moved": False,
+        "already_completed": False,
+        "item_id": None,
+        "error": None,
+        "status_error": None,
+        "move_error": None,
+    }
+    if not item_id:
+        out["error"] = "item_id is required"
+        return out
+    item_id = int(item_id)
+    out["item_id"] = item_id
+
+    board_id = JOBCHECK_BOARD_ID or OPERATIONS_BOARD_ID
+    try:
+        mc._query(_MUTATION_CREATE_LABELS, {
+            "boardId": str(board_id),
+            "itemId": str(item_id),
+            "values": json.dumps({
+                OPS_COL_SCHEDULED_DAY: {"label": OPS_INVOICED_LABEL},
+            }),
+        })
+        out["status_written"] = True
+    except Exception as e:  # noqa: BLE001
+        out["status_error"] = f"{type(e).__name__}: {e}"
+
+    if (current_group_id or "") == OPS_COMPLETED_GROUP_ID:
+        out["ok"] = bool(out["status_written"])
+        out["already_completed"] = True
+        monday_cache.invalidate(
+            "list:jobcheck:active_jobs",
+            "list:morning:ops_items",
+            "list:billing:ready_to_invoice",
+        )
+        return out
+
+    try:
+        mc._query(_MOVE_GROUP, {
+            "itemId": str(item_id),
+            "groupId": OPS_COMPLETED_GROUP_ID,
+        })
+        out["group_moved"] = True
+    except Exception as e:  # noqa: BLE001
+        out["move_error"] = f"{type(e).__name__}: {e}"
+
+    monday_cache.invalidate(
+        "list:jobcheck:active_jobs",
+        "list:morning:ops_items",
+        "list:billing:ready_to_invoice",
+    )
+    out["ok"] = bool(out["status_written"] or out["group_moved"])
+    if not out["ok"] and not out["error"]:
+        out["error"] = out["status_error"] or out["move_error"] or "stamp failed"
+    return out
+
 
 def move_ops_item_to_ready_to_invoice(
     mc, item_id: int, *,

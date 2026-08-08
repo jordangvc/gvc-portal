@@ -27,8 +27,11 @@ monday Operations board 1920364853: items in group `group_mm3zq4q2` (Ready to In
 
 1. Resolve linked Projects item; pull Payroll Rate×Count actuals.
 2. Build internal costing worksheet (by-sheet or T&M).
-3. Stage DRAFT invoice for human review (live mode — post-gauntlet).
-4. On human finalize+send: stamp Ops Scheduled Day = Invoiced.
+3. Stage portal worksheet for human review (`dry_run=false`); Stripe draft
+   create stays post-gauntlet.
+4. On human finalize (when `job.ops_item_id` / `?ops_ready=` present): stamp
+   Ops Scheduled Day = Invoiced and move to Completed Tasks; mark worksheet
+   consumed. Non-fatal if Monday fails.
 5. Idempotent; per-item try/except; dry_run flag.
 
 ## Gauntlet
