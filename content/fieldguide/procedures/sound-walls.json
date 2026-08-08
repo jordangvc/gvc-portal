@@ -1,0 +1,140 @@
+{
+  "id": "sound-walls",
+  "slug": "sound-walls",
+  "title": "Sound Walls & Resilient Channel",
+  "short_answer": "Batt in the cavity is not a sound wall by itself.",
+  "summary": "Batt in the cavity is not a sound wall by itself.",
+  "plain_words": "Batt in the cavity is not a sound wall by itself. Seal what the detail calls for, offset boxes when you can, and if drawings show resilient channel or isolation clips, install them so board screws do not hit the stud through the channel. Wrong attach = failed acoustics and tear-out.",
+  "when_to_use": [
+    "When the job calls for sound walls & resilient channel"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "stage_line": "Assemblies · sound walls & RC",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Read the wall type / STC note on the partition schedule",
+      "body": "do not copy the last job's channel spacing.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Insulation + perimeter seal per Insulation / sou",
+      "body": "Insulation + perimeter seal per Insulation / sound-wall guidance before the second side closes.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "RC / hat channel / clips: orientation and fasten",
+      "body": "RC / hat channel / clips: orientation and fastening per the manufacturer and the listed assembly — not memory.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Screw length trap: fasteners into the channel on",
+      "body": "Screw length trap: fasteners into the channel only where required; screws that bite the stud through RC short-circuit the decoupling.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Boxes and penetrations",
+      "body": "back-to-back boxes are acoustic holes; offset or seal per detail.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Wall vs plenum: STC wall stopped at a suspended",
+      "body": "Wall vs plenum: STC wall stopped at a suspended ceiling with open plenum above — ask before hang (same rule as Insulation Full detail).",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Photo channel / clip layout before board when it",
+      "body": "Photo channel / clip layout before board when it is a hold point (Inspection Photos).",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "sound-wa-q1",
+      "prompt": "Sound Walls & Resilient Channel: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip RC layout",
+      "wrong": "Hang board like a normal wall",
+      "right": "Follow the assembly — RC spacing and isolation",
+      "why": "STC fails inspection"
+    },
+    {
+      "title": "Bridge the channel",
+      "wrong": "Screw through RC into studs carelessly",
+      "right": "Fasten per assembly so channel can flex",
+      "why": "Kills the resilient break"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "insulation",
+    "hang",
+    "ratedwalls"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "RC and isolation start in the frame"
+    },
+    {
+      "procedure_id": "insulation",
+      "label": "Insulation",
+      "why": "Cavity fill is part of the STC story"
+    },
+    {
+      "procedure_id": "hang",
+      "label": "Hang Drywall",
+      "why": "Board type and layers per assembly"
+    }
+  ],
+  "search_tags": [
+    "sound wall",
+    "resilient channel",
+    "STC",
+    "RC-1",
+    "acoustic"
+  ],
+  "synonyms": [
+    "resilient channel",
+    "soundboard",
+    "acoustic wall"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

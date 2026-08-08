@@ -1,0 +1,127 @@
+{
+  "id": "receiving",
+  "slug": "receiving",
+  "title": "Material Receiving & Freight Damage",
+  "short_answer": "Inspect and count at the truck — photos and ticket notes beat a claim filed after unload.",
+  "summary": "Stocking tells you where to put good material.",
+  "plain_words": "Stocking tells you where to put good material. This page is the gate that keeps bad material off the floor. If it is wet, crushed, or the wrong specialty board, it does not get staged \"for later.\"",
+  "when_to_use": [
+    "Every drywall or material delivery",
+    "Suspected freight damage or shortage"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "materials",
+  "template": "task_guide",
+  "stage_line": "Materials · receiving & freight",
+  "role_tags": [
+    "crew",
+    "lead",
+    "ops"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Count vs ticket",
+      "body": "quantities and product types (shaftliner, MR, abuse, cement, standard).",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Photo damage on the truck before unload when you",
+      "body": "Photo damage on the truck before unload when you see wet wrap, broken corners, or bent studs.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Reject or quarantine unusable material",
+      "body": "call the lead/office/supplier path the job uses. Do not hide it in a closet.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Segregate specialty board so shaftliner and ceme",
+      "body": "Segregate specialty board so shaftliner and cement board never get grabbed as standard rock.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Then stock to the work",
+      "body": "Stocking Any Material / Stocking Drywall.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "receivin-q1",
+      "prompt": "Material Receiving & Freight Damage: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Unload then notice damage",
+      "wrong": "Sign the ticket before inspecting boards",
+      "right": "Count and photo damage at the truck",
+      "why": "Freight claims die without evidence"
+    },
+    {
+      "title": "No shortage note",
+      "wrong": "Assume the pack matches the PO",
+      "right": "Board-count vs PO before the truck leaves",
+      "why": "Shortages become job delays"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "stock-general",
+    "stock-drywall",
+    "material-feedback"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "stock-general",
+      "label": "Stock General",
+      "why": "After receive, place room-level"
+    },
+    {
+      "procedure_id": "stock-drywall",
+      "label": "Stock Drywall",
+      "why": "Board count and placement"
+    },
+    {
+      "procedure_id": "material-feedback",
+      "label": "Material Return & Waste",
+      "why": "Damaged freight needs a paper trail"
+    }
+  ],
+  "search_tags": [
+    "receiving",
+    "freight",
+    "delivery",
+    "damaged board"
+  ],
+  "synonyms": [
+    "material receiving",
+    "truck delivery",
+    "freight claim"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

@@ -1,0 +1,126 @@
+{
+  "id": "material-feedback",
+  "slug": "material-feedback",
+  "title": "Material Return & Waste Feedback",
+  "short_answer": "Leftover board in the rain is not a cushion — it is money.",
+  "summary": "Leftover board in the rain is not a cushion — it is money.",
+  "plain_words": "Leftover board in the rain is not a cushion — it is money. Count returnables before the window closes. Tell the office actual vs ordered in plain numbers. Do not invent waste factors in the manual; Job Check history and real counts are the source.",
+  "when_to_use": [
+    "When the job calls for material return & waste feedback"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "materials",
+  "template": "task_guide",
+  "stage_line": "Materials · return & waste feedback",
+  "role_tags": [
+    "lead",
+    "ops",
+    "crew"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Count leftover by product (standard / MR / shaft",
+      "body": "Count leftover by product (standard / MR / shaft / cement / steel) before it gets damaged or stolen.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Call in returns in the supplier window the office uses",
+      "body": "lead or office places the pickup.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Report actual vs ordered same week",
+      "body": "short note is enough (job name, product, ordered, used, returned, damaged).",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Damaged after staging: photo trail (Receiving +",
+      "body": "Damaged after staging: photo trail (Receiving + Protection) so it is not silently eaten as \"waste.\"",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "No published production rates in this manual",
+      "body": "do not invent them in the feedback note either; stick to counts.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "material-q1",
+      "prompt": "Material Return & Waste Feedback: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Silent waste",
+      "wrong": "Throw damaged board without a note",
+      "right": "Photo + ticket + who owns the credit",
+      "why": "No feedback loop, repeat waste"
+    },
+    {
+      "title": "Return without paperwork",
+      "wrong": "Send material back with no PO/credit trail",
+      "right": "Document reason, qty, and destination",
+      "why": "Credits never land"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "receiving",
+    "stock-general",
+    "changeorder"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "receiving",
+      "label": "Receiving",
+      "why": "Damage starts at the truck"
+    },
+    {
+      "procedure_id": "stock-general",
+      "label": "Stock General",
+      "why": "Waste from bad placement"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Change Orders",
+      "why": "Extra material from scope changes"
+    }
+  ],
+  "search_tags": [
+    "material return",
+    "waste",
+    "damaged materials",
+    "credit"
+  ],
+  "synonyms": [
+    "return materials",
+    "waste report",
+    "freight damage claim"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}
