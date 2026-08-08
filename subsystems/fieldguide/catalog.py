@@ -66,6 +66,11 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "window-returns": "window-returns",
     "windows": "window-returns",
     "window-type": "window-returns",
+    "acoustical": "act",
+    "drop-ceiling": "act",
+    "suspended-ceiling": "act",
+    "ceiling-grid": "act",
+    "ct": "act",
 }
 
 _CACHE: dict[str, Any] = {

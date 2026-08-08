@@ -1,0 +1,379 @@
+{
+  "id": "act",
+  "slug": "act",
+  "title": "Acoustical Ceilings",
+  "short_answer": "A ceiling is judged from across the room, all at once. Level grid and even border tiles are the whole job.",
+  "summary": "Hang a metal grid from structure on wires, then drop tiles into it. Dead-level grid and big, even border tiles make it look professional; sliver borders and out-of-level mains show from every angle.",
+  "plain_words": "You hang a metal grid from the structure on wires, then drop tiles into it. Two things make it look right: the grid is dead level, and the cut tiles around the edges are big and even. Get those two and it looks professional. Miss either one and everybody notices, even people who don't know why.",
+  "when_to_use": [
+    "Installing CT / ACT suspended ceiling grid and tile",
+    "Layout before any hanger wire goes up",
+    "Grid early while trades work above; tile last after dusty work is done"
+  ],
+  "prerequisites": [
+    "Approved submittal for grid face profile and tile edge type (matched pair)",
+    "Ceiling height and seismic category from project documents",
+    "Mechanical layout for fixtures, diffusers, sprinklers, and speakers"
+  ],
+  "trade_id": "act",
+  "category_id": "act-ceilings",
+  "template": "task_guide",
+  "stage_line": "Ceilings · CT / ACT",
+  "role_tags": [
+    "act",
+    "crew",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Rotating laser level",
+      "optional": false
+    },
+    {
+      "name": "Chalk line / snap line",
+      "optional": false
+    },
+    {
+      "name": "Wire cutters / pliers for hanger wrap",
+      "optional": false
+    },
+    {
+      "name": "Clean gloves for tile handling",
+      "optional": false
+    },
+    {
+      "name": "Laser measure / tape for layout",
+      "optional": true
+    }
+  ],
+  "materials": [
+    {
+      "name": "Wall angle / perimeter molding",
+      "optional": false
+    },
+    {
+      "name": "Main tees / main runners (typically 4' o.c.)",
+      "optional": false
+    },
+    {
+      "name": "Cross tees for module (2' / 4' per layout)",
+      "optional": false
+    },
+    {
+      "name": "12-gauge hanger wire",
+      "optional": false
+    },
+    {
+      "name": "Acoustical tile / panel (edge matched to grid)",
+      "optional": false
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Find the room's centerlines both directions and work the tile layout out from center.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Aim for border tiles that are equal on opposite sides and as large as possible.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Never end with a sliver border. A 2\" strip against a wall is the single most common ceiling complaint. Shift the whole layout half a tile to fix it.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Check the layout against light fixtures, diffusers, sprinklers, and speakers — they want to land in the grid sensibly, and the mechanical drawings assume a layout.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Establish the ceiling height off the drawings, then laser a level line all the way around the room and snap it. Don't measure down from a deck that isn't level.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "In a corridor, run the layout down the length so the borders stay consistent the whole way — a corridor shows a drifting layout worse than any other space.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Wall angle first, on the snapped line, all the way around. This is the reference for everything after it.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Mark main runner locations from the tile layout.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Hang the wires. Minimum 12 gauge, maximum 4 feet on center along each main runner, and within the required distance of each end.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Wrap each wire a minimum of three full turns within 3 inches. This is inspected and it's the most commonly failed item.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Wires must attach to structure — never to ductwork, pipe, conduit, or another trade's hangers.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Set main tees, typically on 4' centers, and level them as you go.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Install cross tees to form the module.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "Square the grid before any tile goes in — measure the diagonals. A grid that's out of square shows in every tile.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "Confirm light fixtures and diffusers are independently supported where required — most fixtures need their own wires, not the grid.",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "",
+      "body": "Tile goes in last, after the dusty trades are done. Clean gloves — a fingerprint on a white tile is a replacement.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "note",
+      "title": "Why layout comes first",
+      "body": "Same principle as framing: the layout carries all the thinking. Work out the tile layout on paper or on the floor before a single wire goes up, because the border tile size is decided the moment you place the first main runner — and it can't be fixed later without taking the grid apart."
+    },
+    {
+      "severity": "money",
+      "title": "Grid early, tile late",
+      "body": "The grid can go in while other trades are still working above the ceiling — they need it for their layout anyway. Tile is the last thing in the room. Tiling early means damaged, dirty, and lifted tile, and every tile another trade lifts and drops back badly is one you come back for."
+    }
+  ],
+  "experts": [
+    {
+      "id": "act-maintee",
+      "tag": "Full detail · the system",
+      "summary": "Grid components: wall angle (perimeter trim; seismic may require 2\" angle), main tee/runner at 4' o.c. on hanger wire, cross tees forming the module, 12-gauge wire wrapped three full turns within 3\" to structure only, and tile/panel matched to grid face. Grid face profiles: 15/16\" exposed (standard, forgiving), 9/16\" narrow (less forgiving of alignment), slotted (for tegular/reveal edges), concealed (different access). Tile edges: square lay-in (flat on flange), tegular (face drops below grid — needs matching profile), reveal/vector (shadow line — border cuts are skilled work). Grid face and tile edge are a matched pair — confirm both off the same submittal."
+    },
+    {
+      "id": "act-wire",
+      "tag": "Seismic — what changes and why",
+      "summary": "Suspended ceilings are life-safety in a seismic event. Requirements come from the project's seismic design category — never carry the last job's answer. Higher categories may require wider wall angle, two adjacent walls attached with opposite walls free (commonly 3/4\" clearance), splay wires and compression posts, independent fixture support, perimeter clips, and clearance around penetrations. The one that gets missed: the ceiling has to be able to move — fastening all four sides tight defeats the design."
+    }
+  ],
+  "variations": [
+    {
+      "id": "act-corridor",
+      "title": "Corridor layout",
+      "when": "Long narrow runs",
+      "changes": [
+        "Run layout down the length so borders stay consistent",
+        "A drifting layout reads worse in a corridor than any other space"
+      ]
+    },
+    {
+      "id": "act-tegular-reveal",
+      "title": "Tegular or reveal border cuts",
+      "when": "Stepped or shadow-line tile edges",
+      "changes": [
+        "Border cuts must be reworked to match the factory edge profile",
+        "Price skilled border work differently than square lay-in"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "qc-act-level",
+      "prompt": "Main runners dead level on laser — visible from across the room",
+      "severity": "required"
+    },
+    {
+      "id": "qc-act-borders",
+      "prompt": "Border tiles equal on opposite walls; no sliver strips at the perimeter",
+      "severity": "required"
+    },
+    {
+      "id": "qc-act-square",
+      "prompt": "Grid diagonals equal before any tile is set",
+      "severity": "required"
+    },
+    {
+      "id": "qc-act-wire",
+      "prompt": "12-gauge wire, 4' o.c. max, three full wraps within 3\", attached to structure only",
+      "severity": "required"
+    },
+    {
+      "id": "qc-act-fixtures",
+      "prompt": "Fixtures and diffusers independently supported where required",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "id": "cm-act-sliver",
+      "title": "Sliver borders",
+      "wrong": "Accepting a 2\" border strip at the wall",
+      "right": "Shift layout half a tile so opposite borders are even and as large as possible",
+      "why": "A layout decision that can't be fixed after the first main runner is set"
+    },
+    {
+      "id": "cm-act-level",
+      "title": "Out of level",
+      "wrong": "Measuring down from an unlevel deck or eyeballing mains",
+      "right": "Laser a level line around the room and set every main to it",
+      "why": "Visible from across the room and from every angle"
+    },
+    {
+      "id": "cm-act-square",
+      "title": "Out of square",
+      "wrong": "Setting tile before checking diagonals",
+      "right": "Square the grid and measure diagonals before any tile goes in",
+      "why": "Every tile in the room shows a skewed module"
+    },
+    {
+      "id": "cm-act-wire",
+      "title": "Bad hanger wire",
+      "wrong": "Insufficient wraps or wires tied to ductwork",
+      "right": "Three full turns within 3\" to structure; 12 gauge, 4' o.c. max",
+      "why": "Inspection failure and a safety issue"
+    },
+    {
+      "id": "cm-act-fixtures",
+      "title": "Fixtures on the grid",
+      "wrong": "Hanging lights or diffusers from the ceiling grid alone",
+      "right": "Independent support wires to structure where required",
+      "why": "Grid is not rated for fixture weight"
+    },
+    {
+      "id": "cm-act-early-tile",
+      "title": "Tile before dirty trades finish",
+      "wrong": "Setting tile while trades still work above or in the room",
+      "right": "Grid early, tile last — after dusty work is done",
+      "why": "Damaged and soiled tile must be replaced"
+    },
+    {
+      "id": "cm-act-mismatch",
+      "title": "Grid and tile edge mismatched",
+      "wrong": "Ordering tegular tile against a standard grid face",
+      "right": "Confirm grid profile and tile edge on the same approved submittal",
+      "why": "Submittal error that shows up as a full reorder"
+    },
+    {
+      "id": "cm-act-gloves",
+      "title": "Dirty hands on white tile",
+      "wrong": "Handling tile without clean gloves",
+      "right": "Clean gloves; keep tile boxed until the grid is complete and the room is clean",
+      "why": "Fingerprints don't clean off white tile"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-act-sliver",
+      "symptom": "Layout produces a skinny border at one wall",
+      "likely_cause": "First main runner placed before border math",
+      "fix": "Shift the whole layout half a tile from center before any wire goes up"
+    },
+    {
+      "id": "ts-act-diagonal",
+      "symptom": "Tiles don't sit flat / corners lift",
+      "likely_cause": "Grid out of square",
+      "fix": "Measure diagonals and adjust cross tees before setting tile"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "qc-walk",
+    "cleanout",
+    "insulation",
+    "tectum",
+    "firestop",
+    "inspection-hold"
+  ],
+  "next_steps": [
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Verify borders and level before handoff"
+    },
+    {
+      "id": "cleanout",
+      "label": "Clean-out",
+      "why": "Room cleanup after tile is in"
+    },
+    {
+      "id": "framing",
+      "label": "Framing",
+      "why": "Soffits and bulkheads that carry the ceiling plane"
+    }
+  ],
+  "search_tags": [
+    "act",
+    "acoustical",
+    "drop ceiling",
+    "grid",
+    "tile ceiling",
+    "suspended ceiling",
+    "ct",
+    "ceiling tile",
+    "main tee",
+    "cross tee",
+    "hanger wire",
+    "tegular",
+    "lay-in"
+  ],
+  "synonyms": [
+    "ACT",
+    "acoustical",
+    "drop ceiling",
+    "grid",
+    "tile ceiling",
+    "suspended ceiling",
+    "CT",
+    "ceiling grid",
+    "acoustical ceiling"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Hanger wire gauge and spacing (12 gauge minimum, 4' on center maximum), the three-full-turns-within-3-inches wrap, main runners at 4' centers, and perimeter clearance requirements follow manufacturer installation instructions from Armstrong, USG, and Rockfon, and are consistent with code requirements for suspended ceilings. Seismic requirements are driven by the project's seismic design category and by the code edition in force — this section orients you; the project documents govern. Grid profile and tile edge compatibility come from the approved submittal.",
+    "sources": [
+      "Armstrong installation instructions",
+      "USG installation instructions",
+      "Rockfon installation instructions",
+      "GVC Field Manual"
+    ]
+  }
+}
