@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Field Guide materials + leadership catalog (r98) — BUILT 2026-08-08
+Migrated 10 HTML-only stand-alone procedures into the catalog with offline
+`.nextpath`: cement-board, receiving, sound-walls, gc-talk, ops-lead,
+ceiling-finish, board-count-check, plywood-backing, abuse-board,
+material-feedback (55 total). Dropped cloned `#health`/`.dot` CSS on
+Billing / Job Check / Lien (shared topbar rules). Hub **r98**.
+
 ## ✨ Money-form CSS extracted into gvc.css (r97) — BUILT 2026-08-08
 Estimate / Invoice / Change Order / Check / Job Start / COI no longer ship the
 ~110-line money-generator `<style>` clone. Shared dialect lives under

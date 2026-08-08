@@ -1,0 +1,138 @@
+{
+  "id": "ops-lead",
+  "slug": "ops-lead",
+  "title": "Ops Lead / Superintendent Playbook",
+  "short_answer": "You own production across jobs: who goes where, whether prep is real, when to pull a crew, and when standing-by becomes a documentation event.",
+  "summary": "You own production across jobs: who goes where, whether prep is real, when to pull a crew, and when standing-by becomes a documentation event.",
+  "plain_words": "You own production across jobs: who goes where, whether prep is real, when to pull a crew, and when standing-by becomes a documentation event. Morning Brief / route / prep status are side chat or DM — never Slack #operations .",
+  "when_to_use": [
+    "When the job calls for ops lead / superintendent playbook"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-leadership",
+  "template": "task_guide",
+  "stage_line": "Leadership · ops lead / superintendent",
+  "role_tags": [
+    "foreman",
+    "ops",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Read prep across today's jobs",
+      "body": "material, access, scaffold/heat notes from Job Start, open questions still unanswered.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Huddle / assign from the private brief",
+      "body": "do not broadcast route sheets to #operations.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Unscheduled work last unless a hard stop (inspec",
+      "body": "Unscheduled work last unless a hard stop (inspection, owner walk) forces a reorder — and then document why.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Protect Job Check truth",
+      "body": "do not advance stages to calm a GC; send the lead to QC Walk first.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Standing-by / stacked trades: treat as documenta",
+      "body": "Standing-by / stacked trades: treat as documentation events (Change Order page) — hours, crew, reason, same day.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Pull criteria: unsafe access, incomplete handoff",
+      "body": "Pull criteria: unsafe access, incomplete handoff packet, rated work without a clear assembly, or a stop condition from Safety Orientation.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Escalate money/scope to the office; keep owner e",
+      "body": "Escalate money/scope to the office; keep owner exceptions rare (Escalation Ladder).",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "ops-lead-q1",
+      "prompt": "Ops Lead / Superintendent Playbook: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Advance stages on hope",
+      "wrong": "Mark complete without a real walk",
+      "right": "QC walk before Job Check moves",
+      "why": "Lies in Monday become field surprises"
+    },
+    {
+      "title": "No daily plan",
+      "wrong": "Crew starts without a clear first task",
+      "right": "Lead-day rhythm — who, where, what first",
+      "why": "Idle time and rework"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "lead-day",
+    "escalate",
+    "morning-rhythm",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "lead-day",
+      "label": "Lead Day",
+      "why": "Daily rhythm for the person in charge"
+    },
+    {
+      "procedure_id": "morning-rhythm",
+      "label": "Morning Rhythm",
+      "why": "Start the crew right"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Honest status before advancing stages"
+    }
+  ],
+  "search_tags": [
+    "ops lead",
+    "superintendent",
+    "foreman playbook"
+  ],
+  "synonyms": [
+    "superintendent",
+    "ops superintendent",
+    "field lead"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

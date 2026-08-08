@@ -1,0 +1,132 @@
+{
+  "id": "plywood-backing",
+  "slug": "plywood-backing",
+  "title": "Plywood / Sheathing Backing",
+  "short_answer": "Backing goes in before board — cabinets, grab bars, and TV mounts need specified plywood, not hope.",
+  "summary": "Blocking is one stud bay.",
+  "plain_words": "Blocking is one stud bay. Plywood backing is a panel so something can land anywhere on that wall. Install what the drawings / packet call for, flush or recessed as detailed, and stop if the wall is rated and the listing does not allow random plywood.",
+  "when_to_use": [
+    "Fixture zones, cabinets, grab bars, TV mounts",
+    "Pre-board walk catching missing blocking"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "stage_line": "Framing · plywood / sheathing backing",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Confirm we sold it",
+      "body": "scope / Job Start / drawings. Plywood for mounts is easy to \"just add\" as free work.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Size and thickness per detail or approved submittal",
+      "body": "do not guess ¾\" everywhere.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Fasten to framing so the panel cannot rattle; ed",
+      "body": "Fasten to framing so the panel cannot rattle; edges supported as detailed.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Flush vs recessed for board plane",
+      "body": "proud plywood prints through finish.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Rated walls: only what the listed assembly / detail allows",
+      "body": "When unclear → RFI, do not invent.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Mark locations for hangers so cabinets/TVs land",
+      "body": "Mark locations for hangers so cabinets/TVs land on the panel (ties Framing backing list + Cabinets).",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "plywood--q1",
+      "prompt": "Plywood / Sheathing Backing: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Hang then remember backing",
+      "wrong": "Board first, backing later",
+      "right": "Backing in framing / pre-board walk",
+      "why": "Cut-outs and rework"
+    },
+    {
+      "title": "Wrong thickness",
+      "wrong": "Random scrap for cabinet mounts",
+      "right": "Specified plywood/sheathing at fixture zones",
+      "why": "Pull-out and callbacks"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "hang",
+    "preboard-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "Backing goes in before board"
+    },
+    {
+      "procedure_id": "preboard-walk",
+      "label": "Pre-Board Walk",
+      "why": "Catch missing backing before hang"
+    },
+    {
+      "procedure_id": "hang",
+      "label": "Hang Drywall",
+      "why": "Board over backing for fixtures"
+    }
+  ],
+  "search_tags": [
+    "plywood backing",
+    "sheathing",
+    "blocking",
+    "cabinet backing"
+  ],
+  "synonyms": [
+    "wood backing",
+    "fixture backing",
+    "blocking"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

@@ -29,7 +29,12 @@ ACT / firestop / rated / safety / CO / touch-up as before;
 **escalate**, **inspection-hold**, **punch-cadence**;
 **rfi-field**, **exclusions-walk**, **residential-field**, **garage-finish**;
 **drawings**, **dont**, **stock-general**, **portal-field-tools**,
-**ai-field-rules**, **protection** (38 approved procedures; link audit clean).
+**ai-field-rules**, **protection**; onboard/FRP/doors/patch (r95);
+materials + leadership batch (r98): **cement-board**, **receiving**,
+**sound-walls**, **gc-talk**, **ops-lead**, **ceiling-finish**,
+**board-count-check**, **plywood-backing**, **abuse-board**,
+**material-feedback** (**55** approved procedures; link audit clean).
+Leftover shell: role tracks, glossary/sources, cabinets.
 
 Coach: catalog-only procedure ids synthesize checklist steps from catalog
 `steps` (no home-tile FALLBACK).

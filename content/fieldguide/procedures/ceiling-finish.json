@@ -1,0 +1,132 @@
+{
+  "id": "ceiling-finish",
+  "slug": "ceiling-finish",
+  "title": "Ceiling Finish Decision",
+  "short_answer": "Job Start has Ceiling finish and Garage finish because crews otherwise build yesterday's job.",
+  "summary": "Job Start has Ceiling finish and Garage finish because crews otherwise build yesterday's job.",
+  "plain_words": "Job Start has Ceiling finish and Garage finish because crews otherwise build yesterday's job. Read those fields, then the RCP / finish schedule. If they disagree, that is an RFI or an office call — not a coin flip in the driveway.",
+  "when_to_use": [
+    "When the job calls for ceiling finish decision"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "production-finishes",
+  "template": "task_guide",
+  "stage_line": "Finish · ceiling decision",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Open Job Start",
+      "body": "Ceiling finish + Garage finish labels.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Open the drawings",
+      "body": "RCP, finish schedule, any garage note. Confirm hard lid vs ACT vs open / exposed.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Garage: how far finish goes (classic rework)",
+      "body": "Do not assume full finish if the packet says otherwise.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Transitions and bulkheads",
+      "body": "know where systems meet before stock lands.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Fire / smoke above grid",
+      "body": "if ACT sits under a rated path, do not invent the above-ceiling detail; ask.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Only then start layout (Hang or ACT procedures)",
+      "body": "Only then start layout (Hang or ACT procedures).",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "ceiling--q1",
+      "prompt": "Ceiling Finish Decision: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Wrong level of finish",
+      "wrong": "Level 4 where critical light needs 5",
+      "right": "Decide ceiling finish from light and spec",
+      "why": "Flash and telegraph forever"
+    },
+    {
+      "title": "ACT vs skim guess",
+      "wrong": "Skim a ceiling that should be grid",
+      "right": "Confirm finish schedule before production",
+      "why": "Wrong system = tear-out"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "finish",
+    "level5-skim",
+    "act",
+    "painting"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "finish",
+      "label": "Tape & Finish",
+      "why": "Ceiling level of finish starts here"
+    },
+    {
+      "procedure_id": "level5-skim",
+      "label": "Level 5 Skim",
+      "why": "Critical light ceilings"
+    },
+    {
+      "procedure_id": "act",
+      "label": "ACT Ceilings",
+      "why": "Sometimes the answer is grid, not skim"
+    }
+  ],
+  "search_tags": [
+    "ceiling finish",
+    "level 4",
+    "level 5",
+    "critical light"
+  ],
+  "synonyms": [
+    "ceiling level",
+    "flat ceiling",
+    "raking light ceiling"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

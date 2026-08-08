@@ -1,0 +1,132 @@
+{
+  "id": "cement-board",
+  "slug": "cement-board",
+  "title": "Cement Board / Tile Backer",
+  "short_answer": "Cement board is not drywall with a different color.",
+  "summary": "Cement board is not drywall with a different color.",
+  "plain_words": "Cement board is not drywall with a different color. You do not mud it like gypsum, you do not hang it on a bounce-y wall, and you do not guess who owns the waterproofing membrane. Wrong here is tear-out behind tile.",
+  "when_to_use": [
+    "When the job calls for cement board / tile backer"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "materials",
+  "template": "task_guide",
+  "stage_line": "Materials · cement board / tile backer",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Confirm the product",
+      "body": "cement board / glass-mat tile backer vs moisture-resistant gypsum. Tile usually wants backer; paint often wants MR gypsum. The finish schedule decides.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Check framing deflection for tile (often L/360). If the wall is soft, stop",
+      "body": "tiling over flex is a callback.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Fasten per the manufacturer",
+      "body": "pattern, screw type, and edge distances. Do not \"drywall screw it wherever.\"",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Joints: treat with the listed alkali-resistant mesh / base as required",
+      "body": "not ordinary paper tape and all-purpose mud as if it were a bedroom wall.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Transitions to drywall are deliberate",
+      "body": "height, bead, and who finishes what.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Waterproofing membrane is often another trade",
+      "body": "If ownership is unclear, stop and get it in writing before you cover the substrate.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "cement-b-q1",
+      "prompt": "Cement Board / Tile Backer: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Mud like drywall",
+      "wrong": "Paper tape + all-purpose on cement board joints",
+      "right": "Listed alkali-resistant mesh/base per manufacturer",
+      "why": "Joints fail behind tile"
+    },
+    {
+      "title": "Guess waterproofing owner",
+      "wrong": "Cover substrate before membrane ownership is clear",
+      "right": "Get it in writing first",
+      "why": "Tear-out and callbacks"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "hang",
+    "stock-drywall",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "hang",
+      "label": "Hang Drywall",
+      "why": "Transitions to gypsum and fastening discipline"
+    },
+    {
+      "procedure_id": "stock-drywall",
+      "label": "Stock Drywall",
+      "why": "Right product on the right walls before hang"
+    },
+    {
+      "procedure_id": "dont",
+      "label": "Don'ts",
+      "why": "Wrong substrate behind tile is tear-out"
+    }
+  ],
+  "search_tags": [
+    "cement board",
+    "tile backer",
+    "durock",
+    "wonderboard",
+    "hardiebacker"
+  ],
+  "synonyms": [
+    "cementboard",
+    "tile backer board",
+    "glass mat backer"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

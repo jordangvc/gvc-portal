@@ -1,0 +1,125 @@
+{
+  "id": "abuse-board",
+  "slug": "abuse-board",
+  "title": "Abuse- / Impact-Resistant Board",
+  "short_answer": "Abuse-resistant and impact-resistant panels are specified products with their own fastening and finishing notes.",
+  "summary": "Abuse-resistant and impact-resistant panels are specified products with their own fastening and finishing notes.",
+  "plain_words": "Abuse-resistant and impact-resistant panels are specified products with their own fastening and finishing notes. Use the approved submittal. Do not substitute standard board because the stack was closer.",
+  "when_to_use": [
+    "When the job calls for abuse- / impact-resistant board"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "materials",
+  "template": "task_guide",
+  "stage_line": "Materials · abuse / impact board",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Confirm the product on the finish / partition sc",
+      "body": "Confirm the product on the finish / partition schedule and approved submittal.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Segregate on the floor at receiving",
+      "body": "do not mix into the standard stack.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Fasten per manufacturer for that panel",
+      "body": "patterns can differ from standard ½\" / ⅝\" gypsum.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Transitions to standard board are intentional",
+      "body": "height and bead as detailed.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Finishing: follow manufacturer joint treatment n",
+      "body": "Finishing: follow manufacturer joint treatment notes; do not assume ordinary paper-tape habits always apply.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "abuse-bo-q1",
+      "prompt": "Abuse- / Impact-Resistant Board: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Standard board in corridors",
+      "wrong": "Hang regular gypsum where abuse is specified",
+      "right": "Match product to schedule",
+      "why": "Impact damage in weeks"
+    },
+    {
+      "title": "Wrong fasteners",
+      "wrong": "Drywall screws wherever",
+      "right": "Manufacturer pattern and screw type",
+      "why": "Board fails under impact"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "hang",
+    "stock-drywall",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "hang",
+      "label": "Hang Drywall",
+      "why": "Abuse board still hangs — different product rules"
+    },
+    {
+      "procedure_id": "stock-drywall",
+      "label": "Stock Drywall",
+      "why": "Right board on the right walls"
+    },
+    {
+      "procedure_id": "dont",
+      "label": "Don'ts",
+      "why": "Wrong board in corridors is callbacks"
+    }
+  ],
+  "search_tags": [
+    "abuse board",
+    "impact resistant",
+    "densarmor",
+    "fiberock"
+  ],
+  "synonyms": [
+    "impact board",
+    "abuse resistant",
+    "high abuse"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

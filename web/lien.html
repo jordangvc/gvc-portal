@@ -25,11 +25,7 @@
      deadline-table / job-card widgets the JS renders. Kept page-local because
      the severity colours are meaning-bearing (missed vs critical vs warn);
      everything references gvc tokens. */
-  #health { font-size:var(--gvc-fs-caption); color:#DCE8DD; display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; align-items:center; }
-  .dot { width:9px; height:9px; border-radius:50%; background:#C8C2B0; display:inline-block; margin-right:5px; }
-  .dot.ok { background:var(--gvc-brand-bright); } .dot.bad { background:#E88070; }
-
-  .summary { display:flex; gap:var(--gvc-space-2); flex-wrap:wrap; align-items:center; }
+.summary { display:flex; gap:var(--gvc-space-2); flex-wrap:wrap; align-items:center; }
   .summary .count { font-size:var(--gvc-fs-small); font-weight:600; padding:4px var(--gvc-space-3);
     border-radius:var(--gvc-r-pill); border:1px solid var(--gvc-line); background:var(--gvc-surface); }
   .chip { display:inline-flex; align-items:center; font-size:var(--gvc-fs-micro); font-weight:700;

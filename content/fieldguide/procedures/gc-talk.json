@@ -1,0 +1,135 @@
+{
+  "id": "gc-talk",
+  "slug": "gc-talk",
+  "title": "Talking to the GC / Builder",
+  "short_answer": "Be respectful, be specific, and leave with a written next step — never a hallway maybe.",
+  "summary": "Be respectful.",
+  "plain_words": "Be respectful. Be clear. Do not invent scope. Do not quote square footage or \"1-side / 2-side\" language from internal scope reviews to a client. Extra work needs written authorization from someone who can actually authorize it — another sub never can.",
+  "when_to_use": [
+    "Before committing GVC to schedule or scope changes on site",
+    "When the GC asks for extras or disagrees with the packet",
+    "Daily coordination that could become a CO or RFI"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-leadership",
+  "template": "task_guide",
+  "stage_line": "Leadership · talking to the GC",
+  "role_tags": [
+    "lead",
+    "foreman",
+    "ops"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Allowed: schedule coordination, access questions",
+      "body": "Allowed: schedule coordination, access questions, pointing at drawings, \"I need to check with the office before we add that.\"",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Not allowed: promising free extras, agreeing to",
+      "body": "Not allowed: promising free extras, agreeing to revision work without a CO path, guessing fire ratings, inventing return depths.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Never say we'll \"just take care of it\" for work not on our drawings",
+      "body": "that phrase is how unpaid days start.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Client-facing language: do not paste internal sc",
+      "body": "Client-facing language: do not paste internal scope-review SF or 1-side/2-side phrasing into emails or verbal scope — those are internal (Job Start scrub rule).",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Residential verbal changes need the same stop-ph",
+      "body": "Residential verbal changes need the same stop-photo-write-call discipline as commercial — documentation matters more when the process is informal (see Reading Drawings res vs comm).",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Who authorizes: GC PM / superintendent / owner rep per contract",
+      "body": "not the electrician, not \"the guy who asked nicely.\" Escalate via Escalation Ladder.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "gc-talk-q1",
+      "prompt": "Talking to the GC / Builder: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Argue on site without paper",
+      "wrong": "Verbal only when scope is contested",
+      "right": "Confirm in writing / photo / CO path",
+      "why": "Memory fights lose"
+    },
+    {
+      "title": "Promise without authority",
+      "wrong": "Commit GVC to work you cannot authorize",
+      "right": "Escalate when money or schedule moves",
+      "why": "Trust and margin both take hits"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "escalate",
+    "changeorder",
+    "rfi-field",
+    "lead-day"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "escalate",
+      "label": "Escalate",
+      "why": "When talk is not enough"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Change Orders",
+      "why": "Document extras before you do them"
+    },
+    {
+      "procedure_id": "rfi-field",
+      "label": "Field RFIs",
+      "why": "Get answers in writing"
+    }
+  ],
+  "search_tags": [
+    "GC",
+    "builder",
+    "superintendent",
+    "communication"
+  ],
+  "synonyms": [
+    "talk to GC",
+    "builder meeting",
+    "super"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}

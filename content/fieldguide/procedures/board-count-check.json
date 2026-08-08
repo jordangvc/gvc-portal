@@ -1,0 +1,124 @@
+{
+  "id": "board-count-check",
+  "slug": "board-count-check",
+  "title": "Board Count Check",
+  "short_answer": "Reconcile takeoff, receiving, and on-floor stacks before hang — shortages mid-hang stop the crew.",
+  "summary": "We do not guess board count in a stairwell.",
+  "plain_words": "We do not guess board count in a stairwell. The handoff should already carry it. Your job is to notice when reality is wildly off (wrong product, wrong floor, obvious short) and report actual vs packet back to the office — that is how estimating gets better. You do not rewrite Monday money columns from Job Check.",
+  "when_to_use": [
+    "Before stocking rooms or starting hang",
+    "When packs look short vs the PO"
+  ],
+  "prerequisites": [
+    "Read drawings and finish schedule before acting"
+  ],
+  "trade_id": "drywall",
+  "category_id": "materials",
+  "template": "task_guide",
+  "stage_line": "Materials · board count check",
+  "role_tags": [
+    "lead",
+    "crew"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Read board count from Job Start / Projects befor",
+      "body": "Read board count from Job Start / Projects before the hang wave starts.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Receiving: count specialty board (shaftliner, MR",
+      "body": "Receiving: count specialty board (shaftliner, MR, cement, abuse) separate from standard — see Material Receiving.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Obvious miss: photo + tell the lead/office same day",
+      "body": "Do not silently \"make it work\" with random leftovers from another floor.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Overage / leftover: count returnable sheets before they get ruined",
+      "body": "Material Feedback.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Never edit billing basis columns from the field",
+      "body": "Job Check will not offer them; that is office-owned.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "board-co-q1",
+      "prompt": "Board Count Check: steps followed and documented",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Count after hang starts",
+      "wrong": "Discover shortage mid-hang",
+      "right": "Count before stocking rooms",
+      "why": "Stops production cold"
+    },
+    {
+      "title": "Trust takeoff alone",
+      "wrong": "Never reconcile to delivered packs",
+      "right": "Takeoff vs receiving vs on-floor count",
+      "why": "Freight short vs takeoff short are different fixes"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "stock-drywall",
+    "hang"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "stock-drywall",
+      "label": "Stock Drywall",
+      "why": "Count before you move board"
+    },
+    {
+      "procedure_id": "hang",
+      "label": "Hang Drywall",
+      "why": "Shortages show up mid-hang"
+    },
+    {
+      "procedure_id": "receiving",
+      "label": "Receiving",
+      "why": "Freight short vs takeoff short"
+    }
+  ],
+  "search_tags": [
+    "board count",
+    "takeoff check",
+    "shortage"
+  ],
+  "synonyms": [
+    "sheet count",
+    "board shortage",
+    "count rock"
+  ],
+  "governance": {
+    "status": "approved",
+    "owner": "field",
+    "source": "fieldguide.html migration",
+    "reviewed": "2026-08-08"
+  },
+  "provenance": {
+    "tier": "gvc_practice",
+    "note": "Migrated from Field Guide HTML shell — content unchanged in intent."
+  }
+}
