@@ -120,11 +120,3 @@ def test_commit_rejects_multi_check_image():
         assert ei.value.detail["code"] == "MULTI_CHECK_IMAGE"
     finally:
         check_flow.vision = orig_vision
-
-
-def test_check_html_blocks_confirm_on_multi():
-    html = (ROOT / "web" / "check.html").read_text(encoding="utf-8")
-    assert "MULTI_CHECK" in html
-    assert '$("#confirm").disabled = true' in html
-    assert "MULTI_CHECK > 1" in html
-    assert "Recording is blocked" in html

@@ -11,11 +11,10 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## ⚡ Monday 429 retry + multi-check hard-stop (r75) — BUILT 2026-08-08
-`MondayClient._query` now bounded-retries 429 / ComplexityException / 5xx /
-transport (Slack pattern). Paid-by-Check blocks recording when Vision counts
->1 checks (UI disables Confirm; commit returns 409 `MULTI_CHECK_IMAGE`).
-Hub **r75**.
+## ⚡ Monday 429/complexity retry + multi-check commit guard — BUILT 2026-08-08
+`MondayClient._query` bounded-retries 429 / ComplexityException / 5xx /
+transport (Slack pattern). `commit_check` returns 409 `MULTI_CHECK_IMAGE`
+when Vision counts >1 checks (server fail-safe; UI soft-stop is separate).
 
 ## ⚡ Monday critical-path perf (r73) — BUILT 2026-08-08
 Evidence-backed: live paint waits on Monday JSON, not HTML/bundles. Fixes:

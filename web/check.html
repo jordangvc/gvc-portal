@@ -263,8 +263,6 @@
     fillModal(data);
   }
 
-  let MULTI_CHECK = 0;
-
   function fillModal(data) {
     // Show the uploaded check at the top of the modal for reference while editing.
     const img = $("#m-image"), f = $("#file").files[0];
@@ -273,19 +271,11 @@
     else { img.removeAttribute("src"); img.style.display = "none"; }
 
     const warn = $("#multi-warn");
-    MULTI_CHECK = Number(data.multi_check || 0) || 0;
-    if (MULTI_CHECK > 1) {
+    if (data.multi_check && data.multi_check > 1) {
       warn.style.display = "block";
-      warn.innerHTML = `⚠️ <strong>${MULTI_CHECK} checks detected</strong> in this photo. ` +
-        `Recording is blocked — the fields below describe only one of them. ` +
-        `Photograph and upload <strong>one check at a time</strong>, then Read check again.`;
-      $("#confirm").disabled = true;
-      $("#confirm").title = "Upload one check per photo before recording";
-    } else {
-      warn.style.display = "none";
-      $("#confirm").disabled = false;
-      $("#confirm").removeAttribute("title");
-    }
+      warn.innerHTML = `⚠️ <strong>${data.multi_check} checks detected</strong> in this photo. ` +
+        `The fields below describe only one of them. For accurate matching, photograph and upload one check at a time.`;
+    } else { warn.style.display = "none"; }
     const p = data.parsed || {};
     $("#m-payer").value = p.payer || "";
     $("#m-amount").value = p.amount || "";
@@ -483,10 +473,6 @@
   }
 
   async function confirm() {
-    if (MULTI_CHECK > 1) {
-      setStatus("err", "This photo has multiple checks — upload one check at a time before recording.");
-      return;
-    }
     if (!SELECTED.length) { setStatus("err", "Pick the invoice(s) this check pays before recording."); return; }
     const f = $("#file").files[0];
     if (!f) { setStatus("err", "The check image is missing — re-upload and read it again."); return; }

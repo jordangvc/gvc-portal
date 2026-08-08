@@ -75,8 +75,7 @@ support the field. Admin / Activity are company tools.
 9. ~~Photos / Projects link discovery on Job Check~~ — blocked-photo hint now
    opens/scrolls the Link Projects panel when Ops→Projects is missing; GFolder
    gaps name the office Monday column to fill.
-10. ~~Multi-check photo soft-stop on Paid by Check~~ — confirm disabled +
-    server `MULTI_CHECK_IMAGE` 409 on commit (r75).
+10. Multi-check photo soft-stop on Paid by Check.
 11. Money-form shared CSS extraction / Field Manual token convergence.
 
 ---
