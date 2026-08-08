@@ -72,7 +72,9 @@ support the field. Admin / Activity are company tools.
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
    Path strip now also mounts on Change Order + Paid by Check (spine includes
    CO + Check).
-9. Photos / Projects link discovery on Job Check — strengthen empty guidance.
+9. ~~Photos / Projects link discovery on Job Check~~ — blocked-photo hint now
+   opens/scrolls the Link Projects panel when Ops→Projects is missing; GFolder
+   gaps name the office Monday column to fill.
 10. Multi-check photo soft-stop on Paid by Check.
 11. Money-form shared CSS extraction / Field Manual token convergence.
 
