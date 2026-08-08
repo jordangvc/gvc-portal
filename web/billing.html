@@ -237,6 +237,14 @@ function metaBits(item) {
   const bits = [];
   if (item.project_number) bits.push(`Project # <b>${esc(item.project_number)}</b>`);
   if (item.estimate_number) bits.push(`Est <b>${esc(item.estimate_number)}</b>`);
+  if (item.proposed_total != null && item.proposed_total !== "") {
+    const n = Number(item.proposed_total);
+    const money = Number.isFinite(n)
+      ? n.toLocaleString("en-US", { style: "currency", currency: "USD" })
+      : String(item.proposed_total);
+    const model = item.model ? ` · ${esc(item.model)}` : "";
+    bits.push(`Proposed <b>${esc(money)}</b>${model}`);
+  }
   if (item.builder) bits.push(`Builder <b>${esc(item.builder)}</b>`);
   if (item.supervisor) bits.push(`Super <b>${esc(item.supervisor)}</b>`);
   if (item.location) bits.push(esc(item.location));

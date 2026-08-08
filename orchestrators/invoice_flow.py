@@ -687,6 +687,33 @@ def process_one(
     except Exception:  # noqa: BLE001 — alerting must never break the flow
         pass
 
+    # P5: when Billing opened Invoice with ?ops_ready=, stamp Ops Scheduled
+    # Day = Invoiced and leave the Ready queue. Non-fatal; never auto-sends.
+    if finalize and not hosted_url_override:
+        ops_ready_id = (
+            (enriched.get("job") or {}).get("ops_item_id")
+            or (data.get("job") or {}).get("ops_item_id")
+            or data.get("ops_item_id")
+        )
+        if ops_ready_id:
+            try:
+                from adapters.monday.client import MondayClient as _MC
+                from adapters.monday import jobcheck as _mj
+                from subsystems.invoice import ready_stage as _ready_stage
+                stamp = _mj.stamp_ops_invoiced(_MC(), int(ops_ready_id))
+                writeback["ops_invoiced"] = stamp
+                _ready_stage.mark_consumed(ops_ready_id)
+                print(f"[live {identifier}] Ops invoiced stamp: "
+                      f"ok={stamp.get('ok')} status={stamp.get('status_written')} "
+                      f"moved={stamp.get('group_moved')}")
+            except Exception as e:  # noqa: BLE001 — invoice already issued
+                writeback["ops_invoiced"] = {
+                    "ok": False,
+                    "error": f"{type(e).__name__}: {e}",
+                }
+                print(f"[live {identifier}] Ops invoiced stamp FAILED "
+                      f"(non-fatal): {type(e).__name__}: {e}", file=sys.stderr)
+
     return writeback
 
 

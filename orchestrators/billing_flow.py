@@ -74,7 +74,29 @@ def billing_hub_payload(mc=None) -> dict:
     # Live path fans the three Monday walks out — Hub + Billing Hub first paint.
     def _load_ready(client: Any) -> list:
         raw = monday_billing.fetch_ready_to_invoice(client)
-        return [bq.shape_ready_to_invoice(r) for r in (raw or [])]
+        # Attach P5 staged worksheet summaries (soft-fail) so Ready cards
+        # show proposed $ without another Monday round-trip.
+        staged: dict = {}
+        try:
+            from subsystems.invoice import ready_stage
+            ids = [r.get("item_id") for r in (raw or []) if r.get("item_id")]
+            staged = ready_stage.get_summaries(ids)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[billing] ready_stage enrich skipped: {exc}", file=sys.stderr)
+            staged = {}
+        shaped = []
+        for r in (raw or []):
+            row = dict(r)
+            key = str(int(row["item_id"])) if row.get("item_id") is not None else ""
+            summary = staged.get(key) or {}
+            if summary.get("proposed_total") is not None:
+                row["proposed_total"] = summary["proposed_total"]
+            if summary.get("model"):
+                row["model"] = summary["model"]
+            if summary.get("price_label"):
+                row["price_label"] = summary["price_label"]
+            shaped.append(bq.shape_ready_to_invoice(row))
+        return shaped
 
     def _load_bids(client: Any) -> list:
         raw = monday_billing.fetch_accepted_bids(client)

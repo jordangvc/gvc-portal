@@ -27,8 +27,11 @@ monday Operations board 1920364853: items in group `group_mm3zq4q2` (Ready to In
 
 1. Resolve linked Projects item; pull Payroll Rate×Count actuals.
 2. Build internal costing worksheet (by-sheet or T&M).
-3. Stage DRAFT invoice for human review (live mode — post-gauntlet).
-4. On human finalize+send: stamp Ops Scheduled Day = Invoiced.
+3. Stage portal worksheet for human review (`dry_run=false`); Stripe draft
+   create stays post-gauntlet.
+4. On human finalize (when `job.ops_item_id` / `?ops_ready=` present): stamp
+   Ops Scheduled Day = Invoiced and move to Completed Tasks; mark worksheet
+   consumed. Non-fatal if Monday fails.
 5. Idempotent; per-item try/except; dry_run flag.
 
 ## Gauntlet
@@ -38,7 +41,12 @@ Dry-run replay of 3 already-invoiced jobs; drafted amounts within ±5%; zero wri
 ## Status
 
 - **Code:** dry-run consumer shipped (`check_ready_to_invoice`, default `dry_run=true`).
-- **Live staging / scheduler activate:** after dry-run gauntlet on real Ready queue.
+- **Portal staging (r84):** `dry_run=false` persists worksheets to
+  `portal/invoice-ready-worksheets.json` (memory fallback). Billing Hub Ready
+  cards show proposed $; `/ui/invoice?ops_ready=` prefills editable lines.
+  **Still never creates Stripe drafts or auto-sends.**
+- **Stripe draft staging / scheduler live flip:** after dry-run gauntlet on
+  real Ready queue + deliberate env/body change (workflow stays `dry_run: true`).
 
 ## Activate (Jordan — GitHub Actions; no local gcloud)
 

@@ -15,13 +15,14 @@ from adapters.monday import billing as monday_billing
 
 def invoice_href(*, project_number: Optional[str] = None,
                  monday_item_id: Optional[Any] = None,
-                 q: Optional[str] = None) -> str:
-    # Forward q — Ready-to-Invoice shaping passes the job name when Project #
-    # is missing so /ui/invoice can still search/prefill. Omitting q here is
-    # what produced the live Billing Hub TypeError
-    # ("invoice_href() got an unexpected keyword argument 'q'").
+                 q: Optional[str] = None,
+                 ops_item_id: Optional[Any] = None) -> str:
+    # Forward q / ops_item_id — Ready-to-Invoice shaping passes the job name
+    # when Project # is missing so /ui/invoice can still search/prefill, and
+    # ops_ready so a staged P5 worksheet can load into line items.
     return monday_billing.invoice_href(
-        project_number=project_number, monday_item_id=monday_item_id, q=q)
+        project_number=project_number, monday_item_id=monday_item_id, q=q,
+        ops_item_id=ops_item_id)
 
 
 def estimate_href(*, estimate_number: Optional[str] = None,
@@ -58,6 +59,7 @@ def shape_ready_to_invoice(row: dict) -> dict:
         project_number=project_number,
         monday_item_id=monday_for_invoice,
         q=None if (project_number or monday_for_invoice) else job_q,
+        ops_item_id=ops_item_id,
     )
     status_labels = [s for s in (
         _clean(row.get("billable")) and f"Billable: {row.get('billable')}",
@@ -65,6 +67,15 @@ def shape_ready_to_invoice(row: dict) -> dict:
         _clean(row.get("project_status")),
         _clean(row.get("ready_date")) and f"Ready {row.get('ready_date')}",
     ) if s]
+    # Optional P5 staged worksheet fields (caller may attach; never required).
+    proposed_total = row.get("proposed_total")
+    model = _clean(row.get("model"))
+    price_label = _clean(row.get("price_label"))
+    if proposed_total is not None:
+        try:
+            proposed_total = round(float(proposed_total), 2)
+        except (TypeError, ValueError):
+            proposed_total = None
     if project_number:
         note = "Project # known — invoice form will look it up."
     elif monday_for_invoice:
@@ -74,6 +85,10 @@ def shape_ready_to_invoice(row: dict) -> dict:
             "No Projects link yet — opens invoice search with the job name. "
             "Link the Ops task to Projects so one-tap invoice works."
         )
+    if proposed_total is not None and price_label:
+        note = f"Proposed ${proposed_total:,.2f} ({price_label}). {note}"
+    elif proposed_total is not None:
+        note = f"Proposed ${proposed_total:,.2f} from staged worksheet. {note}"
     return {
         "kind": "ready_to_invoice",
         "name": _clean(row.get("name")) or "(unnamed)",
@@ -90,6 +105,9 @@ def shape_ready_to_invoice(row: dict) -> dict:
         "billable": _clean(row.get("billable")),
         "stage": _clean(row.get("stage")),
         "monday_url": _clean(row.get("url")),
+        "proposed_total": proposed_total,
+        "model": model,
+        "price_label": price_label,
         "invoice_href": href,
         "estimate_href": None,
         "jobstart_href": None,
