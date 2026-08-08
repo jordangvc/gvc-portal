@@ -25,7 +25,9 @@ looks like, what changes on site, and what to open next.
 `qc-walk`, `closeout-rhythm` (Notes + Completion Date anchors); Ops logistics —
 `jobstart-firstday`, `job-conditions`, `window-returns`, `scaffold-lifts`
 (Lock Box, Heater/Cans, Window type, Scaffolding, Open questions anchors);
-**ACT ceilings** — `act` (first non-spine trade stub; grid layout, hanger wire, tile).
+**ACT ceilings** — `act` (grid layout, hanger wire, tile);
+**Firestopping** — `firestop` (UL HW-D decode, annular space, dynamic joints);
+**Safety orientation** — `safety-orient` (ops safety-basics).
 
 ## 2. Assumptions
 

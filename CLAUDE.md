@@ -11,12 +11,16 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## ✨ FIELD GUIDE NEXTPATH + ACT/FIRESTOP/SAFETY (r81) — BUILT 2026-08-08
+## ✨ FIELD GUIDE FIRESTOP + SAFETY ORIENT (r82) — BUILT 2026-08-08
+Catalog gains **firestop** (UL HW-D / annular / dynamic joints) and
+**safety-orient** (ops safety-basics). Aliases + baked nextpath via
+`scripts/bake_fieldguide_nextpath.py`. Hub **r82**.
+
+## ✨ FIELD GUIDE NEXTPATH + ACT CATALOG (r81) — BUILT 2026-08-08
 Catalog-backed Field Manual docs no longer dead-end offline: baked
 ``.nextpath[data-catalog-nav]`` from catalog ``next_steps`` in the HTML shell,
 plus sync inject from catalog cards (no waiting on procedure API). Migrated
-**ACT**, **firestop**, and **safety-orient**; bake script
-`scripts/bake_fieldguide_nextpath.py`. Hub **r81**.
+**ACT / Acoustical Ceilings** (`act`) as its own trade. Hub **r81**.
 
 ## ✨ Owner Pulse recovery + COI Next links (r78) — BUILT 2026-08-08
 Owner Pulse load failure offers Try again + Morning Brief + hub. COI single/bulk
