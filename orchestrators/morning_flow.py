@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
 from typing import Any, Optional
 from zoneinfo import ZoneInfo
@@ -141,8 +142,16 @@ def _card(row: dict, *, reason: str) -> dict:
 
 
 def _attach_gfolder_urls(mc, cards: list[dict]) -> None:
-    """Attach Open Drive URLs onto brief cards. Soft-fails per item."""
+    """
+    Attach Open Drive URLs onto brief cards. Soft-fails per item.
+
+    Each unique Ops item costs 2 GraphQL calls (link → Projects GFolder).
+    Unique ids are resolved in parallel when MONDAY_API_TOKEN is set (live
+    Session is not thread-safe — one MondayClient per worker). Without a
+    token (unit tests / fakes) the walk stays serial on the injected client.
+    """
     cache: dict[int, Optional[str]] = {}
+    ordered_ids: list[int] = []
     for card in cards:
         try:
             iid = int(card.get("item_id") or 0)
@@ -150,19 +159,51 @@ def _attach_gfolder_urls(mc, cards: list[dict]) -> None:
             continue
         if not iid:
             continue
-        if iid in cache:
-            card["gfolder_url"] = cache[iid]
-            continue
-        url = None
+        if iid not in cache:
+            cache[iid] = None  # placeholder; filled below
+            ordered_ids.append(iid)
+
+    if not ordered_ids:
+        return
+
+    def _one(iid: int, client) -> tuple[int, Optional[str]]:
         try:
-            url = mm.get_gfolder_url_for_ops_item(mc, iid)
+            return iid, mm.get_gfolder_url_for_ops_item(client, iid)
         except Exception as e:  # noqa: BLE001
             print(f"[morning] gfolder skipped for {iid}: {e}", file=sys.stderr)
-        cache[iid] = url
-        card["gfolder_url"] = url
+            return iid, None
+
+    live = bool((os.environ.get("MONDAY_API_TOKEN") or "").strip())
+    if live and len(ordered_ids) > 1:
+        workers = min(8, len(ordered_ids))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            futs = [
+                pool.submit(_one, iid, MondayClient())
+                for iid in ordered_ids
+            ]
+            for fut in as_completed(futs):
+                iid, url = fut.result()
+                cache[iid] = url
+    else:
+        for iid in ordered_ids:
+            _, url = _one(iid, mc)
+            cache[iid] = url
+
+    for card in cards:
+        try:
+            iid = int(card.get("item_id") or 0)
+        except (TypeError, ValueError):
+            continue
+        if iid and iid in cache:
+            card["gfolder_url"] = cache[iid]
 
 
-def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, Any]:
+def build_employee_brief(
+    email: str,
+    *,
+    record_open: bool = True,
+    attach_gfolder: bool = True,
+) -> dict[str, Any]:
     email = (email or "").strip().lower()
     display_name = _person_name_for(email)
     now = datetime.now(_ET)
@@ -291,11 +332,14 @@ def build_employee_brief(email: str, *, record_open: bool = True) -> dict[str, A
         f"{len(stops)} stops · {len(attention)} need attention"
     )
 
-    # Open Drive on cards — unique item_ids only; soft-fail if Monday chain incomplete.
-    try:
-        _attach_gfolder_urls(mc, mine + attention + holds + unscheduled)
-    except Exception as e:  # noqa: BLE001
-        print(f"[morning] gfolder attach skipped: {e}", file=sys.stderr)
+    # Open Drive on cards — unique item_ids only; soft-fail if Monday chain
+    # incomplete. Hub first paint passes attach_gfolder=False (hub does not
+    # render Drive links; 2×N GraphQL was the office-hub cold-path killer).
+    if attach_gfolder:
+        try:
+            _attach_gfolder_urls(mc, mine + attention + holds + unscheduled)
+        except Exception as e:  # noqa: BLE001
+            print(f"[morning] gfolder attach skipped: {e}", file=sys.stderr)
 
     payload = {
         "ok": True,

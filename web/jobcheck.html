@@ -1089,18 +1089,19 @@ window.addEventListener("beforeunload", (e) => {
   e.preventDefault();
   e.returnValue = "";
 });
-/* Warm Monday snapshot for this page's job list (Hub also warms; belt+suspenders). */
-fetch("/ui/api/monday/warm", {
-  method: "POST", credentials: "same-origin", keepalive: true,
-}).catch(() => {});
 checkHealth();
-/* Deep-link opens the job NOW; jobs list loads in parallel for Change-job. */
+/* Deep-link opens the job NOW; jobs list loads in parallel for Change-job.
+   Warm AFTER the jobs fetch settles so it does not race the Ops walk. */
 (async () => {
   const deep = await bootJobFromUrl();
-  loadJobs(); /* fire-and-forget; form already up when deep-linked */
   if (!deep && $("#joblist")) {
     $("#joblist").innerHTML = `<div class="hint">Loading active jobs…</div>`;
   }
+  Promise.resolve(loadJobs()).finally(() => {
+    fetch("/ui/api/monday/warm", {
+      method: "POST", credentials: "same-origin", keepalive: true,
+    }).catch(() => {});
+  });
 })();
 </script>
 <script src="/ui/gvc-theme.js"></script>

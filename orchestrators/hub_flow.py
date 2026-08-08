@@ -182,7 +182,11 @@ def _queue_link_for(role: str, home_href: str, home_name: str) -> tuple[str, str
 def _try_morning_brief(email: str) -> Optional[dict]:
     try:
         from orchestrators import morning_flow
-        return morning_flow.build_employee_brief(email, record_open=False)
+        # Hub metrics/needs never show Open Drive — skip the per-card
+        # Ops→Projects→GFolder walk (2 GraphQL × unique cards).
+        return morning_flow.build_employee_brief(
+            email, record_open=False, attach_gfolder=False,
+        )
     except Exception as exc:  # noqa: BLE001
         print(f"[hub] morning brief skipped: {type(exc).__name__}: {exc}",
               file=sys.stderr)

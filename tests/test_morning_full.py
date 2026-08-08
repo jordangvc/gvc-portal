@@ -270,6 +270,41 @@ def test_attach_gfolder_urls_soft_fails():
     assert calls == [1, 2]
 
 
+def test_build_employee_brief_can_skip_gfolder():
+    """Hub first paint uses attach_gfolder=False — prove the flag is honored."""
+    from unittest.mock import patch
+
+    calls = {"n": 0}
+
+    class _MC:
+        pass
+
+    def boom(*_a, **_k):
+        calls["n"] += 1
+        raise RuntimeError("gfolder attach should be skipped")
+
+    orig_fetch = mm.fetch_ops_items
+    orig_authors = mm.fetch_recent_update_authors
+    orig_gfolder = flow._attach_gfolder_urls
+    mm.fetch_ops_items = lambda mc: []
+    mm.fetch_recent_update_authors = lambda mc, ids, limit=15: {}
+    flow._attach_gfolder_urls = boom
+    try:
+        with patch("orchestrators.morning_flow.MondayClient", _MC):
+            out = flow.build_employee_brief(
+                "crew@x.com", record_open=False, attach_gfolder=False)
+            assert out.get("ok") is True
+            assert calls["n"] == 0
+            out2 = flow.build_employee_brief(
+                "crew@x.com", record_open=False, attach_gfolder=True)
+            assert out2.get("ok") is True
+            assert calls["n"] == 1
+    finally:
+        mm.fetch_ops_items = orig_fetch
+        mm.fetch_recent_update_authors = orig_authors
+        flow._attach_gfolder_urls = orig_gfolder
+
+
 def test_hub_morning_route_aliases_registered():
     """Hub links /ui/morning-gm and /ui/morning-owner; canonical is /ui/morning/gm."""
     src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
@@ -368,6 +403,7 @@ if __name__ == "__main__":
         test_link_column_url_ignores_gfolder_label,
         test_card_includes_gfolder_url,
         test_attach_gfolder_urls_soft_fails,
+        test_build_employee_brief_can_skip_gfolder,
         test_hub_morning_route_aliases_registered,
         test_normalize_updated_at_feeds_hold_in_card,
         test_ar_escalation_sweep_dms_ack_and_overdue,

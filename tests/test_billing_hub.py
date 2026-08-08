@@ -488,10 +488,22 @@ def test_warm_monday_includes_billing_keys():
     src = (Path(__file__).resolve().parents[1] / "app" / "service.py").read_text()
     chunk = src.split("def _warm_monday_caches")[1].split("def require_api_key")[0]
     assert "list:billing:ready_to_invoice" in chunk
-    assert "list:billing:accepted_bids" in chunk
     assert "list:billing:projects_billing:75" in chunk
+    assert "list:billing:accepted_bids" in chunk
+    # Accepted bids is DERIVED from jobstart L1 — not a parallel Bid walk.
+    assert "_fetch_accepted_bids_uncached" in chunk
+    assert '("list:billing:accepted_bids"' not in chunk.split("jobs =")[1].split(
+        "def _refresh_one")[0]
     assert "ThreadPoolExecutor" in chunk
     assert "as_completed" in chunk
+
+
+def test_search_billing_runs_rich_legs_in_parallel():
+    src = (Path(__file__).resolve().parents[1] / "orchestrators" / "billing_flow.py").read_text()
+    chunk = src.split("def search_billing")[1].split("backend = \"rich\"")[0]
+    assert "ThreadPoolExecutor(max_workers=2)" in chunk
+    assert "parallel = mc is None" in chunk
+    assert "fut_p" in chunk and "fut_b" in chunk
 
 
 def test_billing_hub_payload_survives_partial_failures():

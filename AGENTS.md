@@ -25,6 +25,14 @@ Master then deploys via dispatched `deploy-cloud-run.yml`. Prefer
 auto-merge: add label `hold` or `do-not-merge` (draft alone does not pause).
 Setup notes: `docs/ops/auto-merge-setup.md`.
 
+### Performance (Monday-backed screens)
+
+Static HTML is fast; live paint waits on Monday GraphQL. Before guessing
+“need a DB,” run `scripts/measure_monday_paths.py` and read
+`docs/ops/perf-audit.md`. Prefer skip unused work → parallelize → share
+caches → defer warm. Set `GVC_MONDAY_TRACE=1` to attach `monday_trace` on
+hub/billing JSON.
+
 ## Repository layout (package structure, 2026-06)
 
 Code is layered. Imports flow **one direction**: `app → orchestrators → subsystems/adapters → shared`.
