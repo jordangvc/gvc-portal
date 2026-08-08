@@ -11,6 +11,11 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Field Guide role tracks catalogued (r99) — BUILT 2026-08-08
+Migrated **track-laborer**, **track-hanger**, **track-finisher**, **track-act**,
+**track-lead** into the catalog with offline `.nextpath` (60 procedures).
+Leftover shell: glossary/sources/index, cabinets. Hub **r99**.
+
 ## ✨ Field Guide materials + leadership catalog (r98) — BUILT 2026-08-08
 Migrated 10 HTML-only stand-alone procedures into the catalog with offline
 `.nextpath`: cement-board, receiving, sound-walls, gc-talk, ops-lead,
