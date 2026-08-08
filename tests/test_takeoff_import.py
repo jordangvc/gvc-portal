@@ -165,9 +165,17 @@ def test_estimate_import_ui_script_parses_and_exposes_deep_link():
     html = (ROOT / "web" / "estimate.html").read_text(encoding="utf-8")
     scripts = re.findall(r"<script>(.*?)</script>", html, flags=re.DOTALL)
     assert scripts, "estimate page has no inline script"
+    # The page is a template: app/service.py substitutes {{EMAIL_JSON}} & friends
+    # before the browser ever sees it, so render them here too. Parsing the raw
+    # template would flag a Jinja token in JS position as a syntax error.
+    source = re.sub(
+        r"\{\{[A-Z0-9_]+\}\}",
+        '"gvc-test@localhost"',
+        "\n".join(scripts),
+    )
     checked = subprocess.run(
         ["node", "--check", "-"],
-        input="\n".join(scripts),
+        input=source,
         text=True,
         capture_output=True,
         check=False,
