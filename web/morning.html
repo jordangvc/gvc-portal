@@ -40,8 +40,8 @@
     background: var(--gvc-surface); border: 1px solid var(--gvc-line);
     border-radius: var(--gvc-r-pill); padding: 6px 12px;
   }
-  .mb-chip--ok { background: var(--gvc-ok-tint); border-color: #bcd6c8; color: var(--gvc-green-dark); }
-  .mb-chip--warn { background: var(--gvc-warn-tint); border-color: #E3CFA0; color: var(--gvc-gold-dark); }
+  .mb-chip--ok { background: var(--gvc-ok-tint); border-color: var(--color-ok-border, #bcd6c8); color: var(--color-ok-ink, var(--gvc-green-dark)); }
+  .mb-chip--warn { background: var(--gvc-warn-tint); border-color: var(--color-warn-border, #E3CFA0); color: var(--color-warn-ink, var(--gvc-gold-dark)); }
   .mb-card {
     background: var(--gvc-surface); border: 1px solid var(--gvc-line);
     border-top: 2.5px solid var(--gvc-gold-matte); border-radius: var(--gvc-r-lg);
@@ -118,14 +118,15 @@
   .field label { font-size: var(--gvc-fs-caption); font-weight: 600; color: var(--gvc-muted); }
   .field input, .field select, .field textarea {
     min-height: 44px; border: 1px solid var(--gvc-line-strong); border-radius: var(--gvc-r);
-    padding: 8px 10px; font: inherit; background: #fff;
+    padding: 8px 10px; font: inherit; background: var(--color-input-bg, var(--gvc-surface));
+    color: var(--gvc-ink);
   }
   .field textarea { min-height: 88px; resize: vertical; }
   #status, #offline {
     display: none; padding: 12px 14px; border-radius: var(--gvc-r); font-size: var(--gvc-fs-small);
   }
-  #status.show { display: block; background: var(--gvc-danger-tint); border: 1px solid #E2C3BA; color: var(--gvc-danger-dark); }
-  #offline.show { display: block; background: var(--gvc-warn-tint); border: 1px solid #E3CFA0; color: var(--gvc-gold-dark); }
+  #status.show { display: block; background: var(--gvc-danger-tint); border: 1px solid var(--color-danger-border, #E2C3BA); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
+  #offline.show { display: block; background: var(--gvc-warn-tint); border: 1px solid var(--color-warn-border, #E3CFA0); color: var(--color-warn-ink, var(--gvc-gold-dark)); }
   .role-links { display: flex; flex-wrap: wrap; gap: 8px; }
   .role-links a { min-height: 40px; }
   .upd-overlay {

@@ -9,6 +9,7 @@ Companion docs:
 | Doc | Purpose |
 |---|---|
 | `docs/GVC-COMMAND-STYLE.md` | Tokens, art direction, Command components |
+| `docs/UI-DARK-MODE.md` | Dark theme tokens, contrast rules, integration UI |
 | `docs/UI-AUDIT.md` | Current visual/consistency audit |
 | `docs/UI-FLOW-AUDIT.md` | Dead ends + continuation gaps |
 | `docs/UX-CHECKLIST.md` | Required checklist for every UI change |

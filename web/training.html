@@ -60,16 +60,16 @@
     text-transform: uppercase; border-radius: 999px; padding: 3px 8px;
     border: 1px solid var(--gvc-line); white-space: nowrap;
   }
-  .tr-badge.open { background: #E8F0EA; color: #1F4D32; }
-  .tr-badge.lock { background: #F3F1EC; color: #6B6560; }
-  .tr-badge.done { background: #E7F0FF; color: #1A3A6B; }
+  .tr-badge.open { background: var(--color-primary-soft, #E8F0EA); color: var(--color-ok-ink, #1F4D32); }
+  .tr-badge.lock { background: var(--color-neutral-soft, #F3F1EC); color: var(--color-text-muted, #6B6560); }
+  .tr-badge.done { background: var(--color-info-soft, #E7F0FF); color: var(--color-info-ink, #1A3A6B); }
   .tr-steps { margin: 0; padding-left: 1.2rem; }
   .tr-steps li { margin: 0 0 8px; }
   .tr-steps label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
   .tr-steps input { margin-top: 4px; }
   .tr-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--gvc-space-4); }
   .tr-note {
-    background: var(--gvc-warn-tint); border: 1px solid #E0CDA9;
+    background: var(--gvc-warn-tint); border: 1px solid var(--color-warn-border, #E0CDA9);
     border-left: 4px solid var(--gvc-gold-dark); border-radius: var(--gvc-r);
     padding: var(--gvc-space-4); margin: var(--gvc-space-5) 0;
     font-size: var(--gvc-fs-body);

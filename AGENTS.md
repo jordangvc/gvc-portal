@@ -196,7 +196,10 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   content to `#operations`. Side chat / DM only (Jordan 2026-08-05).
 - **Portal UI system:** `docs/UI-SYSTEM.md` + `docs/UX-CHECKLIST.md` are the
   product-system contract (shells, actions, dead-end rules). Visual tokens stay
-  in `docs/GVC-COMMAND-STYLE.md` / `web/gvc.css`. Before shipping UI changes,
+  in `docs/GVC-COMMAND-STYLE.md` / `web/gvc.css`. Dark mode / contrast rules:
+  `docs/UI-DARK-MODE.md` (semantic `--color-*-ink`, `--color-input-bg`,
+  `.gvc-msg--*`; no light-only hex in page CSS/JS). Before shipping UI changes,
   run `python scripts/ui_consistency_check.py` and complete the UX checklist.
-  Prefer system fixes in `gvc.css` over new page-local dialects.
+  Prefer system fixes in `gvc.css` over new page-local dialects. Toggle theme
+  via topbar (`web/gvc-theme.js` → `data-theme`); verify light **and** dark.
 
