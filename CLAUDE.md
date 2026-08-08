@@ -11,6 +11,15 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Monday critical-path perf (r73) — BUILT 2026-08-08
+Evidence-backed: live paint waits on Monday JSON, not HTML/bundles. Fixes:
+hub skips morning GFolder attach (2×N GraphQL the hub never showed); Morning
+GFolder attach parallelized; billing rich search projects∥bids; warm derives
+`accepted_bids` from jobstart (no second Bid walk); Path pages warm **after**
+first paint; Job Check Ops list derives from Morning Ops walk (no second
+pagination). Repeatable audit: `docs/ops/perf-audit.md` +
+`scripts/measure_monday_paths.py`. Hub **r73**.
+
 ## ✨ FIELD GUIDE JOB-CHECK SPINE (r71) — BUILT 2026-08-08
 Catalog now covers the drywall Job Check spine end-to-end:
 `framing` → `preboard-walk` → `hang` → `scrape` → `finish` → `level5-skim` →

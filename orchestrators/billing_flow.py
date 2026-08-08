@@ -197,42 +197,77 @@ def search_billing(mc, q: str) -> dict:
             "notes": ["Type at least 2 characters to search."],
         }
 
-    client = _client(mc)
     notes: list[str] = []
     projects: list[dict] = []
     bids: list[dict] = []
     used_rich = False
 
+    # Injected clients (tests) stay serial. Live: projects ∥ bids on separate
+    # MondayClients so wall time is max(leg) not sum(leg).
+    parallel = mc is None
+
     if _rich_search_available():
         rich_ok = True
-        try:
-            raw_projects = monday_search.search_projects_rich(client, query)
-            projects = [bq.shape_search_project(r) for r in (raw_projects or [])]
-        except Exception as exc:  # noqa: BLE001
-            rich_ok = False
-            notes.append(
-                f"Rich project search failed ({type(exc).__name__}); "
-                "using fallback."
-            )
-            print(f"[billing] search_projects_rich failed: {exc}",
-                  file=sys.stderr)
-        try:
-            raw_bids = monday_search.search_bids_rich(client, query)
-            bids = [bq.shape_search_bid(r) for r in (raw_bids or [])]
-        except Exception as exc:  # noqa: BLE001
-            rich_ok = False
-            notes.append(
-                f"Rich bid search failed ({type(exc).__name__}); "
-                "using fallback."
-            )
-            print(f"[billing] search_bids_rich failed: {exc}",
-                  file=sys.stderr)
+
+        def _rich_projects(client):
+            raw = monday_search.search_projects_rich(client, query)
+            return [bq.shape_search_project(r) for r in (raw or [])]
+
+        def _rich_bids(client):
+            raw = monday_search.search_bids_rich(client, query)
+            return [bq.shape_search_bid(r) for r in (raw or [])]
+
+        if parallel:
+            with ThreadPoolExecutor(max_workers=2) as pool:
+                fut_p = pool.submit(_rich_projects, MondayClient())
+                fut_b = pool.submit(_rich_bids, MondayClient())
+                try:
+                    projects = fut_p.result()
+                except Exception as exc:  # noqa: BLE001
+                    rich_ok = False
+                    notes.append(
+                        f"Rich project search failed ({type(exc).__name__}); "
+                        "using fallback."
+                    )
+                    print(f"[billing] search_projects_rich failed: {exc}",
+                          file=sys.stderr)
+                try:
+                    bids = fut_b.result()
+                except Exception as exc:  # noqa: BLE001
+                    rich_ok = False
+                    notes.append(
+                        f"Rich bid search failed ({type(exc).__name__}); "
+                        "using fallback."
+                    )
+                    print(f"[billing] search_bids_rich failed: {exc}",
+                          file=sys.stderr)
+        else:
+            client = _client(mc)
+            try:
+                projects = _rich_projects(client)
+            except Exception as exc:  # noqa: BLE001
+                rich_ok = False
+                notes.append(
+                    f"Rich project search failed ({type(exc).__name__}); "
+                    "using fallback."
+                )
+                print(f"[billing] search_projects_rich failed: {exc}",
+                      file=sys.stderr)
+            try:
+                bids = _rich_bids(client)
+            except Exception as exc:  # noqa: BLE001
+                rich_ok = False
+                notes.append(
+                    f"Rich bid search failed ({type(exc).__name__}); "
+                    "using fallback."
+                )
+                print(f"[billing] search_bids_rich failed: {exc}",
+                      file=sys.stderr)
         used_rich = rich_ok
 
     if not used_rich:
         # Fallback path: co.search_projects + estimate.search_bids.
-        # Documented: adapters/monday/search.py is owned by another agent —
-        # import when present; until then this is the production path.
+        client = _client(mc)
         if not projects:
             try:
                 raw_projects = monday_co.search_projects(client, query)

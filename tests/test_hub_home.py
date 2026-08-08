@@ -139,6 +139,14 @@ def test_hub_refresh_shape() -> None:
     check("no pinned key", "pinned" not in out)
 
 
+def test_hub_skips_morning_gfolder_attach():
+    """Office hub must not pay 2×N GFolder GraphQL on first paint."""
+    src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
+    chunk = src.split("def _try_morning_brief")[1].split("def _try_billing")[0]
+    check("hub passes attach_gfolder=False",
+          "attach_gfolder=False" in chunk)
+
+
 def test_hub_files_and_route() -> None:
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
@@ -154,6 +162,18 @@ def test_hub_files_and_route() -> None:
     check("polls still use refresh",
           'fetch("/ui/api/hub/refresh"' in hub.split("async function refreshBadges")[1])
     check("logs monday_trace when present", "monday_trace" in fetch_fn)
+    check("warm after first paint", "warmMondayAfterPaint" in hub)
+    warm_fn = hub.split("function warmMondayAfterPaint")[1].split(
+        "wireChrome();")[0]
+    check("warm POST inside helper",
+          'fetch("/ui/api/monday/warm"' in warm_fn)
+    # Concurrent boot warm removed — only the helper + post-fetchPayload calls remain.
+    check("no top-level warm race at script end",
+          not hub.rstrip().endswith('keepalive: true\n  }).catch(() => {});\n})();'))
+    boot = hub.split("wireChrome();")[1]
+    check("boot warms after fetchPayload settles",
+          "warmMondayAfterPaint()" in boot
+          and boot.index("fetchPayload()") < boot.index("warmMondayAfterPaint()"))
     check("skeleton", "hub-skel" in hub and "hublive" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)
@@ -400,7 +420,9 @@ if __name__ == "__main__":
     test_hub_pins_validate()
     test_hub_payload_shape()
     test_hub_brief_billing_parallel_contract()
+    test_hub_skips_morning_gfolder_attach()
     test_hub_files_and_route()
+    test_hub_refresh_shape()
     test_need_urgent_flag()
     test_office_queue_ids_and_handoffs()
     test_clear_summary_honest_when_unreachable()

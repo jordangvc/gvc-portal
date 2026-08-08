@@ -844,10 +844,12 @@ $("#updForm").addEventListener("submit", async (e) => {
   }
 });
 
-load();
-fetch("/ui/api/monday/warm", {
-  method: "POST", credentials: "same-origin", keepalive: true,
-}).catch(function () {});
+load().finally(function () {
+  /* Warm AFTER brief paint — concurrent warm raced Ops walks on cold boot. */
+  fetch("/ui/api/monday/warm", {
+    method: "POST", credentials: "same-origin", keepalive: true,
+  }).catch(function () {});
+});
 </script>
 <script src="/ui/gvc-theme.js"></script>
 <script>

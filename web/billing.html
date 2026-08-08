@@ -455,12 +455,14 @@ $("#billing-q").addEventListener("keydown", (e) => {
 });
 $("#act-filter").addEventListener("input", () => renderActivity($("#act-filter").value));
 
-/* Warm Monday snapshot for queues / search (Hub also warms; Path can skip Hub). */
-fetch("/ui/api/monday/warm", {
-  method: "POST", credentials: "same-origin", keepalive: true,
-}).catch(() => {});
+/* Warm AFTER first hub paint — concurrent warm used to race /billing/hub
+   and force-refresh the same board walks the page is reading. */
 checkHealth();
-loadHub();
+loadHub().finally(() => {
+  fetch("/ui/api/monday/warm", {
+    method: "POST", credentials: "same-origin", keepalive: true,
+  }).catch(() => {});
+});
 loadActivity();
 </script>
 <script src="/ui/gvc-theme.js"></script>

@@ -842,6 +842,14 @@
     } catch (_) {}
   }
 
+  function warmMondayAfterPaint() {
+    // After first hub JSON — not concurrent with it. Warm force-refreshes
+    // board walks and used to stampede Monday on cold boot next to /hub.
+    fetch("/ui/api/monday/warm", {
+      method: "POST", credentials: "same-origin", keepalive: true
+    }).catch(() => {});
+  }
+
   wireChrome();
   fetchPayload()
     .then(() => {
@@ -849,6 +857,7 @@
         payload = demoPayload();
         renderAll();
       }
+      warmMondayAfterPaint();
     })
     .catch((err) => {
       showLive();
@@ -858,14 +867,11 @@
       $("summary").textContent = String(err.message || err);
       const wrap = $("homectawrap");
       if (wrap) wrap.hidden = true;
+      warmMondayAfterPaint();
     });
 
   setInterval(() => refreshBadges(false), BADGE_MS);
   window.addEventListener("focus", () => refreshBadges(false));
-
-  fetch("/ui/api/monday/warm", {
-    method: "POST", credentials: "same-origin", keepalive: true
-  }).catch(() => {});
 })();
 </script>
 </body>
