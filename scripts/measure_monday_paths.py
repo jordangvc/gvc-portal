@@ -83,10 +83,13 @@ COLD_PATH_BUDGET = {
         "notes": "",
     },
     "client_query": {
-        "retries": False,
-        "rate_limit_handling": False,
+        "retries": True,
+        "rate_limit_handling": True,
         "timeout_s": 30,
-        "notes": "One POST; 429/ComplexityException raise immediately — no backoff.",
+        "notes": (
+            "Bounded retry (MAX_RETRIES=2) on 429 / ComplexityException / 5xx / "
+            "transport; honors Retry-After capped at 4s (Slack pattern)."
+        ),
     },
 }
 

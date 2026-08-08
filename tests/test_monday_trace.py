@@ -67,7 +67,8 @@ def test_measure_script_budget_runs_without_token():
     assert "office_hub" in proc.stdout
     assert "billing_search" in proc.stdout
     assert "no GFolder" in proc.stdout or "skips GFolder" in proc.stdout
-    assert "retries=False" in proc.stdout
+    assert "retries=True" in proc.stdout
+    assert "429_handling=True" in proc.stdout
 
 
 def _run_all() -> bool:

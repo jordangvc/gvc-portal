@@ -133,6 +133,33 @@ def commit_check(*, monday_item_ids: list[int], image_bytes: bytes, content_type
     key), and per-invoice failures don't stop the remaining invoices — a retry
     re-plans and runs only what's missing.
     """
+    # Fail-safe: multi-check photos must not write Stripe/Monday. OCR fields
+    # describe only ONE check; recording from a collage pays the wrong invoice.
+    try:
+        ocr_text = vision.ocr_text(image_bytes)
+        n_checks = check_deposit.count_checks(ocr_text)
+    except vision.VisionNotConfigured:
+        n_checks = 1  # can't verify; Vision was required at extract
+    except Exception as e:  # noqa: BLE001 — don't block commit on OCR flake
+        print(f"[check] multi-check re-OCR skipped: {type(e).__name__}: {e}")
+        n_checks = 1
+    if n_checks > 1:
+        raise HTTPException(
+            status_code=409,
+            detail={
+                "ok": False,
+                "code": "MULTI_CHECK_IMAGE",
+                "detail": (
+                    f"This photo looks like {n_checks} checks. "
+                    "Photograph and upload one check (or stub) at a time."
+                ),
+                "advice": (
+                    "Re-upload a single check image, then Read check again. "
+                    "Recording from a multi-check photo can pay the wrong invoice."
+                ),
+            },
+        )
+
     allocations = {int(k): int(v) for k, v in (allocations or {}).items()} or None
     ids = list(dict.fromkeys(monday_item_ids))  # dedupe, preserve order
     if allocations and set(allocations) != set(ids):

@@ -191,7 +191,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r74 footer", ">r74<" in hub)
+    check("r75 footer", ">r75<" in hub)
     check("setup badge class", "is-setup" in hub)
     check("setup in refresh slice", "payload.setup" in hub)
     check("light refresh endpoint", "/ui/api/hub/refresh" in hub)

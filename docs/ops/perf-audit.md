@@ -74,9 +74,12 @@ Run scale-to-zero empties L1 — warm + L2 matter.
 1. Run `measure_monday_paths.py` (budget + live if token).
 2. Confirm you are not double-fetching the same JSON on boot.
 3. Check `monday_trace.count` for unexpected N (GFolder, search legs, pagination).
-4. Prefer: skip work the UI does not show → parallelize independent walks →
-   share cache keys → defer warm → only then consider off-request snapshots/DB.
+4. Prefer: skip unused work → parallelize → share caches → defer warm →
+   **bounded Monday retry** → only then off-request snapshots/DB.
 5. Do **not** replace Monday wholesale without live trace numbers.
+
+`MondayClient._query` retries 429 / ComplexityException / 5xx / transport
+(MAX_RETRIES=2, Retry-After capped at 4s) — same class as Slack `post_message`.
 
 ## Regression tests to keep green
 
