@@ -3,6 +3,10 @@
 **Contract for portal UI.** Token-driven: no component may hard-code a hex, font,
 or px value that a token already carries.
 
+**Product-system layer** (page shells, flow rules, dead-end prevention, PR
+checklist): `docs/UI-SYSTEM.md` + `docs/UX-CHECKLIST.md`. Visual tokens alone
+are not enough — every screen must also pass the flow rules there.
+
 Implementation lives in `web/gvc.css` (Command section). Activate per page with:
 
 ```html
@@ -123,6 +127,8 @@ On ≤620px, inner max-heights are released (no nested scroll traps on a phone).
 6. Works at 375px with 48px targets, and at 1440px without clipping the top bar.
 7. Opt the page in with `data-palette="emerald"` only when ready — do not surprise
    unmigrated tools.
+8. Also complete `docs/UX-CHECKLIST.md` (flow / dead-end / state completeness).
+9. Run `python scripts/ui_consistency_check.py`.
 
 ---
 

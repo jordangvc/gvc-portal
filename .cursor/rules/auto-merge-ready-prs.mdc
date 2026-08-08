@@ -1,0 +1,19 @@
+---
+description: cursor/* PRs auto-merge; do not ask Jordan to click Merge
+alwaysApply: true
+---
+
+# Auto-merge (already on — Jordan does not click Merge)
+
+`.github/workflows/auto-merge-cursor-prs.yml` squash-merges `cursor/*` →
+`master` after `compileall` + `pytest`, then dispatches Cloud Run deploy.
+
+## Hard rules
+
+1. Branch must start with `cursor/`. Prefer `draft: false`, but **drafts also
+   auto-merge** (workflow marks ready; a 20-min cron wakes stuck drafts).
+2. **Do not ask Jordan to merge.** Keep moving after you open the PR.
+3. To **pause** auto-merge: label `hold` or `do-not-merge` (draft alone does
+   **not** pause).
+4. If merge fails as `DIRTY` / conflicting: rebase onto `master`, push, done.
+5. Setup notes: `docs/ops/auto-merge-setup.md` (also summarized in `AGENTS.md`).

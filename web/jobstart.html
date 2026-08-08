@@ -670,7 +670,17 @@ function renderState() {
 
   if (status === "with_ops" && !d.can_accept && d.self_sent) {
     $("#savestate").textContent =
-      "You sent this packet — someone in Operations needs to accept it.";
+      "You sent this packet — Operations must accept it. Slack was pinged; if nobody picks it up, message Ops or an admin from the hub.";
+    // Keep the sender oriented: packet is read-only, but they can still leave
+    // safely and open Job Check later once Ops accepts.
+    const hint = document.createElement("div");
+    hint.className = "readonly-note";
+    hint.style.marginTop = "8px";
+    hint.innerHTML =
+      `Waiting on Ops. <a href="/">Back to hub</a> · ` +
+      `<a href="/ui/jobcheck">Job Check</a> (after accept) · ` +
+      `ask an admin if the wrong person was expected to accept.`;
+    $("#statebox").appendChild(hint);
   }
 
   // An accepted or in-review packet is a record, not a form.
@@ -810,8 +820,13 @@ async function hydrateDriveSources(itemId) {
   }
 }
 
-function backToList() {
+async function backToList() {
+  // Flush debounced autosave so "Change bid" never drops the last keystrokes
+  // (Job Check uses confirmLeaveDirty; here we save then leave).
   clearTimeout(saveTimer);
+  if (detail && detail.editable) {
+    try { await saveDraft(); } catch (_) { /* savestate already set */ }
+  }
   detail = null;
   ["#ctxcard", "#namecard", "#reqcard", "#optcard", "#gccard"].forEach((s) => { $(s).style.display = "none"; });
   $("#savebar").classList.remove("show");
