@@ -58,8 +58,11 @@ support the field. Admin / Activity are company tools.
 ### Still open (next passes)
 
 5. Job Start self-sent wait — clearer copy + hub/ops guidance (improved; still
-   needs a human Ops acceptor; no resend API yet).
-6. Owner Pulse — actionable links instead of raw JSON blobs.
+   needs a human Ops acceptor; no resend API yet). Hub Accept queue is on a
+   parallel branch (r71) when that lands.
+6. ~~Owner Pulse raw JSON~~ — fixed this pass: structured decision cards +
+   Job Check links on safety stops; decisions from owner-tagged parking +
+   escalated ARs.
 7. COI / Time Off / Admin — hub “needs setup” badges before opening.
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
 9. Photos / Projects link discovery on Job Check — strengthen empty guidance.

@@ -28,8 +28,14 @@
   .card h2 { margin: 0 0 8px; font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .06em; color: var(--gvc-green-dark); }
   .big { font-size: 40px; font-weight: 700; color: var(--gvc-green-dark); line-height: 1; }
   .muted { color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
-  .item { padding: 8px 0; border-bottom: 1px solid var(--gvc-line-soft); }
+  .item { padding: 10px 0; border-bottom: 1px solid var(--gvc-line-soft);
+    display: grid; gap: 4px; }
   .item:last-child { border-bottom: 0; }
+  .item .kind { font-size: 11px; text-transform: uppercase; letter-spacing: .05em;
+    color: var(--gvc-gold-deep, var(--gvc-muted)); font-weight: 600; }
+  .item .title { font-weight: 600; color: var(--gvc-ink); }
+  .item .detail { color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
+  .item .go { margin-top: 4px; }
   #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); }
   #err.show { display:block; }
 </style>
@@ -56,7 +62,31 @@
 </main>
 <script src="/ui/gvc-command.js"></script>
 <script>
-const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]));
+
+function decisionCard(x) {
+  const kind = esc(x.kind || "Decision");
+  const title = esc(x.title || x.name || "Item");
+  const detail = esc(x.detail || x.blocked || x.need || x.message || "");
+  const href = esc(x.href || "/ui/morning-gm");
+  const action = esc(x.action || "Open");
+  return `<div class="item">
+    <div class="kind">${kind}</div>
+    <div class="title">${title}</div>
+    ${detail ? `<div class="detail">${detail}</div>` : ""}
+    <div class="go"><a class="gvc-btn gvc-btn--ghost" href="${href}">${action}</a></div>
+  </div>`;
+}
+
+function safetyCard(s) {
+  const href = s.href || (s.item_id ? `/ui/jobcheck?item=${s.item_id}` : "");
+  const body = `<b>${esc(s.name)}</b> — ${esc(s.blocked || "Safety stop")}`;
+  if (!href) return `<div class="item">${body}</div>`;
+  return `<div class="item">${body}
+    <div class="go"><a class="gvc-btn gvc-btn--ghost" href="${esc(href)}">Open Job Check</a></div>
+  </div>`;
+}
+
 async function load(){
   try {
     const r = await fetch("/ui/api/morning/owner");
@@ -67,10 +97,10 @@ async function load(){
     const tp = d.team_preparation || {};
     document.getElementById("pctsub").textContent = `${tp.prepared||0} of ${tp.team_size||0} fully ready · ${d.workdate||""}`;
     document.getElementById("safety").innerHTML = (d.safety_stops||[]).length
-      ? d.safety_stops.map(s=>`<div class="item"><b>${esc(s.name)}</b> — ${esc(s.blocked)}</div>`).join("")
+      ? d.safety_stops.map(safetyCard).join("")
       : "None flagged";
     document.getElementById("alerts").innerHTML = (d.prep_alerts||[]).length
-      ? d.prep_alerts.map(a=>`<div class="item">${esc(a.email)} · L${a.level}: ${esc(a.message)}</div>`).join("")
+      ? d.prep_alerts.map(a=>`<div class="item">${esc(a.email)} · L${esc(a.level)}: ${esc(a.message)}</div>`).join("")
       : "None";
     const h = d.huddle || {};
     document.getElementById("huddle").textContent =
@@ -80,7 +110,7 @@ async function load(){
       ? d.planning_signals.map(p=>`<div class="item">${esc(p.email)} · ${p.count} route overrides / 10 days</div>`).join("")
       : "None";
     document.getElementById("dec").innerHTML = (d.owner_decisions||[]).length
-      ? d.owner_decisions.map(x=>`<div class="item">${esc(JSON.stringify(x))}</div>`).join("")
+      ? d.owner_decisions.map(decisionCard).join("")
       : "None waiting";
   } catch (e) {
     document.getElementById("err").className = "show";

@@ -187,13 +187,24 @@ def test_owner_pulse_filters():
         "prep_pct": 80,
         "prep_alerts_3_5": [{"level": 3, "message": "visible"}],
         "planning_signals": [{"alert": True, "count": 3}],
-        "safety_stops": [],
+        "safety_stops": [{"item_id": "99", "name": "Hazard Site", "blocked": "Safety stop"}],
         "owner_decisions": [],
+        "parking": [{"topic": "Buy scaffolding", "owner": "Jordan", "follow_up": "Approve spend"}],
+        "action_requests": [{"project_name": "Site A", "need": "Confirm GC",
+                             "escalation": "overdue", "status": "open"}],
         "huddle_outcome": {"projects_covered": 2, "actions_assigned": 1},
     })
     assert pulse["team_prep_pct"] == 80
     assert pulse["has_exceptions"] is True
     assert len(pulse["preparation_alerts"]) == 1
+    assert pulse["safety_stops"][0]["href"] == "/ui/jobcheck?item=99"
+    kinds = {d["kind"] for d in pulse["owner_decisions"]}
+    assert "Parked" in kinds
+    assert "Ask" in kinds
+    assert all(d.get("href") and d.get("action") for d in pulse["owner_decisions"])
+    n = owner_pulse.normalize_owner_decision({"name": "X", "item_id": "1"})
+    assert n["href"] == "/ui/jobcheck?item=1"
+    assert owner_pulse.normalize_owner_decision({}) is None
 
 
 def test_financial_still_excluded():

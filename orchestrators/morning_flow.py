@@ -715,10 +715,24 @@ def build_owner_pulse(email: str) -> dict[str, Any]:
     except Exception:  # noqa: BLE001
         pass
 
+    open_ars: list[dict] = []
+    try:
+        ar_doc, _ = mstore.read_doc(ar.DEFAULT_OBJECT)
+        for rec in (ar_doc.get("requests") or {}).values():
+            if not isinstance(rec, dict):
+                continue
+            if (rec.get("status") or "") == ar.STATUS_COMPLETED:
+                continue
+            open_ars.append(rec)
+    except Exception:  # noqa: BLE001
+        open_ars = []
+
     pulse = opulse.build_owner_pulse({
         "prep_pct": prep_pct.get("pct"),
         "safety_stops": safety,
         "owner_decisions": [],
+        "parking": meeting.get("parking") or [],
+        "action_requests": open_ars,
         "prep_alerts_3_5": prep_alerts,
         "huddle_outcome": {
             "projects_covered": len(meeting.get("ordered_item_ids") or []),

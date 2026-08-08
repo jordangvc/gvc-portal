@@ -57,6 +57,98 @@ def _is_planning_alert(signal: dict) -> bool:
         return False
 
 
+def normalize_owner_decision(raw: Any) -> Optional[dict]:
+    """PURE. Coerce a decision blob into {kind,title,detail,href,action}.
+
+    Rejects empties. Never invents a fake job — missing href falls back to
+    GM Huddle (where parked/owner items live), not a fabricated Job Check.
+    """
+    if not isinstance(raw, dict):
+        return None
+    title = (raw.get("title") or raw.get("name") or raw.get("project_name")
+             or raw.get("topic") or "").strip()
+    if not title:
+        return None
+    detail = (raw.get("detail") or raw.get("blocked") or raw.get("need")
+              or raw.get("message") or raw.get("follow_up") or "").strip()
+    href = (raw.get("href") or "").strip()
+    item_id = str(raw.get("item_id") or "").strip()
+    if not href and item_id:
+        href = f"/ui/jobcheck?item={item_id}"
+    if not href:
+        href = (raw.get("fallback_href") or "/ui/morning-gm").strip()
+    action = (raw.get("action") or "Open").strip() or "Open"
+    kind = (raw.get("kind") or "Decision").strip() or "Decision"
+    return {
+        "kind": kind[:40],
+        "title": title[:120],
+        "detail": detail[:200],
+        "href": href,
+        "action": action[:40],
+    }
+
+
+def _parking_needs_owner(row: dict) -> bool:
+    owner = (row.get("owner") or "").strip().lower()
+    if not owner:
+        return False
+    if row.get("needs_owner"):
+        return True
+    return any(tok in owner for tok in ("jordan", "owner", "jfaulkner"))
+
+
+def collect_owner_decisions(*, explicit: Optional[list] = None,
+                            parking: Optional[list] = None,
+                            action_requests: Optional[list] = None,
+                            unresolved_risks: Optional[list] = None
+                            ) -> list[dict]:
+    """PURE. Build the Owner decisions list from known exception sources."""
+    out: list[dict] = []
+    seen: set[str] = set()
+
+    def _add(raw: dict) -> None:
+        n = normalize_owner_decision(raw)
+        if not n:
+            return
+        key = f"{n['kind']}|{n['title']}|{n['href']}"
+        if key in seen:
+            return
+        seen.add(key)
+        out.append(n)
+
+    for row in explicit or []:
+        _add(row if isinstance(row, dict) else {})
+    for risk in unresolved_risks or []:
+        if isinstance(risk, dict):
+            _add({**risk, "kind": risk.get("kind") or "Risk",
+                  "action": risk.get("action") or "Review",
+                  "fallback_href": "/ui/morning-gm"})
+    for row in parking or []:
+        if not isinstance(row, dict) or not _parking_needs_owner(row):
+            continue
+        _add({
+            "kind": "Parked",
+            "title": row.get("topic") or "Parked huddle item",
+            "detail": row.get("follow_up") or f"Owner: {row.get('owner')}",
+            "href": "/ui/morning-gm",
+            "action": "Open GM Huddle",
+        })
+    for req in action_requests or []:
+        if not isinstance(req, dict):
+            continue
+        esc = (req.get("escalation") or "").strip().lower()
+        if esc not in ("overdue", "ack_reminder") and not req.get("needs_owner"):
+            continue
+        _add({
+            "kind": "Ask",
+            "title": req.get("project_name") or req.get("need") or "Action request",
+            "detail": req.get("need") or esc.replace("_", " "),
+            "href": "/ui/morning-gm",
+            "action": "Open GM Huddle",
+        })
+    return out
+
+
 def build_owner_pulse(data: Optional[dict] = None, **kwargs: Any) -> dict:
     """
     PURE. Assemble the Owner Pulse from already-computed inputs. Accepts
@@ -98,10 +190,22 @@ def build_owner_pulse(data: Optional[dict] = None, **kwargs: Any) -> dict:
     raw_signals = payload.get("planning_signals") or []
     planning_signals = [s for s in raw_signals if _is_planning_alert(s)]
 
-    safety_stops = list(payload.get("safety_stops") or [])
-    owner_decisions = list(payload.get("owner_decisions") or [])
+    safety_stops: list[dict] = []
+    for stop in payload.get("safety_stops") or []:
+        if not isinstance(stop, dict):
+            continue
+        s = dict(stop)
+        if s.get("item_id") and not s.get("href"):
+            s["href"] = f"/ui/jobcheck?item={s['item_id']}"
+        safety_stops.append(s)
     huddle = payload.get("huddle_outcome") or {}
     unresolved_risks = list(huddle.get("unresolved_owner_risks") or [])
+    owner_decisions = collect_owner_decisions(
+        explicit=payload.get("owner_decisions") or [],
+        parking=payload.get("parking") or [],
+        action_requests=payload.get("action_requests") or [],
+        unresolved_risks=unresolved_risks,
+    )
 
     has_exceptions = bool(
         safety_stops or owner_decisions or prep_alerts or planning_signals or unresolved_risks
