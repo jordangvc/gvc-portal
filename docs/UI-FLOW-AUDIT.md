@@ -61,9 +61,13 @@ support the field. Admin / Activity are company tools.
    aimed-at-owner); UI cards + Job Check links (no more `JSON.stringify`).
    Hub Needs also surfaces top decisions.
 
+6. **Job Start `with_ops` invisible on hub (r71)** — Ops had to open Job Start
+   to find packets. Hub now folds GCS drafts: Accept handoff Needs for
+   non-senders (admins included); senders see Waiting queue rows. Still needs
+   a human Ops acceptor; no resend API yet.
+
 ### Still open (next passes)
 
-6. Job Start self-sent wait — still needs a human Ops acceptor; no resend API.
 7. COI / Time Off / Admin — hub “needs setup” badges before opening.
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
 9. Photos / Projects link discovery on Job Check — strengthen empty guidance.
