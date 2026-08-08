@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Owner Pulse + search Monday auth honesty (r96) — BUILT 2026-08-08
+Follow-on to r94: Owner Pulse returns `ok`/`monday_ok` false on auth death
+(hub never gold-clears over empty safety stops). Search legs
+(Billing/Estimate/CO/`find_project_by_number`) re-raise `is_auth_failure`
+instead of soft-empty "No matches." Hub **r96**.
+
 ## ✨ FIELD GUIDE ONBOARD + FRP/DOORS/PATCH (r95) — BUILT 2026-08-08
 Catalog gains **onboard-week1**, **morning-rhythm**, **lead-day**,
 **skill-ladder**, **patch**, **frp**, **doors** (45 procedures). Coach
@@ -20,7 +26,7 @@ FALLBACK related `onboard-week1` now catalog-backed. Hub **r95**.
 Dead Monday token no longer paints Billing as an empty Ready queue or Hub
 "You're clear". Auth failures re-raise from billing fetches; payload sets
 `ok`/`monday_ok` false + MONDAY_AUTH; hub `_try_billing` returns None.
-Port of conflicting #155 onto post-r93 master. Hub **r94**.
+Hub **r94**.
 
 ## ⚡ Morning Ops active-group fetch + progressive GFolder (r92) — BUILT 2026-08-08
 Cold Morning/Job Check was walking the entire Operations board (~2.1k items,

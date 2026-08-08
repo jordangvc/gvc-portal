@@ -43,7 +43,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Optional
 
 from adapters.monday import cache as monday_cache
-from adapters.monday.client import MondayClient
+from adapters.monday.client import MondayClient, is_auth_failure
 from shared.boards import BID_BOARD_ID, OPERATIONS_BOARD_ID, PROJECTS_BOARD_ID, SUBITEMS_BOARD_ID
 from shared.doc_number import core_number, search_needles
 from subsystems.change_order.number import parse_co_number
@@ -372,6 +372,8 @@ def _search_projects_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
             try:
                 data = fut.result()
             except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
+                if is_auth_failure(e):
+                    raise
                 print(f"[monday-co] search leg {column_id!r} failed: {e}", file=sys.stderr)
                 continue
             for board in data.get("boards") or []:
