@@ -1,10 +1,11 @@
 /**
  * Job Check status picker — grouped searchable one-value-per-field control.
- * Spec: Status Picker handoff + docs/GVC-COMMAND-STYLE.md
+ * Markup/classes from docs/redesign/Status Picker Handoff.md (copy, don't invent).
  *
- * Closed: label + gold current chip + Change.
- * Open: search → Next up (green) → phase groups (collapsed; current group open).
+ * Closed: .card.card-flush.sp → .row / .kicker / gold .chip / Change
+ * Open: search .input → Next up .chip-next → .sp__groups
  * Never tint chips with Monday hex — gold=selected, green=next, neutral=else.
+ * Write-back stays with the page Save bar (onChange only).
  */
 (function (global) {
   "use strict";
@@ -139,7 +140,7 @@
   function chipHtml(value, { active, next }) {
     const cls = ["chip"];
     if (active) cls.push("is-active");
-    if (next) cls.push("chip--next");
+    if (next) cls.push("chip-next");
     return (
       `<button type="button" class="${cls.join(" ")}" data-value="${esc(value)}" ` +
       `aria-pressed="${active ? "true" : "false"}">${esc(value)}</button>`
@@ -166,7 +167,7 @@
     let value = cfg.value == null || cfg.value === "" ? "" : String(cfg.value);
 
     const sec = document.createElement("section");
-    sec.className = "sp";
+    sec.className = "card card-flush sp";
     sec.dataset.field = key;
     sec.setAttribute("aria-label", label);
 
@@ -174,21 +175,21 @@
       const has = !!value;
       const currentHtml = has
         ? `<button type="button" class="chip is-active" data-clear aria-pressed="true">${esc(value)}</button>`
-        : `<span class="sp__empty">(not set)</span>`;
+        : `<span class="faint" style="font-size:var(--text-xs)">(not set)</span>`;
       const hint = cfg.hint
-        ? `<em class="sp__hint">${esc(cfg.hint)}</em>`
+        ? `<em class="faint" style="font-size:var(--text-xs)">${esc(cfg.hint)}</em>`
         : "";
       sec.innerHTML =
-        `<div class="sp__row">` +
-        `<div class="sp__meta">` +
-        `<span class="sp__label">${esc(label)}</span>` +
-        `<span class="sp__current">${currentHtml}${hint}</span>` +
+        `<div class="row" style="border-bottom:0">` +
+        `<div class="row__main">` +
+        `<span class="kicker">${esc(label)}</span>` +
+        `<span class="cluster">${currentHtml}${hint}</span>` +
         `</div>` +
         (writable
-          ? `<button type="button" class="btn sp__toggle" data-toggle>Change</button>`
+          ? `<button type="button" class="btn btn-sm row__end" data-toggle>Change</button>`
           : "") +
         `</div>` +
-        `<div class="sp__panel" hidden aria-hidden="true"></div>`;
+        `<div class="sp__panel card-foot stack" hidden aria-hidden="true"></div>`;
     }
 
     function renderPanel() {
@@ -197,11 +198,11 @@
       const groups = groupsFor(key, liveLabels);
       const next = suggestionsFor(key, value, liveLabels);
       const sugHtml = next.length
-        ? `<div class="sp__block" data-suggestions>` +
-          `<span class="sp__kicker">Next up</span>` +
-          `<div class="sp__opts">${next.map((v) => chipHtml(v, { next: true, active: false })).join("")}</div>` +
+        ? `<div class="stack" style="gap:var(--space-2)" data-suggestions>` +
+          `<span class="kicker kicker-sm">Next up</span>` +
+          `<div class="cluster">${next.map((v) => chipHtml(v, { next: true, active: false })).join("")}</div>` +
           `</div>`
-        : `<div class="sp__block" data-suggestions hidden></div>`;
+        : `<div class="stack" style="gap:var(--space-2)" data-suggestions hidden></div>`;
 
       const groupsHtml = groups.map((g) => {
         const holds = value && g.items.includes(value);
@@ -214,16 +215,16 @@
           `<button type="button" class="sp__ghead" data-group aria-expanded="${open}">` +
           `<span class="sp__gname">${esc(g.name)}</span>` +
           (holds ? `<i class="sp__gdot" aria-hidden="true"></i>` : "") +
-          `<span class="sp__gcount">${g.items.length}</span>` +
-          `<span class="sp__gcaret">${open === "true" ? "–" : "+"}</span>` +
+          `<span class="mono faint" style="font-size:var(--text-xs)">${g.items.length}</span>` +
+          `<span class="faint sp__gcaret">${open === "true" ? "–" : "+"}</span>` +
           `</button>` +
-          `<div class="sp__opts">${chips}</div>` +
+          `<div class="cluster sp__opts">${chips}</div>` +
           `</div>`
         );
       }).join("");
 
       panel.innerHTML =
-        `<input class="sp__search" type="search" placeholder="Type to find a status" autocomplete="off" />` +
+        `<input class="input" type="search" placeholder="Type to find a status" autocomplete="off" />` +
         sugHtml +
         `<div class="sp__groups">${groupsHtml}</div>`;
     }
@@ -248,7 +249,7 @@
       panel.setAttribute("aria-hidden", "false");
       const toggle = sec.querySelector("[data-toggle]");
       if (toggle) toggle.textContent = "Done";
-      const search = panel.querySelector(".sp__search");
+      const search = panel.querySelector(".input");
       if (search) search.focus();
     }
 
@@ -307,7 +308,7 @@
     });
 
     sec.addEventListener("input", (e) => {
-      const input = e.target.closest(".sp__search");
+      const input = e.target.closest(".sp__panel .input");
       if (!input || !sec.contains(input)) return;
       const q = input.value.trim().toLowerCase();
       const sug = sec.querySelector("[data-suggestions]");
@@ -329,7 +330,7 @@
             if (caret) caret.textContent = "–";
           }
         }
-        const count = g.querySelector(".sp__gcount");
+        const count = g.querySelector(".mono");
         if (count) count.textContent = String(shown);
       });
     });

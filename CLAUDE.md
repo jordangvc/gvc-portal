@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Job Check status picker on gvc-ui.css (r102) — BUILT 2026-08-08
+`/ui/jobcheck` converted to Status Picker handoff: one-value-per-field
+(`.card.card-flush.sp` → Change → search / Next up `.chip-next` / phase groups).
+Dates use `.kicker` + `.input`. Links `/ui/gvc-ui.css` only (no `gvc.css`).
+Save bar still batches Monday writes. Job Start left on legacy chips. Hub **r102**.
+
 ## ✨ Hub shell redesigned on gvc-ui.css (r101) — BUILT 2026-08-08
 `/` converted to redesign SoT from `gvc-shell-demo.html`: `.app` / `.rail` /
 `.topbar` / `.page` / `.tabbar`. One rail (phone drawer = `.rail.is-open`),
