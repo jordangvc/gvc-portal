@@ -801,8 +801,12 @@ async function doAutosave() {
   const payload = collectData();
   if (!currentDraftId && isEmptyPayload(payload)) return;  // don't create empty drafts
   if (!currentDraftId) currentDraftId = genDraftId();
+  // Persist revise mode (same gap as estimate drafts — resume must not drop it).
+  const revise = isReviseMode();
+  const storePayload = Object.assign({}, payload, { _ui: { revise: revise } });
   const rec = {
-    id: currentDraftId, label: deriveLabel(payload), payload,
+    id: currentDraftId, label: deriveLabel(payload), payload: storePayload,
+    revise: revise,
     updated_at: new Date().toISOString(), updated_by: "(you)",
   };
   const existing = loadLocal()[currentDraftId] || {};
@@ -873,6 +877,8 @@ function renderDrafts(map) {
       `<div class="d-main">
          <div class="d-label">${escapeHtml(r.label || "Untitled change order")}` +
          (isActive ? `<span class="badge active">editing</span>` : "") +
+         ((r.revise || (r.payload && r.payload._ui && r.payload._ui.revise))
+           ? `<span class="badge active">revise</span>` : "") +
          (synced ? `<span class="badge synced">synced</span>` : `<span class="badge local">this device</span>`) +
        `</div>
          <div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div>
@@ -891,11 +897,19 @@ function renderDrafts(map) {
 
 function resumeDraft(id) {
   const rec = loadLocal()[id]; if (!rec) return;
-  applyData(rec.payload);
+  const p = Object.assign({}, rec.payload || {});
+  const ui = p._ui || {};
+  delete p._ui;
+  applyData(p);
+  const wantRevise = !!(rec.revise || ui.revise);
+  const ident = (val("co_number") || "").trim();
+  $("#revise-flag").checked = !!(wantRevise && ident);
+  updateReviseUI();
   currentDraftId = id;
   lastPreviewOk = false; $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
-  setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
+  setSaveState(rec._syncedAt ? "synced" : "local",
+    wantRevise && ident ? "Resumed draft · revise mode on" : "Resumed draft");
   renderDrafts();
   $("#co-form").scrollIntoView({ behavior: "smooth" });
 }
