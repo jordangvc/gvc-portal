@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Owner Pulse recovery + COI Next links (r78) — BUILT 2026-08-08
+Owner Pulse load failure offers Try again + Morning Brief + hub. COI single/bulk
+finalize carry Next links. Coach catalog import at module top; Field Guide
+shell↔catalog wiring regression-tested. Perf-audit documents Monday `_query`
+retries. Hub **r78**.
+
 ## ✨ FIELD GUIDE OPS LOGISTICS CATALOG (r77) — BUILT 2026-08-08
 Job Check Ops how-to anchors are catalog procedures (not HTML-only):
 `jobstart-firstday` (Lock Box / Open questions), `job-conditions` (Heater/Cans),

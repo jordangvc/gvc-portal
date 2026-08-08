@@ -335,6 +335,7 @@ async function run(mode) {
       if (wb.drive_status) html += `<div class="result-line" style="color:#96763B">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
       html += `<div class="result-line">Slack notice: ${wb.slack_notified ? "posted ✅" : escapeHtml(wb.slack_status || wb.slack_error || "not sent")}</div>`;
       if (wb.monday_status) html += `<div class="result-line">Monday: ${escapeHtml(wb.monday_status)}</div>`;
+      html += `<div class="result-line">Next: <a href="/">hub</a> · <a href="/ui/admin">Admin</a> (swap blank template) · another COI above.</div>`;
       setStatus("warn", html);
     }
   } catch (e) {
@@ -494,6 +495,7 @@ function bulkFinish(b) {
   html += `<div class="result-line">Drafts are waiting in hello@ — review and send.</div>`;
   if (b.slack_notified) html += `<div class="result-line">Slack summary posted ✅</div>`;
   else if (b.slack_status || b.slack_error) html += `<div class="result-line" style="color:#96763B">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
+  html += `<div class="result-line">Next: <a href="/">hub</a> · <a href="/ui/admin">Admin</a> (template) · start another sheet above.</div>`;
   $("#bulk-result").innerHTML = html;
   setStatus(st.failed ? "warn" : "info",
     `Bulk run finished — ${st.done} drafted this run${st.failed ? `, ${st.failed} failed (marked NO; they retry on the next run)` : ""}.` +

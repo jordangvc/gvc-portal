@@ -10,7 +10,8 @@ jobcheck / morning feel slow, or before blaming “we need a database.”
 - HTML routes return immediately (`_cached_web_html`). **Live paint waits on
   `/ui/api/*` JSON**, and those APIs wait on Monday GraphQL.
 - Every GraphQL POST goes through `MondayClient._query`
-  (`adapters/monday/client.py`). No retries / 429 backoff today.
+  (`adapters/monday/client.py`). Bounded retries on 429 / ComplexityException /
+  5xx / transport (MAX_RETRIES=2, Retry-After capped at 4s).
 
 ## Measure (required before large changes)
 
