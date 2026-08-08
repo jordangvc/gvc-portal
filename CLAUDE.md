@@ -11,6 +11,32 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Hub replays last numbers on boot (r106) — BUILT 2026-08-08
+Jordan: the hub takes too long before it's usable. Measured the path first —
+`GET /` touches no Monday and no Cloud Logging (boot shell from
+`hub_nav.boot_shell` via `{{HUB_BOOT_JSON}}`), so the HTML was never the
+problem. The wait is `GET /ui/api/hub`: `_live_hub_slice` fans out up to 5
+jobs on a ThreadPoolExecutor and returns **only when the slowest finishes** —
+for an owner that's brief + billing + owner-pulse + jobstart. Needs/metrics/
+queue are shaped from the combination, so nothing can paint early. Result:
+instant shell, then a visibly empty page.
+FIX (client-only, no route/payload change): `web/hub.html` stashes the last
+successful payload in `localStorage` (`gvc_hub_last_v1`) and replays it over
+the boot shell, so the hub opens FULL and swaps to live when the walk returns.
+⚠ TWO RULES, both regression-tested in `tests/test_hub_stash.py`:
+  1. **Display slices only** (`STASH_FIELDS` = generated_at / summary / needs /
+     needs_clear / metrics / queue / pinned). `nav`, `user`, `quick_actions`
+     and `badges` are NEVER stashed — replaying a cached rail could show a
+     tile whose grant was revoked. Grants stay server-owned, every load.
+  2. **Replayed numbers are never presented as live** — dateline reads
+     "as of Aug 8, 6:12 PM · refreshing…", and "· refresh failed" if the walk
+     dies. Stash is per-email, expires at 24h, is cleared on Sign out, and a
+     payload with `ok === false` is never stashed.
+NOT a fix for the underlying Monday latency — that's still the slowest-job
+problem above, and the next lever is measuring which job dominates
+(`GVC_MONDAY_TRACE=1` → client logs `[gvc monday_trace]` to the console).
+Hub **r106**.
+
 ## ✨ Field-jump errors + list polish (r105) — BUILT 2026-08-08
 Clicking validation errors (“Finish a client”, missing Job Start fields, COI
 requireds) jumps to the field via `gvc-field-jump.js` + form-stages gap banner.

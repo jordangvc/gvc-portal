@@ -41,7 +41,7 @@
         <span class="row__sub" id="railrole"></span>
       </span>
       <button type="button" class="btn btn-sm btn-ghost" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
+      <a class="btn btn-sm btn-ghost" id="signout" href="/auth/logout">Sign out</a>
     </div>
   </aside>
 
@@ -152,7 +152,7 @@
 
         <p class="muted" style="font-size:var(--text-xs);margin:0">
           Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.
-          <span style="float:right">Portal <b>r105</b> · Aug 8, 2026</span>
+          <span style="float:right">Portal <b>r106</b> · Aug 8, 2026</span>
         </p>
       </div>
     </div>
@@ -179,8 +179,11 @@
   const EMAIL = {{EMAIL_JSON}};
   const HUB_BOOT = {{HUB_BOOT_JSON}};
   const RECENT_KEY = "gvc_hub_recent_v1";
+  const STASH_KEY = "gvc_hub_last_v1";
+  const STASH_MAX_AGE_MS = 24 * 60 * 60 * 1000;
   const BADGE_MS = 60 * 1000;
   const REFRESH_MIN_MS = 30 * 1000;
+  let showingStash = false;
   let lastRefreshAt = 0;
   let liveHydrated = false;
 
@@ -202,6 +205,44 @@
     el.classList.add("is-on");
     clearTimeout(toast._t);
     toast._t = setTimeout(() => el.classList.remove("is-on"), 2200);
+  }
+
+  // Last live numbers, replayed on the next visit so the hub opens full
+  // instead of empty while /ui/api/hub walks Monday.
+  //
+  // DISPLAY DATA ONLY. nav / user / quick_actions always come from the
+  // server's boot JSON — replaying a cached rail could show a tile whose
+  // grant was revoked since. Anything access-controlled stays server-owned.
+  const STASH_FIELDS = [
+    "generated_at", "summary", "needs", "needs_clear",
+    "metrics", "queue", "pinned",
+  ];
+
+  function loadStash() {
+    try {
+      const raw = JSON.parse(localStorage.getItem(STASH_KEY) || "null");
+      if (!raw || typeof raw !== "object") return null;
+      if (raw.email !== EMAIL) return null;          // different sign-in
+      if (!raw.saved_at) return null;
+      const age = Date.now() - Number(raw.saved_at);
+      if (!(age >= 0) || age > STASH_MAX_AGE_MS) return null;
+      return raw.data && typeof raw.data === "object" ? raw.data : null;
+    } catch (_) { return null; }
+  }
+
+  function saveStash(p) {
+    try {
+      if (!p || p.ok === false) return;              // never cache a failed read
+      const data = {};
+      STASH_FIELDS.forEach((k) => { if (k in p) data[k] = p[k]; });
+      localStorage.setItem(STASH_KEY, JSON.stringify({
+        email: EMAIL, saved_at: Date.now(), data: data,
+      }));
+    } catch (_) {}
+  }
+
+  function clearStash() {
+    try { localStorage.removeItem(STASH_KEY); } catch (_) {}
   }
 
   function loadRecent() {
@@ -348,6 +389,27 @@
     } catch (_) {
       return "";
     }
+  }
+
+  function formatStamp(iso) {
+    const d = iso ? new Date(iso) : null;
+    if (!d || Number.isNaN(d.getTime())) return "";
+    try {
+      return d.toLocaleString("en-US", {
+        timeZone: "America/New_York",
+        month: "short", day: "numeric",
+        hour: "numeric", minute: "2-digit",
+      });
+    } catch (_) { return ""; }
+  }
+
+  // Stale numbers must never read as live — this is the failure that hid a
+  // 3-week-old recap in the Takeoff app. Say when they're from, and say
+  // that a refresh is in flight.
+  function datelineText() {
+    if (!showingStash) return formatDateLine(payload && payload.generated_at) || "Today";
+    const stamp = formatStamp(payload && payload.generated_at);
+    return stamp ? ("as of " + stamp + " · refreshing…") : "refreshing…";
   }
 
   function renderNeeds() {
@@ -704,7 +766,7 @@
     showLive();
     $("greeting").textContent = payload.greeting || "Hello.";
     const dl = $("dateline");
-    if (dl) dl.textContent = formatDateLine(payload.generated_at) || "Today";
+    if (dl) dl.textContent = datelineText();
     // When clear, summary lives inside the clear banner — don't duplicate.
     $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
     renderHomeCta();
@@ -731,6 +793,14 @@
     };
     if (payload.nav && Array.isArray(payload.nav.features)) {
       payload.nav.features.forEach((f) => FEATURES.add(f));
+    }
+    // Replay the last live numbers over the boot shell so the page opens
+    // full rather than empty. Display slices only — the rail, user and
+    // quick actions above stay exactly as the server just sent them.
+    const stash = wantDemo ? null : loadStash();
+    if (stash) {
+      STASH_FIELDS.forEach((k) => { if (k in stash) payload[k] = stash[k]; });
+      showingStash = true;
     }
     liveHydrated = false;
     renderAll();
@@ -899,7 +969,9 @@
       payload.quick_actions = quick;
     }
     liveHydrated = true;
+    showingStash = false;
     lastRefreshAt = Date.now();
+    saveStash(payload);
     if (payload.nav && Array.isArray(payload.nav.features)) {
       payload.nav.features.forEach((f) => FEATURES.add(f));
     }
@@ -935,6 +1007,10 @@
       if (next.ok === false && !next.badges && !(next.needs || []).length) return;
       applyRefreshSlice(next);
       liveHydrated = true;
+      showingStash = false;
+      saveStash(payload);
+      const dl = $("dateline");
+      if (dl) dl.textContent = datelineText();
       renderUserChrome();
       renderNav($("railnav"), $("railsearch").value);
       renderNeeds();
@@ -954,6 +1030,10 @@
     }).catch(() => {});
   }
 
+  // Signing out must not leave one person's numbers for the next sign-in.
+  const soBtn = $("signout");
+  if (soBtn) soBtn.addEventListener("click", clearStash);
+
   wireChrome();
   paintInstantShell();
   fetchPayload()
@@ -969,9 +1049,18 @@
     .catch((err) => {
       liveHydrated = true;
       showLive();
-      // Keep boot rail/CTA; only flag that live slice failed.
+      // Keep boot rail/CTA; only flag that live slice failed. If replayed
+      // numbers are on screen, say so — never let them pass for current.
+      const stamp = showingStash ? formatStamp(payload && payload.generated_at) : "";
       $("summary").textContent = "Couldn't refresh live numbers — " +
-        String(err.message || err) + ". Tools still work from the rail.";
+        String(err.message || err) +
+        (stamp ? ". Showing the last numbers from " + stamp + "." : ".") +
+        " Tools still work from the rail.";
+      const dl = $("dateline");
+      if (dl && showingStash) {
+        dl.textContent = stamp ? ("as of " + stamp + " · refresh failed")
+                               : "refresh failed";
+      }
       renderNeeds();
       warmMondayAfterPaint();
     });
