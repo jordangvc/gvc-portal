@@ -3,7 +3,7 @@
   "slug": "hang",
   "title": "Hanging Drywall",
   "short_answer": "Board goes on after framing is true, backing is in, and MEP rough-in is done. Ceiling first, then walls. Stagger joints and land every edge on framing or backing.",
-  "summary": "Hang board so every edge lands on framing or backing, stagger joints, and leave a controlled gap at the floor.",
+  "summary": "Hanging decides how much finishing there is. Every joint you avoid creating is a joint nobody has to tape, coat three times, sand, and touch up.",
   "when_to_use": [
     "Framing status is Done and backing for cabinets, grab bars, and TV mounts is in",
     "MEP rough-in and inspections that must precede board are complete",
@@ -22,7 +22,7 @@
     "crew",
     "lead"
   ],
-  "plain_words": "Board goes on after framing is true, backing is in, and MEP rough-in is done. Ceiling first, then walls. Stagger joints \u2014 never stack a wall joint directly over a ceiling joint. Land every edge on framing or backing; floating edges crack. Leave ~1/2\" at the floor so the board never sits in a wet floor finish.",
+  "plain_words": "Use the longest sheets that fit, ceilings before walls, top sheet before bottom, and never let a joint land on the corner of a door. Set the screws so they dimple the paper without tearing it. Fewer seams is the whole game \u2014 the finishers inherit whatever you leave them.",
   "tools": [
     {
       "name": "Screw gun / collated screw gun",
@@ -66,44 +66,116 @@
   "steps": [
     {
       "order": 1,
-      "title": "Confirm the wall is ready",
-      "body": "Walk the bay: framing true, backing in, boxes set to plane, no uninspected MEP that must precede board.",
+      "title": "",
+      "body": "Framing accepted: plumb, straight, backing in, no protruding fasteners, no twisted studs.",
       "checklist": true
     },
     {
       "order": 2,
-      "title": "Ceiling first",
-      "body": "Hang ceiling board before walls so wall board can catch the ceiling edge. Use a lift or T-brace on large spans.",
+      "title": "",
+      "body": "MEP rough-in complete and inspected. Board over uninspected rough-in comes back off.",
       "checklist": true
     },
     {
       "order": 3,
-      "title": "Stagger joints",
-      "body": "Never align a wall butt joint under a ceiling butt joint. Stagger factory edges and butt joints across the plane.",
+      "title": "",
+      "body": "Insulation in where it belongs behind the board.",
       "checklist": true
     },
     {
       "order": 4,
-      "title": "Land every edge",
-      "body": "Every cut edge and butt joint lands on a stud, joist, or installed backing. Floating edges are finish failures waiting to happen.",
+      "title": "",
+      "body": "Confirm board type per wall \u2014 thickness, rated vs. non-rated, moisture/abuse-resistant, layer count.",
       "checklist": true
     },
     {
       "order": 5,
-      "title": "Fasten to schedule",
-      "body": "Screw pattern per drawings/spec (typically field and perimeter). Heads dimple the face paper without tearing it.",
+      "title": "",
+      "body": "Confirm fastener type and spacing for each condition from the spec.",
       "checklist": true
     },
     {
       "order": 6,
-      "title": "Gap at the floor",
-      "body": "Hold board ~1/2\" off the finished-floor plane so moisture and floor finishes do not wick into the gypsum core.",
+      "title": "",
+      "body": "Board acclimated and conditions reasonable.",
       "checklist": true
     },
     {
       "order": 7,
-      "title": "Cutouts clean",
-      "body": "Boxes and penetrations get clean cutouts \u2014 not oversize caves. Oversize holes become crack starters at finish.",
+      "title": "",
+      "body": "Cut for a snug fit, but don't force a sheet in \u2014 forced board bows, breaks at the corners, and pushes framing out of plane.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Push tight to the neighbor before fastening. Gaps mean more mud.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Fasten from the center outward, holding the board tight as you go. Edges-first traps a belly in the middle.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Set gun depth so the head dimples the paper without breaking it. A broken-paper screw holds nothing.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Keep fasteners back from the edges per spec \u2014 too close and the edge crumbles.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Leave the specified gap at the floor so board isn't wicking off the slab and isn't bearing.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Walk it with a knife and a gun. Every screw set, none proud, none broken through.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "No torn paper left un-addressed.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "Gaps within tolerance; oversized gaps pre-filled, not left for tape.",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "",
+      "body": "All openings cut, none missed, none oversized.",
+      "checklist": true
+    },
+    {
+      "order": 17,
+      "title": "",
+      "body": "Control joints where the detail shows them, with the board actually broken.",
+      "checklist": true
+    },
+    {
+      "order": 18,
+      "title": "",
+      "body": "Rated walls photographed, layer one before layer two.",
+      "checklist": true
+    },
+    {
+      "order": 19,
+      "title": "",
+      "body": "Room updated in Job Check.",
       "checklist": true
     }
   ],

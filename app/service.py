@@ -83,6 +83,7 @@ from subsystems.change_order import drafts as co_drafts
 from subsystems.fieldguide import runs as fieldguide_runs
 from subsystems.fieldguide import catalog as fieldguide_catalog
 from subsystems.fieldguide import search as fieldguide_search
+from subsystems.fieldguide import render as fieldguide_render
 from adapters import vision as vision
 from adapters import slack_notify as slack_notify
 from subsystems.checks import deposit as check_deposit
@@ -2683,7 +2684,7 @@ def ui_fieldguide_procedure(procedure_id: str, request: Request) -> dict:
         "ok": True,
         "procedure": proc,
         "related": fieldguide_search.related_suggestions(procedure_id),
-        "html": None,  # shell still owns full HTML; render available server-side
+        "html": fieldguide_render.render_procedure_article(proc),
     }
 
 

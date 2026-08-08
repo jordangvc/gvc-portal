@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE CATALOG ↔ SHELL WIRING (r73) — BUILT 2026-08-08
+Procedure API returns rendered HTML; Field Manual injects catalog `.nextpath`
+on spine docs (hang/scrape/finish/… were dead-ends). Coach merges catalog
+related/next into related. hang/scrape steps re-synced from HTML. OSS reuse
+map: `docs/OSS-REUSE-MAP.md`. Hub **r73**.
+
 ## ✨ FIELD GUIDE JOB-CHECK SPINE (r71) — BUILT 2026-08-08
 Catalog now covers the drywall Job Check spine end-to-end:
 `framing` → `preboard-walk` → `hang` → `scrape` → `finish` → `level5-skim` →
