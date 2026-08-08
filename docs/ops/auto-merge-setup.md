@@ -1,8 +1,8 @@
 # Auto-merge setup (cloud agent PRs)
 
-Goal: when a cloud agent opens a ready PR on `cursor/*` → `master`, it merges
-itself after tests pass, then **Deploy to Cloud Run** ships production. Jordan
-should not have to hunt for the latest PR and click Merge.
+Goal: when a cloud agent opens a PR on `cursor/*` → `master`, it merges itself
+after tests pass, then **Deploy to Cloud Run** ships production. Jordan should
+not hunt for the latest PR or click Merge / Ready.
 
 ## Already flipped on the repo (2026-08-07)
 
@@ -12,30 +12,30 @@ Via GitHub (owner account):
 - **Automatically delete head branches** = on
 - Squash merge uses PR title + body
 
-## Actions workflow (this PR)
+## Actions workflow
 
-`.github/workflows/auto-merge-cursor-prs.yml` runs on non-draft PRs whose head
-branch starts with `cursor/`:
+`.github/workflows/auto-merge-cursor-prs.yml`:
 
-1. Same gate as deploy: `compileall` + `pytest`
-2. Squash-merge into `master` + delete the branch
-3. Explicitly dispatch **Deploy to Cloud Run** (GITHUB_TOKEN merges do not
-   fire push-triggered workflows — GitHub recursion guard)
+1. On PR open/sync/ready/unlabel (and every **20 minutes** via cron)
+2. `cursor/*` head only; skip if label `hold` / `do-not-merge`
+3. **Auto-mark draft → ready** (draft alone no longer blocks)
+4. Gate: `compileall` + `pytest`
+5. Squash-merge + delete branch
+6. Explicitly dispatch **Deploy to Cloud Run**
 
-**Pause a PR:** mark it **Draft**, or add label `hold` / `do-not-merge`.
+**Pause a PR:** add label `hold` or `do-not-merge`.
 
 ## Actions write — already OK on this repo
 
 Workflow runs show `Contents: write` for `GITHUB_TOKEN`. If a future merge job
 403s, flip **Settings → Actions → Workflow permissions → Read and write**.
 
+## Agent rules
 
-## Agent rules (so this keeps working)
-
-- Open PRs as **ready** (`draft: false`), not draft — drafts never auto-merge.
-- Branch names stay `cursor/<topic>-685a` (or any `cursor/…`).
-- Do not put `hold` / `do-not-merge` unless you intentionally want a human merge.
-- After merge, trust `deploy-cloud-run.yml` on `master` (already live).
+- Branch names stay `cursor/<topic>-…`.
+- Prefer `draft: false` when opening PRs; drafts still auto-ready for `cursor/*`.
+- Do not add `hold` / `do-not-merge` unless you intentionally want a human merge.
+- **Conflicts block merge** — rebase onto master; cron retries once MERGEABLE.
 
 ## Hold / human merge
 

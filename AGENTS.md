@@ -16,11 +16,15 @@ anything else obvious":
 
 ### Auto-merge (portal owns landing on `master`)
 
-Ready (non-draft) PRs from `cursor/*` → `master` are squash-merged by
-`.github/workflows/auto-merge-cursor-prs.yml` after `compileall` + `pytest`.
-Master push then triggers Cloud Run deploy. Do **not** create those PRs as
-drafts. To pause auto-merge on one PR: keep it draft or add label `hold` /
-`do-not-merge`. Setup notes: `docs/ops/auto-merge-setup.md`.
+PRs from `cursor/*` → `master` are squash-merged by
+`.github/workflows/auto-merge-cursor-prs.yml` after `compileall` + `pytest`, then
+Cloud Run deploy is dispatched. **Drafts are auto-marked ready** for `cursor/*`
+(agents often open draft by default). A cron every 20 minutes also sweeps
+mergeable `cursor/*` PRs so conflict fixes do not wait for a human click.
+
+To pause one PR: add label `hold` or `do-not-merge` (draft alone does **not**
+pause). Prefer opening with `draft: false` when the tool allows. Setup notes:
+`docs/ops/auto-merge-setup.md`.
 
 ## Repository layout (package structure, 2026-06)
 

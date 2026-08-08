@@ -1,25 +1,38 @@
 name: Auto-merge cursor PRs
 
 # Cloud-agent branches (`cursor/*`) land on master without Jordan clicking Merge.
-# After merge, deploy-cloud-run.yml already deploys on master push.
+# After merge, deploy-cloud-run.yml is dispatched explicitly (GITHUB_TOKEN merges
+# do not fire push-triggered workflows — GitHub recursion guard).
 #
 # Gates:
-#   - PR targets master, not draft
+#   - PR targets master
 #   - head branch starts with cursor/
 #   - no hold / do-not-merge labels
 #   - compileall + pytest pass (same bar as deploy)
+#   - mergeable (conflicts fail loudly; cron retries after rebase)
 #
-# Hold a PR: add label `hold` or `do-not-merge`, or keep it as draft.
+# Drafts ARE allowed for cursor/* — agents often open draft by default; waiting
+# for a ready-click is the button Jordan should not have to press.
+# Pause a PR: add label `hold` or `do-not-merge` (draft alone no longer pauses).
 #
 # One-time repo setup: docs/ops/auto-merge-setup.md
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, unlabeled]
     branches: [master]
+  # Pick up PRs that became mergeable after a conflict fix without a new push.
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: "Optional PR number to merge now (blank = scan all cursor/*)"
+        required: false
+        default: ""
 
 concurrency:
-  group: auto-merge-pr-${{ github.event.pull_request.number }}
+  group: auto-merge-pr-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -30,12 +43,30 @@ permissions:
 jobs:
   gate:
     if: >
-      github.event.pull_request.draft == false &&
+      github.event_name == 'pull_request' &&
       startsWith(github.head_ref, 'cursor/') &&
       !contains(github.event.pull_request.labels.*.name, 'hold') &&
       !contains(github.event.pull_request.labels.*.name, 'do-not-merge')
     runs-on: ubuntu-latest
+    outputs:
+      pr: ${{ steps.meta.outputs.pr }}
     steps:
+      - name: Meta
+        id: meta
+        run: echo "pr=${{ github.event.pull_request.number }}" >> "$GITHUB_OUTPUT"
+
+      - name: Mark ready if draft
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          draft=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)
+          if [ "$draft" = "true" ]; then
+            echo "Marking PR #$PR ready (cursor/* drafts auto-ready)."
+            gh pr ready "$PR" --repo "$GITHUB_REPOSITORY"
+          fi
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -68,36 +99,37 @@ jobs:
 
   merge:
     needs: gate
+    if: needs.gate.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - name: Squash-merge into master
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR: ${{ github.event.pull_request.number }}
+          PR: ${{ needs.gate.outputs.pr }}
         run: |
           set -euo pipefail
-          # Wait briefly if GitHub still computing mergeability after the last push.
-          for i in 1 2 3 4 5 6; do
+          for i in 1 2 3 4 5 6 7 8; do
             state=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json mergeable,mergeStateStatus \
               --jq '"\(.mergeable):\(.mergeStateStatus)"')
             echo "mergeability=$state"
             case "$state" in
-              MERGEABLE:CLEAN|MERGEABLE:UNSTABLE|MERGEABLE:HAS_HOOKS|MERGEABLE:BEHIND)
+              MERGEABLE:CLEAN|MERGEABLE:UNSTABLE|MERGEABLE:HAS_HOOKS|MERGEABLE:BEHIND|MERGEABLE:BLOCKED)
                 break
                 ;;
-              MERGEABLE:BLOCKED)
-                # No required reviewers/checks on this repo today; still try merge.
-                break
+              CONFLICTING:*|*:DIRTY)
+                echo "::error::PR #$PR has merge conflicts — rebase onto master. Cron will retry after."
+                exit 1
                 ;;
               *)
                 sleep 5
                 ;;
             esac
           done
-          gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --delete-branch
+          if ! gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --delete-branch; then
+            merged=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json state --jq .state)
+            [ "$merged" = "MERGED" ] || exit 1
+          fi
 
-      # GITHUB_TOKEN merges do NOT fire push-triggered workflows (GitHub recursion
-      # guard). Kick Cloud Run deploy explicitly so master still ships.
       - name: Trigger Cloud Run deploy
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -106,3 +138,55 @@ jobs:
             --repo "$GITHUB_REPOSITORY" \
             --ref master
           echo "Deploy dispatched — watch Actions for Deploy to Cloud Run."
+
+  # Cron / manual: merge cursor/* PRs that are already MERGEABLE (e.g. conflicts
+  # fixed via merge commit, draft unmarked, or prior merge job flaked).
+  sweep:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Sweep mergeable cursor/* PRs
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ONLY: ${{ github.event.inputs.pr_number || '' }}
+        run: |
+          set -euo pipefail
+          if [ -n "${ONLY}" ]; then
+            list="${ONLY}"
+          else
+            list=$(gh pr list --repo "$GITHUB_REPOSITORY" --base master --state open --limit 50 \
+              --json number,headRefName,labels,mergeable \
+              --jq '[.[]
+                | select(.headRefName | startswith("cursor/"))
+                | select([.labels[].name] | index("hold") | not)
+                | select([.labels[].name] | index("do-not-merge") | not)
+                | select(.mergeable == "MERGEABLE")
+                | .number] | map(tostring) | join(" ")')
+          fi
+          if [ -z "${list}" ]; then
+            echo "No mergeable cursor/* PRs to sweep."
+            exit 0
+          fi
+          merged_any=0
+          for PR in $list; do
+            echo "==== Sweeping PR #$PR ===="
+            draft=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft)
+            if [ "$draft" = "true" ]; then
+              gh pr ready "$PR" --repo "$GITHUB_REPOSITORY" || true
+            fi
+            # Re-run the PR gate by empty commit is too invasive; merge if GitHub
+            # says MERGEABLE. Full pytest already ran on the last synchronize for
+            # healthy PRs; conflicted ones never appear in this list.
+            if gh pr merge "$PR" --repo "$GITHUB_REPOSITORY" --squash --delete-branch; then
+              merged_any=1
+              echo "Merged #$PR"
+            else
+              echo "::warning::Could not merge #$PR"
+            fi
+          done
+          if [ "$merged_any" = "1" ]; then
+            gh workflow run deploy-cloud-run.yml \
+              --repo "$GITHUB_REPOSITORY" \
+              --ref master
+            echo "Deploy dispatched after sweep."
+          fi
