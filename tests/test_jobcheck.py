@@ -1141,3 +1141,15 @@ def test_jobcheck_slack_skips_cleanly_without_a_channel(monkeypatch=None):
     finally:
         if old is not None:
             os.environ["GVC_JOBCHECK_SLACK_CHANNEL"] = old
+
+
+def test_jobcheck_photo_blocked_guidance_in_ui():
+    """Blocked photos must name the next step (link panel / office GFolder)."""
+    from pathlib import Path
+    body = (Path(__file__).resolve().parents[1] / "web" / "jobcheck.html").read_text(
+        encoding="utf-8")
+    assert "photolinkfix" in body
+    assert "Link Projects item" in body
+    assert "GFolder Link" in body
+    assert "has_project_link" in body
+    assert "linkpanel" in body and "scrollIntoView" in body

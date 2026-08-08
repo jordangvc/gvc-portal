@@ -772,20 +772,56 @@ function applyPhotoReady(pr) {
   const hint = $("#photohint");
   const input = $("#photos");
   const btn = $("#photoupload");
+  const hasProject = !!(pr && (pr.has_project_link || pr.project_item_id));
   const reason = (pr && (pr.reason || pr.photo_block_reason || pr.photo_ready_reason))
     || "No GFolder Link for this job.";
   if (ready) {
     hint.className = "hint okhint";
-    hint.textContent = "Photos go to Pictures under GFolder.";
+    hint.textContent = "Photos go to Pictures under the project Drive folder (GFolder).";
     input.disabled = false;
     btn.disabled = false;
-  } else {
-    hint.className = "hint warnhint";
-    hint.textContent = "Photos blocked — " + reason;
-    input.value = "";
-    input.disabled = true;
-    btn.disabled = true;
+    return;
   }
+  hint.className = "hint warnhint";
+  input.value = "";
+  input.disabled = true;
+  btn.disabled = true;
+  if (!hasProject) {
+    // Photos need the same Ops→Projects link as Trade status — surface that panel.
+    const tradeSec = $("#tradesection");
+    const linkPanel = $("#linkpanel");
+    if (tradeSec && linkPanel) {
+      tradeSec.style.display = "";
+      linkPanel.classList.add("show");
+      const lh = $("#linkhint");
+      if (lh) {
+        lh.textContent = "Link a Projects item so Trade status and Site photos both work.";
+      }
+      if (typeof loadLinkSuggestions === "function") {
+        try { loadLinkSuggestions(); } catch (_) { /* ignore */ }
+      }
+    }
+    hint.innerHTML = "Photos blocked — this Operations task isn't linked to a Projects item. "
+      + "Link it below (or in Monday), then reload the job."
+      + '<div class="btnrow" style="margin-top:8px">'
+      + '<button type="button" class="btn secondary" id="photolinkfix">Link Projects item</button>'
+      + "</div>";
+    const fix = $("#photolinkfix");
+    if (fix) {
+      fix.addEventListener("click", () => {
+        const panel = $("#linkpanel");
+        if (panel) panel.scrollIntoView({ behavior: "smooth", block: "center" });
+        const inp = $("#linkinput");
+        if (inp) inp.focus();
+      });
+    }
+    return;
+  }
+  const pid = pr.project_item_id ? ` (Projects #${esc(String(pr.project_item_id))})` : "";
+  hint.innerHTML = "Photos blocked — no Drive <b>GFolder Link</b> on the linked Projects item"
+    + pid + ". Ask office to paste the project folder URL into Monday → Projects → "
+    + "<b>GFolder Link</b> (crew can't set that column here)."
+    + `<div class="muted" style="margin-top:6px">${esc(reason)}</div>`;
 }
 
 function backToList() {
