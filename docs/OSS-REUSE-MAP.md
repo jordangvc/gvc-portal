@@ -89,8 +89,8 @@ Portal stack = FastAPI + vanilla HTML/JS + WeasyPrint. Takeoff = separate React 
 
 ## 6. Fastest wins (ordered)
 
-1. **Wire Field Manual shell → catalog** (nextpath inject, procedure HTML API, coach related merge) — done on this branch.  
-2. **Vendor Fuse.js** only if client fuzzy over *all* HTML tiles is still weak after catalog search is called from the home box.  
+1. **Wire Field Manual shell → catalog** (nextpath inject, procedure HTML API, coach related merge, home → `/search`) — **done r74**.  
+2. **Vendor Fuse.js** only if client fuzzy over *all* HTML tiles is still weak after catalog search boost.  
 3. **Takeoff:** read OpenTakeoff `oneclick.ts` / scale patterns before writing more measure code.  
 4. **Extract fieldguide SVGs** into `content/fieldguide/diagrams/` (reuse render `diagram_ids`).  
 5. **Defer** Docusaurus/Starlight migration — wrong runtime for an authenticated portal tool.
