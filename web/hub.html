@@ -126,7 +126,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r68</b> · Aug 7, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r69</b> · Aug 7, 2026</span>
         </div>
       </div>
     </div>
@@ -793,22 +793,18 @@
   }
 
   async function fetchPayload() {
-    // Two-step load: paint live Monday slice ASAP, then hydrate identity /
-    // nav / activity / pins (Cloud Logging) without blocking first paint.
-    const refreshRes = await fetch("/ui/api/hub/refresh", { credentials: "same-origin" });
-    if (!refreshRes.ok) throw new Error("hub refresh " + refreshRes.status);
-    const refresh = await refreshRes.json();
-    lastRefreshAt = Date.now();
-    if (!(refresh.ok === false && !refresh.badges && !(refresh.needs || []).length)) {
-      applyRefreshSlice(refresh);
-      renderLiveSlice();
-    }
-
+    // One Monday walk on first paint. /ui/api/hub/refresh runs the SAME
+    // brief+billing slice as /ui/api/hub — calling both on boot doubled
+    // cold GraphQL cost. Polls still use refresh (skips Cloud Logging).
     const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
     if (!res.ok) throw new Error("hub " + res.status);
     payload = await res.json();
+    lastRefreshAt = Date.now();
     if (payload.nav && Array.isArray(payload.nav.features)) {
       payload.nav.features.forEach((f) => FEATURES.add(f));
+    }
+    if (payload.monday_trace && typeof console !== "undefined" && console.info) {
+      console.info("[gvc monday_trace]", payload.monday_trace);
     }
     renderAll();
   }

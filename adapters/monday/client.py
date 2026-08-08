@@ -21,6 +21,8 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime, timedelta
 from typing import Any, Optional
@@ -38,6 +40,67 @@ from shared.doc_number import (
 
 MONDAY_API_URL = "https://api.monday.com/v2"
 MONDAY_API_VERSION = "2024-10"  # pin so query semantics don't drift on us
+
+# Process-local Monday timing (enable with GVC_MONDAY_TRACE=1). Not a correctness
+# layer — used to measure request count + wall time on hub/billing/jobcheck paths.
+_TRACE_LOCK = threading.Lock()
+_TRACE: list[dict[str, Any]] = []
+_TRACE_ENABLED: Optional[bool] = None
+
+
+def monday_trace_enabled() -> bool:
+    global _TRACE_ENABLED
+    if _TRACE_ENABLED is None:
+        _TRACE_ENABLED = (os.environ.get("GVC_MONDAY_TRACE") or "").strip() == "1"
+    return _TRACE_ENABLED
+
+
+def reset_monday_trace() -> None:
+    """Clear the in-process Monday request log (tests / measure scripts)."""
+    with _TRACE_LOCK:
+        _TRACE.clear()
+
+
+def get_monday_trace() -> list[dict[str, Any]]:
+    """Copy of traced Monday POSTs: {ms, ok, status, err, query_head, vars_keys}."""
+    with _TRACE_LOCK:
+        return list(_TRACE)
+
+
+def monday_trace_summary() -> dict[str, Any]:
+    rows = get_monday_trace()
+    total_ms = sum(float(r.get("ms") or 0) for r in rows)
+    errors = [r for r in rows if not r.get("ok")]
+    return {
+        "count": len(rows),
+        "total_ms": round(total_ms, 1),
+        "error_count": len(errors),
+        "max_ms": round(max((float(r.get("ms") or 0) for r in rows), default=0.0), 1),
+        "rate_limited": any(
+            (r.get("status") == 429)
+            or ("ComplexityException" in str(r.get("err") or ""))
+            or ("rate" in str(r.get("err") or "").lower())
+            for r in rows
+        ),
+        "calls": rows,
+    }
+
+
+def _query_head(query: str) -> str:
+    """First meaningful line of a GraphQL document (for logs, not secrets)."""
+    for line in (query or "").splitlines():
+        s = line.strip()
+        if s and not s.startswith("#"):
+            return s[:160]
+    return ""
+
+
+def _record_trace(**kwargs: Any) -> None:
+    with _TRACE_LOCK:
+        _TRACE.append(kwargs)
+        # Bound memory if someone leaves TRACE on in prod.
+        if len(_TRACE) > 500:
+            del _TRACE[:-400]
 
 # Board IDs (env-overridable for testing)
 from shared.boards import (PROJECTS_BOARD_ID, CUSTOMERS_BOARD_ID,
@@ -197,16 +260,44 @@ class MondayClient:
         })
 
     def _query(self, query: str, variables: Optional[dict] = None) -> dict:
-        resp = self.session.post(
-            MONDAY_API_URL,
-            json={"query": query, "variables": variables or {}},
-            timeout=30,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        if "errors" in data:
-            raise RuntimeError(f"Monday API error: {data['errors']}")
-        return data["data"]
+        """
+        Single GraphQL POST. No retries, no 429/complexity backoff — a rate
+        limit or complexity error surfaces immediately as HTTPError/RuntimeError.
+        Set GVC_MONDAY_TRACE=1 to log every call's duration into get_monday_trace().
+        """
+        trace = monday_trace_enabled()
+        t0 = time.perf_counter() if trace else 0.0
+        status: Optional[int] = None
+        err: Optional[str] = None
+        ok = False
+        try:
+            resp = self.session.post(
+                MONDAY_API_URL,
+                json={"query": query, "variables": variables or {}},
+                timeout=30,
+            )
+            status = resp.status_code
+            resp.raise_for_status()
+            data = resp.json()
+            if "errors" in data:
+                err = str(data["errors"])[:400]
+                raise RuntimeError(f"Monday API error: {data['errors']}")
+            ok = True
+            return data["data"]
+        except Exception as exc:  # noqa: BLE001 — re-raise after optional trace
+            if err is None:
+                err = f"{type(exc).__name__}: {exc}"[:400]
+            raise
+        finally:
+            if trace:
+                _record_trace(
+                    ms=round((time.perf_counter() - t0) * 1000.0, 1),
+                    ok=ok,
+                    status=status,
+                    err=err,
+                    query_head=_query_head(query),
+                    vars_keys=sorted((variables or {}).keys()),
+                )
 
     # ---- Read ----
 
