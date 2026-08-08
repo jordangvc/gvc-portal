@@ -61,13 +61,12 @@ support the field. Admin / Activity are company tools.
    aimed-at-owner); UI cards + Job Check links (no more `JSON.stringify`).
    Hub Needs also surfaces top decisions.
 
-6. **Job Start `with_ops` invisible on hub (r71 / r76)** — Ops had to open Job
-   Start to find packets. Hub now folds GCS drafts: Accept handoff Needs for
-   non-senders (admins included); senders see Waiting queue rows. Send Back is
-   ops-only (same two-party rule as Accept) — senders no longer see a mislabeled
-   "recall" button. Still needs a human Ops acceptor; no Sales pull-back API yet.
-   Outcome toasts (send / send-back / accept / incomplete / GC draft) now carry
-   spine **Next:** links (r79).
+6. **Job Start `with_ops` invisible on hub (r71 / r76 / r79 / r80)** — Ops had
+   to open Job Start to find packets. Hub folds GCS drafts: Accept Needs for
+   non-senders; senders see Waiting rows. Send Back is ops-only. Outcome toasts
+   carry spine **Next:** links (r79). Senders get **Nudge Ops** (Slack re-ping,
+   15-min cooldown) — not a pull-back/recall (r80). Still needs a human Ops
+   acceptor.
 
 ### Still open (next passes)
 
