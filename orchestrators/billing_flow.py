@@ -50,7 +50,7 @@ def _client(mc: Optional[Any] = None) -> Any:
     return mc if mc is not None else MondayClient()
 
 
-def billing_hub_payload(mc=None) -> dict:
+def billing_hub_payload(mc=None, *, for_hub: bool = False) -> dict:
     """
     Full Billing Hub payload:
 
@@ -65,6 +65,10 @@ def billing_hub_payload(mc=None) -> dict:
     Each queue item includes name, ids, builder/supervisor/location when
     available, status_labels, monday_url, and portal deep links
     (invoice_href / estimate_href / jobstart_href / primary_href).
+
+    ``for_hub=True`` (personal hub home): skip the Projects billing board walk
+    and P5 ready_stage enrich — hub only needs Ready + Accepted for Needs /
+    Queue / counts. Full Billing Hub keeps all three legs + proposed $.
     """
     notes: list[str] = []
     queues = {
@@ -80,13 +84,15 @@ def billing_hub_payload(mc=None) -> dict:
         raw = monday_billing.fetch_ready_to_invoice(client)
         # Attach P5 staged worksheet summaries (soft-fail) so Ready cards
         # show proposed $ without another Monday round-trip.
+        # Hub home skips — it never renders proposed $.
         staged: dict = {}
-        try:
-            ids = [r.get("item_id") for r in (raw or []) if r.get("item_id")]
-            staged = ready_stage.get_summaries(ids)
-        except Exception as exc:  # noqa: BLE001
-            print(f"[billing] ready_stage enrich skipped: {exc}", file=sys.stderr)
-            staged = {}
+        if not for_hub:
+            try:
+                ids = [r.get("item_id") for r in (raw or []) if r.get("item_id")]
+                staged = ready_stage.get_summaries(ids)
+            except Exception as exc:  # noqa: BLE001
+                print(f"[billing] ready_stage enrich skipped: {exc}", file=sys.stderr)
+                staged = {}
         shaped = []
         for r in (raw or []):
             row = dict(r)
@@ -126,8 +132,13 @@ def billing_hub_payload(mc=None) -> dict:
     loaders = {
         "ready_to_invoice": _load_ready,
         "accepted_bids": _load_bids,
-        "projects_billing": _load_projects,
     }
+    if not for_hub:
+        loaders["projects_billing"] = _load_projects
+    else:
+        notes.append(
+            "Projects billing count opens on Billing Hub — skipped on home for speed."
+        )
 
     def _run_one(key: str, client: Any) -> tuple[str, list, Optional[Exception]]:
         try:
@@ -173,20 +184,28 @@ def billing_hub_payload(mc=None) -> dict:
             "before they have a Projects item to invoice."
         )
 
+    counts = {
+        "ready_to_invoice": len(queues["ready_to_invoice"]),
+        "accepted_bids": len(queues["accepted_bids"]),
+        "needs_handoff": needs_handoff,
+    }
+    if for_hub:
+        # Honest dash on hub — not a fake zero.
+        counts["projects_billing"] = None
+        counts["projects_billing_skipped"] = True
+    else:
+        counts["projects_billing"] = len(queues["projects_billing"])
+
     return {
         "ok": True,
         "queues": queues,
         "generated_at": _now_iso(),
         "notes": notes,
+        "for_hub": for_hub,
         "search_backend": (
             "rich" if _rich_search_available() else "fallback"
         ),
-        "counts": {
-            "ready_to_invoice": len(queues["ready_to_invoice"]),
-            "accepted_bids": len(queues["accepted_bids"]),
-            "projects_billing": len(queues["projects_billing"]),
-            "needs_handoff": needs_handoff,
-        },
+        "counts": counts,
     }
 
 

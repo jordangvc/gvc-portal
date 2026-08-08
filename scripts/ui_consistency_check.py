@@ -62,7 +62,19 @@ REQUIRED_CSS_TOKENS = (
     "--color-on-primary:",
     "--color-text-disabled:",
     ".gvc-msg--danger",
+    ".gvc-callout--warn",
 )
+
+# Orphan custom props that are not defined in gvc.css (except Field Manual's
+# private palette). These silently break dark mode / status panels.
+# Trailing (?![\w-]) avoids matching --line-soft / --muted-foo.
+ORPHAN_VAR_RE = re.compile(
+    r"var\(\s*--(?:"
+    r"warn-bg|warn-line|err-bg|err-line|ok-bg|ok-line|"
+    r"green-dark|line|muted"
+    r")(?![\w-])"
+)
+ORPHAN_VAR_ALLOW = {"fieldguide.html"}
 
 
 def html_pages() -> list[Path]:
@@ -167,6 +179,14 @@ def main() -> int:
                 f"{rel}: .pill.open still uses light-only #e0f2fe "
                 f"(use --color-info-soft / --color-info-ink)"
             )
+
+        if path.name not in ORPHAN_VAR_ALLOW:
+            for i, line in enumerate(lines, 1):
+                for m in ORPHAN_VAR_RE.finditer(line):
+                    violations.append(
+                        f"{rel}:{i}: orphan CSS var {m.group(0)} "
+                        f"(use --gvc-* / --color-* / .gvc-callout--* / .gvc-msg--*)"
+                    )
 
     # Shared CSS must keep the aliases pages already use.
     css = (WEB / "gvc.css").read_text(encoding="utf-8")

@@ -227,13 +227,13 @@
           <span class="spinner" id="bulk-spinner">⏳ Working…</span>
           <span id="bulk-progress" class="hint"></span>
         </div>
-        <div style="max-height:340px;overflow:auto;border:1px solid var(--line);border-radius:8px;">
+        <div style="max-height:340px;overflow:auto;border:1px solid var(--gvc-line);border-radius:8px;">
           <table id="bulk-table" style="width:100%;border-collapse:collapse;font-size:13px;">
             <thead><tr>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">Row</th>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">Builder / Name</th>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">Contact</th>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--line);">State</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">Row</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">Builder / Name</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">Contact</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">State</th>
             </tr></thead>
             <tbody id="bulk-rows"></tbody>
           </table>
@@ -390,9 +390,9 @@ function stateBadge(e) {
   if (e.state === "ready") {
     return e.duplicate_of
       ? `<span class="gvc-msg--warn">ready ⚠ dup of row ${e.duplicate_of}</span>`
-      : `<span style="color:var(--green-dark)">ready</span>`;
+      : `<span class="gvc-msg--ok">ready</span>`;
   }
-  if (e.state === "skip_sent") return `<span class="opt" style="color:var(--muted)">already sent (YES)</span>`;
+  if (e.state === "skip_sent") return `<span class="opt gvc-msg--muted">already sent (YES)</span>`;
   return `<span class="gvc-msg--danger">needs attention — ${escapeHtml((e.reasons || []).join("; "))}</span>`;
 }
 
@@ -424,10 +424,10 @@ async function bulkReview() {
       const tr = document.createElement("tr");
       tr.id = "bulk-row-" + e.row_number;
       tr.innerHTML =
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);">${e.row_number}</td>` +
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);">${escapeHtml(e.name || "—")}</td>` +
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);">${escapeHtml(e.contact_name || "")} ${escapeHtml(e.contact_email ? "<" + e.contact_email + ">" : "")}</td>` +
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--line);" class="bulk-state">${stateBadge(e)}</td>`;
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);">${e.row_number}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);">${escapeHtml(e.name || "—")}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);">${escapeHtml(e.contact_name || "")} ${escapeHtml(e.contact_email ? "<" + e.contact_email + ">" : "")}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);" class="bulk-state">${stateBadge(e)}</td>`;
       tb.appendChild(tr);
     });
     $("#btn-bulk-run").textContent = `Create ${bulkReady} draft${bulkReady === 1 ? "" : "s"}`;
@@ -449,7 +449,7 @@ function markRowResult(res) {
   if (!tr) return;
   const cell = tr.querySelector(".bulk-state");
   if (res.ok) {
-    let html = `<span style="color:var(--green-dark)">✅ drafted</span>`;
+    let html = `<span class="gvc-msg--ok">✅ drafted</span>`;
     if (res.gmail_draft_url) html += ` <a href="${res.gmail_draft_url}" target="_blank" rel="noopener">draft</a>`;
     if (res.drive_pdf_url) html += ` · <a href="${res.drive_pdf_url}" target="_blank" rel="noopener">Drive</a>`;
     if (res.writeback_error) html += ` <span class="gvc-msg--warn">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
