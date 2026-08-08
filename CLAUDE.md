@@ -11,6 +11,11 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Invoice on money Path (r67) — BUILT 2026-08-07
+Path strip is now Hub › Takeoff › Estimate › Job Start › Job Check › Billing ›
+**Invoice**. `web/invoice.html` mounts the strip + Monday warm so Billing →
+Invoice stays on the spine (office daily click-through). Hub **r67**.
+
 ## ⚡ Estimate finalize → Job Start ?bid= (r66) — BUILT 2026-08-07
 Finalize success "Next: open Job Start" deep-links `/ui/jobstart?bid=` when
 `writeback.monday_item_id` or the form's `job_monday_item_id` is known — no
