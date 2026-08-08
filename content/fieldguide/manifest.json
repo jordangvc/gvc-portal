@@ -30,9 +30,10 @@
         "jobstart-firstday",
         "job-conditions",
         "window-returns",
-        "scaffold-lifts"
+        "scaffold-lifts",
+        "safety-orient"
       ],
-      "search_tags": ["ops", "job start", "logistics", "access", "conditions"],
+      "search_tags": ["ops", "job start", "logistics", "access", "conditions", "safety"],
       "synonyms": ["field ops", "job start", "handoff", "mobilize"]
     },
     {
@@ -43,6 +44,15 @@
       "procedure_ids": ["act"],
       "search_tags": ["act", "acoustical", "drop ceiling", "grid", "suspended ceiling", "ct"],
       "synonyms": ["drop ceiling", "suspended ceiling", "ceiling grid", "tile ceiling"]
+    },
+    {
+      "id": "firestop",
+      "title": "Firestopping",
+      "summary": "Listed joint and penetration systems — head-of-wall, annular space, photo before cover.",
+      "icon": "firestop",
+      "procedure_ids": ["firestop"],
+      "search_tags": ["firestop", "fire stop", "head of wall", "HW-D", "rated assembly", "UL"],
+      "synonyms": ["firestopping", "head-of-wall", "through-penetration", "annular space"]
     }
   ],
   "categories": [
@@ -93,6 +103,22 @@
       "summary": "CT / ACT grid layout, hanger wire, and tile — level and even borders.",
       "procedure_ids": ["act"],
       "order": 4
+    },
+    {
+      "id": "rated-assemblies",
+      "trade_id": "firestop",
+      "title": "Rated assemblies",
+      "summary": "Listed firestop systems — joint numbers, movement class, install and photo record.",
+      "procedure_ids": ["firestop"],
+      "order": 5
+    },
+    {
+      "id": "safety-basics",
+      "trade_id": "ops",
+      "title": "Safety basics",
+      "summary": "PPE, access, silica, and hard stops — field orientation every job.",
+      "procedure_ids": ["safety-orient"],
+      "order": 6
     }
   ],
   "featured_procedure_ids": ["framing", "hang", "scrape", "finish"],
@@ -146,6 +172,20 @@
     "act": "act",
     "drop ceiling": "act",
     "suspended ceiling": "act",
-    "ceiling grid": "act"
+    "ceiling grid": "act",
+    "firestop": "firestop",
+    "fire stop": "firestop",
+    "firestopping": "firestop",
+    "head of wall": "firestop",
+    "head-of-wall": "firestop",
+    "hw-d": "firestop",
+    "through-penetration": "firestop",
+    "annular space": "firestop",
+    "annular": "firestop",
+    "safety": "safety-orient",
+    "orientation": "safety-orient",
+    "ppe": "safety-orient",
+    "silica": "safety-orient",
+    "refuse unsafe": "safety-orient"
   }
 }
