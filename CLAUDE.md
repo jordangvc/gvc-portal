@@ -11,6 +11,17 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE PLATFORM FOUNDATION (r70) — BUILT 2026-08-08
+Scalable content layer under the live Field Manual shell (not a UI-only polish).
+`content/fieldguide/` + `subsystems/fieldguide/{schema,validate,catalog,search,render}`
+normalize procedures with synonyms, governance, next_steps, variations. Pilots:
+**hang** + **scrape** (Job Check Hanging / Scrapping). APIs:
+`GET /ui/api/fieldguide/catalog|search|procedure/{id}`. Home search hydrates
+catalog synonyms (try "hang rock" / "scrapping" / "knockdown"). Dockerfile
+`COPY content`. Design + expansion path: `docs/FIELD-GUIDE-PLATFORM.md`.
+HTML shell still owns the full ~61-procedure library — migrate spine-first.
+Hub **r70**.
+
 ## ⚡ Job Start progressive Drive paint (r68) — BUILT 2026-08-07
 Opening a bid no longer waits on Drive before the form appears.
 `GET /ui/api/jobstart/bid/{id}?lite=1` returns Monday + draft first

@@ -652,7 +652,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
   <div class="home-toolbar" id="home-toolbar">
     <div class="home-search-wrap">
-      <input type="search" id="home-search" placeholder="Search procedures…" autocomplete="off" enterkeyhint="search" />
+      <input type="search" id="home-search" placeholder="Search procedures… (try scrape, hang rock, knockdown)" autocomplete="off" enterkeyhint="search" />
       <button type="button" class="home-search-clear" id="home-search-clear" hidden aria-label="Clear search">Clear</button>
     </div>
     <div class="role-chips" id="role-chips" role="group" aria-label="Filter by role">
@@ -6401,9 +6401,36 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     function tileSearchText(tile) {
       var name = tile.querySelector(".name");
       var desc = tile.querySelector(".desc");
-      return ((name ? name.textContent : "") + " " + (desc ? desc.textContent : ""))
+      var base = ((name ? name.textContent : "") + " " + (desc ? desc.textContent : ""))
         .toLowerCase();
+      var go = (tile.getAttribute("data-go") || "").toLowerCase();
+      var extra = (catalogSynonyms && catalogSynonyms[go]) || "";
+      return base + " " + go + " " + extra;
     }
+
+    /* Catalog synonyms (content/fieldguide) — expands home search for migrated ids. */
+    var catalogSynonyms = null;
+    function hydrateCatalogSearch() {
+      if (typeof navigator !== "undefined" && navigator.onLine === false) { return; }
+      fetch("/ui/api/fieldguide/catalog")
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          if (!j || !j.cards) { return; }
+          var map = {};
+          (j.cards || []).forEach(function (c) {
+            if (!c || !c.id) { return; }
+            var bits = []
+              .concat(c.synonyms || [])
+              .concat(c.tags || [])
+              .concat(c.jobcheck_stage ? [c.jobcheck_stage] : []);
+            map[String(c.id).toLowerCase()] = bits.join(" ").toLowerCase();
+          });
+          catalogSynonyms = map;
+          applyHomeFilter();
+        })
+        .catch(function () { /* shell search still works without catalog */ });
+    }
+    hydrateCatalogSearch();
 
     function tileMatchesRole(tile, role) {
       if (!role || role === "all") { return true; }

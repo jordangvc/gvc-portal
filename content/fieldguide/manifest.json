@@ -1,0 +1,48 @@
+{
+  "version": "2026-08-08",
+  "trades": [
+    {
+      "id": "drywall",
+      "title": "Drywall",
+      "summary": "Frame \u2192 hang \u2192 scrape \u2192 finish \u2014 the Job Check spine.",
+      "icon": "drywall",
+      "procedure_ids": [
+        "hang",
+        "scrape"
+      ],
+      "search_tags": [
+        "drywall",
+        "rock",
+        "board",
+        "gypsum"
+      ],
+      "synonyms": [
+        "sheetrock",
+        "sheet rock",
+        "gypsum board",
+        "hang rock"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "drywall-sequence",
+      "trade_id": "drywall",
+      "title": "Drywall sequence",
+      "summary": "Ordered passes that match Job Check stage columns.",
+      "procedure_ids": [
+        "hang",
+        "scrape"
+      ],
+      "order": 1
+    }
+  ],
+  "featured_procedure_ids": [
+    "hang",
+    "scrape"
+  ],
+  "jobcheck_anchors": {
+    "Hanging Status": "hang",
+    "Scrapping Status": "scrape"
+  }
+}

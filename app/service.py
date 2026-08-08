@@ -81,6 +81,8 @@ from subsystems.invoice import drafts as invoice_drafts
 from subsystems.invoice import estimate_import as invoice_estimate_import
 from subsystems.change_order import drafts as co_drafts
 from subsystems.fieldguide import runs as fieldguide_runs
+from subsystems.fieldguide import catalog as fieldguide_catalog
+from subsystems.fieldguide import search as fieldguide_search
 from adapters import vision as vision
 from adapters import slack_notify as slack_notify
 from subsystems.checks import deposit as check_deposit
@@ -2602,6 +2604,87 @@ def ui_fieldguide_coach(
         column_id=column_id,
         board=board,
     )
+
+
+@app.get("/ui/api/fieldguide/catalog")
+def ui_fieldguide_catalog(request: Request) -> dict:
+    """Field Guide content catalog (cards, trades, groups, Job Check anchors).
+
+    Backed by ``content/fieldguide/`` — the scalable content layer. The HTML
+    shell still holds the full library; this API exposes migrated procedures
+    for search, next-step wiring, and progressive normalization.
+    """
+    require_feature(request, "fieldguide")
+    try:
+        return fieldguide_catalog.catalog_summary()
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "FIELDGUIDE_CATALOG_MISSING", "detail": str(e)},
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "FIELDGUIDE_CATALOG_INVALID", "detail": str(e)},
+        )
+
+
+@app.get("/ui/api/fieldguide/search")
+def ui_fieldguide_search(
+    request: Request,
+    q: str = "",
+    trade: Optional[str] = None,
+    limit: int = 20,
+) -> dict:
+    """Synonym-aware procedure search for phone / field language."""
+    require_feature(request, "fieldguide")
+    try:
+        return fieldguide_search.search_payload(
+            q, trade=trade, limit=limit
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "FIELDGUIDE_CATALOG_MISSING", "detail": str(e)},
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "FIELDGUIDE_CATALOG_INVALID", "detail": str(e)},
+        )
+
+
+@app.get("/ui/api/fieldguide/procedure/{procedure_id}")
+def ui_fieldguide_procedure(procedure_id: str, request: Request) -> dict:
+    """One normalized procedure (canonical schema) + related suggestions."""
+    require_feature(request, "fieldguide")
+    try:
+        proc = fieldguide_catalog.get_procedure(procedure_id)
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "FIELDGUIDE_CATALOG_MISSING", "detail": str(e)},
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "FIELDGUIDE_CATALOG_INVALID", "detail": str(e)},
+        )
+    if not proc:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "code": "FIELDGUIDE_PROCEDURE_NOT_FOUND",
+                "detail": f"No catalog procedure {procedure_id!r} "
+                          "(not yet migrated from the HTML shell).",
+            },
+        )
+    return {
+        "ok": True,
+        "procedure": proc,
+        "related": fieldguide_search.related_suggestions(procedure_id),
+        "html": None,  # shell still owns full HTML; render available server-side
+    }
 
 
 # ---------------------------------------------------------------------------
