@@ -219,9 +219,6 @@ def _warm_monday_caches() -> dict:
     def _factory_morning():
         return monday_morning._fetch_ops_items_uncached(MondayClient())
 
-    def _factory_jobcheck():
-        return monday_jobcheck._fetch_active_jobs_uncached(MondayClient())
-
     def _factory_billing_ready():
         return monday_billing._fetch_ready_to_invoice_uncached(MondayClient())
 
@@ -229,13 +226,12 @@ def _warm_monday_caches() -> dict:
         return monday_billing._fetch_projects_billing_uncached(
             MondayClient(), limit=75)
 
-    # Do NOT warm list:billing:accepted_bids in parallel with jobstart —
-    # accepted_bids is a reshape of jobstart.fetch_bids; warming both walked
-    # the Bid Board twice. Derive after jobstart lands.
+    # Do NOT warm accepted_bids or jobcheck active_jobs in parallel with their
+    # source walks — both are reshapes (jobstart bids / morning Ops). Warming
+    # both walked Bid / Ops twice. Derive after the source key lands.
     jobs = (
         ("list:jobstart:bids", _factory_jobstart),
         ("list:morning:ops_items", _factory_morning),
-        ("list:jobcheck:active_jobs", _factory_jobcheck),
         ("list:billing:ready_to_invoice", _factory_billing_ready),
         ("list:billing:projects_billing:75", _factory_billing_projects),
     )
@@ -254,7 +250,7 @@ def _warm_monday_caches() -> dict:
             print(f"[monday:warm] {key} failed: {msg}", file=sys.stderr)
             return key, msg
 
-    with ThreadPoolExecutor(max_workers=5) as pool:
+    with ThreadPoolExecutor(max_workers=4) as pool:
         futs = [pool.submit(_refresh_one, key, factory) for key, factory in jobs]
         for fut in as_completed(futs):
             key, err = fut.result()
@@ -281,6 +277,25 @@ def _warm_monday_caches() -> dict:
             msg = f"{type(e).__name__}: {e}"
             errors["list:billing:accepted_bids"] = msg
             print(f"[monday:warm] accepted_bids derive failed: {msg}",
+                  file=sys.stderr)
+
+    # Derive Job Check picker from Morning Ops L1 — zero extra Ops pagination.
+    if "list:morning:ops_items" in warmed:
+        try:
+            derived_jobs = monday_jobcheck._fetch_active_jobs_uncached(
+                MondayClient())
+            monday_cache.put(
+                "list:jobcheck:active_jobs",
+                derived_jobs,
+                ttl=monday_cache.list_ttl(),
+                stale_ttl=monday_cache.stale_ttl(),
+                persist=True,
+            )
+            warmed.append("list:jobcheck:active_jobs")
+        except Exception as e:  # noqa: BLE001
+            msg = f"{type(e).__name__}: {e}"
+            errors["list:jobcheck:active_jobs"] = msg
+            print(f"[monday:warm] jobcheck derive failed: {msg}",
                   file=sys.stderr)
 
     return {

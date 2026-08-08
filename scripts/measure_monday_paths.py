@@ -42,7 +42,7 @@ COLD_PATH_BUDGET = {
         "notes": (
             "Hub build_employee_brief(attach_gfolder=False) — Open Drive is Morning-only. "
             "Morning page still attaches GFolder in PARALLEL (2 GraphQL × unique Ops cards). "
-            "Job Check + Morning use separate Ops cache keys → duplicate full walks when both cold. "
+            "Job Check list reshapes Morning Ops cache (no second Ops pagination when boards match). "
             "Boot is /hub only; warm runs AFTER first paint (not concurrent)."
         ),
     },
@@ -55,12 +55,16 @@ COLD_PATH_BUDGET = {
         "notes": "Wall time should be max(projects, bids), not sum — search_billing parallelizes.",
     },
     "jobcheck_list": {
-        "min_graphql": 1,
-        "typical_graphql": "1–P pages",
-        "shape": "serial Ops pagination",
+        "min_graphql": 0,
+        "typical_graphql": "0 when Morning warm; else 1–P (fat Morning walk)",
+        "shape": "reshape of list:morning:ops_items (same board default)",
         "html_blocks_on_monday": False,
         "api_blocks_live_paint": True,
-        "notes": "Same Operations board as Morning, different cache key.",
+        "notes": (
+            "Job Check no longer paginates Ops separately when "
+            "JOBCHECK_BOARD_ID == MORNING_BOARD_ID. Cold Job-Check-only still "
+            "pays one fat Morning walk."
+        ),
     },
     "jobcheck_detail": {
         "min_graphql": 3,

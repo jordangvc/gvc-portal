@@ -37,7 +37,7 @@ In the browser (dev / staging with `GVC_MONDAY_TRACE=1` on Cloud Run):
 | Hub | `GET /ui/api/hub` | morning brief ∥ billing (+ owner/gm extras). Hub skips GFolder attach. |
 | Billing | `GET /ui/api/billing/hub` | 3 parallel board walks |
 | Morning | `GET /ui/api/morning/brief` | Ops walk + authors + **parallel** GFolder × unique cards |
-| Job Check | `GET /ui/api/jobcheck/jobs` | Ops pagination (separate cache key from morning) |
+| Job Check | `GET /ui/api/jobcheck/jobs` | Reshape of Morning Ops (0 extra GraphQL when warm) |
 | Invoice search | `GET /ui/api/invoice/search` | 5–7 parallel contains_text legs |
 
 **Anti-patterns we already fixed once — do not reintroduce:**
@@ -48,18 +48,23 @@ In the browser (dev / staging with `GVC_MONDAY_TRACE=1` on Cloud Run):
 3. Warm POSTing **concurrent** with the page’s first data fetch (stampede).
 4. Warming `list:billing:accepted_bids` **and** `list:jobstart:bids` in parallel
    (same Bid Board walk twice). Derive accepted bids from jobstart L1.
-5. Billing rich search running projects then bids **serially**.
+5. Warming `list:jobcheck:active_jobs` **and** `list:morning:ops_items` in
+   parallel (same Ops board twice). Derive Job Check from Morning L1.
+6. Billing rich search running projects then bids **serially**.
 
 ## Duplicate / cache map
 
 | Cache key | Source | Notes |
 |-----------|--------|-------|
-| `list:morning:ops_items` | Morning Ops walk | Same board as Job Check, different projection |
-| `list:jobcheck:active_jobs` | Job Check Ops walk | Still a second cold walk if both miss |
+| `list:morning:ops_items` | Morning Ops walk | **Source** for Job Check picker when boards match |
+| `list:jobcheck:active_jobs` | Reshape of morning Ops | Must not force a second Ops walk on warm |
 | `list:jobstart:bids` | Bid Board | Source of truth for accepted-bids reshape |
 | `list:billing:accepted_bids` | Reshape of jobstart | Must not force a second Bid walk on warm |
 | `list:billing:ready_to_invoice` | Ops Ready group | |
 | `list:billing:projects_billing:75` | Projects | |
+
+Ops writes in Job Check invalidate **both** `list:jobcheck:active_jobs` and
+`list:morning:ops_items` (membership changes).
 
 L1 = process memory; L2 = GCS snapshots (`adapters/monday/snapshot.py`). Cloud
 Run scale-to-zero empties L1 — warm + L2 matter.

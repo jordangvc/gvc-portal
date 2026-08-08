@@ -490,10 +490,14 @@ def test_warm_monday_includes_billing_keys():
     assert "list:billing:ready_to_invoice" in chunk
     assert "list:billing:projects_billing:75" in chunk
     assert "list:billing:accepted_bids" in chunk
-    # Accepted bids is DERIVED from jobstart L1 — not a parallel Bid walk.
+    assert "list:jobcheck:active_jobs" in chunk
+    assert "list:morning:ops_items" in chunk
+    # Accepted bids + jobcheck are DERIVED from source walks — not parallel.
     assert "_fetch_accepted_bids_uncached" in chunk
-    assert '("list:billing:accepted_bids"' not in chunk.split("jobs =")[1].split(
-        "def _refresh_one")[0]
+    assert "_fetch_active_jobs_uncached" in chunk
+    jobs_block = chunk.split("jobs =")[1].split("def _refresh_one")[0]
+    assert '("list:billing:accepted_bids"' not in jobs_block
+    assert '("list:jobcheck:active_jobs"' not in jobs_block
     assert "ThreadPoolExecutor" in chunk
     assert "as_completed" in chunk
 
