@@ -217,7 +217,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r93 footer", ">r93<" in hub)
+    check("r94 footer", ">r94<" in hub)
     check("boot json placeholder", "{{HUB_BOOT_JSON}}" in hub or "HUB_BOOT" in hub)
     check("instant shell paint", "paintInstantShell" in hub)
     check("quick actions", "hub-quick" in hub or "quickactions" in hub)
@@ -355,6 +355,40 @@ def test_clear_summary_honest_when_unreachable() -> None:
     check("gm unreachable NOT clear", gm["clear"] is False)
     sales = hub_flow._build_sales("s@x.com", None, None)
     check("sales unreachable NOT clear", sales["clear"] is False)
+
+
+def test_try_billing_drops_auth_dead_payload() -> None:
+    """Hub must not treat monday_ok=False as a live empty billing queue."""
+    from orchestrators import billing_flow, hub_flow
+
+    dead = {
+        "ok": False,
+        "monday_ok": False,
+        "queues": {
+            "ready_to_invoice": [],
+            "accepted_bids": [],
+            "projects_billing": [],
+        },
+        "counts": {
+            "ready_to_invoice": 0,
+            "accepted_bids": 0,
+            "projects_billing": 0,
+            "needs_handoff": 0,
+        },
+        "notes": ["Monday authentication failed"],
+        "code": "MONDAY_AUTH",
+    }
+    orig = billing_flow.billing_hub_payload
+    billing_flow.billing_hub_payload = lambda *a, **k: dead  # type: ignore[assignment]
+    try:
+        got = hub_flow._try_billing()
+        check("auth-dead billing is None", got is None)
+        office = hub_flow._build_office("office@x.com", got, None)
+        check("office not clear on auth-dead", office["clear"] is False)
+        check("office no false clear banner",
+              not office["summary"].lower().startswith("you're clear"))
+    finally:
+        billing_flow.billing_hub_payload = orig
 
 
 def test_build_gm_and_sales_shapes() -> None:
@@ -499,6 +533,7 @@ if __name__ == "__main__":
     test_need_urgent_flag()
     test_office_queue_ids_and_handoffs()
     test_clear_summary_honest_when_unreachable()
+    test_try_billing_drops_auth_dead_payload()
     test_build_gm_and_sales_shapes()
     test_field_prep_badge()
     test_morning_deeplink_hyphens()

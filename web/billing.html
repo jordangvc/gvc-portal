@@ -456,8 +456,13 @@ async function loadHub() {
     const body = await r.json();
     if (!r.ok || body.ok === false) {
       const d = body.detail || body;
+      const advice = d.advice || body.advice || "Confirm you have the invoice grant and Monday is healthy on /health.";
+      const detail = (typeof d === "string" ? d : null)
+        || d.detail || body.detail
+        || (body.notes && body.notes[0])
+        || "Couldn't load the billing queues.";
       showStatus("err",
-        `<b>${esc(d.code || "ERROR")}</b> — ${esc(d.detail || "Couldn't load the billing queues.")}<br>${esc(d.advice || "Confirm you have the invoice grant and Monday is healthy on /health.")}`);
+        `<b>${esc(d.code || body.code || "ERROR")}</b> — ${esc(detail)}<br>${esc(advice)}`);
       renderQueue($("#queue-ready"), [], "Queue unavailable — see the error above.");
       renderQueue($("#queue-bids"), [], "Queue unavailable.");
       renderQueue($("#queue-projects"), [], "Queue unavailable.");

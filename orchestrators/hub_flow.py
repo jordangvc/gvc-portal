@@ -239,7 +239,12 @@ def _try_billing() -> Optional[dict]:
     try:
         from orchestrators import billing_flow
         # Slim slice: Ready + Accepted only (no Projects board walk / P5 enrich).
-        return billing_flow.billing_hub_payload(for_hub=True)
+        out = billing_flow.billing_hub_payload(for_hub=True)
+        # Auth-dead Monday returns ok/monday_ok False — treat as unreachable
+        # so hub never paints a gold "You're clear" over empty queues.
+        if out.get("monday_ok") is False or out.get("ok") is False:
+            return None
+        return out
     except Exception as exc:  # noqa: BLE001
         print(f"[hub] billing skipped: {type(exc).__name__}: {exc}",
               file=sys.stderr)

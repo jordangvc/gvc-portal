@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Hub/Billing honest on Monday auth failure (r94) — BUILT 2026-08-08
+Dead Monday token no longer paints Billing as an empty Ready queue or Hub
+"You're clear". Auth failures re-raise from billing fetches; payload sets
+`ok`/`monday_ok` false + MONDAY_AUTH; hub `_try_billing` returns None.
+Port of conflicting #155 onto post-r93 master. Hub **r94**.
+
 ## ⚡ Morning Ops active-group fetch + progressive GFolder (r92) — BUILT 2026-08-08
 Cold Morning/Job Check was walking the entire Operations board (~2.1k items,
 mostly Completed Tasks) then filtering skip-groups in Python (~30s). Now lists

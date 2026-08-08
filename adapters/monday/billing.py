@@ -22,6 +22,7 @@ from typing import Any, Optional
 from urllib.parse import quote
 
 from adapters.monday import cache as monday_cache
+from adapters.monday import client as monday_client
 from adapters.monday import jobstart as monday_jobstart
 from shared import boards
 from shared.boards import (
@@ -189,6 +190,9 @@ def _fetch_ready_to_invoice_uncached(mc) -> list[dict]:
             if not cursor:
                 break
     except Exception as exc:  # noqa: BLE001 — fall back to group-scoped page
+        # Auth failures must surface — empty [] would paint a false "clear" hub.
+        if monday_client.is_auth_failure(exc):
+            raise
         print(
             f"[monday-billing] group-filtered Ready-to-Invoice fetch failed "
             f"({type(exc).__name__}: {exc}); falling back to groups(ids:) page",
@@ -197,6 +201,8 @@ def _fetch_ready_to_invoice_uncached(mc) -> list[dict]:
         try:
             rows = _fetch_ready_to_invoice_by_group(mc)
         except Exception as exc2:  # noqa: BLE001 — never walk the full ~2k board
+            if monday_client.is_auth_failure(exc2):
+                raise
             print(
                 f"[monday-billing] Ready-to-Invoice group page also failed "
                 f"({type(exc2).__name__}: {exc2}); returning empty queue",
@@ -354,6 +360,8 @@ def _fetch_accepted_bids_uncached(mc) -> list[dict]:
     try:
         bids = monday_jobstart.fetch_bids(mc)
     except Exception as exc:  # noqa: BLE001
+        if monday_client.is_auth_failure(exc):
+            raise
         print(f"[monday-billing] jobstart.fetch_bids failed: "
               f"{type(exc).__name__}: {exc}", file=sys.stderr)
         return []
