@@ -247,6 +247,7 @@
 
   let OPEN_ROWS = [];
   let SELECTED = [];   // monday_item_ids as strings, in pick order — one check can pay several invoices
+  let MULTI_CHECK_BLOCKED = false;  // soft-stop Confirm when OCR sees >1 check in the photo
 
   async function extract() {
     const f = $("#file").files[0];
@@ -271,11 +272,18 @@
     else { img.removeAttribute("src"); img.style.display = "none"; }
 
     const warn = $("#multi-warn");
-    if (data.multi_check && data.multi_check > 1) {
+    MULTI_CHECK_BLOCKED = !!(data.multi_check && data.multi_check > 1);
+    if (MULTI_CHECK_BLOCKED) {
       warn.style.display = "block";
       warn.innerHTML = `⚠️ <strong>${data.multi_check} checks detected</strong> in this photo. ` +
-        `The fields below describe only one of them. For accurate matching, photograph and upload one check at a time.`;
-    } else { warn.style.display = "none"; }
+        `Confirm is locked — photograph and upload <strong>one check at a time</strong>, then Read check again.`;
+      $("#confirm").disabled = true;
+      $("#confirm").title = "Upload one check at a time";
+    } else {
+      warn.style.display = "none";
+      $("#confirm").disabled = false;
+      $("#confirm").removeAttribute("title");
+    }
     const p = data.parsed || {};
     $("#m-payer").value = p.payer || "";
     $("#m-amount").value = p.amount || "";
@@ -473,6 +481,10 @@
   }
 
   async function confirm() {
+    if (MULTI_CHECK_BLOCKED) {
+      setStatus("err", "This photo has more than one check — upload one check at a time before recording.");
+      return;
+    }
     if (!SELECTED.length) { setStatus("err", "Pick the invoice(s) this check pays before recording."); return; }
     const f = $("#file").files[0];
     if (!f) { setStatus("err", "The check image is missing — re-upload and read it again."); return; }

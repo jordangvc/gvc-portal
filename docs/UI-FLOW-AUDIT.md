@@ -68,14 +68,16 @@ support the field. Admin / Activity are company tools.
 
 ### Still open (next passes)
 
-7. ~~COI / Time Off / Admin — hub “needs setup” badges~~ (r74).
+7. ~~COI / Time Off / Admin — hub “needs setup” badges~~ (r74). Rail shows
+   Setup when Time Off URL / COI template / Admin GCS backend is missing.
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
    Path strip now also mounts on Change Order + Paid by Check (spine includes
    CO + Check).
 9. ~~Photos / Projects link discovery on Job Check~~ — blocked-photo hint now
    opens/scrolls the Link Projects panel when Ops→Projects is missing; GFolder
    gaps name the office Monday column to fill.
-10. Multi-check photo soft-stop on Paid by Check.
+10. ~~Multi-check photo soft-stop on Paid by Check~~ (r75) — Confirm locked
+    when extract reports `multi_check > 1`; re-upload one check to continue.
 11. Money-form shared CSS extraction / Field Manual token convergence.
 
 ---
