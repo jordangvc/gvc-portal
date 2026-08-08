@@ -1,0 +1,170 @@
+{
+  "id": "scaffold-lifts",
+  "slug": "scaffold-lifts",
+  "title": "Scaffold, Lifts & Tall Work",
+  "short_answer": "Job Start's Scaffold field is the plan. If the gear on site does not match it — or is unsafe — stop. This is a field card, not GVC's written fall-protection program.",
+  "summary": "Job Start's Scaffold field is the plan. If the gear on site does not match it — or is unsafe — stop. This is a field card, not GVC's written fall-protection program.",
+  "plain_words": "Match the packet: needed? whose? Do not borrow a lift you are not cleared to run. Do not climb incomplete scaffold \"for a minute.\" Refusing bad access is the job; falling is not.",
+  "when_to_use": [
+    "Before loading scaffold or running a lift on site",
+    "When Job Start scaffold note does not match gear present",
+    "Tall hang, finish, or ACT work requiring elevated access"
+  ],
+  "prerequisites": [
+    "Job Start Scaffold field read (and heater/cans if finishing at height)",
+    "Lead authorization for lift operation per GC and GVC rules"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-logistics",
+  "template": "task_guide",
+  "jobcheck_stage": "Scaffolding",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Job Start packet"
+    },
+    {
+      "name": "Lift ticket / authorization when required"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Read Job Start Scaffold (and heater/cans if finishing). Confirm what should be on site.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Inspect before load: planks, rails, base — if incomplete, stop and call the lead.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Lifts: only with authorization / ticket the GC and GVC accept. No borrowed keys.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Material on scaffold: board weight tips scaffolds — stage sensibly; do not build a leaning tower of rock.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Finished work nearby: moving scaffold without protection damages punch (and becomes our repair).",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Refuse unsafe access — Safety Orientation; escalate via Escalation Ladder.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Honesty bar",
+      "body": "GVC's written fall-protection / lift programs (when formalized) live with the office. This page is orientation tied to the Job Start scaffold field and stop authority. It is not a substitute for OSHA compliance documents."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "sl-packet-match",
+      "prompt": "Scaffold on site matches Job Start Scaffold field",
+      "severity": "required"
+    },
+    {
+      "id": "sl-inspect",
+      "prompt": "Planks, rails, and base inspected before load",
+      "severity": "required"
+    },
+    {
+      "id": "sl-lift-auth",
+      "prompt": "Lift operation only with accepted authorization — no borrowed keys",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Minute on bad scaffold",
+      "wrong": "Climb incomplete scaffold \"just for a minute\"",
+      "right": "Stop and call the lead — refuse unsafe access",
+      "why": "Falls are not recoverable; punch damage is expensive"
+    },
+    {
+      "title": "Rock tower on planks",
+      "wrong": "Stack board weight until the scaffold tips",
+      "right": "Stage material sensibly; respect load limits",
+      "why": "Board weight tips scaffolds"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "safety-orient",
+    "escalate",
+    "hang"
+  ],
+  "next_steps": [
+    {
+      "id": "jobstart-firstday",
+      "label": "Packet source",
+      "why": "Scaffold plan lives on Job Start"
+    },
+    {
+      "id": "hang",
+      "label": "Tall hang",
+      "why": "Ceiling and high-wall board need safe access first"
+    },
+    {
+      "id": "job-conditions",
+      "label": "Heat at height",
+      "why": "Finishing tall work may need heater/cans per packet"
+    }
+  ],
+  "search_tags": [
+    "scaffold",
+    "lift",
+    "aerial",
+    "tall work",
+    "fall protection",
+    "access",
+    "boom lift",
+    "scissor lift"
+  ],
+  "synonyms": [
+    "scaffold",
+    "scaffolding",
+    "lifts",
+    "lift",
+    "aerial lift",
+    "boom",
+    "scissor",
+    "tall work",
+    "access"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Job Start field scaffold (written to Projects + Operations); Safety Orientation refuse-unsafe rule. Deliberately not a full regulatory manual — Jordan's open item on written safety programs remains office-owned.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start scaffold field",
+      "Job Check Scaffolding column"
+    ]
+  }
+}

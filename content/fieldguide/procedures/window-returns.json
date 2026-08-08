@@ -1,0 +1,167 @@
+{
+  "id": "window-returns",
+  "slug": "window-returns",
+  "title": "Window Returns & Opening Finishes",
+  "short_answer": "Job Start carries Window type and Window returns for a reason. Wrong wrap vs butt is a classic residential callback — and a free rebuild if we guessed.",
+  "summary": "Job Start carries Window type and Window returns for a reason. Wrong wrap vs butt is a classic residential callback — and a free rebuild if we guessed.",
+  "plain_words": "Before you hang returns, open the Job Start packet. Window type (drywall, wood, or both) and the Window returns note tell the crew what we sold. If the packet is blank and the drawings are vague, that is a question for the lead/office — not a field invention on the first window.",
+  "when_to_use": [
+    "Before the first window return or opening wrap",
+    "When Job Start window type or returns fields are blank or unclear",
+    "Mixed openings on the same job (drywall vs wood returns)"
+  ],
+  "prerequisites": [
+    "Job Start packet open — Window type + Window returns text",
+    "Door/window schedule or approved detail when packet references it"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-logistics",
+  "template": "task_guide",
+  "jobcheck_stage": "Window type",
+  "role_tags": [
+    "crew",
+    "lead",
+    "hanger"
+  ],
+  "tools": [
+    {
+      "name": "Job Start packet / Handoff PDF"
+    },
+    {
+      "name": "Tape measure for RO and return depth"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Read Job Start: Window type + Window returns text. Match the packet, not the last subdivision's habit.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Confirm ownership — drywall return vs wood return vs trim by others. Mixed openings are common; do not assume every window is the same.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Check the RO and the window actually in the opening before cutting returns. Wrong RO is a phone call; wrong return after hang is rework.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Depth / wrap: follow the detail or the packet note. If neither exists, stop and ask — do not invent a wrap depth to look finished.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Bead and corners at returns crack when framing or board is forced. Square the opening; mud will not fix a twisted return.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Extra wrap or upgrade beyond what we sold is a change order path — Spotting a Change Order — not a favor to the builder.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Why this page exists",
+      "body": "Window returns and garage finish are classic GVC rework causes — that is why they live on the Job Start form. The packet is the stand-behind source for what the crew builds at openings; habit is not."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "wr-packet-read",
+      "prompt": "Window type and returns read from Job Start before first return",
+      "severity": "required"
+    },
+    {
+      "id": "wr-ownership",
+      "prompt": "Drywall vs wood vs trim-by-others confirmed per opening",
+      "severity": "required"
+    },
+    {
+      "id": "wr-ro-check",
+      "prompt": "RO and installed window verified before cutting returns",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Subdivision habit",
+      "wrong": "Build returns like the last builder's job",
+      "right": "Match Job Start packet and drawings for this job",
+      "why": "Wrong wrap vs butt is a classic callback"
+    },
+    {
+      "title": "Invented wrap depth",
+      "wrong": "Guess depth when packet and detail are silent",
+      "right": "Stop and ask lead/office — RFI if needed",
+      "why": "Free rebuild if we guessed wrong"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "garage-finish",
+    "preboard-walk"
+  ],
+  "next_steps": [
+    {
+      "id": "hang",
+      "label": "Returns and board",
+      "why": "Hang procedure covers board at openings after returns are decided"
+    },
+    {
+      "id": "jobstart-firstday",
+      "label": "Packet source",
+      "why": "Window fields are first-class Job Start data"
+    },
+    {
+      "id": "preboard-walk",
+      "label": "Before full hang wave",
+      "why": "RO and opening checks belong in the pre-board gate"
+    }
+  ],
+  "search_tags": [
+    "window",
+    "returns",
+    "wrap",
+    "opening",
+    "window type",
+    "rough opening",
+    "wood return",
+    "drywall return"
+  ],
+  "synonyms": [
+    "window returns",
+    "window type",
+    "windows",
+    "opening finish",
+    "wrap",
+    "return depth"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC Job Start fields window_type / window_returns (and related garage/ceiling finish fields). Opening geometry still follows the drawings and any approved detail. This page does not invent return depths or product brands — the packet and the set do.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start window_type / window_returns fields",
+      "Job Check Window type column"
+    ]
+  }
+}

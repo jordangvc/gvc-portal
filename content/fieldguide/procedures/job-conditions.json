@@ -1,0 +1,171 @@
+{
+  "id": "job-conditions",
+  "slug": "job-conditions",
+  "title": "Cold & Wet Job Conditions",
+  "short_answer": "Mud, paint, and adhesives have temperature floors. Tri-state winters and damp slabs do not care about the schedule — pushing coats into the wrong conditions buys remobilization.",
+  "summary": "Mud, paint, and adhesives have temperature floors. Tri-state winters and damp slabs do not care about the schedule — pushing coats into the wrong conditions buys remobilization.",
+  "plain_words": "If it is too cold or too wet for the product, stop and heat, ventilate, or wait. Heater/cans exist on Job Start for a reason. Hero coats in a cold shell look fine at 4pm and fail when the GC walks it under raking light.",
+  "when_to_use": [
+    "Before mud, paint, FRP adhesive, or skim coats in cold or damp conditions",
+    "When Job Start heater/cans notes do not match what is on site",
+    "After weather delay or standing-by for heat/power"
+  ],
+  "prerequisites": [
+    "Job Start packet read for heater/cans and power notes",
+    "Product labels available (can, bag, or submittal)"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-logistics",
+  "template": "task_guide",
+  "jobcheck_stage": "Heater/Cans",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Thermometer or surface touch check"
+    },
+    {
+      "name": "Heaters / fans per Job Start plan"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Read the can / bag for min application temperature and humidity. When in doubt, treat 50°F air and surface as a hard floor for compound and most paints unless the product says otherwise.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Surface temperature matters — a cold exterior wall can be below the air temp. Touch the steel; if it feels like a cooler, mud will not dry right.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Heat and ventilate on purpose. Closed-up heat without airflow makes condensation; airflow without heat just moves cold air. Match the Job Start heater/cans note or call the lead.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Protect stocked board from moisture — see Stocking Drywall. Wet board is not \"dry enough by morning.\"",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "FRP and adhesives are especially unforgiving in cold — do not install to save a day if the adhesive will not cure.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Document delay when conditions stop you — date, hours, reason. Standing-by / weather delay is a record, not a shrug (see Spotting a Change Order).",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Do not push coats",
+      "body": "Green mud under the next coat, paint over a cold damp wall, and adhesive that never kicks are all the same mistake: the expensive work done twice. QC Walk will catch some of it; the GC's light catches the rest."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "jc-temp-read",
+      "prompt": "Product min temp/humidity checked on the label",
+      "severity": "required"
+    },
+    {
+      "id": "jc-surface-temp",
+      "prompt": "Cold exterior walls / steel checked — not just air temp",
+      "severity": "required"
+    },
+    {
+      "id": "jc-delay-record",
+      "prompt": "Weather or standing-by delay documented same day when work stops",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Hero coat in a cold shell",
+      "wrong": "Push mud or paint because the schedule is tight",
+      "right": "Stop, heat, ventilate, or wait — document the delay",
+      "why": "Failures show up under raking light after the crew leaves"
+    },
+    {
+      "title": "Condensation trap",
+      "wrong": "Seal the building with heat but no airflow",
+      "right": "Match heat and ventilation to the Job Start plan",
+      "why": "Wet surfaces fail adhesives and compound cure"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "stock-drywall",
+    "changeorder",
+    "level5-skim"
+  ],
+  "next_steps": [
+    {
+      "id": "finish",
+      "label": "When conditions allow",
+      "why": "Coat sequence only after temp and humidity are in range"
+    },
+    {
+      "id": "qc-walk",
+      "label": "Before advancing stages",
+      "why": "Cold-failed finish shows up on the walk"
+    },
+    {
+      "id": "jobstart-firstday",
+      "label": "Packet check",
+      "why": "Heater/cans notes live on Job Start — match the packet"
+    }
+  ],
+  "search_tags": [
+    "cold",
+    "wet",
+    "heat",
+    "heater",
+    "cans",
+    "temperature",
+    "humidity",
+    "weather delay",
+    "standing by"
+  ],
+  "synonyms": [
+    "job conditions",
+    "cold job",
+    "wet job",
+    "heater",
+    "cans",
+    "heat",
+    "conditions",
+    "temp",
+    "weather"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice + manufacturer temperature ranges (product-specific — the can wins). Complements Finishing, Painting, FRP, and Job Start heater/cans fields. Not a building-science treatise.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start heater/cans fields",
+      "Manufacturer product labels"
+    ]
+  }
+}

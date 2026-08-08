@@ -1,0 +1,173 @@
+{
+  "id": "jobstart-firstday",
+  "slug": "jobstart-firstday",
+  "title": "Job Start → First Day on Site",
+  "short_answer": "Sales owned the bid until Ops accepted the packet. The handoff PDF is the job. This is how you open a site without guessing.",
+  "summary": "Sales owned the bid until Ops accepted the packet. The handoff PDF is the job. This is how you open a site without guessing.",
+  "plain_words": "If the packet is incomplete, send it back — do not \"figure it out on site.\" Lock box, board count, exclusions, open questions, builder/supervisor, and city/state/ZIP in the name exist so you are not inventing a job in a stairwell with one bar of signal.",
+  "when_to_use": [
+    "First mobilization day after Ops accepts the Job Start packet",
+    "Before crew touches layout, hang, or conditions work",
+    "When lock box, open questions, or exclusions are still unclear"
+  ],
+  "prerequisites": [
+    "Job Start packet accepted by Ops (not still with Sales)",
+    "Handoff PDF available in the job's Drive Handoff folder"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-logistics",
+  "template": "task_guide",
+  "jobcheck_stage": "Lock Box",
+  "role_tags": [
+    "lead",
+    "foreman",
+    "ops"
+  ],
+  "tools": [
+    {
+      "name": "Handoff PDF (Drive Handoff folder)"
+    },
+    {
+      "name": "Phone camera (lock box location, access)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Confirm Ops accepted the Job Start packet. Until then, the job is not yours to mobilize.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Open the Handoff PDF in Drive (job Handoff folder). Read exclusions and open questions out loud with the crew lead.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Access: lock box / keys / who to call if locked out. Photo the box location for the crew chat.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Conditions: scaffold/lift, heater/cans, power, water, dumpster — match the packet, do not assume.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Layout truth: job name should carry street + city + ST + ZIP | builder. If geography is missing, ask the office — we work in three states with repeat road names.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Do not invent scope, SF, or 1-side/2-side language in client-facing talk — those scrub rules exist because scope reviews are internal.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Incomplete packet",
+      "body": "Missing lock box, missing exclusions, unanswered open questions that block framing/hang — send back to Sales/Ops. Starting anyway turns every ambiguity into a change-order fight or free work."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "js-ops-accepted",
+      "prompt": "Ops acceptance confirmed before mobilization",
+      "severity": "required"
+    },
+    {
+      "id": "js-handoff-read",
+      "prompt": "Exclusions and open questions read aloud with the lead",
+      "severity": "required"
+    },
+    {
+      "id": "js-access-photo",
+      "prompt": "Lock box / access documented (photo in crew chat)",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Figuring it out on site",
+      "wrong": "Mobilize with a blank lock box field or unanswered open questions",
+      "right": "Send the packet back to Sales/Ops until complete",
+      "why": "Ambiguity becomes free work or a CO fight"
+    },
+    {
+      "title": "Client-facing scope slip",
+      "wrong": "Quote square footage or 1-side/2-side from internal scope review",
+      "right": "Use scrubbed client language only; internal docs stay internal",
+      "why": "Scope reviews are not client-facing"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "exclusions-walk",
+    "escalate"
+  ],
+  "next_steps": [
+    {
+      "id": "scaffold-lifts",
+      "label": "Scaffold / lifts",
+      "why": "Match Job Start scaffold plan before tall work"
+    },
+    {
+      "id": "job-conditions",
+      "label": "Heater / cans",
+      "why": "Confirm temp and power match the packet"
+    },
+    {
+      "id": "window-returns",
+      "label": "Window openings",
+      "why": "Read window type and returns before the first opening"
+    },
+    {
+      "id": "qc-walk",
+      "label": "QC habit",
+      "why": "Honest board updates start day one"
+    }
+  ],
+  "search_tags": [
+    "job start",
+    "first day",
+    "lock box",
+    "handoff",
+    "open questions",
+    "exclusions",
+    "mobilize"
+  ],
+  "synonyms": [
+    "job start",
+    "first day",
+    "firstday",
+    "jobstart",
+    "lock box",
+    "lockbox",
+    "handoff",
+    "open questions"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Job Start portal design (2026-07-29): two parties, one gate; Monday items created only on Ops accept; handoff PDF in Projects/…/Handoff/. Naming standard requires city/state/ZIP.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start portal",
+      "Job Check Lock Box column"
+    ]
+  }
+}

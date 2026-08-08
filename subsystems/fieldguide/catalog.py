@@ -53,6 +53,19 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "end-of-day": "closeout-rhythm",
     "eod": "closeout-rhythm",
     "completion-date": "closeout-rhythm",
+    "firstday": "jobstart-firstday",
+    "jobstart": "jobstart-firstday",
+    "lock-box": "jobstart-firstday",
+    "lockbox": "jobstart-firstday",
+    "heater": "job-conditions",
+    "cans": "job-conditions",
+    "conditions": "job-conditions",
+    "heat": "job-conditions",
+    "scaffold": "scaffold-lifts",
+    "lifts": "scaffold-lifts",
+    "window-returns": "window-returns",
+    "windows": "window-returns",
+    "window-type": "window-returns",
 }
 
 _CACHE: dict[str, Any] = {
