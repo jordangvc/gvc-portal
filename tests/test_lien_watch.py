@@ -237,7 +237,8 @@ def test_alert_gate_is_dark_by_default():
     try:
         out = lien_flow.send_lien_alerts({"jobs": [{"item_id": 1, "deadlines": [
             {"kind": "notice_of_furnishing", "days_remaining": 7}]}]})
-        assert out == {"ok": True, "enabled": False, "sent": [], "errors": []}
+        assert out["ok"] is True and out["enabled"] is False
+        assert out["sent"] == [] and out.get("skipped") == []
         # Near-true values must NOT open the gate.
         for value in ("1", "yes", "True", "TRUE", " true "):
             os.environ["GVC_LIEN_ALERTS_ENABLED"] = value
@@ -303,6 +304,63 @@ def test_alerts_enabled_but_no_channel_is_a_loud_noop():
             os.environ["GVC_LIEN_ALERTS_ENABLED"] = saved_flag
         if saved_chan is not None:
             os.environ["GVC_LIEN_SLACK_CHANNEL"] = saved_chan
+
+
+def test_alert_key_and_prune():
+    from subsystems.lien_watch import alert_state as st
+    from datetime import datetime, timezone, timedelta
+
+    key = st.alert_key(42, "notice_of_furnishing", 7, "2026-08-02")
+    assert key == "42:notice_of_furnishing:7:2026-08-02"
+    assert st.alert_key(42, "notice_of_furnishing", 7, None).endswith(":-")
+
+    old = (datetime.now(timezone.utc) - timedelta(days=200)).isoformat()
+    fresh = datetime.now(timezone.utc).isoformat()
+    doc = st.with_sent(st.empty_doc(), "fresh-key", when=fresh)
+    doc["sent"]["stale-key"] = old
+    pruned = st.prune_sent(doc)
+    assert "fresh-key" in pruned["sent"] and "stale-key" not in pruned["sent"]
+    assert st.already_sent(pruned, "fresh-key") is True
+    assert st.already_sent(pruned, "missing") is False
+
+
+def test_alert_dedup_skips_second_dry_run():
+    from unittest.mock import patch
+    from subsystems.lien_watch import alert_state as st
+
+    saved_flag = os.environ.get("GVC_LIEN_ALERTS_ENABLED")
+    saved_chan = os.environ.get("GVC_LIEN_SLACK_CHANNEL")
+    os.environ["GVC_LIEN_ALERTS_ENABLED"] = "true"
+    os.environ["GVC_LIEN_SLACK_CHANNEL"] = "C000TEST"
+    tracker = {"jobs": [{
+        "item_id": 99, "name": "Job B", "url": "https://x", "state": "OH",
+        "first_furnishing": "2026-07-20", "first_furnishing_basis": "start_date",
+        "deadlines": [
+            {"kind": "notice_of_furnishing", "label": "NOF",
+             "days_remaining": 7, "due_date": "2026-08-02",
+             "statute": "ORC", "anchor_text": "first furnishing"},
+        ]}]}
+    key = st.alert_key(99, "notice_of_furnishing", 7, "2026-08-02")
+    prior = st.with_sent(st.empty_doc(), key, when="2026-08-01T00:00:00+00:00")
+    try:
+        with patch.object(st, "load_sent_doc", return_value=(prior, "memory")):
+            out = lien_flow.send_lien_alerts(tracker, dry_run=True)
+        assert out["sent"] == []
+        assert len(out["skipped"]) == 1
+        assert out["skipped"][0]["skipped"] == "already_sent"
+        # Different due date = different mark → would send.
+        tracker["jobs"][0]["deadlines"][0]["due_date"] = "2026-08-09"
+        with patch.object(st, "load_sent_doc",
+                          return_value=(prior, "memory")):
+            out2 = lien_flow.send_lien_alerts(tracker, dry_run=True)
+        assert len(out2["sent"]) == 1 and out2["sent"][0].get("would_send")
+    finally:
+        for env_key, val in (("GVC_LIEN_ALERTS_ENABLED", saved_flag),
+                             ("GVC_LIEN_SLACK_CHANNEL", saved_chan)):
+            if val is None:
+                os.environ.pop(env_key, None)
+            else:
+                os.environ[env_key] = val
 
 
 if __name__ == "__main__":
