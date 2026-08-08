@@ -56,7 +56,7 @@
         <div class="hub-search-hits" id="searchhits"></div>
       </div>
 
-      <div id="skel" class="hub-skel" aria-hidden="true">
+      <div id="skel" class="hub-skel" hidden aria-hidden="true">
         <div class="hub-skel__title"></div>
         <div class="hub-skel__line"></div>
         <div class="hub-skel__line hub-skel__line--short"></div>
@@ -72,13 +72,25 @@
         </div>
       </div>
 
-      <div id="hublive" hidden>
+      <!-- Instant shell: greeting / quick actions / recent paint from HUB_BOOT
+           before Monday. Needs/metrics/queue hydrate when /ui/api/hub returns. -->
+      <div id="hublive">
         <p class="hub-greet hub-rise hub-rise--1" id="greeting"></p>
         <p class="hub-date hub-rise hub-rise--1" id="dateline"></p>
         <p class="hub-summary hub-rise hub-rise--2" id="summary"></p>
         <div class="hub-rise hub-rise--2" id="homectawrap" hidden>
           <a class="hub-home-cta" id="homecta" href="#">Open</a>
         </div>
+
+        <section class="hub-rise hub-rise--2" aria-labelledby="quick-kicker" id="quicksection">
+          <p class="hub-kicker" id="quick-kicker">Do next</p>
+          <div class="hub-quick" id="quickactions"></div>
+        </section>
+
+        <section class="hub-rise hub-rise--2" aria-labelledby="recent-kicker">
+          <p class="hub-kicker" id="recent-kicker">Jump back in</p>
+          <div class="hub-recent" id="recent"></div>
+        </section>
 
         <section class="hub-rise hub-rise--3" aria-labelledby="needs-kicker">
           <p class="hub-kicker hub-kicker--needs" id="needs-kicker">
@@ -118,11 +130,6 @@
             </section>
           </div>
         </div>
-
-        <section class="hub-rise hub-rise--4" aria-labelledby="recent-kicker">
-          <p class="hub-kicker" id="recent-kicker">Jump back in</p>
-          <div class="hub-recent" id="recent"></div>
-        </section>
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
@@ -182,10 +189,12 @@
   }
   const FEATURES = new Set({{FEATURES_JSON}});
   const EMAIL = {{EMAIL_JSON}};
+  const HUB_BOOT = {{HUB_BOOT_JSON}};
   const RECENT_KEY = "gvc_hub_recent_v1";
   const BADGE_MS = 60 * 1000;
   const REFRESH_MIN_MS = 30 * 1000;
   let lastRefreshAt = 0;
+  let liveHydrated = false;
 
   let payload = null;
   let drawerOpen = false;
@@ -379,6 +388,13 @@
       return;
     }
     if (!list.length) {
+      if (!liveHydrated) {
+        box.innerHTML =
+          `<div class="hub-empty-soft hub-empty-soft--loading">` +
+          `<strong>Refreshing live needs…</strong>` +
+          `Open a tool above anytime — you don't have to wait.</div>`;
+        return;
+      }
       const line = (payload.summary ||
         "Live numbers aren't available yet — tools still work from the rail.").trim();
       box.innerHTML =
@@ -406,7 +422,15 @@
   }
 
   function renderMetrics() {
-    $("metrics").innerHTML = (payload.metrics || []).map((m) => {
+    const metrics = payload.metrics || [];
+    if (!metrics.length && !liveHydrated) {
+      $("metrics").innerHTML =
+        `<div class="hub-metric is-unavailable"><div class="hub-metric__label">Live</div>` +
+        `<div class="hub-metric__value">…</div>` +
+        `<div class="hub-metric__foot">loading</div></div>`.repeat(4);
+      return;
+    }
+    $("metrics").innerHTML = metrics.map((m) => {
       const unavailable = m.unavailable || m.value === "—";
       const zero = !unavailable && (m.zero || m.value === 0 || m.value === "0");
       const live = !unavailable && !zero && m.value != null && m.value !== "";
@@ -423,6 +447,47 @@
         `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
       );
     }).join("");
+  }
+
+  function renderQuickActions() {
+    const box = $("quickactions");
+    const sec = $("quicksection");
+    if (!box) return;
+    const actions = (payload && payload.quick_actions) || [];
+    // Fall back to home CTA tools from nav when live payload has no quick_actions.
+    let items = actions.slice();
+    if (!items.length) {
+      const u = (payload && payload.user) || {};
+      if (u.homeHref) {
+        items = [{ name: u.homeToolName || "Home tool", href: u.homeHref }];
+      }
+      const extras = flatTools().filter((t) => t.granted).slice(0, 3);
+      extras.forEach((t) => {
+        if (items.some((i) => i.href === t.href)) return;
+        items.push({ name: t.name, href: t.href, feature: t.feature });
+      });
+      items = items.slice(0, 4);
+    }
+    if (!items.length) {
+      if (sec) sec.hidden = true;
+      return;
+    }
+    if (sec) sec.hidden = false;
+    box.innerHTML = items.map((a, i) => {
+      const primary = i === 0 ? " hub-quick__btn--primary" : "";
+      return (
+        `<a class="hub-quick__btn${primary}" href="${esc(a.href)}" ` +
+        `data-feature="${esc(a.feature || "")}">${esc(a.name)}</a>`
+      );
+    }).join("");
+    box.querySelectorAll("a.hub-quick__btn").forEach((a) => {
+      a.addEventListener("click", () => {
+        const feat = a.getAttribute("data-feature");
+        const tool = flatTools().find((t) => t.href === a.getAttribute("href"))
+          || { name: a.textContent, href: a.getAttribute("href"), granted: true, feature: feat };
+        pushRecent(tool);
+      });
+    });
   }
 
   function rowHtml(r, { pinable }) {
@@ -654,12 +719,30 @@
     renderUserChrome();
     renderNav($("railnav"));
     renderNav($("drawernav"));
+    renderQuickActions();
     renderNeeds();
     renderMetrics();
     renderQueue();
     renderPinned();
     renderActivity();
     renderRecent();
+  }
+
+  function paintInstantShell() {
+    // Zero-Monday first paint from server-injected boot JSON.
+    payload = HUB_BOOT && typeof HUB_BOOT === "object" ? HUB_BOOT : {
+      greeting: "Hello.",
+      user: { name: EMAIL, initials: "?", homeHref: "/ui/morning", homeToolName: "Morning Brief" },
+      nav: { groups: [] },
+      needs: [], needs_clear: false, metrics: [], quick_actions: [],
+      activity: [], activity_deferred: true, pinned: [],
+      queue: { title: "Queue", rows: [] },
+    };
+    if (payload.nav && Array.isArray(payload.nav.features)) {
+      payload.nav.features.forEach((f) => FEATURES.add(f));
+    }
+    liveHydrated = false;
+    renderAll();
   }
 
   function demoPayload() {
@@ -822,12 +905,18 @@
   }
 
   async function fetchPayload() {
-    // One Monday walk on first paint. /ui/api/hub/refresh runs the SAME
-    // brief+billing slice as /ui/api/hub — calling both on boot doubled
-    // cold GraphQL cost. Polls still use refresh (skips Cloud Logging).
+    // Boot chrome already painted. One Monday walk hydrates needs/metrics/queue.
+    // Activity (Cloud Logging) loads after via /ui/api/hub/activity.
     const res = await fetch("/ui/api/hub", { credentials: "same-origin" });
     if (!res.ok) throw new Error("hub " + res.status);
-    payload = await res.json();
+    const next = await res.json();
+    // Preserve boot quick_actions if live payload omits them.
+    const quick = (payload && payload.quick_actions) || next.quick_actions || [];
+    payload = next;
+    if (quick.length && !(payload.quick_actions || []).length) {
+      payload.quick_actions = quick;
+    }
+    liveHydrated = true;
     lastRefreshAt = Date.now();
     if (payload.nav && Array.isArray(payload.nav.features)) {
       payload.nav.features.forEach((f) => FEATURES.add(f));
@@ -836,6 +925,18 @@
       console.info("[gvc monday_trace]", payload.monday_trace);
     }
     renderAll();
+  }
+
+  async function fetchActivityDeferred() {
+    if (wantDemo) return;
+    try {
+      const res = await fetch("/ui/api/hub/activity", { credentials: "same-origin" });
+      if (!res.ok || !payload) return;
+      const next = await res.json();
+      payload.activity = next.activity || [];
+      payload.activity_deferred = false;
+      renderActivity();
+    } catch (_) {}
   }
 
   async function refreshBadges(force) {
@@ -851,6 +952,7 @@
       const next = await res.json();
       if (next.ok === false && !next.badges && !(next.needs || []).length) return;
       applyRefreshSlice(next);
+      liveHydrated = true;
       renderUserChrome();
       renderNav($("railnav"), $("railsearch").value);
       renderNav($("drawernav"), $("drawersearch").value);
@@ -872,22 +974,24 @@
   }
 
   wireChrome();
+  paintInstantShell();
   fetchPayload()
     .then(() => {
       if (wantDemo) {
         payload = demoPayload();
+        liveHydrated = true;
         renderAll();
       }
       warmMondayAfterPaint();
+      fetchActivityDeferred();
     })
     .catch((err) => {
+      liveHydrated = true;
       showLive();
-      $("greeting").textContent = "Couldn't load your hub";
-      const dl = $("dateline");
-      if (dl) dl.textContent = "";
-      $("summary").textContent = String(err.message || err);
-      const wrap = $("homectawrap");
-      if (wrap) wrap.hidden = true;
+      // Keep boot rail/CTA; only flag that live slice failed.
+      $("summary").textContent = "Couldn't refresh live numbers — " +
+        String(err.message || err) + ". Tools still work from the rail.";
+      renderNeeds();
       warmMondayAfterPaint();
     });
 

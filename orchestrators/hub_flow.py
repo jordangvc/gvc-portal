@@ -224,7 +224,10 @@ def _try_morning_brief(email: str) -> Optional[dict]:
         # Hub metrics/needs never show Open Drive — skip the per-card
         # Ops→Projects→GFolder walk (2 GraphQL × unique cards).
         return morning_flow.build_employee_brief(
-            email, record_open=False, attach_gfolder=False,
+            email,
+            record_open=False,
+            attach_gfolder=False,
+            include_weather=False,  # hub never shows weather
         )
     except Exception as exc:  # noqa: BLE001
         print(f"[hub] morning brief skipped: {type(exc).__name__}: {exc}",
@@ -258,7 +261,10 @@ def _try_owner_pulse(email: str) -> Optional[dict]:
 def _try_gm_view(email: str) -> Optional[dict]:
     try:
         from orchestrators import morning_flow
-        out = morning_flow.build_gm_view(email)
+        # Same slim flags as employee brief — hub does not render Drive/weather.
+        out = morning_flow.build_gm_view(
+            email, attach_gfolder=False, include_weather=False,
+        )
         if out.get("ok") is False:
             return None
         return out
@@ -1199,32 +1205,8 @@ def build_hub_payload(email: str) -> dict[str, Any]:
     shaped = live["shaped"]
     greeting = hub_nav.greeting_for(name, hour=now.hour)
 
-    # Activity: recent portal events for this actor (best-effort).
-    activity_rows: list[dict] = []
-    try:
-        from shared import activity_read
-        # Soft-fail if Cloud Logging / IAM missing — empty is fine.
-        packed = activity_read.fetch_events(
-            actor=email, page_size=16, range_key="7d")
-        for ev in packed.get("events") or []:
-            text = _human_activity(
-                ev.get("action") or "",
-                ev.get("target") or "",
-                ev.get("result") or "",
-            )
-            if not text:
-                continue
-            when = ev.get("ts") or ev.get("timestamp") or ""
-            activity_rows.append({
-                "text": text,
-                "when": when,
-                "href": "/ui/activity",
-            })
-            if len(activity_rows) >= 6:
-                break
-    except Exception:  # noqa: BLE001
-        activity_rows = []
-
+    # Activity (Cloud Logging) is deferred — see build_hub_activity + client
+    # fetch after first paint. Pins stay here (cheap GCS / memory).
     pinned: list[dict] = []
     try:
         from subsystems.hub import pinned as hub_pins
@@ -1257,7 +1239,8 @@ def build_hub_payload(email: str) -> dict[str, Any]:
             "rows": shaped["queue_rows"],
         },
         "pinned": pinned,
-        "activity": activity_rows,
+        "activity": [],
+        "activity_deferred": True,
         "recent": [],  # client fills from localStorage
         "badges": shaped["badges"],
         "setup": setup_flags(),
@@ -1266,3 +1249,32 @@ def build_hub_payload(email: str) -> dict[str, Any]:
             "features": sorted(feats),
         },
     }
+
+
+def build_hub_activity(email: str, *, limit: int = 6) -> dict[str, Any]:
+    """Deferred Activity panel — Cloud Logging only, after first paint."""
+    email = (email or "").strip().lower()
+    activity_rows: list[dict] = []
+    try:
+        from shared import activity_read
+        packed = activity_read.fetch_events(
+            actor=email, page_size=max(limit * 3, 16), range_key="7d")
+        for ev in packed.get("events") or []:
+            text = _human_activity(
+                ev.get("action") or "",
+                ev.get("target") or "",
+                ev.get("result") or "",
+            )
+            if not text:
+                continue
+            when = ev.get("ts") or ev.get("timestamp") or ""
+            activity_rows.append({
+                "text": text,
+                "when": when,
+                "href": "/ui/activity",
+            })
+            if len(activity_rows) >= limit:
+                break
+    except Exception:  # noqa: BLE001
+        activity_rows = []
+    return {"ok": True, "activity": activity_rows, "activity_deferred": False}
