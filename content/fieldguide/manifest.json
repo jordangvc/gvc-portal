@@ -16,7 +16,8 @@
         "level5-skim",
         "cleanout",
         "qc-walk",
-        "closeout-rhythm"
+        "closeout-rhythm",
+        "touchup-drywall"
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
       "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
@@ -127,6 +128,14 @@
       "title": "Safety basics",
       "summary": "PPE, access, silica, and hard stops — field orientation every job.",
       "procedure_ids": ["safety-orient"],
+      "order": 6
+    },
+    {
+      "id": "repair-punch",
+      "trade_id": "drywall",
+      "title": "Repair & punch",
+      "summary": "Raking-light walk, drywall finish repair, and primer before paint.",
+      "procedure_ids": ["touchup-drywall"],
       "order": 6
     }
   ],

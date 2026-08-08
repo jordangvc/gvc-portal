@@ -87,6 +87,10 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "extras": "changeorder",
     "verbal-add": "changeorder",
     "standing-by": "changeorder",
+    "touch-up": "touchup-drywall",
+    "touchup": "touchup-drywall",
+    "drywall-touchup": "touchup-drywall",
+    "punch-drywall": "touchup-drywall",
 }
 
 _CACHE: dict[str, Any] = {

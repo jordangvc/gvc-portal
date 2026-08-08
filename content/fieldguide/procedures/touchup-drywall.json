@@ -1,0 +1,342 @@
+{
+  "id": "touchup-drywall",
+  "slug": "touchup-drywall",
+  "title": "Drywall Touch-Up",
+  "short_answer": "Fixing the wall itself, not the paint. Found before the painter it costs minutes; found after, it costs the repair plus a repainted wall.",
+  "summary": "Fixing the wall itself, not the paint. Found before the painter it costs minutes; found after, it costs the repair plus a repainted wall.",
+  "plain_words": "This is fixing the drywall — screw pops, dings, ridges you can see in a seam, fuzzy spots where somebody sanded through the paper. Walk the room with a bright light held flat against the wall; that's how you find them. Fill thin, feather it out wide, match the texture, and prime it before anybody paints over it.",
+  "when_to_use": [
+    "Punch phase before paint mobilizes",
+    "Pre-paint QC walk finds drywall finish defects",
+    "Finisher punch pass after coats are done but before handoff to painter"
+  ],
+  "prerequisites": [
+    "Finish coats complete enough to judge surface quality",
+    "Bright work light for raking pass",
+    "Specified finish level known"
+  ],
+  "trade_id": "drywall",
+  "category_id": "repair-punch",
+  "template": "task_guide",
+  "stage_line": "Punch · step 1 · drywall finish repair",
+  "role_tags": [
+    "finisher",
+    "lead",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Bright work light (raking / grazing angle)"
+    },
+    {
+      "name": "Low-tack tape or pencil for marking"
+    },
+    {
+      "name": "Taping knives (6–12\"+)"
+    },
+    {
+      "name": "Pole sander / hand sander"
+    },
+    {
+      "name": "Phone camera"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Setting compound (for depth fills)"
+    },
+    {
+      "name": "Topping or lightweight compound (final coat)"
+    },
+    {
+      "name": "Primer"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Raking light",
+      "body": "Take a bright work light and hold it close to the wall and nearly parallel to it, so the light rakes across the surface. Every high and low spot throws a shadow.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "One wall at a time",
+      "body": "Work one wall at a time, top to bottom. Sweeping a whole room at once misses things.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Real viewing angle",
+      "body": "Also look from the angle and in the light the room is actually used in — a defect nobody can ever see from a normal standing position may not be worth chasing, and one under a wall-wash fixture absolutely is.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Mark outside",
+      "body": "Mark outside the defect with low-tack tape or a light pencil dot. Never a marker on the wall — marker bleeds through primer and paint and becomes a second defect.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Three buckets",
+      "body": "Sort what you mark into three buckets: drywall finish repair (this document), a real hole needing a patch (see Drywall Patch), and someone else's damage.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Photo first",
+      "body": "Photograph other trades' damage before you touch it. Otherwise it silently becomes our cost.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Batch work",
+      "body": "Then work in batches — all the cut-outs, all the fills, all the coats — rather than one defect start-to-finish at a time.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Setting compound",
+      "body": "Setting compound for anything with depth — it sets chemically, so you can recoat the same visit instead of coming back tomorrow.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Final coat",
+      "body": "Topping or lightweight for the final coat, even if the fill was hot mud. The last coat is the one you sand.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Wider coats",
+      "body": "Thin coats, each one wider than the last. Same rule as everywhere else in finishing.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "Feather wide",
+      "body": "Feather much further than feels necessary. The repair fails at its edge, not its middle.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Re-check",
+      "body": "Sand lightly and check again with the raking light before you call it done.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Match texture",
+      "body": "Match the surrounding texture. A perfectly smooth repair in a textured wall is still an obvious repair.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "Prime every repair",
+      "body": "Prime every repair. Bare compound absorbs paint differently than the wall around it — this is the single handoff item that decides whether the painter's work shows.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "Full walk",
+      "body": "Raking-light walk done on every wall and ceiling, not just the ones somebody complained about.",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "Repairs complete",
+      "body": "All repairs coated, sanded, textured to match, and primed.",
+      "checklist": true
+    },
+    {
+      "order": 17,
+      "title": "Cracks investigated",
+      "body": "Any crack investigated for cause, not just filled.",
+      "checklist": true
+    },
+    {
+      "order": 18,
+      "title": "Skim vs punch",
+      "body": "Any wall that needed a full skim identified and dealt with as finishing, not punch.",
+      "checklist": true
+    },
+    {
+      "order": 19,
+      "title": "Other trades",
+      "body": "Other trades' damage photographed and reported before repair.",
+      "checklist": true
+    },
+    {
+      "order": 20,
+      "title": "Clean up",
+      "body": "Tape and pencil marks removed. Floors cleaned of sanding dust.",
+      "checklist": true
+    },
+    {
+      "order": 21,
+      "title": "GC walk",
+      "body": "Walk it with the GC in the same light and get agreement before the painter starts.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Why this is its own step, before paint",
+      "body": "A drywall defect found before the painter costs a knife, a little mud, and a dab of primer. The identical defect found after paint costs that same repair, plus priming, plus repainting the entire plane corner to corner — because a spot repaint on a finished wall flashes. One careful raking-light walk before the painter mobilizes is the cheapest hour in the finishing scope."
+    },
+    {
+      "severity": "stop",
+      "title": "A crack is not a touch-up",
+      "body": "Movement caused the crack — a missing or ineffective control joint, framing movement, or a joint landed on an opening corner. Filling a moving crack brings it back, usually within a season. Find the cause; see Hanging Drywall control joints. Do not treat it as punch fill."
+    },
+    {
+      "severity": "stop",
+      "title": "A wall covered in defects is not punch work",
+      "body": "If defects are everywhere on a wall, the finish never reached the specified level. That is a finishing problem — go back to Finishing Drywall and skim the plane properly. Chasing a hundred spots individually costs more than doing the wall."
+    }
+  ],
+  "experts": [
+    {
+      "id": "tud-defects",
+      "tag": "Full detail · reading the defect",
+      "summary": "Most defects are quick fixes; two are symptoms of something else. Screw or nail pop: reset the fastener or add one beside it holding the board tight, then two to three thin coats. Blister in tape: cut the blistered section out, re-bed that length properly — filling over a blister does not bond. Ridge down a seam: scrape or sand flat, skim wider and feather. Fuzzy patch from over-sanding: do not sand more — skim to seal raised fibers. Dings: fill and feather wide; broken paper = small patch. Shadow at butt joint: widen substantially — most commonly under-fixed defect. Dented corner bead: shallow dents fill; deep dent or kinked bead means replacing the bead. A crack means movement — stop, not a touch-up. Defects everywhere on a wall means the finish never hit spec — not punch work, skim the plane. The crack and bad-wall judgment calls are the valuable part of this page."
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "tud-raking",
+      "prompt": "Raking-light walk on every wall and ceiling",
+      "severity": "required"
+    },
+    {
+      "id": "tud-mark-outside",
+      "prompt": "Defects marked outside with tape or pencil — never marker",
+      "severity": "required"
+    },
+    {
+      "id": "tud-primed",
+      "prompt": "Every repair primed before painter handoff",
+      "severity": "required"
+    },
+    {
+      "id": "tud-crack-judgment",
+      "prompt": "Cracks investigated for cause — not filled as punch",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Defects found after paint",
+      "wrong": "Skip drywall punch and let the painter find defects",
+      "right": "Raking-light walk before paint mobilizes",
+      "why": "Repair price doubles or worse once paint is on"
+    },
+    {
+      "title": "Not priming the repair",
+      "wrong": "Hand off bare compound to the painter",
+      "right": "Prime every repair before paint",
+      "why": "Guarantees touch-up flashes and comes back to us"
+    },
+    {
+      "title": "Feathering too small",
+      "wrong": "Tight fill at the defect only",
+      "right": "Feather much further than feels necessary",
+      "why": "Repair fails at its edge — gets done twice"
+    },
+    {
+      "title": "Filling a crack",
+      "wrong": "Mud over a moving crack as punch work",
+      "right": "Stop and find the movement cause",
+      "why": "Warranty callback with our name on it"
+    },
+    {
+      "title": "Chasing spots on a bad wall",
+      "wrong": "Punch a hundred defects on a wall that needed skimming",
+      "right": "Identify and skim the plane as finishing",
+      "why": "More labor than doing the wall right"
+    },
+    {
+      "title": "Marker on the wall",
+      "wrong": "Circle defects with permanent marker",
+      "right": "Low-tack tape or pencil outside the defect",
+      "why": "Marker bleeds through and becomes a new defect"
+    },
+    {
+      "title": "Sanding a fuzzy spot",
+      "wrong": "Keep sanding raised paper fibers",
+      "right": "Skim to seal fibers, then light sand",
+      "why": "Each sanding pass makes it worse"
+    },
+    {
+      "title": "Undocumented other-trade damage",
+      "wrong": "Repair damage without photos or report",
+      "right": "Photograph and report before touching",
+      "why": "We absorb somebody else's cost"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "touchup-paint",
+    "punch-cadence",
+    "finish",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Honest pass/fail before stages advance"
+    },
+    {
+      "id": "finish",
+      "label": "Finishing Drywall",
+      "why": "Wall covered in defects needs skim — not punch spots"
+    },
+    {
+      "id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Other trades' damage documented before repair"
+    },
+    {
+      "id": "cleanout",
+      "label": "Cleaned Out",
+      "why": "Honest cleanup before the next trade"
+    }
+  ],
+  "search_tags": [
+    "touch up",
+    "drywall touch-up",
+    "punch",
+    "punch list",
+    "raking light",
+    "screw pop",
+    "primer",
+    "feather",
+    "punch drywall"
+  ],
+  "synonyms": [
+    "touch up",
+    "touchup",
+    "drywall touch-up",
+    "punch drywall",
+    "raking light",
+    "screw pop",
+    "drywall punch"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Defect causes and remedies follow standard finishing practice and manufacturer guidance on joint treatment and sanding. The raking-light inspection is how commercial drywall work is actually judged — the same check in Finishing Drywall, applied at punch. The prime-before-paint requirement traces to the same porosity mechanism documented in Paint Touch-Up. The crack-versus-touch-up and bad-wall-versus-punch distinctions are judgment calls reflecting GVC practice and the cost logic above, not a published standard.",
+    "sources": [
+      "GVC Field Manual",
+      "GA-214",
+      "Finishing Drywall procedure"
+    ]
+  }
+}

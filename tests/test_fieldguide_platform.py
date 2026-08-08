@@ -106,6 +106,11 @@ def test_repo_catalog_hang_scrape() -> None:
            "changeorder", "safety-orient"}
     check("ops logistics migrated", ops <= set(cat["by_id"]))
     check("changeorder migrated", "changeorder" in cat["by_id"])
+    check("touchup-drywall migrated", "touchup-drywall" in cat["by_id"])
+    tud = cat["by_id"]["touchup-drywall"]
+    check("touchup-drywall 21 steps", len(tud.get("steps") or []) == 21)
+    check("touchup-drywall expert block",
+          any(e.get("id") == "tud-defects" for e in (tud.get("experts") or [])))
     check("firestop migrated", "firestop" in cat["by_id"])
     check("safety-orient migrated", "safety-orient" in cat["by_id"])
     check("approved cards", len(cat["cards"]) >= 15)
@@ -138,6 +143,11 @@ def test_repo_catalog_hang_scrape() -> None:
     check("resolve ppe", resolve_procedure_id("ppe") == "safety-orient")
     check("resolve standing-by", resolve_procedure_id("standing-by") == "changeorder")
     check("resolve co", resolve_procedure_id("co") == "changeorder")
+    check("resolve touch-up", resolve_procedure_id("touch-up") == "touchup-drywall")
+    check("resolve punch-drywall", resolve_procedure_id("punch-drywall") == "touchup-drywall")
+    hits6 = search_procedures("drywall touch-up")
+    check("drywall touch-up → touchup-drywall",
+          hits6 and hits6[0]["id"] == "touchup-drywall")
     check("get_procedure taped", get_procedure("taped")["id"] == "finish")
     check("get_procedure firestopping", get_procedure("firestopping")["id"] == "firestop")
 
