@@ -52,13 +52,22 @@ def test_takeoff_page_and_flow_js_on_disk() -> None:
     check("takeoff.html exists", (web / "takeoff.html").is_file())
     check("gvc-flow.js exists", (web / "gvc-flow.js").is_file())
     html = (web / "takeoff.html").read_text(encoding="utf-8")
-    check("brand back to hub", 'href="/"' in html and "gvc-brand" in html)
+    check("redesign stylesheet", 'href="/ui/gvc-ui.css"' in html)
+    check("no competing gvc.css on takeoff", 'href="/ui/gvc.css"' not in html)
+    check("no page-local style block", "<style>" not in html)
+    check("redesign shell", 'class="app"' in html and 'class="rail"' in html)
+    check("handoff primary", "handoff__card is-primary" in html)
+    check("hub link", 'href="/"' in html)
+    check("path host uses redesign .path", 'class="path"' in html and 'id="gvc-flow"' in html)
     check("path mount", 'GvcFlow.mount' in html and '"takeoff"' in html)
     check("import estimate link", "/ui/estimate?takeoff=1" in html)
-    check("open takeoff cta", "open-takeoff" in html)
+    check("open takeoff cta", 'id="open-takeoff"' in html)
+    check("honest empty queue", "Nothing staged yet" in html)
+    check("no fake staged jobs", "1246 Meriweather" not in html)
 
     flow_js = (web / "gvc-flow.js").read_text(encoding="utf-8")
     check("flow exports mount", "mount:" in flow_js or "function mount" in flow_js)
+    check("flow supports redesign path", "mountPath" in flow_js and "path__step" in flow_js)
     for page, step in (
         ("estimate.html", "estimate"),
         ("jobstart.html", "jobstart"),

@@ -111,10 +111,8 @@ Every portal HTML page: **`/ui/gvc.css` only**. None yet load `gvc-ui.css` or `g
 
 ## Proposed conversion order (portal only)
 
-Per pack + traffic, after you approve this inventory:
-
-1. **Shell** — map redesign `.app/.rail/.topbar/.tabbar` onto hub (or adapt hub to match shell demo without inventing CSS)
-2. **`takeoff.html` bridge** — match `gvc-takeoff-bridge-reference.html`
+1. ~~**`takeoff.html` bridge**~~ **Done** — redesign shell + handoff + honest empty queue; `GvcFlow` mounts `.path`
+2. **Shell on hub** — map redesign `.app/.rail/.topbar/.tabbar` onto hub home
 3. **Estimate** — drop `<select>`s, delete leftover page CSS, checklist
 4. **Job Check** status picker — `Status Picker Handoff.md`
 5. Remaining money spine → morning → fieldguide last (private palette)
