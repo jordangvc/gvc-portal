@@ -597,6 +597,55 @@ def test_billing_page_shows_proposed_total():
     assert "Proposed" in html
 
 
+def test_billing_page_enrich_ready_worksheets():
+    html = (Path(__file__).resolve().parents[1] / "web" / "billing.html").read_text()
+    assert "enrichReadyWorksheets" in html
+    assert "/ui/api/billing/ready-worksheets" in html
+    assert "mergeWorksheetOntoRow" in html
+    assert "READY_ROWS" in html
+
+
+def test_compute_ready_worksheets_reuses_staged_and_skips_unlinked():
+    from subsystems.invoice import ready_stage
+    from unittest import mock
+
+    ready_stage.clear_memory_for_tests()
+    try:
+        ready_stage.save_worksheet(1, {
+            "job_name": "A",
+            "proposed_invoice_total": 500.0,
+            "pricing": {"model": "tm", "price_label": "T&M", "total": 500.0},
+        }, actor="test")
+        rows = [
+            {"item_id": 1, "project_item_id": 10, "name": "A"},
+            {"item_id": 2, "project_item_id": None, "name": "Unlinked"},
+            {"item_id": 3, "project_item_id": 30, "name": "Need compute"},
+        ]
+
+        def fake_payroll(mc, pid):
+            return {
+                "project_item_id": pid,
+                "rows": [{"count": 1, "rate": 800}],
+                "labor_cost": 800.0,
+                "board_count_hint": 100,
+            }
+
+        with mock.patch.object(bf.monday_payroll, "fetch_payroll_for_project",
+                               side_effect=fake_payroll):
+            out = bf.compute_ready_worksheets(rows, persist=True, limit=25, mc=object())
+        assert out["reused"] == 1
+        assert out["skipped"] == 1
+        assert out["computed"] == 1
+        assert out["worksheets"]["1"]["proposed_total"] == 500.0
+        assert out["worksheets"]["1"]["source"] == "staged"
+        assert out["worksheets"]["3"]["source"] == "computed"
+        assert out["worksheets"]["3"]["proposed_total"] > 0
+        assert ready_stage.get_worksheet(3) is not None
+        assert out["auto_send"] is False
+    finally:
+        ready_stage.clear_memory_for_tests()
+
+
 def test_jobstart_page_boots_bid_deep_link():
     html = (Path(__file__).resolve().parents[1] / "web" / "jobstart.html").read_text()
     assert "function bootJobStartFromUrl" in html

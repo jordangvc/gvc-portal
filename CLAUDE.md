@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ BILLING READY ON-DEMAND COSTING (r91) — BUILT 2026-08-08
+After hub first paint, `GET /ui/api/billing/ready-worksheets` costs linked
+Ready rows from Payroll + company rates, stages worksheets for Invoice
+`?ops_ready=`, and patches Proposed $ onto cards. Ships with r90 money-spine
+dead-end fixes on the same branch. Never Stripe / never auto-send. Hub **r91**.
+Supersedes conflicting #144 design (ported onto r90).
+
 ## ✨ INVOICE ops_ready LAZY-COST + READY CTAs (r90) — BUILT 2026-08-08
 Money-spine dead-ends closed without waiting on conflicting #141/#144:
 `ensure_ready_worksheet` computes+stages from Payroll when Invoice `?ops_ready=`
