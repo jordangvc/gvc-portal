@@ -98,7 +98,7 @@
   .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px; font-weight:600; }
   .badge.synced { background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; }
   .badge.local { background:var(--gvc-warn-tint); color:var(--gvc-gold-dark); border:1px solid #E3CFA0; }
-  .badge.active { background:#e0f2fe; color:#1A72B8; border:1px solid #bae6fd; }
+  .badge.active { background:var(--color-info-soft); color:var(--color-info-ink); border:1px solid var(--color-info-border); }
   .line-item { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:12px; margin-bottom:10px; background:var(--gvc-bg); }
   .line-item .row1 { display:grid; grid-template-columns:1fr 130px 70px auto; gap:10px; align-items:end; }
   @media (max-width:720px){ .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
@@ -135,8 +135,8 @@
 
     #billable-cos .co-pick, #estimate-import .co-pick { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid #eee; }
     #billable-cos .co-pick:last-child, #estimate-import .co-pick:last-child { border-bottom:0; }
-    #billable-cos .co-pick-meta, #estimate-import .co-pick-meta { font-size:13px; color:#555; }
-    #billable-cos .co-pick-meta strong, #estimate-import .co-pick-meta strong { color:#222; }
+    #billable-cos .co-pick-meta, #estimate-import .co-pick-meta { font-size:13px; color:var(--color-text-muted, var(--gvc-muted)); }
+    #billable-cos .co-pick-meta strong, #estimate-import .co-pick-meta strong { color:var(--color-text, var(--gvc-ink)); }
 </style>
 </head>
 <body>
@@ -889,7 +889,7 @@ async function run(mode) {
       if (wb.stripe_invoice_id) html += `<div class="result-line">Stripe invoice: <code>${wb.stripe_invoice_id}</code>${wb.already_existed ? " (already existed — not duplicated)" : ""}</div>`;
       if (wb.hosted_invoice_url) html += `<div class="result-line">Payment page: <a href="${wb.hosted_invoice_url}" target="_blank" rel="noopener">${wb.hosted_invoice_url}</a></div>`;
       if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the Gmail draft in billing@</a> — review, then click Send.</div>`;
-      if (wb.gmail_status) html += `<div class="result-line" style="color:#b91c1c">⚠️ ${wb.gmail_status}</div>`;
+      if (wb.gmail_status) html += `<div class="result-line gvc-msg--danger">⚠️ ${wb.gmail_status}</div>`;
       if (wb.drive_aia_writeback) html += `<div class="result-line">Drive AIA writeback: ${wb.drive_aia_writeback}</div>`;
       if (wb.ledger && wb.ledger.ledger_item_url) html += `<div class="result-line">📒 <a href="${wb.ledger.ledger_item_url}" target="_blank" rel="noopener">Logged to the Monday Invoices board</a> (${wb.ledger.ledger_action || "recorded"}).</div>`;
       // Inline correction: this run reused an existing invoice (likely a wrong
@@ -897,7 +897,7 @@ async function run(mode) {
       // already in the form — no separate trip to the correction tool.
       if (wb.already_existed || wb.correction_hint) {
         window._lastInvoiceData = data;
-        html += `<div class="result-line" style="margin-top:10px;color:#96763B">⚠️ ${wb.correction_hint || "This invoice number already exists in Stripe — re-running reuses it rather than changing it."}</div>`;
+        html += `<div class="result-line gvc-msg--warn" style="margin-top:10px;">⚠️ ${wb.correction_hint || "This invoice number already exists in Stripe — re-running reuses it rather than changing it."}</div>`;
         html += `<div class="result-line"><button type="button" class="btn secondary small" id="btn-correct-inline">Correct / reissue this invoice…</button></div>`;
       }
       html += `<div class="result-line">Next: <a href="/ui/billing">Billing Hub</a> · <a href="/ui/check">Paid by Check</a> · <a href="/">hub</a>.</div>`;
@@ -1383,7 +1383,7 @@ function customerSearch() {
       const items = body.customers || [];
       box.innerHTML = "";
       if (!items.length) {
-        box.innerHTML = "<div style='padding:8px;color:#777;'>No matches</div>";
+        box.innerHTML = "<div class='gvc-msg--muted' style='padding:8px;'>No matches</div>";
         box.style.display = "block"; return;
       }
       items.forEach((c) => {

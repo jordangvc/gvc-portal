@@ -98,7 +98,7 @@
   .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px; font-weight:600; }
   .badge.synced { background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; }
   .badge.local { background:var(--gvc-warn-tint); color:var(--gvc-gold-dark); border:1px solid #E3CFA0; }
-  .badge.active { background:#e0f2fe; color:#1A72B8; border:1px solid #bae6fd; }
+  .badge.active { background:var(--color-info-soft); color:var(--color-info-ink); border:1px solid var(--color-info-border); }
   .line-item { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:12px; margin-bottom:10px; background:var(--gvc-bg); }
   .line-item .row1 { display:grid; grid-template-columns:1fr 130px 70px auto; gap:10px; align-items:end; }
   @media (max-width:720px){ .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
@@ -147,8 +147,8 @@
   .bidbtn .meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:2px; }
   .pill { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill);
     margin-left:6px; font-weight:600; border:1px solid var(--gvc-line); background:var(--gvc-surface); }
-  .pill.open { background:#e0f2fe; color:#1A72B8; border-color:#bae6fd; }
-  .pill.accepted { background:var(--gvc-ok-tint); color:var(--gvc-green-dark); border-color:#BCD6C8; }
+  .pill.open { background:var(--color-info-soft); color:var(--color-info-ink); border-color:var(--color-info-border); }
+  .pill.accepted { background:var(--gvc-ok-tint); color:var(--color-ok-ink, var(--gvc-green-dark)); border-color:var(--color-ok-border, #BCD6C8); }
   .ctx { font-size:var(--gvc-fs-small); color:var(--gvc-muted); margin-bottom:12px; }
   .ctx-meta { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
   .field { margin-bottom:12px; }
@@ -518,7 +518,7 @@ function renderNameNote() {
   if (!el) return;
   // Jake's rule: a missing piece gets ASKED for, never guessed.
   if (nm.note) {
-    el.innerHTML = `<span style="color:#7A1F1F;font-weight:600;">${esc(nm.note)}</span>`;
+    el.innerHTML = `<span class="gvc-msg--danger" style="font-weight:600;">${esc(nm.note)}</span>`;
   } else if (nm.original && nm.suggestion && nm.original !== nm.suggestion) {
     el.innerHTML = `Renamed to the GVC standard. Bid was
       <span style="opacity:.75;">${esc(nm.original)}</span>`;
@@ -1008,7 +1008,7 @@ async function draftGcEmail() {
     const body = await r.json();
     if (!r.ok) {
       const d = body.detail || body;
-      out.innerHTML = `<span style="color:#7A1F1F;"><b>${esc(d.detail || "Couldn't draft it.")}</b><br>${esc(d.advice || "")}</span>`;
+      out.innerHTML = `<span class="gvc-msg--danger"><b>${esc(d.detail || "Couldn't draft it.")}</b><br>${esc(d.advice || "")}</span>`;
       return;
     }
     const link = body.gmail_url
@@ -1022,7 +1022,7 @@ async function draftGcEmail() {
       `<div class="result-line" style="margin-top:8px">Next: finish the packet fields · ` +
       `<a href="/ui/jobstart">other bids</a> · <a href="/">hub</a>.</div>`;
   } catch (e) {
-    out.innerHTML = `<span style="color:#7A1F1F;">Network error — ${esc(e.message)}</span>`;
+    out.innerHTML = `<span class="gvc-msg--danger">Network error — ${esc(e.message)}</span>`;
   } finally {
     btn.disabled = false;
     btn.textContent = "Draft the scope confirmation";

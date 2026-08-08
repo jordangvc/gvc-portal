@@ -40,7 +40,7 @@
     font-size: var(--gvc-fs-small); text-decoration: none;
   }
   .item-actions a.primary {
-    background: var(--gvc-green); border-color: var(--gvc-green); color: #fff;
+    background: var(--gvc-green); border-color: var(--gvc-green); color: var(--color-on-primary, #fff);
     box-shadow: inset 0 0 0 1px var(--gvc-gold);
   }
   .chip {
@@ -48,8 +48,8 @@
     font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
     background: var(--gvc-tint-sand); color: var(--gvc-gold-dark); margin-right: 6px;
   }
-  .chip.warn { background: var(--gvc-danger-tint); color: var(--gvc-danger-dark); }
-  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); color: var(--gvc-danger-dark); }
+  .chip.warn { background: var(--gvc-danger-tint); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
+  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
   #err.show { display:block; }
   #err .err-title { font-weight: 700; margin: 0 0 6px; }
   #err .err-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
@@ -60,7 +60,7 @@
     font-size: var(--gvc-fs-small); text-decoration: none; cursor: pointer;
   }
   #err .err-actions button.primary {
-    background: var(--gvc-green); border-color: var(--gvc-green); color: #fff;
+    background: var(--gvc-green); border-color: var(--gvc-green); color: var(--color-on-primary, #fff);
   }
 </style>
 </head>

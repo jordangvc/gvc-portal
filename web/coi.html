@@ -97,7 +97,7 @@
   .badge { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill); margin-left:6px; font-weight:600; }
   .badge.synced { background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid #E3CFA0; }
   .badge.local { background:var(--gvc-warn-tint); color:var(--gvc-gold-dark); border:1px solid #E3CFA0; }
-  .badge.active { background:#e0f2fe; color:#1A72B8; border:1px solid #bae6fd; }
+  .badge.active { background:var(--color-info-soft); color:var(--color-info-ink); border:1px solid var(--color-info-border); }
   .line-item { border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); padding:12px; margin-bottom:10px; background:var(--gvc-bg); }
   .line-item .row1 { display:grid; grid-template-columns:1fr 130px 70px auto; gap:10px; align-items:end; }
   @media (max-width:720px){ .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
@@ -330,9 +330,9 @@ async function run(mode) {
       let html = `<strong>✅ COI created for ${escapeHtml(wb.holder_name || "")}.</strong><br />`;
       if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
       if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
-      if (wb.gmail_status) html += `<div class="result-line" style="color:#96763B">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
+      if (wb.gmail_status) html += `<div class="result-line gvc-msg--warn">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
       if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">COI in Drive</a> (${escapeHtml(wb.drive_folder_path || "COIs Sent/")})</div>`;
-      if (wb.drive_status) html += `<div class="result-line" style="color:#96763B">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
+      if (wb.drive_status) html += `<div class="result-line gvc-msg--warn">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
       html += `<div class="result-line">Slack notice: ${wb.slack_notified ? "posted ✅" : escapeHtml(wb.slack_status || wb.slack_error || "not sent")}</div>`;
       if (wb.monday_status) html += `<div class="result-line">Monday: ${escapeHtml(wb.monday_status)}</div>`;
       html += `<div class="result-line">Next: <a href="/">hub</a> · <a href="/ui/admin">Admin</a> (swap blank template) · another COI above.</div>`;
@@ -389,11 +389,11 @@ function bulkSpinner(on) {
 function stateBadge(e) {
   if (e.state === "ready") {
     return e.duplicate_of
-      ? `<span style="color:#96763B">ready ⚠ dup of row ${e.duplicate_of}</span>`
+      ? `<span class="gvc-msg--warn">ready ⚠ dup of row ${e.duplicate_of}</span>`
       : `<span style="color:var(--green-dark)">ready</span>`;
   }
   if (e.state === "skip_sent") return `<span class="opt" style="color:var(--muted)">already sent (YES)</span>`;
-  return `<span style="color:#b91c1c">needs attention — ${escapeHtml((e.reasons || []).join("; "))}</span>`;
+  return `<span class="gvc-msg--danger">needs attention — ${escapeHtml((e.reasons || []).join("; "))}</span>`;
 }
 
 async function bulkReview() {
@@ -452,10 +452,10 @@ function markRowResult(res) {
     let html = `<span style="color:var(--green-dark)">✅ drafted</span>`;
     if (res.gmail_draft_url) html += ` <a href="${res.gmail_draft_url}" target="_blank" rel="noopener">draft</a>`;
     if (res.drive_pdf_url) html += ` · <a href="${res.drive_pdf_url}" target="_blank" rel="noopener">Drive</a>`;
-    if (res.writeback_error) html += ` <span style="color:#96763B">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
+    if (res.writeback_error) html += ` <span class="gvc-msg--warn">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
     cell.innerHTML = html;
   } else {
-    cell.innerHTML = `<span style="color:#b91c1c">❌ NO — ${escapeHtml(res.error || "failed")}</span>`;
+    cell.innerHTML = `<span class="gvc-msg--danger">❌ NO — ${escapeHtml(res.error || "failed")}</span>`;
   }
 }
 
@@ -464,8 +464,8 @@ function markInvalidRowsSkipped(marked) {
     const tr = document.getElementById("bulk-row-" + m.row_number);
     if (!tr) return;
     const cell = tr.querySelector(".bulk-state");
-    let html = `<span style="color:#96763B">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
-    if (m.writeback_error) html += ` <span style="color:#b91c1c">⚠ NO not written: ${escapeHtml(m.writeback_error)}</span>`;
+    let html = `<span class="gvc-msg--warn">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
+    if (m.writeback_error) html += ` <span class="gvc-msg--danger">⚠ NO not written: ${escapeHtml(m.writeback_error)}</span>`;
     cell.innerHTML = html;
   });
 }
@@ -494,7 +494,7 @@ function bulkFinish(b) {
   }
   html += `<div class="result-line">Drafts are waiting in hello@ — review and send.</div>`;
   if (b.slack_notified) html += `<div class="result-line">Slack summary posted ✅</div>`;
-  else if (b.slack_status || b.slack_error) html += `<div class="result-line" style="color:#96763B">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
+  else if (b.slack_status || b.slack_error) html += `<div class="result-line gvc-msg--warn">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
   html += `<div class="result-line">Next: <a href="/">hub</a> · <a href="/ui/admin">Admin</a> (template) · start another sheet above.</div>`;
   $("#bulk-result").innerHTML = html;
   setStatus(st.failed ? "warn" : "info",
