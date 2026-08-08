@@ -43,12 +43,29 @@
   #status ul { margin: 6px 0 0; padding-left: 20px; }
   .result-line a { color: var(--color-primary); font-weight: 600; }
 
-  #bidlist { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; gap: 6px; }
+  #bidlist { margin-top: 10px; display: grid; gap: var(--space-3); }
+  .bid-section {
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    background: var(--color-surface);
+    padding: var(--space-3);
+    display: grid; gap: var(--space-2);
+  }
+  .bid-section__list {
+    max-height: min(36vh, 280px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    display: grid; gap: 6px;
+  }
   .listhead {
     font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
-    color: var(--color-text-muted); margin: 10px 0 4px; padding-top: 4px;
+    color: var(--color-text-muted); margin: 0; display: flex; align-items: center; gap: 8px;
   }
-  .listhead:first-child { margin-top: 0; }
+  .listhead .count {
+    margin-left: auto; font-variant-numeric: tabular-nums; text-transform: none; letter-spacing: 0;
+    color: var(--color-text-faint); font-weight: 600;
+  }
   .bidbtn { display: block; width: 100%; text-align: left; min-height: var(--tap);
     padding: 10px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-full);
     background: var(--color-surface); font: inherit; cursor: pointer; color: inherit; }
@@ -218,6 +235,7 @@
   <div id="savestate"></div>
 </div>
 
+<script src="/ui/gvc-field-jump.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
 const $ = (s) => document.querySelector(s);
@@ -292,16 +310,21 @@ function renderBidList() {
     $("#bidlist").innerHTML = `<div class="hint">No bid matches "${esc(q)}".</div>`;
     return;
   }
-  let html = "";
-  let head = null;
+  // One scroll pane per stage section (Waiting on Ops / Sent back / …) — not one giant list.
+  const groups = new Map();
   hits.forEach((b) => {
     const rank = b.rank === undefined ? 4 : b.rank;
-    if (rank !== head) {
-      head = rank;
-      html += `<div class="listhead">${esc(RANK_HEADS[rank] || "Bids")}</div>`;
-    }
-    html += bidButton(b);
+    if (!groups.has(rank)) groups.set(rank, []);
+    groups.get(rank).push(b);
   });
+  let html = "";
+  for (const [rank, rows] of groups) {
+    html += `<section class="bid-section" data-rank="${rank}">` +
+      `<div class="listhead">${esc(RANK_HEADS[rank] || "Bids")}` +
+      `<span class="count">${rows.length}</span></div>` +
+      `<div class="bid-section__list">${rows.map(bidButton).join("")}</div>` +
+      `</section>`;
+  }
   $("#bidlist").innerHTML = html;
   document.querySelectorAll("#bidlist .bidbtn").forEach((b) =>
     b.addEventListener("click", () => loadBid(+b.dataset.id)));
@@ -528,7 +551,18 @@ function renderForm() {
 function missingRequired() {
   return (detail?.fields || [])
     .filter((f) => f.required && !String(values[f.key] ?? "").trim())
-    .map((f) => f.label);
+    .map((f) => ({ key: f.key, label: f.label }));
+}
+
+function jumpToMissingField(field) {
+  if (!field) return;
+  const target = `.field[data-field="${CSS.escape(field.key)}"]`;
+  if (window.GvcFieldJump) {
+    window.GvcFieldJump.focus(target);
+    return;
+  }
+  const el = document.querySelector(target);
+  if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
 }
 
 function refreshGate() {
@@ -540,12 +574,19 @@ function refreshGate() {
   if (!editable) {
     el.className = "";
     el.textContent = status === "accepted" ? "Accepted" : "With Operations";
+    el.removeAttribute("data-jump");
+    el.style.cursor = "";
   } else if (missing.length) {
     el.className = "blocked";
-    el.textContent = `${missing.length} still needed`;
+    el.textContent = `${missing.length} still needed — tap to fix`;
+    el.setAttribute("data-jump", `.field[data-field="${missing[0].key}"]`);
+    el.style.cursor = "pointer";
+    el.title = missing.map((m) => m.label).join(", ");
   } else {
     el.className = "";
     el.textContent = "Packet complete";
+    el.removeAttribute("data-jump");
+    el.style.cursor = "";
   }
   $("#send").disabled = missing.length > 0 || savingNow || !editable;
   // Say what the button is about to do. Sending an OPEN bid also writes Stage =
@@ -808,10 +849,16 @@ function showActionError(d) {
       const el = document.querySelector(`.field[data-field="${CSS.escape(m.key)}"]`);
       if (el) el.classList.add("missing");
     });
+    const jump = window.GvcFieldJump;
+    const items = d.missing.map((m) => ({
+      label: m.label || m.key,
+      focus: `.field[data-field="${m.key}"]`,
+    }));
     showStatus("err",
-      `<strong>Packet incomplete.</strong> ${esc(d.detail || "")}` +
-      `<ul>${d.missing.map((m) => `<li>${esc(m.label)}</li>`).join("")}</ul>` +
+      `<strong>Packet incomplete — tap a field to fix it.</strong> ${esc(d.detail || "")}` +
+      (jump ? jump.list(items) : `<ul>${d.missing.map((m) => `<li>${esc(m.label)}</li>`).join("")}</ul>`) +
       `${esc(d.advice || "")}`);
+    jumpToMissingField(d.missing[0]);
   } else {
     showStatus("err", `<strong>${esc(d.code || "ERROR")}</strong> — ${esc(d.detail || "That didn't work.")}<br>${esc(d.advice || "")}`);
   }
@@ -849,7 +896,17 @@ async function act(path, payload, btn, busyLabel, onDone) {
 
 function sendToOps() {
   const missing = missingRequired();
-  if (missing.length) { refreshGate(); return; }
+  if (missing.length) {
+    refreshGate();
+    const jump = window.GvcFieldJump;
+    showStatus("err",
+      `<strong>${missing.length} required field${missing.length === 1 ? "" : "s"} still needed — tap to fix:</strong>` +
+      (jump
+        ? jump.list(missing.map((m) => ({ label: m.label, focus: `.field[data-field="${m.key}"]` })))
+        : `<ul>${missing.map((m) => `<li>${esc(m.label)}</li>`).join("")}</ul>`));
+    jumpToMissingField(missing[0]);
+    return;
+  }
   act("send", { values, job_name: jobName }, $("#send"), "Sending…", (body) => {
     const pdf = body.preview_url
       ? ` <a href="${esc(body.preview_url)}" target="_blank" rel="noopener">Read the packet</a>`

@@ -186,6 +186,10 @@ def initials_for(name: str, email: str) -> str:
         if parts:
             return parts[0][:2].upper()
     local = (email or "").split("@")[0]
+    # jordan.faulkner → JF (not JO)
+    parts = [p for p in local.replace(".", " ").replace("_", " ").replace("-", " ").split() if p]
+    if len(parts) >= 2:
+        return (parts[0][0] + parts[-1][0]).upper()
     return (local[:2] or "?").upper()
 
 

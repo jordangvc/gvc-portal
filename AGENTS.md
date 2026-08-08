@@ -201,7 +201,9 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   load `gvc-forms.css` + `GvcFormChrome`. Job Check picker markup comes from
   `Status Picker Handoff.md` via `web/gvc-status-picker.js` (Save bar batches
   Monday writes; do not mutate Monday inside the picker). Field Manual keeps a
-  page-local private content palette on top of `gvc-ui`. Product contract:
+  page-local private content palette on top of `gvc-ui`. **Validation gaps**
+  use `web/gvc-field-jump.js` (`[data-jump]`) so tapping an error focuses the
+  missing field — wire new required-field errors that way. Product contract:
   `docs/UI-SYSTEM.md` + `docs/UX-CHECKLIST.md` + redesign `UI Checklist.md`.
   Dark mode: `docs/UI-DARK-MODE.md` / `web/gvc-theme.js` → `data-theme`.
 - **Hub first paint:** HTML injects `HUB_BOOT_JSON` (rail + greeting + quick

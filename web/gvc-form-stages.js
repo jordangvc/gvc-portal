@@ -119,10 +119,39 @@
       } catch (_) {}
     }
 
+    function paintGapBanner(gap) {
+      var host = $(cfg.statusId || "status");
+      if (!host || !gap || !gap.message) return;
+      var msg = String(gap.message)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+      var focus = gap.focus ? String(gap.focus) : "";
+      var stepAttr =
+        typeof gap.step === "number" ? ' data-jump-step="' + gap.step + '"' : "";
+      var html = focus
+        ? '<strong>Needs a fix — tap to go there:</strong> ' +
+          '<button type="button" class="field-jump field-jump--banner" data-jump="' +
+          focus.replace(/"/g, "&quot;") +
+          '"' +
+          stepAttr +
+          ">" +
+          msg +
+          "</button>"
+        : "<strong>" + msg + "</strong>";
+      host.style.display = "";
+      host.className = (host.className || "").replace(/\bshow\b/g, "").trim() + " show";
+      host.innerHTML = html;
+    }
+
     function jumpToGap(gap) {
       if (!gap) return;
       if (typeof gap.step === "number") go(gap.step);
-      if (gap.focus && $(gap.focus)) {
+      paintGapBanner(gap);
+      if (gap.focus && global.GvcFieldJump) {
+        global.GvcFieldJump.focus(gap.focus);
+      } else if (gap.focus && $(gap.focus)) {
         try {
           $(gap.focus).focus({ preventScroll: false });
           $(gap.focus).scrollIntoView({ behavior: "smooth", block: "center" });
@@ -131,6 +160,11 @@
       if (gap.message && nextBtn) {
         nextBtn.classList.add("gvc-btn-blocked");
         nextBtn.textContent = gap.message;
+        nextBtn.setAttribute("data-gap-focus", gap.focus || "");
+        nextBtn.setAttribute(
+          "data-gap-step",
+          typeof gap.step === "number" ? String(gap.step) : ""
+        );
       }
     }
 
@@ -195,7 +229,22 @@
         go(step - 1);
       });
     }
-    if (nextBtn) nextBtn.addEventListener("click", function () { onNext(); });
+    if (nextBtn) {
+      nextBtn.addEventListener("click", function () {
+        // Blocked CTA already names the gap — tap it again to re-jump.
+        if (nextBtn.classList.contains("gvc-btn-blocked") && nextBtn.getAttribute("data-gap-focus")) {
+          jumpToGap({
+            message: nextBtn.textContent,
+            focus: nextBtn.getAttribute("data-gap-focus"),
+            step: nextBtn.getAttribute("data-gap-step")
+              ? +nextBtn.getAttribute("data-gap-step")
+              : undefined,
+          });
+          return;
+        }
+        onNext();
+      });
+    }
 
     // Keep totals fresh
     document.addEventListener("input", paintTotals, true);
@@ -203,9 +252,10 @@
 
     paintChrome();
 
-    return {
+    var api = {
       go: go,
       refresh: paintChrome,
+      jumpToGap: jumpToGap,
       markAccepted: function () {
         accepted = true;
         paintChrome();
@@ -214,6 +264,8 @@
         return step;
       },
     };
+    global.__gvcFormStagesApi = api;
+    return api;
   }
 
   global.GvcFormStages = { mount: mount };

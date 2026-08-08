@@ -1496,6 +1496,24 @@ def portal_form_stages_js() -> Response:
     )
 
 
+@app.get("/ui/gvc-field-jump.js")
+def portal_field_jump_js() -> Response:
+    """Clickable validation errors → focus the missing field."""
+    path = WEB_DIR / "gvc-field-jump.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_text(encoding="utf-8"),
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @app.get("/ui/gvc-status-picker.js")
 def portal_status_picker_js() -> Response:
     """Grouped status picker for Job Check (web/gvc-status-picker.js)."""
@@ -1527,10 +1545,12 @@ def ui_invoice_form(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(
-        _cached_web_html("invoice.html"),
-        headers=_PRIVATE_HTML_CACHE_HEADERS,
+    html = (
+        _cached_web_html("invoice.html")
+        .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{EMAIL_JSON}}", json.dumps(email))
     )
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.get("/ui/billing", response_class=HTMLResponse)
@@ -2204,10 +2224,12 @@ def ui_estimate_form(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    return HTMLResponse(
-        _cached_web_html("estimate.html"),
-        headers=_PRIVATE_HTML_CACHE_HEADERS,
+    html = (
+        _cached_web_html("estimate.html")
+        .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{EMAIL_JSON}}", json.dumps(email))
     )
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
 @app.post("/ui/api/estimate/from-takeoff")
@@ -3007,8 +3029,11 @@ def ui_change_order_form(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    html = _cached_web_html("change-order.html").replace(
-        "{{EMAIL}}", html_escape(email))
+    html = (
+        _cached_web_html("change-order.html")
+        .replace("{{EMAIL}}", html_escape(email))
+        .replace("{{EMAIL_JSON}}", json.dumps(email))
+    )
     return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 

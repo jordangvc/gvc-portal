@@ -219,12 +219,13 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>
 <script src="/ui/gvc-form-chrome.js"></script>
+<script src="/ui/gvc-field-jump.js"></script>
 <script src="/ui/gvc-form-stages.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
 (function () {
   if (window.GvcFormChrome) {
-    window.GvcFormChrome.mount({ app: "change", email: "dev-bypass@localhost" });
+    window.GvcFormChrome.mount({ app: "change", email: {{EMAIL_JSON}} });
   }
   var a = document.getElementById("open-takeoff-from-estimate");
   if (a && window.GvcFlow && window.GvcFlow.takeoffAppUrl) a.href = window.GvcFlow.takeoffAppUrl();
@@ -992,16 +993,21 @@ refreshDrafts();
   }
   function validateStep(i) {
     if (i === 1) {
-      if (!val("client_name")) return { step: 1, message: "Finish a client" };
-      if (!val("client_email")) return { step: 1, message: "Add a recipient" };
-      if (!val("job_name")) return { step: 1, message: "Finish the project name" };
+      if (!val("client_name"))
+        return { step: 1, message: "Finish a client", focus: "client_name" };
+      if (!val("client_email"))
+        return { step: 1, message: "Add a recipient email", focus: "client_email" };
+      if (!val("job_name"))
+        return { step: 1, message: "Finish the project name", focus: "job_name" };
     }
     if (i === 2) {
-      if (!val("title")) return { step: 2, message: "Add a change title" };
+      if (!val("title"))
+        return { step: 2, message: "Add a change title", focus: "title" };
     }
     if (i === 3) {
       var box = document.getElementById("line-items");
-      if (!box || !box.children.length) return { step: 3, message: "Add a line item" };
+      if (!box || !box.children.length)
+        return { step: 3, message: "Add a line item", focus: "line-items" };
     }
     return null;
   }

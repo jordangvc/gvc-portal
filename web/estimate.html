@@ -309,12 +309,13 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>
 <script src="/ui/gvc-form-chrome.js"></script>
+<script src="/ui/gvc-field-jump.js"></script>
 <script src="/ui/gvc-form-stages.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
 (function () {
   if (window.GvcFormChrome) {
-    window.GvcFormChrome.mount({ app: "estimate", email: "dev-bypass@localhost" });
+    window.GvcFormChrome.mount({ app: "estimate", email: {{EMAIL_JSON}} });
   }
   var a = document.getElementById("open-takeoff-from-estimate");
   if (a && window.GvcFlow && window.GvcFlow.takeoffAppUrl) a.href = window.GvcFlow.takeoffAppUrl();
@@ -1380,7 +1381,17 @@ function pickSalesperson(idx) {
   const box = $("#salesperson-people");
   if (box) {
     box.querySelectorAll(".gvc-person").forEach((btn, i) => {
-      btn.classList.toggle("is-on", i === Number(idx));
+      const on = i === Number(idx);
+      btn.classList.toggle("is-on", on);
+      const check = btn.querySelector(".gvc-person-check");
+      if (on && !check) {
+        const span = document.createElement("span");
+        span.className = "gvc-person-check";
+        span.textContent = "✓";
+        btn.appendChild(span);
+      } else if (!on && check) {
+        check.remove();
+      }
     });
   }
   const hid = $("#salesperson-select");
@@ -1406,9 +1417,9 @@ async function loadSalespeople() {
       `<button type="button" class="gvc-person" data-idx="${i}">` +
       `<span class="gvc-person-av">${av.toUpperCase()}</span>` +
       `<span style="flex:1;min-width:0">` +
-      `<span class="gvc-person-name">${name.replace(/</g, "&lt;")}</span>` +
-      `<span class="gvc-person-meta">${String(meta).replace(/</g, "&lt;")}</span>` +
-      `</span><span class="gvc-person-check">✓</span></button>`
+      `<span class="gvc-person-name" title="${name.replace(/"/g, "&quot;")}">${name.replace(/</g, "&lt;")}</span>` +
+      `<span class="gvc-person-meta" title="${String(meta).replace(/"/g, "&quot;")}">${String(meta).replace(/</g, "&lt;")}</span>` +
+      `</span></button>`
     );
   }).join("");
   // Cover the race where a bid deep-link filled pb_name before the roster arrived.
@@ -1544,17 +1555,22 @@ fetch("/ui/api/monday/warm", {
   }
   function validateStep(i) {
     if (i === 1) {
-      if (!val("client_name")) return { step: 1, message: "Finish a client" };
+      if (!val("client_name"))
+        return { step: 1, message: "Finish a client", focus: "client_name" };
       var noEmail = document.getElementById("client_no_email");
       if (!(noEmail && noEmail.checked) && !val("client_emails"))
-        return { step: 1, message: "Add a recipient" };
+        return { step: 1, message: "Add a recipient email", focus: "client_emails" };
     }
     if (i === 2) {
-      if (!val("job_name")) return { step: 2, message: "Finish the job name" };
+      if (!val("job_name"))
+        return { step: 2, message: "Finish the job name", focus: "job_name" };
+      if (!val("job_location") && document.querySelector('[name="job_location"]'))
+        return { step: 2, message: "Add the job location", focus: "job_location" };
     }
     if (i === 3) {
       var box = document.getElementById("line-items");
-      if (!box || !box.children.length) return { step: 3, message: "Add a line item" };
+      if (!box || !box.children.length)
+        return { step: 3, message: "Add a line item", focus: "line-items" };
     }
     return null;
   }

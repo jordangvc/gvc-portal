@@ -331,12 +331,13 @@
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>
 <script src="/ui/gvc-form-chrome.js"></script>
+<script src="/ui/gvc-field-jump.js"></script>
 <script src="/ui/gvc-form-stages.js"></script>
 <script src="/ui/gvc-command.js"></script>
 <script>
 (function () {
   if (window.GvcFormChrome) {
-    window.GvcFormChrome.mount({ app: "invoice", email: "dev-bypass@localhost" });
+    window.GvcFormChrome.mount({ app: "invoice", email: {{EMAIL_JSON}} });
   }
 })();
 </script>
@@ -1739,17 +1740,20 @@ fetch("/ui/api/monday/warm", {
   }
   function validateStep(i) {
     if (i === 1) {
-      if (!val("client_name")) return { step: 1, message: "Finish a client" };
+      if (!val("client_name"))
+        return { step: 1, message: "Finish a client", focus: "client_name" };
       var noEmail = document.getElementById("client_no_email");
       if (!(noEmail && noEmail.checked) && !val("client_emails"))
-        return { step: 1, message: "Add a recipient" };
+        return { step: 1, message: "Add a recipient email", focus: "client_emails" };
     }
     if (i === 2) {
-      if (!val("job_name")) return { step: 2, message: "Finish the job name" };
+      if (!val("job_name"))
+        return { step: 2, message: "Finish the job name", focus: "job_name" };
     }
     if (i === 3) {
       var box = document.getElementById("line-items");
-      if (!box || !box.children.length) return { step: 3, message: "Add a line item" };
+      if (!box || !box.children.length)
+        return { step: 3, message: "Add a line item", focus: "line-items" };
     }
     return null;
   }
