@@ -11,6 +11,7 @@ from typing import Any, Optional
 from urllib.parse import quote
 
 from adapters.monday import billing as monday_billing
+from shared.money import fmt_money
 
 
 def invoice_href(*, project_number: Optional[str] = None,
@@ -302,3 +303,64 @@ def shape_search_bid(row: dict) -> dict:
 def encode_query(q: str) -> str:
     """URL-encode a search string (test helper / thin wrapper)."""
     return quote((q or "").strip())
+
+
+def attach_proposed_total(
+    item: dict,
+    sheet: Optional[dict] = None,
+    *,
+    skip_reason: Optional[str] = None,
+) -> dict:
+    """
+    Attach P5 worksheet proposed-total fields onto a Ready-to-Invoice hub card.
+
+    Pure — no Monday I/O. ``sheet`` is the dict from
+    ``invoice_ready_flow.build_item_worksheet`` / ``pricing.build_worksheet``.
+    Missing / failed worksheets leave the card usable (Open invoice still works).
+    """
+    out = item
+    if skip_reason or not sheet:
+        # Preserve staged/already-attached totals — skip only annotates why we
+        # did not (re)compute. Clearing would blank Ready cards past the cap.
+        if out.get("proposed_total") is None:
+            out["proposed_total"] = None
+            out["proposed_total_display"] = None
+            out["proposed_model"] = None
+            out["proposed_price_label"] = None
+        elif out.get("proposed_total_display") is None:
+            try:
+                out["proposed_total_display"] = fmt_money(float(out["proposed_total"]))
+            except (TypeError, ValueError):
+                pass
+        out["proposed_total_note"] = skip_reason
+        return out
+
+    raw_total = sheet.get("proposed_invoice_total")
+    try:
+        total = float(raw_total) if raw_total is not None else None
+    except (TypeError, ValueError):
+        total = None
+    pricing = sheet.get("pricing") or {}
+    model = pricing.get("model") or sheet.get("model")
+    price_label = pricing.get("price_label")
+
+    out["proposed_total"] = total
+    out["proposed_total_display"] = fmt_money(total) if total is not None else None
+    out["proposed_model"] = model
+    out["proposed_price_label"] = price_label
+    out["proposed_total_note"] = None
+    if total is not None:
+        # Surface on the chip row without requiring UI-only knowledge.
+        labels = list(out.get("status_labels") or [])
+        money_chip = f"Proposed {fmt_money(total)}"
+        if money_chip not in labels:
+            labels.insert(0, money_chip)
+        if price_label and price_label not in labels:
+            labels.insert(1, price_label)
+        out["status_labels"] = labels
+        # Prefer an actionable note when we have a number.
+        out["note"] = (
+            f"Worksheet proposes {fmt_money(total)} — open Invoice to draft "
+            "(office review; never auto-sent)."
+        )
+    return out

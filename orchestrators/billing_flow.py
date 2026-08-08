@@ -20,10 +20,11 @@ Routes (wired by integrator in app/service.py, not this module):
 """
 from __future__ import annotations
 
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any, Callable, Optional
 
 from adapters.monday import billing as monday_billing
 from adapters.monday import payroll as monday_payroll
@@ -33,6 +34,15 @@ from adapters.monday import estimate as monday_estimate
 from orchestrators.invoice_ready_flow import build_item_worksheet
 from subsystems.invoice import billing_queue as bq
 from subsystems.invoice import ready_stage
+
+# Cap payroll walks on Billing Hub first paint. Ready queues are usually small;
+# env override for emergencies (0 = skip enrichment entirely).
+def _ready_proposed_limit() -> int:
+    raw = (os.environ.get("GVC_BILLING_READY_PROPOSED_LIMIT") or "20").strip()
+    try:
+        return max(0, min(int(raw), 50))
+    except (TypeError, ValueError):
+        return 20
 
 # Optional rich search — another agent owns adapters/monday/search.py.
 # When missing, we fall back to co.search_projects + estimate.search_bids.
@@ -194,6 +204,24 @@ def billing_hub_payload(mc=None, *, for_hub: bool = False) -> dict:
             f"{needs_handoff} accepted bid(s) still need a Job Start handoff "
             "before they have a Projects item to invoice."
         )
+
+    # P5 worksheet proposed totals on Ready rows — capped, non-fatal.
+    # Prefer staged totals already attached above; only cost cold gaps.
+    # Hub home skips — it never renders proposed $. Injected mc (tests)
+    # stays serial; live path fans payroll reads.
+    if (not for_hub) and queues["ready_to_invoice"] and not auth_failed:
+        try:
+            enrich_ready_proposed_totals(
+                queues["ready_to_invoice"],
+                mc=mc,
+                parallel=(mc is None),
+            )
+        except Exception as exc:  # noqa: BLE001
+            print(f"[billing] proposed-total enrich failed: {exc}", file=sys.stderr)
+            notes.append(
+                "Couldn't compute proposed invoice totals for Ready rows "
+                f"({type(exc).__name__}). Open Invoice from a row to price by hand."
+            )
 
     counts = {
         "ready_to_invoice": len(queues["ready_to_invoice"]),
@@ -450,6 +478,86 @@ def compute_ready_worksheets(
         "auto_send": False,
         "persist": persist,
     }
+
+
+def enrich_ready_proposed_totals(
+    items: list[dict],
+    *,
+    mc: Optional[Any] = None,
+    limit: Optional[int] = None,
+    parallel: bool = False,
+    fetch_payroll: Optional[Callable[[Any, int], dict]] = None,
+    build_sheet: Optional[Callable[[dict, dict], dict]] = None,
+) -> list[dict]:
+    """
+    Attach P5 worksheet ``proposed_total`` onto Ready-to-Invoice hub cards.
+
+    Cap + optional parallel payroll reads. Per-item failures leave the card
+    without a number — Open invoice still works. Never writes / never sends.
+    """
+    if not items:
+        return items
+    cap = _ready_proposed_limit() if limit is None else max(0, min(int(limit), 50))
+    if cap == 0:
+        for it in items:
+            if it.get("proposed_total") is None:
+                bq.attach_proposed_total(it, skip_reason="proposed totals disabled")
+        return items
+
+    fetch = fetch_payroll or monday_payroll.fetch_payroll_for_project
+    sheet_fn = build_sheet or build_item_worksheet
+    # Shared client only when serial / injected (tests). Live parallel path
+    # builds a fresh MondayClient per worker — clients aren't thread-safe.
+    shared_client = None if (parallel and mc is None) else _client(mc)
+    # Prefer staged/hub totals already on the card — only cost the gaps.
+    need = [it for it in items if it.get("proposed_total") is None]
+    targets = need[:cap]
+
+    def _one(item: dict) -> None:
+        pid = item.get("project_item_id")
+        if not pid:
+            bq.attach_proposed_total(
+                item, skip_reason="needs Projects link for worksheet"
+            )
+            return
+        try:
+            client = shared_client if shared_client is not None else MondayClient()
+            payroll = fetch(client, int(pid))
+            # Worksheet expects the ops/raw shape (name/builder/ids).
+            row = {
+                "item_id": item.get("ops_item_id") or item.get("item_id"),
+                "name": item.get("name"),
+                "builder": item.get("builder"),
+                "project_item_id": pid,
+                "project_number": item.get("project_number"),
+                "ready_date": item.get("ready_date"),
+                "url": item.get("monday_url"),
+            }
+            sheet = sheet_fn(row, payroll or {})
+            bq.attach_proposed_total(item, sheet)
+        except Exception as exc:  # noqa: BLE001
+            print(
+                f"[billing] proposed total for item {item.get('item_id')}: {exc}",
+                file=sys.stderr,
+            )
+            bq.attach_proposed_total(
+                item, skip_reason=f"worksheet unavailable ({type(exc).__name__})"
+            )
+
+    if parallel and len(targets) > 1:
+        workers = min(6, len(targets))
+        with ThreadPoolExecutor(max_workers=workers) as pool:
+            list(pool.map(_one, targets))
+    else:
+        for item in targets:
+            _one(item)
+
+    # Gaps past the cap stay open for Invoice — never wipe staged totals.
+    for item in need[cap:]:
+        bq.attach_proposed_total(
+            item, skip_reason=f"past proposed-total cap ({cap})"
+        )
+    return items
 
 
 def _rich_search_available() -> bool:

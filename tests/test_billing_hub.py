@@ -85,6 +85,86 @@ def test_shape_ready_to_invoice_with_project_number():
     assert "Proposed $15,442.83" in item["note"]
 
 
+def test_attach_proposed_total_from_worksheet():
+    item = bq.shape_ready_to_invoice({
+        "item_id": 10,
+        "name": "Job",
+        "url": "u",
+        "project_item_id": 20,
+        "project_number": "C-1",
+    })
+    sheet = {
+        "proposed_invoice_total": 1544.5,
+        "pricing": {"model": "by_sheet", "price_label": "by-sheet · builder-supplied"},
+    }
+    out = bq.attach_proposed_total(item, sheet)
+    assert out["proposed_total"] == 1544.5
+    assert out["proposed_total_display"] == "$1,544.50"
+    assert out["proposed_model"] == "by_sheet"
+    assert out["status_labels"][0].startswith("Proposed $")
+    assert "Worksheet proposes" in out["note"]
+    assert "never auto-sent" in out["note"]
+
+
+def test_attach_proposed_total_skip_reason():
+    item = {"status_labels": ["Ready"], "note": "keep"}
+    out = bq.attach_proposed_total(item, skip_reason="needs Projects link")
+    assert out["proposed_total"] is None
+    assert out["proposed_total_display"] is None
+    assert out["proposed_total_note"] == "needs Projects link"
+    assert out["note"] == "keep"
+
+
+def test_enrich_ready_proposed_totals_uses_payroll_inject():
+    items = [
+        bq.shape_ready_to_invoice({
+            "item_id": 1, "name": "Kavouras", "url": "u",
+            "project_item_id": 99, "project_number": "C-9",
+            "builder": "Wieland",
+        }),
+        bq.shape_ready_to_invoice({
+            "item_id": 2, "name": "No link", "url": "u2",
+            "project_item_id": None, "project_number": None,
+        }),
+    ]
+    payroll = {"board_count_hint": 275, "labor_cost": 9000.0, "rows": []}
+    calls = []
+
+    def fake_payroll(_mc, pid):
+        calls.append(pid)
+        return payroll
+
+    bf.enrich_ready_proposed_totals(
+        items, mc=object(), fetch_payroll=fake_payroll, parallel=False,
+    )
+    assert calls == [99]
+    assert items[0]["proposed_total"] is not None
+    assert items[0]["proposed_total"] > 0
+    assert items[1]["proposed_total"] is None
+    assert "Projects link" in (items[1].get("proposed_total_note") or "")
+
+
+def test_enrich_ready_proposed_totals_cap_and_failure():
+    items = [
+        bq.shape_ready_to_invoice({
+            "item_id": i, "name": f"Job {i}", "url": f"u{i}",
+            "project_item_id": 100 + i, "project_number": f"C-{i}",
+            "builder": "JDC",
+        })
+        for i in range(3)
+    ]
+
+    def boom(_mc, _pid):
+        raise RuntimeError("monday down")
+
+    bf.enrich_ready_proposed_totals(
+        items, mc=object(), limit=2, fetch_payroll=boom, parallel=False,
+    )
+    assert items[0]["proposed_total"] is None
+    assert "unavailable" in (items[0].get("proposed_total_note") or "")
+    assert "cap" in (items[2].get("proposed_total_note") or "")
+
+
 def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
     item = bq.shape_ready_to_invoice({
         "item_id": 10,

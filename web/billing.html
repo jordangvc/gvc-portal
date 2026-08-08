@@ -277,18 +277,28 @@ function chips(labels, item) {
   return out.join(" ");
 }
 
+function formatProposed(item) {
+  if (item.proposed_total_display) return item.proposed_total_display;
+  if (item.proposed_total == null || item.proposed_total === "") return "";
+  const n = Number(item.proposed_total);
+  if (!Number.isFinite(n)) return "";
+  try {
+    return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
+  } catch (e) {
+    return "$" + n.toFixed(2);
+  }
+}
+
 function metaBits(item) {
   const bits = [];
+  const proposed = formatProposed(item);
+  if (proposed) {
+    const model = item.proposed_model || item.model;
+    const modelBit = model ? ` · ${esc(model)}` : "";
+    bits.push(`Proposed <b>${esc(proposed)}</b>${modelBit}`);
+  }
   if (item.project_number) bits.push(`Project # <b>${esc(item.project_number)}</b>`);
   if (item.estimate_number) bits.push(`Est <b>${esc(item.estimate_number)}</b>`);
-  if (item.proposed_total != null && item.proposed_total !== "") {
-    const n = Number(item.proposed_total);
-    const money = Number.isFinite(n)
-      ? n.toLocaleString("en-US", { style: "currency", currency: "USD" })
-      : String(item.proposed_total);
-    const model = item.model ? ` · ${esc(item.model)}` : "";
-    bits.push(`Proposed <b>${esc(money)}</b>${model}`);
-  }
   if (item.builder) bits.push(`Builder <b>${esc(item.builder)}</b>`);
   if (item.supervisor) bits.push(`Super <b>${esc(item.supervisor)}</b>`);
   if (item.location) bits.push(esc(item.location));
