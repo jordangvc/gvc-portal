@@ -187,11 +187,10 @@ def test_jobcheck_anchors_match_catalog_spine() -> None:
 
     clear_cache()
     known = set(load_catalog()["by_id"])
-    shell_only = {"closeout-rhythm", "qc-walk"}  # still HTML-only
     missing = []
     for _col, anchor in JOBCHECK_FIELDGUIDE_ANCHORS.items():
         pid = resolve_procedure_id((anchor or "").lstrip("#"))
-        if pid in known or pid in shell_only:
+        if pid in known:
             continue
         missing.append(f"{_col}→{anchor}")
     check("no unknown Job Check→Field Manual anchors", missing == [])

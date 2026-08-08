@@ -21,7 +21,8 @@ looks like, what changes on site, and what to open next.
 
 **Pilot migrated:** Job Check drywall spine —
 `framing`, `preboard-walk`, `hang`, `scrape`, `finish`, `level5-skim`, `cleanout`
-(coat-stage chips share `finish`).
+(coat-stage chips share `finish`); Job Check gates —
+`qc-walk`, `closeout-rhythm` (Notes + Completion Date anchors).
 
 ## 2. Assumptions
 

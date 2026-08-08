@@ -123,6 +123,11 @@
   ],
   "next_steps": [
     {
+      "id": "qc-walk",
+      "label": "Before advancing",
+      "why": "Pass/fix walk under raking light"
+    },
+    {
       "id": "finish",
       "label": "If coats remain",
       "why": "Back to finishing sequence"
