@@ -1,0 +1,211 @@
+{
+  "id": "punch-cadence",
+  "slug": "punch-cadence",
+  "title": "Punch List Cadence",
+  "short_answer": "How we walk punch with a GC or owner: drywall first, paint second, photos always, and a clear line between our punch and other-trade damage.",
+  "summary": "How we walk punch with a GC or owner: drywall first, paint second, photos always, and a clear line between our punch and other-trade damage.",
+  "plain_words": "Punch is a process, not a mood. Prep the room, walk with light, fix the wall before you touch paint, and write everything down. Verbal-only punch on commercial work is how items come back a month later as \"you never fixed that.\"",
+  "when_to_use": [
+    "GC or owner punch walk on commercial or warranty work",
+    "Before closing Job Check Completion or calling the job done",
+    "After major trades finish and before final paint touch-up"
+  ],
+  "prerequisites": [
+    "QC walk habit — raking light and honest marking",
+    "Drywall Touch-Up and Paint Touch-Up procedures understood"
+  ],
+  "trade_id": "drywall",
+  "category_id": "repair-punch",
+  "template": "task_guide",
+  "stage_line": "Repair & punch · process",
+  "role_tags": [
+    "lead",
+    "foreman",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Raking work light"
+    },
+    {
+      "name": "Low-tack tape or pencil for marking"
+    },
+    {
+      "name": "Phone camera"
+    },
+    {
+      "name": "Primer for repaired areas"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Prep",
+      "body": "Clean enough to see, tools ready, raking light in hand (see QC Walk + Drywall Touch-Up).",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Drywall punch first",
+      "body": "Defects, ridges, voids, screw issues. Mark outside the defect.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Prime repairs",
+      "body": "Prime repairs, then Paint Touch-Up on a ready wall — not paint over dust.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Photo + written list",
+      "body": "Photo and written list the same day. Commercial: never leave it verbal-only.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Other-trade damage",
+      "body": "Photo before you touch it; then CO / T&M path if we are asked to repair (Spotting a Change Order).",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Close honestly",
+      "body": "Close Job Check / Completion only when the list is truly closed — not when everyone is tired of looking at it.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Verbal-only punch on commercial work",
+      "body": "Items come back a month later as \"you never fixed that.\" Photo + written list the same day — every walk."
+    },
+    {
+      "severity": "warn",
+      "title": "Paint before drywall is ready",
+      "body": "Paint over dust or unprimed compound buys a second mobilization. Drywall punch first, prime, then touch-up paint."
+    }
+  ],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "pc-prep-light",
+      "prompt": "Room prepped and raking light used for the walk",
+      "severity": "required"
+    },
+    {
+      "id": "pc-drywall-first",
+      "prompt": "Drywall defects fixed and primed before paint touch-up",
+      "severity": "required"
+    },
+    {
+      "id": "pc-written",
+      "prompt": "Photo + written punch list completed same day (commercial mandatory)",
+      "severity": "required"
+    },
+    {
+      "id": "pc-close-honest",
+      "prompt": "Completion / Job Check closed only when the list is actually closed",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Verbal-only commercial punch",
+      "wrong": "Walk with the GC and fix items with no written record",
+      "right": "Photo + written list the same day",
+      "why": "Comes back as disputed work weeks later"
+    },
+    {
+      "title": "Paint over dust",
+      "wrong": "Touch up paint before drywall repairs are primed",
+      "right": "Drywall punch → prime → paint touch-up",
+      "why": "Flashing and adhesion failures — paid twice"
+    },
+    {
+      "title": "Closing when tired",
+      "wrong": "Mark Completion because everyone wants to leave",
+      "right": "Close only when the punch list is truly closed",
+      "why": "Job Check Completion is a promise to the office and GC"
+    },
+    {
+      "title": "Repairing other-trade damage for free",
+      "wrong": "Fix electrician damage without a photo or CO path",
+      "right": "Photo first; CO / T&M if asked to repair",
+      "why": "Our punch is not their damage"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "touchup-drywall",
+    "touchup-paint",
+    "qc-walk",
+    "changeorder",
+    "closeout-rhythm"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "touchup-drywall",
+      "label": "Drywall Touch-Up",
+      "why": "Defect repair before paint"
+    },
+    {
+      "procedure_id": "touchup-paint",
+      "label": "Paint Touch-Up",
+      "why": "After primer on a ready wall"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC walk",
+      "why": "Same raking-light ritual at every stage"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Other-trade damage is not free punch"
+    },
+    {
+      "procedure_id": "closeout-rhythm",
+      "label": "Closeout rhythm",
+      "why": "Honest end-of-day close when punch is done"
+    }
+  ],
+  "search_tags": [
+    "punch",
+    "punch list",
+    "punch walk",
+    "punch cadence",
+    "commercial punch",
+    "written list",
+    "gc walk"
+  ],
+  "synonyms": [
+    "punch",
+    "punch list",
+    "punch-list",
+    "punch cadence",
+    "punch-cadence",
+    "punch walk",
+    "punch-walk",
+    "gc punch",
+    "owner punch"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice wrapping Drywall Touch-Up and Paint Touch-Up. Completes the punch tiles with a supervision cadence.",
+    "sources": [
+      "GVC Field Manual",
+      "Drywall Touch-Up",
+      "Paint Touch-Up",
+      "QC Walk"
+    ]
+  }
+}

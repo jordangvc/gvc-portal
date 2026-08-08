@@ -32,10 +32,14 @@ looks like, what changes on site, and what to open next.
 **Change orders** — `changeorder` (ops money-scope);
 **Touch-up** — `touchup-drywall` + `touchup-paint` (repair-punch);
 **Stocking** — `stock-drywall` (pre-hang board staging);
-**Insulation / Painting / Demo** — `insulation`, `painting`, `demo`.
+**Insulation / Painting / Demo** — `insulation`, `painting`, `demo`;
+**Ops gates** — `escalate`, `inspection-hold`, `punch-cadence`;
+**Scope/field** — `rfi-field`, `exclusions-walk`, `residential-field`, `garage-finish`;
+**Tectum** — `tectum` (ACT trade; estimate scope stub flagged in provenance).
 
 Coach: catalog-only procedure ids synthesize checklist steps from catalog
 `steps` (no home-tile FALLBACK) so Job Check / deep-link coach never dead-ends.
+Catalog link audit: `next_steps` and `related` resolve (no dangling).
 
 ## 2. Assumptions
 

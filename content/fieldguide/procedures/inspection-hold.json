@@ -1,0 +1,195 @@
+{
+  "id": "inspection-hold",
+  "slug": "inspection-hold",
+  "title": "Inspection Photos & Hold Points",
+  "short_answer": "What to photograph before you cover it, how to tag it, and when covering without a clear is how you buy tear-out.",
+  "summary": "What to photograph before you cover it, how to tag it, and when covering without a clear is how you buy tear-out.",
+  "plain_words": "If an inspector or GC needs to see a layer, and you covered it, you own the reopen. Photo first. Rated walls, shaftliner, firestop, insulation before the second side, and resilient channel are the usual hold points.",
+  "when_to_use": [
+    "Before covering any rated assembly layer or firestop",
+    "Before second-side board on insulated or shaft walls",
+    "Before resilient channel disappears behind board",
+    "After a failed inspection — before any repair or cover-up"
+  ],
+  "prerequisites": [
+    "Know the hold points on this assembly — ask the lead if unsure",
+    "Fire Walls & Shaftwall and Firestopping procedures reviewed"
+  ],
+  "trade_id": "ops",
+  "category_id": "hold-points",
+  "template": "task_guide",
+  "stage_line": "Rated work · hold points",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Phone camera"
+    },
+    {
+      "name": "Room or grid label habit (frame or filename)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Know the hold points",
+      "body": "Know the hold points on this assembly before you start covering — ask the lead if unsure.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Photo",
+      "body": "Wide (where you are) + close (the detail). Include a room or grid label in the frame or filename habit the lead uses.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Typical set",
+      "body": "Base layer / shaftliner, firestop at head-of-wall and penetrations, insulation before 2nd side, RC/hat channel before board.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Wait for clear",
+      "body": "Do not cover until the lead (and GC/inspector when required) clears — Job Check \"ready\" is not a substitute for a failed inspection.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Failed inspection",
+      "body": "Stop, photo the red tag / note, call the lead. Tear-out vs repair is their call with the office.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Cover without a clear",
+      "body": "If an inspector or GC needed to see a layer and you covered it, you own the reopen. Photo first; wait for lead and inspector clearance when required."
+    },
+    {
+      "severity": "warn",
+      "title": "Job Check is not inspection clearance",
+      "body": "Flipping a stage chip to ready does not replace a failed inspection or a required GC hold-point sign-off."
+    }
+  ],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "ih-hold-known",
+      "prompt": "Hold points for this assembly identified before cover-up starts",
+      "severity": "required"
+    },
+    {
+      "id": "ih-photo-set",
+      "prompt": "Wide + close photos with room/grid context before cover",
+      "severity": "required"
+    },
+    {
+      "id": "ih-cleared",
+      "prompt": "Lead (and inspector when required) cleared before cover",
+      "severity": "required"
+    },
+    {
+      "id": "ih-failed-stop",
+      "prompt": "Failed inspection photographed and escalated before repair",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Cover to keep schedule",
+      "wrong": "Board over shaftliner or firestop because the GC is pushing",
+      "right": "Photo, hold, and get clearance",
+      "why": "Tear-out cost lands on whoever covered without proof"
+    },
+    {
+      "title": "Job Check as inspection substitute",
+      "wrong": "Mark Hanging ready while inspection is still open",
+      "right": "Separate inspection clearance from board updates",
+      "why": "A failed tag means stop — not a chip update"
+    },
+    {
+      "title": "Close-up only photos",
+      "wrong": "Detail photo with no room or grid context",
+      "right": "Wide + close; label in frame or filename habit",
+      "why": "Useless for disputes without location proof"
+    },
+    {
+      "title": "Repair after failed inspection without lead",
+      "wrong": "Cover the red tag and keep going",
+      "right": "Stop, photo tag, call lead — tear-out vs repair is their call",
+      "why": "Office needs authority on rated-work rework"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "ratedwalls",
+    "firestop",
+    "hang",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "ratedwalls",
+      "label": "Fire Walls & Shaftwall",
+      "why": "Assembly layers that drive hold points"
+    },
+    {
+      "procedure_id": "firestop",
+      "label": "Firestopping",
+      "why": "Head-of-wall and penetration photos before cover"
+    },
+    {
+      "procedure_id": "hang",
+      "label": "Hanging",
+      "why": "Second-side cover is a common miss"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC walk",
+      "why": "Honest stage updates after clearance"
+    }
+  ],
+  "search_tags": [
+    "inspection",
+    "hold point",
+    "hold-point",
+    "photo before cover",
+    "rated wall",
+    "shaftliner",
+    "firestop photo",
+    "insulation before second side",
+    "red tag"
+  ],
+  "synonyms": [
+    "inspection-hold",
+    "inspection hold",
+    "hold point",
+    "hold-point",
+    "hold points",
+    "inspection photos",
+    "photo before cover",
+    "red tag",
+    "failed inspection"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice reinforcing Fire Walls & Shaftwall and Firestopping photo discipline into one crew ritual.",
+    "sources": [
+      "GVC Field Manual",
+      "Fire Walls & Shaftwall",
+      "Firestopping"
+    ]
+  }
+}
