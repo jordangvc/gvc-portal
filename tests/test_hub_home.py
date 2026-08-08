@@ -140,14 +140,6 @@ def test_hub_refresh_shape() -> None:
     check("no pinned key", "pinned" not in out)
 
 
-def test_hub_skips_morning_gfolder_attach():
-    """Office hub must not pay 2×N GFolder GraphQL on first paint."""
-    src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
-    chunk = src.split("def _try_morning_brief")[1].split("def _try_billing")[0]
-    check("hub passes attach_gfolder=False",
-          "attach_gfolder=False" in chunk)
-
-
 def test_hub_setup_flags() -> None:
     """Config cliffs surface as sparse setup[feature]=True — never secrets."""
     from orchestrators import hub_flow
@@ -160,7 +152,6 @@ def test_hub_setup_flags() -> None:
         flags = hub_flow.setup_flags()
         check("timeoff needs setup without URL", flags.get("timeoff") is True)
         check("admin needs setup without gcs", flags.get("admin") is True)
-        # coi may or may not be ready depending on store; just type-check
         check("setup values are bools", all(isinstance(v, bool) for v in flags.values()))
 
         os.environ["GVC_TIMEOFF_FORM_URL"] = "https://forms.example/timeoff"
@@ -184,6 +175,13 @@ def test_hub_setup_flags() -> None:
         else:
             os.environ["GVC_GRANTS_BACKEND"] = saved_backend
 
+
+def test_hub_skips_morning_gfolder_attach():
+    """Office hub must not pay 2×N GFolder GraphQL on first paint."""
+    src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
+    chunk = src.split("def _try_morning_brief")[1].split("def _try_billing")[0]
+    check("hub passes attach_gfolder=False",
+          "attach_gfolder=False" in chunk)
 
 
 def test_hub_files_and_route() -> None:
@@ -227,6 +225,7 @@ def test_hub_files_and_route() -> None:
     check("activityall id", "activityall" in hub)
     css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
     check("hub css", ".hub-rail" in css and "264px" in css)
+    check("setup badge css", ".hub-rail__badge.is-setup" in css)
     check("clear gold inset", "hub-clear" in css and "inset 3px" in css)
     check("desktop header stays", "hub-top { display: none" not in css)
     check("home cta css", ".hub-home-cta" in css)
@@ -462,9 +461,9 @@ if __name__ == "__main__":
     test_hub_payload_shape()
     test_hub_brief_billing_parallel_contract()
     test_hub_skips_morning_gfolder_attach()
-    test_hub_setup_flags()
     test_hub_files_and_route()
     test_hub_refresh_shape()
+    test_hub_setup_flags()
     test_need_urgent_flag()
     test_office_queue_ids_and_handoffs()
     test_clear_summary_honest_when_unreachable()
