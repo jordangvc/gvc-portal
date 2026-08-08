@@ -926,7 +926,10 @@ function sendToOps() {
       : "";
     showStatus("ok",
       `✔ <strong>Sent to Operations.</strong> They've been pinged in Slack and
-       need to accept before this job goes on the schedule.${pdf}${bidLine}${bidErr}`);
+       need to accept before this job goes on the schedule.${pdf}${bidLine}${bidErr}` +
+      `<div class="result-line" style="margin-top:8px">Next: <a href="/">hub</a> · ` +
+      `<a href="/ui/morning">Morning Brief</a> — wait for Ops to accept ` +
+      `(Job Check opens after that).</div>`);
   });
 }
 
@@ -946,10 +949,16 @@ function acceptJob() {
         : (body.ops_id ? "ops task updated" : null),
     ].filter(Boolean).join(", ");
     const warnings = body.warnings || [];
+    const jcHref = body.ops_id
+      ? `/ui/jobcheck?item=${encodeURIComponent(body.ops_id)}`
+      : "/ui/jobcheck";
+    const nextJc = `<a href="${jcHref}">Open Job Check</a>`;
     if (body.already_processed) {
       showStatus("ok",
         `✔ <strong>Already handed off</strong> — not creating duplicates.` +
-        (links ? `<br>${links}` : ""));
+        (links ? `<br>${links}` : "") +
+        `<div class="result-line" style="margin-top:8px">Next: ${nextJc} · ` +
+        `<a href="/ui/billing">Billing Hub</a> · <a href="/">hub</a>.</div>`);
       return;
     }
     if (body.complete === false) {
@@ -957,21 +966,22 @@ function acceptJob() {
         `<strong>Handoff incomplete</strong> — still with Operations so you can retry.` +
         (made ? ` ${esc(made)}.` : "") +
         `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>` +
-        (links ? links : ""));
+        (links ? links : "") +
+        `<div class="result-line" style="margin-top:8px">Next: tap <strong>Accept</strong> again ` +
+        `(fixes the missing Ops step) · <a href="/">hub</a>.</div>`);
       return;
     }
     if (!warnings.length) {
-      const jc = body.ops_id
-        ? ` <a href="/ui/jobcheck?item=${encodeURIComponent(body.ops_id)}">Open Job Check for this job</a>`
-        : ` <a href="/ui/jobcheck">Open Job Check</a>`;
-      showStatus("ok", `✔ <strong>Accepted.</strong> ${esc(made)}.<br>${links}<br>Next:${jc} · <a href="/">hub</a>`);
+      showStatus("ok",
+        `✔ <strong>Accepted.</strong> ${esc(made)}.<br>${links}` +
+        `<div class="result-line" style="margin-top:8px">Next: ${nextJc} · ` +
+        `<a href="/ui/billing">Billing Hub</a> · <a href="/">hub</a>.</div>`);
     } else {
-      const jc = body.ops_id
-        ? ` <a href="/ui/jobcheck?item=${encodeURIComponent(body.ops_id)}">Open Job Check</a>`
-        : "";
       showStatus("warn",
         `<strong>Accepted with warnings.</strong> ${esc(made)}.` +
-        `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${links}${jc}`);
+        `<ul>${warnings.map((w) => `<li>${esc(w)}</li>`).join("")}</ul>${links}` +
+        `<div class="result-line" style="margin-top:8px">Next: ${nextJc} · ` +
+        `<a href="/">hub</a>.</div>`);
     }
   });
 }
@@ -1004,7 +1014,9 @@ async function draftGcEmail() {
       `✔ <b>${body.replaced_existing ? "Draft updated" : "Draft created"}</b> in hello@ —
        to ${esc(body.to)}${body.cc ? `, cc ${esc(body.cc)}` : ""}.${link}
        <br>Read it, then hit send yourself. The "Scope emailed to the GC on" date fills
-       itself in within ~10 minutes of the real send — no need to type it.`;
+       itself in within ~10 minutes of the real send — no need to type it.` +
+      `<div class="result-line" style="margin-top:8px">Next: finish the packet fields · ` +
+      `<a href="/ui/jobstart">other bids</a> · <a href="/">hub</a>.</div>`;
   } catch (e) {
     out.innerHTML = `<span style="color:#7A1F1F;">Network error — ${esc(e.message)}</span>`;
   } finally {
@@ -1022,7 +1034,11 @@ function sendBackToSales() {
     return;
   }
   act("send-back", { note }, $("#sendback"), "Sending back…", () => {
-    showStatus("ok", "✔ <strong>Sent back to Sales</strong> with your note.");
+    showStatus("ok",
+      "✔ <strong>Sent back to Sales</strong> with your note." +
+      `<div class="result-line" style="margin-top:8px">Next: ` +
+      `<a href="/ui/jobstart">pick another bid</a> · <a href="/">hub</a> · ` +
+      `<a href="/ui/morning">Morning Brief</a>.</div>`);
   });
 }
 

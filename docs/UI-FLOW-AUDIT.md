@@ -26,7 +26,7 @@ support the field. Admin / Activity are company tools.
 | Morning GM | Pass | Link to brief | Pass | Thin but OK |
 | Owner Pulse | Pass | Hub brand | Pass* | *error state offers retry + Morning/hub; decisions are cards |
 | Job Check | Pass | Hub / Change job | Strong | Dirty confirm exists |
-| Job Start | Pass* | Hub / Change bid* | Strong | *autosave flush on leave |
+| Job Start | Pass* | Hub / Change bid* | Strong | *autosave flush on leave; send/accept/send-back offer Next |
 | Billing | Pass | Hub | Pass* | *activity copy fixed |
 | Invoice | Pass | Hub | Strong | Has Next: Billing / Check |
 | Estimate | Pass | Hub | Strong | Has Next: Job Start |
@@ -66,6 +66,8 @@ support the field. Admin / Activity are company tools.
    non-senders (admins included); senders see Waiting queue rows. Send Back is
    ops-only (same two-party rule as Accept) — senders no longer see a mislabeled
    "recall" button. Still needs a human Ops acceptor; no Sales pull-back API yet.
+   Outcome toasts (send / send-back / accept / incomplete / GC draft) now carry
+   spine **Next:** links (r79).
 
 ### Still open (next passes)
 
