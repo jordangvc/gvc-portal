@@ -1,0 +1,283 @@
+{
+  "id": "finish",
+  "slug": "finish",
+  "title": "Finishing Drywall",
+  "short_answer": "Three coats, each wider and thinner, only on dry mud \u2014 scrape between. Finish to the specified GA-214 level, not nicer than priced.",
+  "summary": "Finishing is where the labor is, where the reputation is, and where the two get traded against each other by accident.",
+  "plain_words": "Three coats, each one wider and thinner than the last, each one only over a coat that's fully dry. Scrape between them. Then sand \u2014 and if you did the coats right, sanding is just blending the edges, not reshaping the wall. The biggest mistake isn't doing it badly; it's doing it better than the job was priced for.",
+  "when_to_use": [
+    "Scrapping Status done and room accepted for tape",
+    "Job Check Taped / 2nd Bed Coat / 3rd Coat / Sanded / Finishing Stage",
+    "Any coat-sequence question on a drywall finish"
+  ],
+  "prerequisites": [
+    "Room scraped and accepted",
+    "Conditions: temperature and air movement for mud",
+    "Specified finish level known (GA-214)"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "Taped Status",
+  "role_tags": [
+    "finisher",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Taping knives (6\u201312\"+)"
+    },
+    {
+      "name": "Mud pan / hawk"
+    },
+    {
+      "name": "Pole sander / hand sander"
+    },
+    {
+      "name": "Vacuum-assisted sanding",
+      "optional": true
+    },
+    {
+      "name": "Raking light / bright work light"
+    }
+  ],
+  "materials": [
+    {
+      "name": "All-purpose / topping / setting compound as specified"
+    },
+    {
+      "name": "Paper or mesh tape per detail"
+    },
+    {
+      "name": "Corner bead"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Room is scraped and accepted. Don't start tape in a room that isn't ready \u2014 you'll do the scrapper's work at a taper's rate.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Pre-fill oversized gaps with setting compound and let them set before taping over.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Conditions reasonable \u2014 mud needs temperature and air movement. Cold, damp, still air turns a three-day finish into a week.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Full bed of compound behind the tape \u2014 tape bedded in a starved joint blisters and comes back.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Squeeze the tape down firmly and clean out the excess. Every bit you leave now is something somebody sands later.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Corner bead set straight and secure \u2014 a wavy bead can't be fixed with mud, only hidden badly.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Only over a fully dry previous coat. Coating over damp compound causes shrinkage cracks and delamination that show up after paint.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Wider than the first. Every coat gets wider \u2014 that's how a joint disappears.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Butt joints get the widest treatment on the wall. Scrape the ridges before they harden.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Thin, wide, feathered. This coat blends, it doesn't fill.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Lightweight or topping compound \u2014 sands far easier, on the coat that gets sanded most.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Sanding blends edges. Don't over-sand \u2014 cutting into the paper creates fuzz that telegraphs through paint.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Check with a bright light at a low angle. That's the light a paint job will reveal.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "Vacuum-assisted sanding where dust control matters \u2014 occupied buildings, phased work, other trades nearby.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "Match specified texture and any existing texture on a tie-in. Make a sample and get it approved.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Finishing above the price",
+      "body": "The biggest mistake isn\u2019t doing it badly \u2014 it\u2019s finishing better than the job was priced for. Match the specified level."
+    },
+    {
+      "severity": "warn",
+      "title": "Coating green mud",
+      "body": "Only coat over a fully dry previous coat. Green mud shrinks, cracks, and delaminates later."
+    },
+    {
+      "severity": "stop",
+      "title": "Tape without scrape",
+      "body": "Don\u2019t start tape in a room that isn\u2019t scraped \u2014 you\u2019ll do scrapper work at taper rates."
+    }
+  ],
+  "variations": [
+    {
+      "id": "finish-level4",
+      "title": "Level 4",
+      "when": "Typical paint-ready commercial/residential",
+      "changes": [
+        "Joints and fasteners finished smooth",
+        "No full skim unless specified"
+      ]
+    },
+    {
+      "id": "finish-level5",
+      "title": "Level 5 / critical light",
+      "when": "Spec or CO calls Level 5 / gloss / critical lighting",
+      "changes": [
+        "Complete Level 4 first",
+        "Then open Level 5 / Full Skim procedure",
+        "Never \u201cgift\u201d a skim"
+      ]
+    },
+    {
+      "id": "finish-cold",
+      "title": "Cold / damp / still air",
+      "when": "Winter or closed buildings with poor airflow",
+      "changes": [
+        "Heat and move air",
+        "Expect longer dry times",
+        "Do not stack coats to \u201csave a day\u201d"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "prompt": "Each coat wider/thinner than the last; prior coat dry"
+    },
+    {
+      "prompt": "Bead straight \u2014 not \u201cfixed\u201d with mud"
+    },
+    {
+      "prompt": "Raking-light QC before calling sanded done"
+    },
+    {
+      "prompt": "Finish level matches what was sold"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Starved tape bed",
+      "wrong": "Tape pressed into thin mud",
+      "right": "Full bed behind tape, squeeze excess",
+      "why": "Blisters come back after paint"
+    },
+    {
+      "title": "Sanding to reshape",
+      "wrong": "Heavy sand to fix thick ridges",
+      "right": "Scrape between coats; sand only blends edges",
+      "why": "Sanding into paper ruins the face"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Joint telegraphs after paint",
+      "likely_cause": "Coat not wide enough or sanded too early",
+      "fix": "Raking light; re-coat wider on dry mud; check level vs sheen"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "scrape",
+    "level5-skim",
+    "cleanout"
+  ],
+  "next_steps": [
+    {
+      "id": "level5-skim",
+      "label": "If Level 5 / Text-Skim",
+      "why": "Job Check Text/Skim \u2014 only when specified or CO\u2019d"
+    },
+    {
+      "id": "cleanout",
+      "label": "Next: Clean-out",
+      "why": "Job Check Cleaned Out after sand"
+    }
+  ],
+  "search_tags": [
+    "finish",
+    "tape",
+    "coat",
+    "mud",
+    "sand",
+    "bead",
+    "taped",
+    "2nd bed",
+    "3rd coat"
+  ],
+  "synonyms": [
+    "taped",
+    "taping",
+    "finishing",
+    "bed coat",
+    "2nd bed coat",
+    "3rd coat",
+    "sanded",
+    "finishing stage",
+    "mud work",
+    "taper"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Migrated from Field Manual HTML #finish; aligned with Job Check where applicable.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check stage columns"
+    ]
+  }
+}

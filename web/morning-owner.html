@@ -28,8 +28,27 @@
   .card h2 { margin: 0 0 8px; font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .06em; color: var(--gvc-green-dark); }
   .big { font-size: 40px; font-weight: 700; color: var(--gvc-green-dark); line-height: 1; }
   .muted { color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
-  .item { padding: 8px 0; border-bottom: 1px solid var(--gvc-line-soft); }
+  .item { padding: 10px 0; border-bottom: 1px solid var(--gvc-line-soft); }
   .item:last-child { border-bottom: 0; }
+  .item-title { font-weight: 700; color: var(--gvc-ink); margin: 0 0 4px; }
+  .item-meta { color: var(--gvc-muted); font-size: var(--gvc-fs-caption); margin: 0 0 8px; }
+  .item-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  .item-actions a {
+    display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px;
+    border-radius: var(--gvc-r-pill); border: 1px solid var(--gvc-line-strong);
+    background: var(--gvc-surface); color: var(--gvc-green-dark); font-weight: 600;
+    font-size: var(--gvc-fs-small); text-decoration: none;
+  }
+  .item-actions a.primary {
+    background: var(--gvc-green); border-color: var(--gvc-green); color: #fff;
+    box-shadow: inset 0 0 0 1px var(--gvc-gold);
+  }
+  .chip {
+    display: inline-block; padding: 2px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    background: var(--gvc-tint-sand); color: var(--gvc-gold-dark); margin-right: 6px;
+  }
+  .chip.warn { background: var(--gvc-danger-tint); color: var(--gvc-danger-dark); }
   #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); }
   #err.show { display:block; }
 </style>
@@ -57,6 +76,47 @@
 <script src="/ui/gvc-command.js"></script>
 <script>
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
+
+function escChip(label, warn) {
+  if (!label) return "";
+  return `<span class="chip${warn ? " warn" : ""}">${esc(label)}</span>`;
+}
+
+function safetyCard(s) {
+  const href = s.href || (s.item_id ? `/ui/jobcheck?item=${encodeURIComponent(s.item_id)}` : "");
+  const actions = href
+    ? `<div class="item-actions"><a class="primary" href="${esc(href)}">Open Job Check</a>
+         <a href="/ui/morning-owner">Stay on Pulse</a></div>`
+    : "";
+  return `<div class="item">
+    <div class="item-title">${escChip("Safety", true)}${esc(s.name || "Job")}</div>
+    <p class="item-meta">${esc(s.blocked || "Safety / stop-work hold")}</p>
+    ${actions}
+  </div>`;
+}
+
+function decisionCard(x) {
+  const escLabel = (x.escalation && x.escalation !== "none") ? x.escalation.replace(/_/g, " ") : "";
+  const warn = x.escalation === "overdue" || x.escalation === "ack_reminder";
+  const title = x.project_name || x.need || "Owner decision";
+  const detail = [
+    x.need && x.project_name ? x.need : "",
+    x.category ? `Category: ${x.category.replace(/_/g, " ")}` : "",
+    x.status ? `Status: ${x.status.replace(/_/g, " ")}` : "",
+    x.requester_email ? `From ${x.requester_email}` : "",
+  ].filter(Boolean).join(" · ");
+  const href = x.href || (x.project_item_id
+    ? `/ui/jobcheck?item=${encodeURIComponent(x.project_item_id)}` : "/ui/morning");
+  return `<div class="item">
+    <div class="item-title">${escChip(escLabel || "Decision", warn)}${esc(title)}</div>
+    <p class="item-meta">${esc(detail || "Needs your call.")}</p>
+    <div class="item-actions">
+      <a class="primary" href="${esc(href)}">${x.project_item_id ? "Open Job Check" : "Open Morning Brief"}</a>
+      <a href="/ui/morning">My brief</a>
+    </div>
+  </div>`;
+}
+
 async function load(){
   try {
     const r = await fetch("/ui/api/morning/owner");
@@ -67,10 +127,10 @@ async function load(){
     const tp = d.team_preparation || {};
     document.getElementById("pctsub").textContent = `${tp.prepared||0} of ${tp.team_size||0} fully ready · ${d.workdate||""}`;
     document.getElementById("safety").innerHTML = (d.safety_stops||[]).length
-      ? d.safety_stops.map(s=>`<div class="item"><b>${esc(s.name)}</b> — ${esc(s.blocked)}</div>`).join("")
+      ? d.safety_stops.map(safetyCard).join("")
       : "None flagged";
     document.getElementById("alerts").innerHTML = (d.prep_alerts||[]).length
-      ? d.prep_alerts.map(a=>`<div class="item">${esc(a.email)} · L${a.level}: ${esc(a.message)}</div>`).join("")
+      ? d.prep_alerts.map(a=>`<div class="item"><b>${esc(a.email)}</b> · L${esc(a.level)}: ${esc(a.message)}</div>`).join("")
       : "None";
     const h = d.huddle || {};
     document.getElementById("huddle").textContent =
@@ -80,7 +140,7 @@ async function load(){
       ? d.planning_signals.map(p=>`<div class="item">${esc(p.email)} · ${p.count} route overrides / 10 days</div>`).join("")
       : "None";
     document.getElementById("dec").innerHTML = (d.owner_decisions||[]).length
-      ? d.owner_decisions.map(x=>`<div class="item">${esc(JSON.stringify(x))}</div>`).join("")
+      ? d.owner_decisions.map(decisionCard).join("")
       : "None waiting";
   } catch (e) {
     document.getElementById("err").className = "show";

@@ -38,6 +38,7 @@ COPY shared ./shared
 COPY templates ./templates
 COPY web ./web
 COPY assets ./assets
+COPY content ./content
 
 # Import smoke test at build time — if app.service or its transitive imports
 # fail to load, fail the BUILD here with a real traceback rather than at

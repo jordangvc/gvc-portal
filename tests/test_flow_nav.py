@@ -24,9 +24,11 @@ def test_flow_nav_spine() -> None:
     ids = flow_nav.spine_ids()
     check("spine starts hub", ids[0] == "hub")
     check("spine has takeoff", "takeoff" in ids)
-    check("spine ends invoice", ids[-1] == "invoice")
-    check("seven steps", len(ids) == 7)
+    check("spine ends check", ids[-1] == "check")
+    check("nine steps", len(ids) == 9)
+    check("CO after jobcheck", ids.index("jobcheck") < ids.index("change_order"))
     check("billing before invoice", ids.index("billing") < ids.index("invoice"))
+    check("invoice before check", ids.index("invoice") < ids.index("check"))
 
     steps = flow_nav.spine_steps()
     takeoff = next(s for s in steps if s["id"] == "takeoff")
@@ -61,8 +63,10 @@ def test_takeoff_page_and_flow_js_on_disk() -> None:
         ("estimate.html", "estimate"),
         ("jobstart.html", "jobstart"),
         ("jobcheck.html", "jobcheck"),
+        ("change-order.html", "change_order"),
         ("billing.html", "billing"),
         ("invoice.html", "invoice"),
+        ("check.html", "check"),
     ):
         body = (web / page).read_text(encoding="utf-8")
         check(f"{page} has path host", 'id="gvc-flow"' in body)

@@ -110,11 +110,13 @@ def test_hub_brief_billing_parallel_contract() -> None:
     """Master #94 fans brief/billing/pulse/gm — keep the contract honest."""
     src = (ROOT / "orchestrators" / "hub_flow.py").read_text(encoding="utf-8")
     chunk = src.split("def _live_hub_slice")[1].split("def build_hub_refresh")[0]
-    check("hub enrichment pool", "ThreadPoolExecutor(max_workers=4)" in chunk)
+    check("hub enrichment pool", "ThreadPoolExecutor(max_workers=5)" in chunk)
     check("submits morning brief", "pool.submit(_try_morning_brief" in chunk)
     check("submits billing", "pool.submit(_try_billing)" in chunk)
     check("submits owner pulse", "pool.submit(_try_owner_pulse" in chunk)
     check("submits gm view", "pool.submit(_try_gm_view" in chunk)
+    check("submits jobstart drafts", "pool.submit(_try_jobstart_drafts)" in chunk)
+    check("folds jobstart queue", "_fold_jobstart_queue(" in chunk)
     check("as_completed gather", "as_completed" in chunk)
     check("refresh helper exists", "def build_hub_refresh" in src)
     check("refresh skips activity",
@@ -150,7 +152,7 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r70 footer", ">r70<" in hub)
+    check("r73 footer", ">r73<" in hub)
     check("light refresh endpoint", "/ui/api/hub/refresh" in hub)
     check("refresh debounce", "REFRESH_MIN_MS" in hub)
     fetch_fn = hub.split("async function fetchPayload")[1].split("async function refreshBadges")[0]
@@ -355,6 +357,64 @@ def test_morning_deeplink_hyphens() -> None:
     check("hyphen owner route", "/ui/morning-owner" in text)
 
 
+def test_jobstart_accept_queue_two_party() -> None:
+    from orchestrators import hub_flow
+
+    rows = [
+        {"bid_id": 101, "status": "with_ops", "job_name": "101 Main | ACME",
+         "sent_by": "jake@x.com", "sent_at": "2026-08-01T12:00:00+00:00"},
+        {"bid_id": 102, "status": "draft", "job_name": "Still drafting",
+         "sent_by": "", "sent_at": ""},
+        {"bid_id": 103, "status": "with_ops", "label": "103 Side | Builder",
+         "sent_by": "ops@x.com", "sent_at": "2026-08-02"},
+    ]
+    as_ops = hub_flow.jobstart_accept_queue(rows, "ops@x.com", is_admin=False)
+    check("ops can accept jake's",
+          any(i["bid_id"] == "101" for i in as_ops["accept"]))
+    check("ops cannot accept own",
+          not any(i["bid_id"] == "103" for i in as_ops["accept"]))
+    check("ops sees own as waiting",
+          any(i["bid_id"] == "103" for i in as_ops["waiting_mine"]))
+    check("drafts ignored",
+          not any(i["bid_id"] == "102" for i in as_ops["accept"] + as_ops["waiting_mine"]))
+
+    as_admin = hub_flow.jobstart_accept_queue(rows, "jake@x.com", is_admin=True)
+    check("admin can accept self-sent",
+          any(i["bid_id"] == "101" for i in as_admin["accept"]))
+
+    shaped = {
+        "needs": [],
+        "queue_rows": [],
+        "badges": {},
+        "summary": "You're clear.",
+        "clear": True,
+        "metrics": [],
+    }
+    folded = hub_flow._fold_jobstart_queue(
+        shaped, "ops@x.com", {"jobstart", "morning"}, rows)
+    check("fold adds Accept need",
+          any(n["kind"] == "Accept" for n in folded["needs"]))
+    check("fold Accept CTA",
+          any(n.get("action") == "Accept handoff" for n in folded["needs"]))
+    check("fold deeplink bid",
+          any("bid=101" in (n.get("href") or "") for n in folded["needs"]))
+    check("fold not clear", folded["clear"] is False)
+    check("fold badge jobstart", folded["badges"].get("jobstart", 0) >= 1)
+    check("fold skips without grant",
+          hub_flow._fold_jobstart_queue(shaped, "x@x.com", {"morning"}, rows)
+          is shaped)
+
+    sender = hub_flow._fold_jobstart_queue(
+        {"needs": [], "queue_rows": [], "badges": {}, "summary": "You're clear.",
+         "clear": True, "metrics": []},
+        "jake@x.com", {"jobstart"}, rows)
+    check("sender no Accept need for own",
+          not any(n["kind"] == "Accept" and "101" in (n.get("href") or "")
+                  for n in sender["needs"]))
+    check("sender Waiting queue row",
+          any(r.get("tag") == "Waiting" for r in sender["queue_rows"]))
+
+
 if __name__ == "__main__":
     test_hub_nav_roles()
     test_hub_pins_validate()
@@ -369,4 +429,5 @@ if __name__ == "__main__":
     test_build_gm_and_sales_shapes()
     test_field_prep_badge()
     test_morning_deeplink_hyphens()
+    test_jobstart_accept_queue_two_party()
     print("all hub home tests passed")

@@ -463,6 +463,93 @@ def list_for(email: str) -> dict:
     return summarize_for(doc.get("requests") or {}, email)
 
 
+def shape_owner_decisions(requests, *, owner_email: str,
+                          limit: int = 20) -> list[dict]:
+    """
+    PURE. Open Action Requests that need the owner's attention → calm Pulse
+    cards (not a task dump). Include when:
+      - needed_from_email is the owner, OR
+      - source is Needs-from-Jordan migration, OR
+      - category is decision_approval AND aimed at the owner
+    Completed rows never appear. Sorted overdue → triage → ack → none.
+    """
+    owner_n = _norm_email(owner_email)
+    if not owner_n:
+        return []
+    if isinstance(requests, dict):
+        rows = list(requests.values())
+    else:
+        rows = list(requests or [])
+
+    picked: list[dict] = []
+    for rec in rows:
+        if not isinstance(rec, dict):
+            continue
+        if rec.get("status") not in _OPEN_STATUSES:
+            continue
+        needed = _norm_email(rec.get("needed_from_email") or "")
+        source = (rec.get("source") or "").strip()
+        category = (rec.get("category") or "").strip()
+        # Aimed at owner, or NFJ migration (even when needed_from was blank).
+        for_owner = (needed == owner_n or source == SOURCE_NEEDS_FROM_JORDAN)
+        if not for_owner:
+            continue
+        try:
+            pid = int(rec["project_item_id"]) if rec.get("project_item_id") is not None else None
+        except (TypeError, ValueError):
+            pid = None
+        href = f"/ui/jobcheck?item={pid}" if pid else "/ui/morning"
+        picked.append({
+            "id": rec.get("id"),
+            "need": (rec.get("need") or "").strip(),
+            "project_name": (rec.get("project_name") or "").strip() or None,
+            "project_item_id": pid,
+            "category": category or None,
+            "status": rec.get("status"),
+            "escalation": rec.get("escalation") or ESCALATION_NONE,
+            "requester_email": rec.get("requester_email"),
+            "source": source or None,
+            "href": href,
+            "created_at": rec.get("created_at"),
+            "due_at": rec.get("due_at"),
+        })
+
+    order = {ESCALATION_OVERDUE: 0, ESCALATION_ACK_REMINDER: 1,
+             ESCALATION_NEEDS_TRIAGE: 2, ESCALATION_NONE: 3}
+
+    def _key(r: dict):
+        return (order.get(r.get("escalation"), 9),
+                r.get("due_at") or "9999-99-99",
+                r.get("created_at") or "")
+
+    picked.sort(key=_key)
+    if limit and limit > 0:
+        return picked[: int(limit)]
+    return picked
+
+
+def list_owner_decisions(*, owner_email: Optional[str] = None,
+                         limit: int = 20) -> list[dict]:
+    """
+    Load open owner-facing Action Requests for Owner Pulse.
+    Soft-fails to [] when the portal store isn't configured.
+    """
+    owner = _norm_email(
+        owner_email
+        or os.environ.get("GVC_OWNER_SLACK_EMAIL")
+        or "jordan@greenvalleycontractors.com"
+    )
+    try:
+        doc, _ = morning_store.read_doc(_object_name())
+    except PortalStoreNotConfigured:
+        return []
+    except Exception:  # noqa: BLE001 — Pulse must still render
+        return []
+    return shape_owner_decisions(
+        doc.get("requests") or {}, owner_email=owner, limit=limit,
+    )
+
+
 def get_request(request_id: str) -> Optional[dict]:
     doc, _ = morning_store.read_doc(_object_name())
     return (doc.get("requests") or {}).get(request_id)

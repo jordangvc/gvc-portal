@@ -1,0 +1,237 @@
+{
+  "id": "hang",
+  "slug": "hang",
+  "title": "Hanging Drywall",
+  "short_answer": "Board goes on after framing is true, backing is in, and MEP rough-in is done. Ceiling first, then walls. Stagger joints and land every edge on framing or backing.",
+  "summary": "Hang board so every edge lands on framing or backing, stagger joints, and leave a controlled gap at the floor.",
+  "when_to_use": [
+    "Framing status is Done and backing for cabinets, grab bars, and TV mounts is in",
+    "MEP rough-in and inspections that must precede board are complete",
+    "You are ready to place ceiling then wall board"
+  ],
+  "prerequisites": [
+    "Framing true; bowing studs corrected",
+    "Blocking and backing installed where finishes need them",
+    "Ceiling height and openings verified against drawings"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "Hanging Status",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "plain_words": "Board goes on after framing is true, backing is in, and MEP rough-in is done. Ceiling first, then walls. Stagger joints \u2014 never stack a wall joint directly over a ceiling joint. Land every edge on framing or backing; floating edges crack. Leave ~1/2\" at the floor so the board never sits in a wet floor finish.",
+  "tools": [
+    {
+      "name": "Screw gun / collated screw gun",
+      "optional": false
+    },
+    {
+      "name": "T-square / drywall square",
+      "optional": false
+    },
+    {
+      "name": "Utility knife + spare blades",
+      "optional": false
+    },
+    {
+      "name": "Lift or T-brace (ceilings)",
+      "optional": true
+    },
+    {
+      "name": "Rasp / Surform",
+      "optional": true
+    },
+    {
+      "name": "Keyhole / rotary cutout tool",
+      "optional": true
+    }
+  ],
+  "materials": [
+    {
+      "name": "Gypsum board (type per schedule \u2014 Regular / Type X / MR / abuse)",
+      "optional": false
+    },
+    {
+      "name": "Drywall screws (length for board + substrate)",
+      "optional": false
+    },
+    {
+      "name": "Corner bead (after hang, before finish)",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Confirm the wall is ready",
+      "body": "Walk the bay: framing true, backing in, boxes set to plane, no uninspected MEP that must precede board.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Ceiling first",
+      "body": "Hang ceiling board before walls so wall board can catch the ceiling edge. Use a lift or T-brace on large spans.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Stagger joints",
+      "body": "Never align a wall butt joint under a ceiling butt joint. Stagger factory edges and butt joints across the plane.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Land every edge",
+      "body": "Every cut edge and butt joint lands on a stud, joist, or installed backing. Floating edges are finish failures waiting to happen.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Fasten to schedule",
+      "body": "Screw pattern per drawings/spec (typically field and perimeter). Heads dimple the face paper without tearing it.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Gap at the floor",
+      "body": "Hold board ~1/2\" off the finished-floor plane so moisture and floor finishes do not wick into the gypsum core.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Cutouts clean",
+      "body": "Boxes and penetrations get clean cutouts \u2014 not oversize caves. Oversize holes become crack starters at finish.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Paper tear at screw heads",
+      "body": "A torn face-paper crater will telegraph through finish. Back the screw out and reset beside it; do not mud over a torn crater as if it were a dimple."
+    },
+    {
+      "severity": "warn",
+      "title": "Wrong board type",
+      "body": "Type X, MR, and abuse board are not interchangeable with regular. Match the schedule \u2014 especially at rated assemblies and wet areas."
+    }
+  ],
+  "variations": [
+    {
+      "id": "hang-ceiling-height",
+      "title": "High or awkward ceilings",
+      "when": "Ceilings above comfortable reach or over stairs",
+      "changes": [
+        "Use a lift or staged scaffolding",
+        "Two-person set on long boards",
+        "Confirm hanger/wire conflicts before fastening"
+      ]
+    },
+    {
+      "id": "hang-rated",
+      "title": "Fire-rated assemblies",
+      "when": "Drawings call Type X / UL assembly",
+      "changes": [
+        "Board type and layer count are load-bearing for the rating",
+        "Do not substitute regular board",
+        "Layer orientation and fastener pattern follow the listed assembly"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "qc-hang-edges",
+      "prompt": "Every board edge lands on framing or backing",
+      "severity": "required"
+    },
+    {
+      "id": "qc-hang-stagger",
+      "prompt": "Butt joints staggered \u2014 not stacked with ceiling joints",
+      "severity": "required"
+    },
+    {
+      "id": "qc-hang-floor",
+      "prompt": "~1/2\" gap at floor; board not sitting in the finish",
+      "severity": "required"
+    },
+    {
+      "id": "qc-hang-screws",
+      "prompt": "Screw heads dimpled, face paper intact",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "id": "cm-hang-float",
+      "title": "Floating butt joints",
+      "wrong": "Butt joint mid-bay with no backing",
+      "right": "Add backing or land on a stud before fastening",
+      "why": "Finish will crack at the unsupported joint"
+    },
+    {
+      "id": "cm-hang-stack",
+      "title": "Stacked joints",
+      "wrong": "Wall butt directly under ceiling butt",
+      "right": "Offset joints so planes do not share a weak line",
+      "why": "Shared weak line telegraphs and cracks"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-hang-bow",
+      "symptom": "Board won't sit flat / rocks on a stud",
+      "likely_cause": "Bowed stud or thick box",
+      "fix": "True the framing or shim/plane the box before forcing the board"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "preboard-walk",
+    "scrape",
+    "finish"
+  ],
+  "next_steps": [
+    {
+      "id": "scrape",
+      "label": "Next: Scraping",
+      "why": "Job Check Scrapping Status \u2014 knockdown after hang"
+    },
+    {
+      "id": "finish",
+      "label": "Then: Finishing",
+      "why": "Tape and coats after scrape"
+    }
+  ],
+  "search_tags": [
+    "hang",
+    "hanging",
+    "board",
+    "drywall hang",
+    "screw",
+    "ceiling first",
+    "butt joint"
+  ],
+  "synonyms": [
+    "hang board",
+    "hang rock",
+    "hanging status",
+    "screw board",
+    "sheet rock hang"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-06",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Aligned with Job Check Hanging Status and Field Manual hang procedure.",
+    "sources": [
+      "GA-216 (practice reference)",
+      "GVC Field Manual"
+    ]
+  }
+}

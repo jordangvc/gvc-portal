@@ -754,15 +754,31 @@ def build_owner_pulse(email: str) -> dict[str, Any]:
             if mm.is_attention(row) and any(
                 k in blocked for k in ("safety", "hazard", "stop work", "stop-work")
             ):
-                safety.append({"item_id": row["item_id"], "name": row["name"],
-                               "blocked": row.get("blocked")})
+                sid = row.get("item_id")
+                safety.append({
+                    "item_id": sid,
+                    "name": row["name"],
+                    "blocked": row.get("blocked"),
+                    "href": (f"/ui/jobcheck?item={sid}" if sid
+                             else "/ui/morning-owner"),
+                })
     except Exception:  # noqa: BLE001
         pass
+
+    owner_email = (
+        os.environ.get("GVC_OWNER_SLACK_EMAIL")
+        or "jordan@greenvalleycontractors.com"
+    )
+    try:
+        decisions = ar.list_owner_decisions(owner_email=owner_email, limit=20)
+    except Exception as e:  # noqa: BLE001 — Pulse still renders without ARs
+        print(f"[morning] owner decisions skipped: {e}", file=sys.stderr)
+        decisions = []
 
     pulse = opulse.build_owner_pulse({
         "prep_pct": prep_pct.get("pct"),
         "safety_stops": safety,
-        "owner_decisions": [],
+        "owner_decisions": decisions,
         "prep_alerts_3_5": prep_alerts,
         "huddle_outcome": {
             "projects_covered": len(meeting.get("ordered_item_ids") or []),

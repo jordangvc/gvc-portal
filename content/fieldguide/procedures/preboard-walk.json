@@ -1,0 +1,136 @@
+{
+  "id": "preboard-walk",
+  "slug": "preboard-walk",
+  "title": "Pre-Board Walk",
+  "short_answer": "Last cheap chance to catch missing backing, wrong ROs, and MEP not ready \u2014 before the first sheet makes mistakes permanent.",
+  "summary": "The last cheap chance to catch missing backing, wrong ROs, and MEP that is not ready \u2014 before the first sheet makes every mistake permanent.",
+  "plain_words": "Hanging over a problem is how you buy tear-out. Walk every wall. If insulation, boxes, backing, or rough openings are wrong, stop hang and fix or escalate. The hang checklist assumes this walk already happened.",
+  "when_to_use": [
+    "Framing Status done; about to hang",
+    "Any doubt about backing, boxes, insulation, or ROs"
+  ],
+  "prerequisites": [
+    "Framing mostly complete",
+    "Drawings / backing list available"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "",
+  "role_tags": [
+    "hanger",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Drawings + door schedule"
+    },
+    {
+      "name": "Flashlight"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "MEP: boxes set to plane; penetrations where they belong; nothing that will be buried without a plan.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Backing: casework, grab bars, TV mounts, door closers \u2014 present and marked (see Framing backing list).",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Rough openings: door/window RO vs schedule. Wrong RO before hang is a phone call; after hang is carpentry + drywall.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Insulation / sound: first side done where required; perimeter seal plan on STC walls.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Rated / shaft: confirm assembly tag and photo plan for layers you will cover. No guessing height or liner sequence.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Stop criteria: missing backing on a known mount, live conflict on drawings, firestop not ready where you must leave access \u2014 write RFI or CO path, do not \"work around quietly.\"",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Hang over a known problem",
+      "body": "Missing backing on a known mount, live drawing conflict, or firestop not ready \u2014 stop and escalate before board."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "prompt": "Backing present for known mounts"
+    },
+    {
+      "prompt": "ROs match schedule"
+    },
+    {
+      "prompt": "MEP/insulation ready where board will bury it"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip the walk",
+      "wrong": "Start hang because the truck is unloaded",
+      "right": "Walk every wall first",
+      "why": "Tear-out after hang is the expensive path"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "hang"
+  ],
+  "next_steps": [
+    {
+      "id": "hang",
+      "label": "Next: Hanging",
+      "why": "Only after walk passes"
+    }
+  ],
+  "search_tags": [
+    "preboard",
+    "pre-board",
+    "walk",
+    "backing check",
+    "before hang"
+  ],
+  "synonyms": [
+    "pre board walk",
+    "before hang walk",
+    "ready for board",
+    "pre-hang"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Migrated from Field Manual HTML #preboard-walk; aligned with Job Check where applicable.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check stage columns"
+    ]
+  }
+}

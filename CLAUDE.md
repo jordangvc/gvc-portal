@@ -11,13 +11,34 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## ⚡ Monday critical-path perf (r70) — BUILT 2026-08-08
+## ⚡ Monday critical-path perf (r73) — BUILT 2026-08-08
 Evidence-backed: live paint waits on Monday JSON, not HTML/bundles. Fixes:
 hub skips morning GFolder attach (2×N GraphQL the hub never showed); Morning
 GFolder attach parallelized; billing rich search projects∥bids; warm derives
 `accepted_bids` from jobstart (no second Bid walk); Path pages warm **after**
-first paint. Repeatable audit: `docs/ops/perf-audit.md` +
-`scripts/measure_monday_paths.py`. Hub **r70**.
+first paint; Job Check Ops list derives from Morning Ops walk (no second
+pagination). Repeatable audit: `docs/ops/perf-audit.md` +
+`scripts/measure_monday_paths.py`. Hub **r73**.
+
+## ✨ FIELD GUIDE JOB-CHECK SPINE (r71) — BUILT 2026-08-08
+Catalog now covers the drywall Job Check spine end-to-end:
+`framing` → `preboard-walk` → `hang` → `scrape` → `finish` → `level5-skim` →
+`cleanout`. Coat chips (Taped / 2nd Bed / 3rd Coat / Sanded / Finishing Stage)
+all resolve to `finish`; Text/Skim → `level5-skim`. Aliases (`frame`, `taped`,
+`scrapping`, …) keep search/API from dead-ending. `audit_link_targets` +
+`GET /ui/api/fieldguide/audit` require every `next_steps` target to resolve.
+Hub **r71**.
+
+## ✨ FIELD GUIDE PLATFORM FOUNDATION (r70) — BUILT 2026-08-08
+Scalable content layer under the live Field Manual shell (not a UI-only polish).
+`content/fieldguide/` + `subsystems/fieldguide/{schema,validate,catalog,search,render}`
+normalize procedures with synonyms, governance, next_steps, variations. Pilots:
+**hang** + **scrape** (Job Check Hanging / Scrapping). APIs:
+`GET /ui/api/fieldguide/catalog|search|procedure/{id}`. Home search hydrates
+catalog synonyms (try "hang rock" / "scrapping" / "knockdown"). Dockerfile
+`COPY content`. Design + expansion path: `docs/FIELD-GUIDE-PLATFORM.md`.
+HTML shell still owns the full ~61-procedure library — migrate spine-first.
+Hub **r70**.
 
 ## ⚡ Job Start progressive Drive paint (r68) — BUILT 2026-08-07
 Opening a bid no longer waits on Drive before the form appears.

@@ -196,6 +196,78 @@ def test_owner_pulse_filters():
     assert len(pulse["preparation_alerts"]) == 1
 
 
+def test_shape_owner_decisions_filters_and_links():
+    owner = "jordan@greenvalleycontractors.com"
+    requests = {
+        "a": {
+            "id": "a",
+            "status": ar.STATUS_NEEDS_TRIAGE,
+            "escalation": ar.ESCALATION_NEEDS_TRIAGE,
+            "needed_from_email": owner,
+            "requester_email": "gm@greenvalleycontractors.com",
+            "category": "decision_approval",
+            "need": "100 Main — Needs from Jordan: Decision",
+            "project_item_id": 42,
+            "project_name": "100 Main | Acme",
+            "source": ar.SOURCE_NEEDS_FROM_JORDAN,
+            "created_at": "2026-08-01T12:00:00+00:00",
+        },
+        "b": {
+            "id": "b",
+            "status": ar.STATUS_OPEN,
+            "escalation": ar.ESCALATION_OVERDUE,
+            "needed_from_email": owner,
+            "requester_email": "ops@greenvalleycontractors.com",
+            "category": "materials",
+            "need": "Approve ladder rental",
+            "project_item_id": 7,
+            "project_name": "7 Oak",
+            "created_at": "2026-08-02T12:00:00+00:00",
+        },
+        "c": {
+            "id": "c",
+            "status": ar.STATUS_COMPLETED,
+            "escalation": ar.ESCALATION_NONE,
+            "needed_from_email": owner,
+            "need": "Done already",
+            "project_item_id": 9,
+        },
+        "d": {
+            "id": "d",
+            "status": ar.STATUS_OPEN,
+            "escalation": ar.ESCALATION_NONE,
+            "needed_from_email": "someoneelse@greenvalleycontractors.com",
+            "need": "Not for owner",
+            "project_item_id": 11,
+        },
+        "e": {
+            "id": "e",
+            "status": ar.STATUS_OPEN,
+            "escalation": ar.ESCALATION_NONE,
+            "needed_from_email": "",
+            "source": ar.SOURCE_NEEDS_FROM_JORDAN,
+            "need": "NFJ with blank needed_from",
+            "project_item_id": 99,
+            "project_name": "Blank needed",
+        },
+    }
+    out = ar.shape_owner_decisions(requests, owner_email=owner)
+    ids = [r["id"] for r in out]
+    assert ids[0] == "b"  # overdue first
+    assert "a" in ids and "e" in ids
+    assert "c" not in ids and "d" not in ids
+    assert out[0]["href"] == "/ui/jobcheck?item=7"
+    pulse = owner_pulse.build_owner_pulse({
+        "prep_pct": 50,
+        "owner_decisions": out,
+        "safety_stops": [{"item_id": 1, "name": "Hazard job",
+                          "blocked": "Safety stop",
+                          "href": "/ui/jobcheck?item=1"}],
+    })
+    assert pulse["has_exceptions"] is True
+    assert len(pulse["owner_decisions"]) == 3
+
+
 def test_financial_still_excluded():
     mm.assert_no_financial_keys({"ok": True, "rows": [{"name": "x"}]})
     for cid in ("board_counts", "numeric_mm3fcjmn"):
@@ -398,6 +470,7 @@ if __name__ == "__main__":
         test_action_request_categories,
         test_pictures_folder_pick,
         test_owner_pulse_filters,
+        test_shape_owner_decisions_filters_and_links,
         test_financial_still_excluded,
         test_long_term_hold,
         test_link_column_url_ignores_gfolder_label,

@@ -229,6 +229,147 @@ def _try_gm_view(email: str) -> Optional[dict]:
         return None
 
 
+def _try_jobstart_drafts() -> list[dict]:
+    """GCS packet store — cheap, no Monday. Soft-fail → []."""
+    try:
+        from subsystems.jobstart import drafts
+        return list(drafts.list_drafts() or [])
+    except Exception as exc:  # noqa: BLE001
+        print(f"[hub] jobstart drafts skipped: {type(exc).__name__}: {exc}",
+              file=sys.stderr)
+        return []
+
+
+def jobstart_accept_queue(draft_rows: list[dict], actor: str, *,
+                          is_admin: bool = False) -> dict[str, list[dict]]:
+    """PURE. Split with_ops packets into accept-for-me vs waiting-mine.
+
+    Mirrors jobstart_flow's two-party rule: sender cannot accept (admins
+    excepted). Hub only knows draft status — partial accepted/ops-missing
+    retries stay on the Job Start page (need Monday ids).
+    """
+    accept: list[dict] = []
+    waiting_mine: list[dict] = []
+    actor_l = (actor or "").strip().lower()
+    for row in draft_rows or []:
+        if (row.get("status") or "") != "with_ops":
+            continue
+        bid = str(row.get("bid_id") or "").strip()
+        if not bid:
+            continue
+        sent_by = (row.get("sent_by") or "").strip().lower()
+        title = (row.get("job_name") or row.get("label")
+                 or f"Bid {bid}")
+        href = f"/ui/jobstart?bid={bid}"
+        item = {
+            "bid_id": bid,
+            "title": str(title)[:120],
+            "sent_by": sent_by,
+            "sent_at": row.get("sent_at") or "",
+            "href": href,
+            "packet_url": row.get("packet_url") or "",
+        }
+        if is_admin or not actor_l or actor_l != sent_by:
+            accept.append(item)
+        else:
+            waiting_mine.append(item)
+    return {"accept": accept, "waiting_mine": waiting_mine}
+
+
+def _fold_jobstart_queue(shaped: dict[str, Any], email: str,
+                         feats: set, draft_rows: list[dict]) -> dict[str, Any]:
+    """Merge Accept-handoff Needs into a role-shaped hub slice."""
+    if "jobstart" not in feats and "*" not in feats:
+        return shaped
+    is_admin = access.has_feature(email, "admin")
+    split = jobstart_accept_queue(draft_rows, email, is_admin=is_admin)
+    accept = split["accept"]
+    waiting_mine = split["waiting_mine"]
+    if not accept and not waiting_mine:
+        return shaped
+
+    needs = list(shaped.get("needs") or [])
+    queue_rows = list(shaped.get("queue_rows") or [])
+    badges = dict(shaped.get("badges") or {})
+    seen_hrefs = {str(n.get("href") or "") for n in needs}
+
+    accept_needs: list[dict] = []
+    for item in accept:
+        href = item["href"]
+        if href in seen_hrefs:
+            continue
+        seen_hrefs.add(href)
+        who = item["sent_by"].split("@")[0] if item["sent_by"] else "Sales"
+        accept_needs.append(_need(
+            kind="Accept",
+            amount=_age_amount(str(item.get("sent_at") or "")[:10],
+                               prefix="Sent"),
+            title=item["title"],
+            detail=f"Packet from {who} — accept to create Projects + Ops.",
+            action="Accept handoff",
+            href=href,
+            secondary_href=item.get("packet_url") or href,
+            urgent=True,
+            sort_key=str(item.get("sent_at") or ""),
+        ))
+
+    # Accept cards win the Needs slot — that's the ops dead-end this fixes.
+    needs = _sort_needs(accept_needs + needs)[:4]
+
+    for item in accept:
+        bid = item["bid_id"]
+        if any(r.get("id") == bid or r.get("href") == item["href"]
+               for r in queue_rows):
+            continue
+        queue_rows.insert(0, _queue_row(
+            item["title"],
+            "Waiting on your accept",
+            tag="Accept",
+            flagged=True,
+            href=item["href"],
+            row_id=bid,
+        ))
+    for item in waiting_mine:
+        bid = item["bid_id"]
+        if any(r.get("id") == bid or r.get("href") == item["href"]
+               for r in queue_rows):
+            continue
+        queue_rows.append(_queue_row(
+            item["title"],
+            "Waiting on Ops",
+            tag="Waiting",
+            flagged=False,
+            href=item["href"],
+            row_id=bid,
+        ))
+    queue_rows = queue_rows[:12]
+
+    accept_n = len(accept)
+    if accept_n:
+        badges["jobstart"] = max(int(badges.get("jobstart") or 0), accept_n)
+
+    summary = shaped.get("summary") or ""
+    clear = bool(shaped.get("clear"))
+    if accept_n:
+        summary = f"{accept_n} handoff(s) waiting on your accept."
+        clear = False
+    elif waiting_mine and clear:
+        # Sender is clear of *their* action; queue still shows Waiting rows.
+        summary = (
+            f"{len(waiting_mine)} handoff(s) waiting on Ops — "
+            "they'll accept from their hub."
+        )
+
+    return {
+        **shaped,
+        "needs": needs,
+        "queue_rows": queue_rows,
+        "badges": badges,
+        "summary": summary,
+        "clear": clear,
+    }
+
+
 def _build_field(email: str, brief: Optional[dict]) -> dict[str, Any]:
     needs: list[dict] = []
     queue_rows: list[dict] = []
@@ -737,6 +878,7 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
     ready = ((billing or {}).get("queues") or {}).get("ready_to_invoice") or []
     ready_n = int(counts.get("ready_to_invoice") or len(ready))
     safety = (pulse or {}).get("safety_stops") or []
+    decisions = (pulse or {}).get("owner_decisions") or []
     prep_alerts = (pulse or {}).get("prep_alerts") or []
     planning = (pulse or {}).get("planning_signals") or []
     team_pct = (pulse or {}).get("team_preparation_pct")
@@ -751,26 +893,41 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
                 "ops ready for huddle"),
         _metric("Safety / stop-work", len(safety) if pulse else "—",
                 "owner-visible holds"),
-        _metric("Planning flags", len(planning) if pulse else "—",
-                "route override signals"),
+        _metric("Owner decisions", len(decisions) if pulse else "—",
+                "Action Requests waiting on you"),
     ]
     if ready_n and billing:
         badges["invoice"] = ready_n
-    if safety and pulse:
-        badges["morning_owner"] = len(safety)
+    if pulse and (safety or decisions):
+        badges["morning_owner"] = len(safety) + len(decisions)
 
     for row in safety[:3]:
         sid = str(row.get("item_id") or "").strip()
-        jc = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-owner"
+        jc = row.get("href") or (
+            f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-owner"
+        )
         needs.append(_need(
             kind="Safety",
             amount="Stop-work",
             title=row.get("name") or "Job",
             detail=row.get("blocked") or "Safety hold on Operations.",
-            action="Open Owner Pulse",
-            href="/ui/morning-owner",
-            secondary_href=jc,
+            action="Open Job Check",
+            href=jc,
+            secondary_href="/ui/morning-owner",
             sort_key="",
+        ))
+
+    for row in decisions[: max(0, 3 - len(needs))]:
+        href = row.get("href") or "/ui/morning-owner"
+        needs.append(_need(
+            kind="Decision",
+            amount=(row.get("escalation") or "open").replace("_", " "),
+            title=row.get("project_name") or row.get("need") or "Owner decision",
+            detail=row.get("need") or "Action Request waiting on you.",
+            action="Open Job Check" if row.get("project_item_id") else "Open Owner Pulse",
+            href=href if row.get("project_item_id") else "/ui/morning-owner",
+            secondary_href="/ui/morning-owner",
+            sort_key=str(row.get("due_at") or row.get("created_at") or ""),
         ))
 
     ready_sorted = sorted(
@@ -899,9 +1056,10 @@ def _live_hub_slice(email: str) -> dict[str, Any]:
         and ("morning_owner" in feats or email in access.superadmin_emails())
     )
     want_gm = role == "gm" and "morning_gm" in feats
+    want_jobstart = "jobstart" in feats
 
     jobs: dict[str, Any] = {}
-    with ThreadPoolExecutor(max_workers=4) as pool:
+    with ThreadPoolExecutor(max_workers=5) as pool:
         futs = {}
         if want_brief:
             futs[pool.submit(_try_morning_brief, email)] = "brief"
@@ -911,6 +1069,8 @@ def _live_hub_slice(email: str) -> dict[str, Any]:
             futs[pool.submit(_try_owner_pulse, email)] = "pulse"
         if want_gm:
             futs[pool.submit(_try_gm_view, email)] = "gm_view"
+        if want_jobstart:
+            futs[pool.submit(_try_jobstart_drafts)] = "jobstart_drafts"
         for fut in as_completed(futs):
             key = futs[fut]
             try:
@@ -923,6 +1083,7 @@ def _live_hub_slice(email: str) -> dict[str, Any]:
     billing = jobs.get("billing")
     pulse = jobs.get("pulse")
     gm_view = jobs.get("gm_view")
+    jobstart_drafts = jobs.get("jobstart_drafts") or []
 
     if role == "owner":
         shaped = _build_owner(email, pulse, billing, brief)
@@ -934,6 +1095,8 @@ def _live_hub_slice(email: str) -> dict[str, Any]:
         shaped = _build_sales(email, billing, brief)
     else:
         shaped = _build_field(email, brief)
+
+    shaped = _fold_jobstart_queue(shaped, email, feats, jobstart_drafts)
 
     q_link, q_href = _queue_link_for(role, home_href, home_tool_name)
     return {
