@@ -202,4 +202,7 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   run `python scripts/ui_consistency_check.py` and complete the UX checklist.
   Prefer system fixes in `gvc.css` over new page-local dialects. Toggle theme
   via topbar (`web/gvc-theme.js` → `data-theme`); verify light **and** dark.
+- **Hub first paint:** HTML injects `HUB_BOOT_JSON` (rail + greeting + quick
+  actions — no Monday). Live Needs/Metrics wait on `GET /ui/api/hub`; Activity
+  is deferred to `GET /ui/api/hub/activity`. See `docs/HUB-HOME.md`.
 

@@ -35,7 +35,7 @@ In the browser (dev / staging with `GVC_MONDAY_TRACE=1` on Cloud Run):
 
 | Screen | First useful JSON | Monday shape (cold) |
 |--------|-------------------|---------------------|
-| Hub | `GET /ui/api/hub` | morning brief ∥ billing (+ owner/gm extras). Hub skips GFolder attach. |
+| Hub | HTML boot → `GET /ui/api/hub` → `GET /ui/api/hub/activity` | Rail/CTA from grants (no Monday). Live needs = morning ∥ billing (+ owner/gm). Hub skips GFolder + weather. Activity deferred. |
 | Billing | `GET /ui/api/billing/hub` | 3 parallel board walks |
 | Morning | `GET /ui/api/morning/brief` | Ops walk + authors + **parallel** GFolder × unique cards |
 | Job Check | `GET /ui/api/jobcheck/jobs` | Reshape of Morning Ops (0 extra GraphQL when warm) |

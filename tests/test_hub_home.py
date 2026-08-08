@@ -98,6 +98,8 @@ def test_hub_payload_shape() -> None:
           or "Pulse" in str(payload["user"].get("homeToolName")))
     check("needs capped", len(payload["needs"]) <= 4)
     check("pinned list", isinstance(payload.get("pinned"), list))
+    check("activity deferred on first paint", payload.get("activity_deferred") is True)
+    check("activity empty until deferred fetch", payload.get("activity") == [])
     # Without Monday, metrics should be em-dash (source unavailable), not fake zeros.
     vals = [m["value"] for m in payload["metrics"]]
     check("unavailable metrics use dash", all(v == "—" or isinstance(v, (int, str)) for v in vals))
@@ -182,6 +184,30 @@ def test_hub_skips_morning_gfolder_attach():
     chunk = src.split("def _try_morning_brief")[1].split("def _try_billing")[0]
     check("hub passes attach_gfolder=False",
           "attach_gfolder=False" in chunk)
+    check("hub skips weather on brief", "include_weather=False" in chunk)
+    gm = src.split("def _try_gm_view")[1].split("def _try_jobstart_drafts")[0]
+    check("gm hub also skips gfolder", "attach_gfolder=False" in gm)
+    check("gm hub skips weather", "include_weather=False" in gm)
+    payload_fn = src.split("def build_hub_payload")[1].split("def build_hub_activity")[0]
+    check("first paint defers activity", "activity_deferred" in payload_fn)
+    check("activity helper exists", "def build_hub_activity" in src)
+
+
+def test_hub_boot_shell_is_cheap() -> None:
+    """Boot shell is grants-only — no Monday — so the rail can paint instantly."""
+    from shared import hub_nav
+
+    boot = hub_nav.boot_shell(
+        "field.tech@example.com",
+        {"morning", "jobcheck", "fieldguide"},
+        person={},
+    )
+    check("boot flag", boot.get("boot") is True)
+    check("nav groups", len((boot.get("nav") or {}).get("groups") or []) >= 5)
+    check("home href", boot["user"]["homeHref"] == "/ui/morning")
+    check("quick actions", len(boot.get("quick_actions") or []) >= 1)
+    check("activity deferred", boot.get("activity_deferred") is True)
+    check("no fake clear", boot.get("needs_clear") is False)
 
 
 def test_hub_files_and_route() -> None:
@@ -189,7 +215,11 @@ def test_hub_files_and_route() -> None:
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r89 footer", ">r89<" in hub)
+    check("r90 footer", ">r90<" in hub)
+    check("boot json placeholder", "{{HUB_BOOT_JSON}}" in hub or "HUB_BOOT" in hub)
+    check("instant shell paint", "paintInstantShell" in hub)
+    check("quick actions", "hub-quick" in hub or "quickactions" in hub)
+    check("deferred activity fetch", "/ui/api/hub/activity" in hub)
     check("setup badge class", "is-setup" in hub)
     check("setup in refresh slice", "payload.setup" in hub)
     check("light refresh endpoint", "/ui/api/hub/refresh" in hub)
