@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import sys
-import types
 from pathlib import Path
 from unittest.mock import MagicMock
 
@@ -14,6 +13,7 @@ from shared import pricing as gvc_pricing
 from orchestrators.invoice_ready_flow import (
     build_item_worksheet,
     check_ready_to_invoice,
+    ensure_ready_worksheet,
 )
 
 
@@ -62,32 +62,23 @@ _STUB_KEYS = (
 
 
 def _install_monday_stubs(fake_rows, fake_payroll, mc):
-    """Swap monday adapters for fakes; return a restore callable.
+    """Patch invoice_ready_flow's monday bindings; return a restore callable."""
+    import orchestrators.invoice_ready_flow as flow
 
-    Earlier versions left stub modules in ``sys.modules`` and poisoned later
-    tests that expect the real ``adapters.monday.client.MondayClient``.
-    """
-    saved = {k: sys.modules.get(k) for k in _STUB_KEYS}
-    billing = types.ModuleType("adapters.monday.billing")
-    billing.fetch_ready_to_invoice = lambda _mc: fake_rows
-    payroll_mod = types.ModuleType("adapters.monday.payroll")
-    payroll_mod.fetch_payroll_for_project = lambda _mc, _pid: fake_payroll
-    client_mod = types.ModuleType("adapters.monday.client")
-    client_mod.MondayClient = lambda: mc
-    monday_pkg = sys.modules.get("adapters.monday") or types.ModuleType("adapters.monday")
-    adapters_pkg = sys.modules.get("adapters") or types.ModuleType("adapters")
-    sys.modules["adapters"] = adapters_pkg
-    sys.modules["adapters.monday"] = monday_pkg
-    sys.modules["adapters.monday.billing"] = billing
-    sys.modules["adapters.monday.payroll"] = payroll_mod
-    sys.modules["adapters.monday.client"] = client_mod
+    saved = {
+        "fetch": flow.fetch_ready_to_invoice,
+        "payroll": flow.monday_payroll.fetch_payroll_for_project,
+        "client": flow.MondayClient,
+    }
+    flow.fetch_ready_to_invoice = lambda _mc: fake_rows  # type: ignore
+    flow.monday_payroll.fetch_payroll_for_project = (  # type: ignore
+        lambda _mc, _pid: fake_payroll)
+    flow.MondayClient = lambda: mc  # type: ignore
 
     def _restore() -> None:
-        for key, prior in saved.items():
-            if prior is None:
-                sys.modules.pop(key, None)
-            else:
-                sys.modules[key] = prior
+        flow.fetch_ready_to_invoice = saved["fetch"]  # type: ignore
+        flow.monday_payroll.fetch_payroll_for_project = saved["payroll"]  # type: ignore
+        flow.MondayClient = saved["client"]  # type: ignore
 
     return _restore
 
@@ -218,3 +209,112 @@ def test_worksheet_to_line_items_by_sheet_and_tm():
     tm_lines = ready_stage.worksheet_to_line_items(tm)
     assert len(tm_lines) == 1
     assert tm_lines[0]["amount"] == 750.0
+
+
+def test_ensure_ready_worksheet_reuses_staged():
+    from subsystems.invoice import ready_stage
+    from unittest import mock
+
+    ready_stage.clear_memory_for_tests()
+    try:
+        sheet = {
+            "job_name": "Staged",
+            "proposed_invoice_total": 100.0,
+            "status": "staged",
+            "pricing": {
+                "model": "tm", "price_label": "T&M", "total": 100.0,
+            },
+            "lines": [],
+        }
+        ready_stage.save_worksheet(42, sheet, actor="test")
+        with mock.patch.object(
+            monday_jobcheck_mod(), "get_item_values"
+        ) as get_item:
+            out = ensure_ready_worksheet(42, persist=False, mc=MagicMock())
+            get_item.assert_not_called()
+        assert out["ok"] is True
+        assert out["source"] == "staged"
+        assert out["proposed_total"] == 100.0
+        assert out["line_items"]
+    finally:
+        ready_stage.clear_memory_for_tests()
+
+
+def monday_jobcheck_mod():
+    import adapters.monday.jobcheck as m
+    return m
+
+
+def test_ensure_ready_worksheet_computes_when_unstaged():
+    from subsystems.invoice import ready_stage
+    from unittest import mock
+    import adapters.monday.jobcheck as monday_jobcheck
+    import adapters.monday.payroll as monday_payroll
+
+    ready_stage.clear_memory_for_tests()
+    mc = MagicMock()
+    try:
+        with mock.patch.object(
+            monday_jobcheck, "get_item_values",
+            return_value={
+                "item_id": 7, "name": "Test Job", "url": "https://m/7",
+                "group_id": "g", "group_title": "Ready", "values": {},
+            },
+        ), mock.patch.object(
+            monday_jobcheck, "get_linked_project_gfolder",
+            return_value={"project_item_id": 99, "error": None},
+        ), mock.patch.object(
+            monday_payroll, "fetch_payroll_for_project",
+            return_value={
+                "project_item_id": 99,
+                "rows": [{"count": 1, "rate": 800, "square_footage": None}],
+                "labor_cost": 800.0,
+                "board_count_hint": 360,
+            },
+        ):
+            out = ensure_ready_worksheet(7, persist=True, mc=mc)
+        assert out["ok"] is True
+        assert out["source"] == "computed"
+        assert out["proposed_total"] and out["proposed_total"] > 0
+        assert out["line_items"]
+        assert ready_stage.get_worksheet(7) is not None
+    finally:
+        ready_stage.clear_memory_for_tests()
+
+
+def test_ensure_ready_worksheet_no_project_link():
+    from subsystems.invoice import ready_stage
+    from unittest import mock
+    import adapters.monday.jobcheck as monday_jobcheck
+
+    ready_stage.clear_memory_for_tests()
+    try:
+        with mock.patch.object(
+            monday_jobcheck, "get_item_values",
+            return_value={
+                "item_id": 8, "name": "Orphan", "url": "https://m/8",
+                "group_id": "g", "group_title": "Ready", "values": {},
+            },
+        ), mock.patch.object(
+            monday_jobcheck, "get_linked_project_gfolder",
+            return_value={"project_item_id": None, "error": "empty"},
+        ):
+            out = ensure_ready_worksheet(8, persist=False, mc=MagicMock())
+        assert out["ok"] is False
+        assert out["code"] == "NO_PROJECT_LINK"
+        assert "/ui/jobcheck?item=8" in (out.get("jobcheck_href") or "")
+    finally:
+        ready_stage.clear_memory_for_tests()
+
+
+if __name__ == "__main__":
+    failed = 0
+    for name, fn in list(globals().items()):
+        if name.startswith("test_") and callable(fn):
+            try:
+                fn()
+                print(f"  ok  {name}")
+            except Exception as exc:  # noqa: BLE001
+                failed += 1
+                print(f"FAIL  {name}: {type(exc).__name__}: {exc}")
+    raise SystemExit(1 if failed else 0)

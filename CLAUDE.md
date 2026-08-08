@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ INVOICE ops_ready LAZY-COST + READY CTAs (r90) — BUILT 2026-08-08
+Money-spine dead-ends closed without waiting on conflicting #141/#144:
+`ensure_ready_worksheet` computes+stages from Payroll when Invoice `?ops_ready=`
+has no staged sheet; Job Check hides Mark Ready when already in RTI and offers
+Open Invoice / Billing; Billing Hub unlinked Ready primary = Link Projects;
+RTI Monday fallback is `groups(ids:)` only (never full Ops board walk). Hub **r90**.
+
 ## ✨ FIELD GUIDE CATALOG DEAD-ENDS CLEARED (r89) — BUILT 2026-08-08
 Follow-on to r88 coach fix: migrate ops gates (**escalate**, **inspection-hold**,
 **punch-cadence**), dangling related (**rfi-field**, **exclusions-walk**,

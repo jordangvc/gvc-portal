@@ -385,13 +385,22 @@ def get_job_detail(item_id: int) -> Optional[dict]:
         form_columns.append(row)
 
     photo_ready = mj.photo_ready_status(ginfo)
+    group_id = item.get("group_id") or ""
+    already_ready = group_id == mj.READY_TO_INVOICE_GROUP_ID
+    ops_id = item["item_id"]
     return {
         "ok": True,
         "job": {
-            "item_id": item["item_id"],
+            "item_id": ops_id,
             "name": item["name"],
             "url": item["url"],
             "group": item["group_title"],
+            "group_id": group_id,
+            "already_ready": already_ready,
+            "billing_href": "/ui/billing" if already_ready else "",
+            "invoice_href": (
+                f"/ui/invoice?ops_ready={ops_id}" if already_ready else ""
+            ),
             # Operations-board context (2026-07-28) — named for what they now
             # actually hold, rather than reusing the old Projects-board keys.
             "project": values.get(mj.CONTEXT_COL_PROJECT_LINK),
@@ -652,9 +661,10 @@ def mark_ready_to_invoice(item_id: int, actor_email: str) -> dict[str, Any]:
             "item_id": item_id,
             "error": "ALREADY_READY",
             "detail": ("This job is already in Ready to Invoice — "
-                       "it should appear on Billing Hub."),
+                       "open Billing Hub or Invoice to continue."),
             "monday_url": before.get("url"),
             "billing_href": "/ui/billing",
+            "invoice_href": f"/ui/invoice?ops_ready={item_id}",
             "warnings": [],
             "group_id": before.get("group_id"),
             "group_title": before.get("group_title"),
@@ -717,6 +727,7 @@ def mark_ready_to_invoice(item_id: int, actor_email: str) -> dict[str, Any]:
         "job": before.get("name"),
         "monday_url": before.get("url"),
         "billing_href": "/ui/billing",
+        "invoice_href": f"/ui/invoice?ops_ready={item_id}",
         "group_moved": bool(moved.get("group_moved")),
         "date_written": bool(moved.get("date_written")),
         "ready_date": moved.get("ready_date"),

@@ -45,9 +45,9 @@ def shape_ready_to_invoice(row: dict) -> dict:
     """
     Ops Ready-to-Invoice row → hub card.
 
-    Primary CTA opens the invoice form via Project # and/or the linked
-    Projects monday_item_id. Never passes the Ops item id as monday_item_id
-    — invoice lookup builds prefills from the Projects board only.
+    Linked rows primary-CTA to Invoice (Project # and/or Projects monday_item_id
+    + ops_ready). Unlinked rows primary-CTA to Job Check Link Projects — opening
+    Invoice search with only a job name is a dead end for costing.
     """
     project_number = _clean(row.get("project_number"))
     project_item_id = row.get("project_item_id")
@@ -55,11 +55,15 @@ def shape_ready_to_invoice(row: dict) -> dict:
     job_q = _clean(row.get("name")) or _clean(row.get("project_name"))
     # Projects board id only — Ops pulses 404 / empty-prefill on invoice lookup.
     monday_for_invoice = project_item_id or None
-    href = invoice_href(
+    inv_href = invoice_href(
         project_number=project_number,
         monday_item_id=monday_for_invoice,
         q=None if (project_number or monday_for_invoice) else job_q,
         ops_item_id=ops_item_id,
+    )
+    jobcheck_href = (
+        f"/ui/jobcheck?item={quote(str(ops_item_id), safe='')}"
+        if ops_item_id is not None else "/ui/jobcheck"
     )
     status_labels = [s for s in (
         _clean(row.get("billable")) and f"Billable: {row.get('billable')}",
@@ -76,14 +80,24 @@ def shape_ready_to_invoice(row: dict) -> dict:
             proposed_total = round(float(proposed_total), 2)
         except (TypeError, ValueError):
             proposed_total = None
-    if project_number:
-        note = "Project # known — invoice form will look it up."
-    elif monday_for_invoice:
-        note = "Opens invoice from the linked Projects item."
+
+    linked = bool(project_number or monday_for_invoice)
+    if linked:
+        primary_href = inv_href
+        if proposed_total is not None:
+            primary_label = f"Open invoice · ${proposed_total:,.2f}"
+        else:
+            primary_label = "Open invoice"
+        if project_number:
+            note = "Project # known — invoice form will look it up."
+        else:
+            note = "Opens invoice from the linked Projects item."
     else:
+        primary_href = jobcheck_href
+        primary_label = "Link Projects"
         note = (
-            "No Projects link yet — opens invoice search with the job name. "
-            "Link the Ops task to Projects so one-tap invoice works."
+            "No Projects link yet — link on Job Check first so Payroll "
+            "costing and one-tap invoice work."
         )
     if proposed_total is not None and price_label:
         note = f"Proposed ${proposed_total:,.2f} ({price_label}). {note}"
@@ -108,11 +122,12 @@ def shape_ready_to_invoice(row: dict) -> dict:
         "proposed_total": proposed_total,
         "model": model,
         "price_label": price_label,
-        "invoice_href": href,
+        "invoice_href": inv_href,
+        "jobcheck_href": jobcheck_href,
         "estimate_href": None,
         "jobstart_href": None,
-        "primary_href": href,
-        "primary_label": "Open invoice",
+        "primary_href": primary_href,
+        "primary_label": primary_label,
         "note": note,
     }
 

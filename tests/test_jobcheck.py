@@ -1061,6 +1061,7 @@ def test_mark_ready_to_invoice_success_and_activity():
 
     assert out["ok"] is True
     assert out["billing_href"] == "/ui/billing"
+    assert out["invoice_href"] == "/ui/invoice?ops_ready=101"
     assert out["monday_url"] == ops_before["url"]
     assert out["group_moved"] is True
     assert out["date_written"] is True
@@ -1102,6 +1103,8 @@ def test_mark_ready_to_invoice_already_ready_rejected():
 
     assert out["ok"] is False
     assert out["error"] == "ALREADY_READY"
+    assert out["invoice_href"] == "/ui/invoice?ops_ready=101"
+    assert out["billing_href"] == "/ui/billing"
 
 
 def test_mark_ready_to_invoice_warns_without_project_link():
@@ -1226,3 +1229,14 @@ def test_jobcheck_photo_blocked_guidance_in_ui():
     assert "GFolder Link" in body
     assert "has_project_link" in body
     assert "linkpanel" in body and "scrollIntoView" in body
+
+
+def test_jobcheck_ready_card_shows_invoice_billing_when_already_ready():
+    body = (Path(__file__).resolve().parents[1] / "web" / "jobcheck.html").read_text(
+        encoding="utf-8")
+    assert 'id="readyinv"' in body
+    assert 'id="readybill"' in body
+    assert "already_ready" in body
+    assert "Open Invoice" in body
+    assert "Open Billing Hub" in body
+    assert "refreshReadyHint" in body
