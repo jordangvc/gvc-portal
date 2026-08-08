@@ -196,15 +196,16 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   content to `#operations`. Side chat / DM only (Jordan 2026-08-05).
 - **Portal UI system:** Redesign SoT is `web/gvc-ui.css` + `docs/redesign/`
   (copy reference markup; **do not invent a second design system**). Converted
-  screens today: **hub** (`/`), **takeoff bridge** (`/ui/takeoff`), and **Job
-  Check** (`/ui/jobcheck` status picker) — those pages load `/ui/gvc-ui.css`
-  only, never stack with `/ui/gvc.css`. Job Check picker markup/classes come
-  from `docs/redesign/Status Picker Handoff.md` via `web/gvc-status-picker.js`
-  (Save bar still batches Monday writes; do not mutate Monday inside the
-  picker). Remaining money-spine pages still use `web/gvc.css` until converted.
-  Product contract: `docs/UI-SYSTEM.md` + `docs/UX-CHECKLIST.md` + redesign
-  `UI Checklist.md`. Dark mode: `docs/UI-DARK-MODE.md` / `web/gvc-theme.js` →
-  `data-theme`.
+  screens today: **hub** (`/`), **takeoff bridge** (`/ui/takeoff`), **Job
+  Check** (`/ui/jobcheck` status picker on `gvc-ui.css` only), and money
+  generators (**estimate / change-order / invoice**) which load `gvc-ui.css` +
+  `gvc-forms.css` with shared `GvcFormChrome` (never stack with `/ui/gvc.css`).
+  Job Check picker markup comes from `Status Picker Handoff.md` via
+  `web/gvc-status-picker.js` (Save bar batches Monday writes; do not mutate
+  Monday inside the picker). Remaining spine pages still use `web/gvc.css`
+  until converted. Product contract: `docs/UI-SYSTEM.md` +
+  `docs/UX-CHECKLIST.md` + redesign `UI Checklist.md`. Dark mode:
+  `docs/UI-DARK-MODE.md` / `web/gvc-theme.js` → `data-theme`.
 - **Hub first paint:** HTML injects `HUB_BOOT_JSON` (rail + greeting + quick
   actions — no Monday). Live Needs/Metrics wait on `GET /ui/api/hub`; Activity
   is deferred to `GET /ui/api/hub/activity`. See `docs/HUB-HOME.md`. Phone

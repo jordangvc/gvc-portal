@@ -1460,6 +1460,42 @@ def portal_flow_js() -> Response:
     )
 
 
+@app.get("/ui/gvc-form-chrome.js")
+def portal_form_chrome_js() -> Response:
+    """Shared forms topbar + nested path (web/gvc-form-chrome.js)."""
+    path = WEB_DIR / "gvc-form-chrome.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_text(encoding="utf-8"),
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
+@app.get("/ui/gvc-form-stages.js")
+def portal_form_stages_js() -> Response:
+    """Stage rail + Continue/Accept for generator forms (web/gvc-form-stages.js)."""
+    path = WEB_DIR / "gvc-form-stages.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(
+        content=path.read_text(encoding="utf-8"),
+        media_type="application/javascript; charset=utf-8",
+        headers={"Cache-Control": "public, max-age=3600"},
+    )
+
+
 @app.get("/ui/gvc-status-picker.js")
 def portal_status_picker_js() -> Response:
     """Grouped status picker for Job Check (web/gvc-status-picker.js)."""

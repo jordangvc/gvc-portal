@@ -68,18 +68,27 @@ def test_takeoff_page_and_flow_js_on_disk() -> None:
     flow_js = (web / "gvc-flow.js").read_text(encoding="utf-8")
     check("flow exports mount", "mount:" in flow_js or "function mount" in flow_js)
     check("flow supports redesign path", "mountPath" in flow_js and "path__step" in flow_js)
+    check("flow supports forms path", "mountFormsPath" in flow_js and "gvc-path-step" in flow_js)
     for page, step in (
         ("estimate.html", "estimate"),
         ("jobstart.html", "jobstart"),
         ("jobcheck.html", "jobcheck"),
-        ("change-order.html", "change_order"),
+        ("change-order.html", "change"),
         ("billing.html", "billing"),
         ("invoice.html", "invoice"),
         ("check.html", "check"),
     ):
         body = (web / page).read_text(encoding="utf-8")
-        check(f"{page} has path host", 'id="gvc-flow"' in body)
-        check(f"{page} mounts {step}", f'"{step}"' in body and "GvcFlow.mount" in body)
+        forms = 'data-forms="1"' in body
+        if forms:
+            check(f"{page} forms chrome", "GvcFormChrome.mount" in body)
+            check(f"{page} forms sheets", 'href="/ui/gvc-forms.css"' in body)
+            check(f"{page} no gvc.css", 'href="/ui/gvc.css"' not in body)
+            check(f"{page} zero select", "<select" not in body.lower().split("<script")[0])
+            check(f"{page} actionbar", "gvc-actionbar" in body and 'id="btn-next"' in body)
+        else:
+            check(f"{page} has path host", 'id="gvc-flow"' in body)
+            check(f"{page} mounts {step}", f'"{step}"' in body and "GvcFlow.mount" in body)
 
 
 def test_takeoff_route_registers() -> None:
