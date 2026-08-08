@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC — phone reference (390px)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gvc-ui.css">
+<style>
+  /* Page chrome for the reference sheet only — NOT part of the system.
+     Each phone below is a real 390px viewport via iframe, so the CSS
+     breakpoints fire exactly as they do on a device. */
+  body { background: var(--color-bg); }
+  .sheet { padding: 40px 32px 80px; display: flex; flex-direction: column; gap: 32px; }
+  .phones { display: flex; gap: 28px; flex-wrap: wrap; }
+  .phone { display: flex; flex-direction: column; gap: 10px; }
+  .phone iframe {
+    width: 390px; height: 780px;
+    border: 1px solid var(--color-border);
+    border-radius: 22px;
+    background: var(--color-bg);
+  }
+</style>
+</head>
+<body>
+<div class="sheet">
+
+  <header style="display:flex;flex-direction:column;gap:6px;padding-bottom:18px;border-bottom:1px solid var(--color-divider)">
+    <span class="kicker">gvc-ui.css &middot; 390px</span>
+    <h1>Phone reference</h1>
+    <p class="muted" style="max-width:64ch">Every screen at a real 390&times;780 viewport. Roughly 90% of use is a phone in a truck, so this is the target &mdash; the desktop builds are the wide version of these, not the other way round.</p>
+  </header>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <span class="kicker">Screens</span>
+    <div class="phones">
+      <div class="phone">
+        <span class="row__sub">Takeoffs list</span>
+        <iframe src="gvc-takeoffs-reference.html" title="Takeoffs list at 390px"></iframe>
+      </div>
+      <div class="phone">
+        <span class="row__sub">Drywall measuring</span>
+        <iframe src="gvc-measuring-reference.html" title="Measuring at 390px"></iframe>
+      </div>
+      <div class="phone">
+        <span class="row__sub">Review</span>
+        <iframe src="gvc-review-reference.html" title="Review at 390px"></iframe>
+      </div>
+      <div class="phone">
+        <span class="row__sub">Hub &mdash; personal home</span>
+        <iframe src="gvc-shell-demo.html" title="Hub at 390px"></iframe>
+      </div>
+    </div>
+  </section>
+
+  <section style="display:flex;flex-direction:column;gap:14px">
+    <span class="kicker">What changes below 900px</span>
+    <div class="grid-cards">
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:6px">
+        <b class="row__title">The rail becomes a drawer</b>
+        <p class="muted" style="font-size:var(--text-sm)">Full-screen, <code class="mono" style="font-size:12px">.rail.is-open</code>. It covers the hamburger that opened it, so it needs the <code class="mono" style="font-size:12px">.phone-only</code> close button &mdash; without one the user is trapped.</p>
+      </div>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:6px">
+        <b class="row__title">The tab bar appears</b>
+        <p class="muted" style="font-size:var(--text-sm)">Four destinations, safe-area padded. Render it in every shell &mdash; it hides itself above 900px.</p>
+      </div>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:6px">
+        <b class="row__title">Chip groups scroll sideways</b>
+        <p class="muted" style="font-size:var(--text-sm)">Each <code class="mono" style="font-size:12px">.chipset__opts</code> becomes one swipeable row with snap points instead of a wrapping wall four rows deep.</p>
+      </div>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:6px">
+        <b class="row__title">Nested scrollers release</b>
+        <p class="muted" style="font-size:var(--text-sm)"><code class="mono" style="font-size:12px">.scroll-rows</code> and <code class="mono" style="font-size:12px">.scroll-tall</code> drop their caps so the page is the only thing that scrolls. Two scrollbars in a moving truck is unusable.</p>
+      </div>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:6px">
+        <b class="row__title">Measuring rows go two-up</b>
+        <p class="muted" style="font-size:var(--text-sm)">Dimensions and board on line one; label, tags and actions on line two. Seven controls in one row is unusable at 390px.</p>
+      </div>
+      <div class="card card-pad" style="display:flex;flex-direction:column;gap:6px">
+        <b class="row__title">Targets grow</b>
+        <p class="muted" style="font-size:var(--text-sm)">Everything interactive hits 44px, primary actions 48px, checkboxes 20px. Chips gain horizontal padding and step up to <code class="mono" style="font-size:12px">--text-sm</code>.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="card card-pad card-note" style="display:flex;flex-direction:column;gap:8px">
+    <b class="row__title">The rule that matters most on a phone</b>
+    <p class="muted" style="font-size:var(--text-sm);max-width:70ch">Every card action deep-links to the exact job, invoice or output &mdash; never to the tool's landing page. Two taps, not eight. It is the single biggest usability win on mobile and it costs nothing but routing.</p>
+  </section>
+
+</div>
+</body>
+</html>

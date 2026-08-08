@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC shell demo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gvc-ui.css">
+</head>
+<body>
+<div class="app">
+  <aside class="rail">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <span class="kicker">GVC Hub</span>
+        <button class="btn btn-icon btn-ghost phone-only" id="close" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="rail__job">All tools</div>
+    </div>
+    <nav class="rail__nav">
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Today</span>
+        <a class="nav-item is-active"><span class="nav-item__name">Owner Pulse</span><span class="badge">3</span></a>
+        <a class="nav-item"><span class="nav-item__name">Activity</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Money</span>
+        <a class="nav-item"><span class="nav-item__name">Billing Hub</span><span class="badge">7</span></a>
+        <a class="nav-item"><span class="nav-item__name">Paid by Check</span></a>
+        <a class="nav-item"><span class="nav-item__name">Lien Watch</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Field</span>
+        <a class="nav-item"><span class="nav-item__name">Job Check</span></a>
+        <a class="nav-item"><span class="nav-item__name">Field Manual</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Company</span>
+        <a class="nav-item is-locked"><span class="nav-item__name">Admin</span><span class="faint">&mdash;</span></a>
+      </div>
+    </nav>
+    <div class="rail__foot">
+      <span class="avatar">JD</span>
+      <span class="row__main">
+        <b class="row__title">Jordan Doyle</b>
+        <span class="row__sub">Owner</span>
+      </span>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button class="btn btn-icon" id="menu" aria-label="All tools">&#8801;</button>
+      <div class="topbar__title">
+        <span class="kicker">Thursday, August 6</span>
+        <h1>Your hub</h1>
+      </div>
+      <div class="topbar__actions">
+        <button class="btn btn-icon" aria-label="Refresh">&#8635;</button>
+        <span class="avatar">JD</span>
+      </div>
+    </header>
+
+    <div class="page">
+      <section class="stack" style="gap:var(--space-3)">
+        <div class="cluster" style="justify-content:space-between">
+          <h2>Needs you today</h2>
+          <span class="mono muted" style="font-size:var(--text-xs)">2 items</span>
+        </div>
+        <div class="grid-cards">
+          <div class="card card-pad card-note stack" style="gap:var(--space-2)">
+            <div class="cluster" style="justify-content:space-between">
+              <span class="kicker kicker-sm">Change order</span>
+              <span class="num num-sm" style="color:var(--color-accent-ink)">$4,180</span>
+            </div>
+            <h3>CO #2 &mdash; 4115 Witler Road, Cincinnati, OH 45248 | Drees | Witler residence</h3>
+            <p class="muted" style="font-size:var(--text-sm)">Priced by Mark, waiting on your approval to send.</p>
+            <div class="cluster">
+              <button class="btn btn-primary">Review &amp; approve</button>
+              <button class="btn">Open job</button>
+            </div>
+          </div>
+          <div class="card card-pad card-note stack" style="gap:var(--space-2)">
+            <div class="cluster" style="justify-content:space-between">
+              <span class="kicker kicker-sm">Invoice</span>
+              <span class="num num-sm" style="color:var(--color-accent-ink)">$12,900</span>
+            </div>
+            <h3>2025 Colerain Avenue, Cincinnati, OH 45214 | Fischer | Colerain residence</h3>
+            <p class="muted" style="font-size:var(--text-sm)">Hang and finish complete, retainage held at 10%.</p>
+            <div class="cluster">
+              <button class="btn btn-primary">Approve to send</button>
+              <button class="btn">Open job</button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="stack" style="gap:var(--space-3)">
+        <h2>Where the company stands</h2>
+        <div class="grid-metrics">
+        <div class="card card-pad stack" style="gap:4px">
+          <span class="kicker kicker-sm">AR over 30</span>
+          <span class="num num-lg">$84,200</span>
+          <span class="muted" style="font-size:var(--text-xs)">4 invoices</span>
+        </div>
+        <div class="card card-pad stack" style="gap:4px">
+          <span class="kicker kicker-sm">Unbilled</span>
+          <span class="num num-lg">$23,100</span>
+          <span class="muted" style="font-size:var(--text-xs)">3 jobs ready</span>
+        </div>
+        <div class="card card-pad stack" style="gap:4px">
+          <span class="kicker kicker-sm">Stuck</span>
+          <span class="num num-lg">2</span>
+          <span class="muted" style="font-size:var(--text-xs)">Both on GC</span>
+        </div>
+        <div class="card card-pad stack" style="gap:4px">
+          <span class="kicker kicker-sm">Crews out</span>
+          <span class="num num-lg">6</span>
+          <span class="muted" style="font-size:var(--text-xs)">Hang one short</span>
+        </div>
+        </div>
+      </section>
+
+      <section class="stack" style="gap:var(--space-3)">
+        <div class="card card-flush">
+          <div class="card-head">
+            <div class="row__main">
+              <h2>Exceptions</h2>
+              <span class="row__sub">4 jobs off plan &mdash; oldest blocked 2 days</span>
+            </div>
+            <a href="#">Owner Pulse</a>
+          </div>
+          <div class="card-foot" style="border-top:0;border-bottom:1px solid var(--color-divider)">
+            <div class="chipset">
+              <span class="chipset__label kicker">Stage</span>
+              <div class="chipset__opts">
+                <button class="chip is-active" aria-pressed="true">All</button>
+                <button class="chip">Hanging</button>
+                <button class="chip">Finishing</button>
+                <button class="chip">Ready to Invoice</button>
+              </div>
+            </div>
+          </div>
+          <div class="scroll-rows">
+            <a class="row">
+              <span class="row__main">
+                <b class="row__title">4115 Witler Road, Cincinnati, OH 45248 | Drees | Witler residence</b>
+                <span class="row__sub">Hang &middot; Mark W &middot; blocked 2 days</span>
+              </span>
+              <span class="tag tag-alert row__end">Waiting on GC</span>
+            </a>
+            <a class="row">
+              <span class="row__main">
+                <b class="row__title">6845 Hager Drive, Cincinnati, OH 45247 | Fischer | Hager residence</b>
+                <span class="row__sub">Finish &middot; Robert R &middot; blocked today</span>
+              </span>
+              <span class="tag tag-alert row__end">Hold for heat</span>
+            </a>
+            <a class="row">
+              <span class="row__main">
+                <b class="row__title">317 Albion Place, Cincinnati, OH 45219 | Maronda | Albion residence</b>
+                <span class="row__sub">Invoice 41 days out &middot; $28,400</span>
+              </span>
+              <span class="tag row__end">Bill it</span>
+            </a>
+            <a class="row">
+              <span class="row__main">
+                <b class="row__title">18863 Rileys Ridge, Greendale, IN 47025 | JDC | Rileys residence</b>
+                <span class="row__sub">Estimate drafted &middot; not sent</span>
+              </span>
+              <span class="tag row__end">Your call</span>
+            </a>
+            <div class="scroll-rows__more" style="display:flex;align-items:center;justify-content:center">
+              <button class="btn btn-sm btn-ghost">Show more</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="tabbar">
+      <a class="is-active">Home</a>
+      <a>Search</a>
+      <a>Alerts<span class="badge">4</span></a>
+      <a id="tools">Tools</a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  var rail = document.querySelector('.rail');
+  function toggle() { rail.classList.toggle('is-open'); }
+  document.getElementById('menu').addEventListener('click', toggle);
+  document.getElementById('tools').addEventListener('click', toggle);
+  document.getElementById('close').addEventListener('click', function () { rail.classList.remove('is-open'); });
+  rail.addEventListener('click', function (e) {
+    if (e.target.closest('.nav-item')) rail.classList.remove('is-open');
+  });
+</script>
+</body>
+</html>

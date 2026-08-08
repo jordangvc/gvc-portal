@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC Takeoff — Takeoffs list (reference build)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gvc-ui.css">
+</head>
+<body>
+
+<header class="topbar">
+  <span class="avatar avatar-lg">GV</span>
+  <div class="topbar__title">
+    <span class="kicker">GVC Takeoff</span>
+    <b style="font-size:var(--text-sm)">Good morning, Jordan &middot; Friday, August 7</b>
+  </div>
+  <div class="topbar__actions">
+    <button class="btn btn-sm">Resume 6703 E Hoff Road</button>
+    <span class="avatar">JD</span>
+  </div>
+</header>
+
+<div class="page" style="max-width:1180px;margin:0 auto;width:100%">
+
+  <!-- ============ start a takeoff ============ -->
+  <section class="card card-pad" style="display:flex;flex-direction:column;gap:var(--space-4)">
+    <div class="cluster-split">
+      <div class="row__main">
+        <span class="kicker">Takeoff jobs</span>
+        <h1 style="font-size:var(--text-lg)">Drafts and finalized takeoffs</h1>
+        <span class="row__sub">Open a field draft or start a clean takeoff.</span>
+      </div>
+      <div class="cluster">
+        <button class="btn btn-primary">+ New takeoff</button>
+        <button class="btn">Budget bid</button>
+        <button class="btn">From plans</button>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:var(--space-2);padding-top:var(--space-4);border-top:1px solid var(--color-divider)">
+      <div class="cluster-split">
+        <span class="kicker kicker-sm">Plan uploads &middot; 5 queued</span>
+        <a href="#">Manage queue</a>
+      </div>
+      <a class="rowcard">
+        <span class="tag row__end">Queued</span>
+        <span class="row__main">
+          <b class="row__title">1246 Meriweather Avenue, Cincinnati, OH 45248 | Willow Creek | Meriweather residence</b>
+          <span class="row__sub">Uploaded by Jordan</span>
+        </span>
+        <span class="rowcard__when">2h ago</span>
+      </a>
+      <a class="rowcard">
+        <span class="tag row__end">Queued</span>
+        <span class="row__main">
+          <b class="row__title">6703 E Hoff Road, Batesville, IN 47006 | Kenny Teuschler | Hoff residence</b>
+          <span class="row__sub">Uploaded by Mark W</span>
+        </span>
+        <span class="rowcard__when">17h ago</span>
+      </a>
+      <a class="rowcard">
+        <span class="tag row__end">Queued</span>
+        <span class="row__main">
+          <b class="row__title">10220 Dugan Gap Road, North Bend, OH 45052 | Jerry Katenkamp | Dugan residence</b>
+          <span class="row__sub">Uploaded by Mark W</span>
+        </span>
+        <span class="rowcard__when">11d ago</span>
+      </a>
+      <button class="btn btn-sm btn-ghost btn-block">Show 2 more</button>
+    </div>
+  </section>
+
+  <!-- ============ search + pipeline ============ -->
+  <section>
+    <div class="field">
+      <span class="kicker">Pipeline &mdash; the 48 active jobs</span>
+      <div class="pipe">
+        <div class="pipe__stage is-live"><span class="pipe__n">48</span><span class="pipe__label">In field</span></div>
+        <div class="pipe__stage is-zero"><span class="pipe__n">0</span><span class="pipe__label">Field done</span></div>
+        <div class="pipe__stage is-zero"><span class="pipe__n">0</span><span class="pipe__label">Estimated</span></div>
+        <div class="pipe__stage is-zero"><span class="pipe__n">0</span><span class="pipe__label">Queued</span></div>
+        <div class="pipe__stage is-zero"><span class="pipe__n">0</span><span class="pipe__label">Staged</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ cleanup banner ============ -->
+  <section class="card card-pad card-note">
+    <div class="cluster-split">
+      <span class="row__main">
+        <b class="row__title">56 recovered autosaves and 31 nameless records are hiding your real jobs</b>
+        <span class="row__sub">&ldquo;Autosave 1:16:22 PM&rdquo;, &ldquo;Untitled&rdquo;, and test entries. None has an address or a builder.</span>
+      </span>
+      <div class="cluster">
+        <button class="btn btn-primary">Review and purge</button>
+        <button class="btn">Dismiss</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ filters ============ -->
+  <section style="display:flex;flex-direction:column;gap:var(--space-3)">
+    <label class="field">
+      <span class="kicker">Search jobs</span>
+      <input class="input" type="search" placeholder="Address, builder, city, or estimator">
+    </label>
+    <div class="cluster-split">
+    <div class="chipset">
+      <div class="chipset__opts">
+        <button class="chip is-active" aria-pressed="true">Active 48</button>
+        <button class="chip" aria-pressed="false">Final 0</button>
+        <button class="chip" aria-pressed="false">Auto-saved 56</button>
+        <button class="chip" aria-pressed="false">All</button>
+      </div>
+    </div>
+    <div class="cluster">
+      <label class="toggle"><input type="checkbox"> Missing ZIP only</label>
+      <div class="seg">
+        <button class="is-active">Newest</button>
+        <button>Oldest</button>
+      </div>
+    </div>
+    </div>
+  </section>
+
+  <!-- ============ job cards ============ -->
+  <section class="grid-cards">
+
+    <article class="card card-flush">
+      <div class="card-pad" style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster"><span class="tag">Draft</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <b class="row__title">6703 E Hoff Road</b>
+          <span class="row__sub">Batesville, IN 47006</span>
+          <span class="row__sub">Kenny Teuschler | Hoff residence</span>
+        </div>
+        <div class="cluster-split" style="gap:var(--space-2)">
+          <span class="row__sub">Mark W</span>
+          <span class="rowcard__when">2d ago</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="is-primary">Estimate</button>
+        <button>Duplicate</button>
+        <button>Navigate</button>
+        <button class="is-danger">Delete</button>
+      </div>
+    </article>
+
+    <article class="card card-flush">
+      <div class="card-pad" style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster"><span class="tag">Draft</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <b class="row__title">10220 Dugan Gap Road</b>
+          <span class="row__sub">North Bend, OH 45052</span>
+          <span class="row__sub">Jerry Katenkamp | Dugan residence</span>
+        </div>
+        <div class="cluster-split" style="gap:var(--space-2)">
+          <span class="row__sub">Mark W</span>
+          <span class="rowcard__when">4d ago</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="is-primary">Estimate</button>
+        <button>Duplicate</button>
+        <button>Navigate</button>
+        <button class="is-danger">Delete</button>
+      </div>
+    </article>
+
+    <article class="card card-flush">
+      <div class="card-pad" style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster"><span class="tag">Draft</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <b class="row__title">1029 Main Street</b>
+          <span class="row__sub">Cincinnati, OH 45202</span>
+          <span class="row__sub">Jeff Dunn | Main Street office</span>
+        </div>
+        <div class="cluster-split" style="gap:var(--space-2)">
+          <span class="row__sub">Mark W</span>
+          <span class="rowcard__when">9d ago</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="is-primary">Estimate</button>
+        <button>Duplicate</button>
+        <button>Navigate</button>
+        <button class="is-danger">Delete</button>
+      </div>
+    </article>
+
+    <article class="card card-flush">
+      <div class="card-pad" style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster"><span class="tag">Draft</span><span class="tag tag-gold">ZIP missing</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <b class="row__title">115 W McMillan Street</b>
+          <span class="row__sub">Cincinnati, OH <em class="faint">&mdash; add ZIP</em></span>
+          <span class="row__sub faint">Builder not set | Job title not set</span>
+        </div>
+        <div class="cluster-split" style="gap:var(--space-2)">
+          <span class="row__sub">Jordan</span>
+          <span class="rowcard__when">16d ago</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="is-primary">Finish the name</button>
+        <button>Duplicate</button>
+        <button>Navigate</button>
+        <button class="is-danger">Delete</button>
+      </div>
+    </article>
+
+    <article class="card card-flush">
+      <div class="card-pad" style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster"><span class="tag">Draft</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <b class="row__title">6850 Mullen Road</b>
+          <span class="row__sub">Cincinnati, OH 45247</span>
+          <span class="row__sub">Willow Creek | Mullen residence</span>
+        </div>
+        <div class="cluster-split" style="gap:var(--space-2)">
+          <span class="row__sub">Mark W</span>
+          <span class="rowcard__when">22d ago</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="is-primary">Estimate</button>
+        <button>Duplicate</button>
+        <button>Navigate</button>
+        <button class="is-danger">Delete</button>
+      </div>
+    </article>
+
+    <article class="card card-flush">
+      <div class="card-pad" style="padding:var(--space-4);display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster"><span class="tag">Draft</span><span class="tag tag-gold">ZIP missing</span></div>
+        <div style="display:flex;flex-direction:column;gap:1px">
+          <b class="row__title">7791 Waynetown Boulevard</b>
+          <span class="row__sub">Huber Heights, OH <em class="faint">&mdash; add ZIP</em></span>
+          <span class="row__sub">Willow Hills | Waynetown residence</span>
+        </div>
+        <div class="cluster-split" style="gap:var(--space-2)">
+          <span class="row__sub">Robert R</span>
+          <span class="rowcard__when">31d ago</span>
+        </div>
+      </div>
+      <div class="btn-row">
+        <button class="is-primary">Finish the name</button>
+        <button>Duplicate</button>
+        <button>Navigate</button>
+        <button class="is-danger">Delete</button>
+      </div>
+    </article>
+
+  </section>
+
+  <!-- ============ everything else ============ -->
+  <section style="display:flex;flex-direction:column;gap:var(--space-3)">
+    <div class="cluster-split">
+      <span class="kicker">Everything else &middot; 42</span>
+      <span class="row__sub">Older drafts and recovered autosaves</span>
+    </div>
+
+    <div class="scroll-tall">
+      <a class="rowcard">
+        <span class="tag row__end">Draft</span>
+        <span class="row__main">
+          <b class="row__title">5672 Whetsel Avenue</b>
+          <span class="row__sub">Cincinnati, OH 45227 &middot; Weiland | Whetsel residence &middot; Robert R</span>
+        </span>
+        <span class="rowcard__when">71d</span>
+      </a>
+      <a class="rowcard">
+        <span class="tag row__end">Draft</span>
+        <span class="row__main">
+          <b class="row__title">952 Hickory Road</b>
+          <span class="row__sub">Lawrenceburg, IN 47012 &middot; Builder not set | Hickory residence &middot; Jordan</span>
+        </span>
+        <span class="rowcard__when">80d</span>
+      </a>
+      <a class="rowcard">
+        <span class="tag row__end">Draft</span>
+        <span class="row__main">
+          <b class="row__title">2740 Greystone Drive</b>
+          <span class="row__sub">West Harrison, IN 47060 &middot; JDC | Greystone residence &middot; Mark W</span>
+        </span>
+        <span class="rowcard__when">87d</span>
+      </a>
+      <a class="rowcard">
+        <span class="tag row__end">Draft</span>
+        <span class="row__main">
+          <b class="row__title">910 SE Mohawk Trail</b>
+          <span class="row__sub">Greensburg, IN 47240 &middot; Jeff Stevens | Mohawk residence &middot; Mark W</span>
+        </span>
+        <span class="rowcard__when">87d</span>
+      </a>
+      <a class="rowcard">
+        <span class="tag row__end">Draft</span>
+        <span class="row__main">
+          <b class="row__title">10286 Dugan Gap Road</b>
+          <span class="row__sub">North Bend, OH 45052 &middot; Greg Gavin | Dugan Gap residence &middot; Mark W</span>
+        </span>
+        <span class="rowcard__when">90d</span>
+      </a>
+
+      <div style="padding:var(--space-5) 0 var(--space-2)">
+        <span class="kicker kicker-sm">No job attached &middot; 31</span>
+      </div>
+
+      <a class="rowcard rowcard-junk">
+        <span class="tag row__end">Recovered</span>
+        <span class="row__main">
+          <b class="row__title">Autosave 1:16:22 PM</b>
+          <span class="row__sub faint">No address, no builder &middot; Jordan</span>
+        </span>
+        <span class="rowcard__when">76d</span>
+      </a>
+      <a class="rowcard rowcard-junk">
+        <span class="tag row__end">Recovered</span>
+        <span class="row__main">
+          <b class="row__title">Untitled</b>
+          <span class="row__sub faint">No address, no builder &middot; Jordan</span>
+        </span>
+        <span class="rowcard__when">76d</span>
+      </a>
+      <a class="rowcard rowcard-junk">
+        <span class="tag row__end">Test</span>
+        <span class="row__main">
+          <b class="row__title">Testing 5-8-2026 V106</b>
+          <span class="row__sub faint">No address, no builder &middot; Jordan</span>
+        </span>
+        <span class="rowcard__when">90d</span>
+      </a>
+
+      <div class="scroll-tall__more" style="display:flex;align-items:center;justify-content:center">
+        <button class="btn btn-sm btn-ghost">Show 34 more</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<nav class="tabbar">
+  <a class="is-active">Jobs</a>
+  <a>Search</a>
+  <a>Uploads</a>
+  <a>Me</a>
+</nav>
+
+</body>
+</html>

@@ -1,0 +1,220 @@
+/* ==========================================================================
+   gvc-v2-patch.css — drop-in corrective layer for the LIVE takeoff app
+   (gvctakeoff.netlify.app/v2.html)
+
+   Load AFTER gvc-ui.css and AFTER the app's own stylesheet:
+
+     <link rel="stylesheet" href="/styles/gvc-ui.css">
+     <link rel="stylesheet" href="/styles/app.css">        <!-- existing -->
+     <link rel="stylesheet" href="/styles/gvc-v2-patch.css">
+
+   This file exists to neutralize the palette the app grew on its own —
+   orange, purple, blue and red section colors, solid-gold buttons, square
+   inputs. It is a BRIDGE, not the destination: as each screen is converted to
+   the gvc-ui.css classes, delete the matching block here. When the file is
+   empty, the port is done.
+
+   Every rule below is deliberately !important. It is fighting inline styles
+   and older selectors that would otherwise win.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. Ground truth — the app must run on the Emerald palette
+   -------------------------------------------------------------------------- */
+
+html, body {
+  background: var(--color-bg) !important;
+  color: var(--color-text) !important;
+}
+
+/* The app currently mixes a light sidebar against a near-black main column.
+   One ground, one theme. If you want the dark treatment, set
+   data-theme="dark" on <html> — do not mix them per-region. */
+.sidebar, .rail, aside,
+main, .main, .content, .page, .screen {
+  background: var(--color-surface) !important;
+}
+main, .main, .content, .page, .screen { background: var(--color-bg) !important; }
+
+/* --------------------------------------------------------------------------
+   1. Kill the stray palette
+   Orange, purple, blue and red are not in this system. Green is action,
+   gold is selection, brown-burgundy is alerts. Nothing else.
+   -------------------------------------------------------------------------- */
+
+/* Orange primary — "SEND TO OFFICE", "+ New takeoff", the ⚡ marks */
+[class*='orange'], [style*='#f97'], [style*='#ff6'], [style*='#e8590c'],
+[style*='#fd7e14'], [style*='orange'] {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-text-inverse) !important;
+  box-shadow: inset 0 0 0 1px var(--color-accent) !important;
+}
+
+/* Purple — the two Monday buttons. They are secondary actions, not primary. */
+[class*='purple'], [style*='#7048e8'], [style*='#845ef7'], [style*='purple'],
+[class*='monday-btn'] {
+  background: var(--color-surface-2) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text-muted) !important;
+  box-shadow: none !important;
+}
+
+/* Blue / red / teal section headers — PAYROLL, MONDAY.COM EXPORT, SALES.
+   Section headings are text, not color-coded objects. */
+[class*='section'] > h1, [class*='section'] > h2, [class*='section'] > h3,
+.accordion__title, .panel__title, .disclosure__title {
+  color: var(--color-text) !important;
+}
+.accordion, .panel, .disclosure {
+  border-left-color: var(--color-divider) !important;
+}
+
+/* Solid gold buttons — UPDATE, Save, "+ New takeoff".
+   Gold is SELECTION. An action is green. */
+[style*='#b8912f'], [style*='#c9a227'], [style*='#d4a017'],
+[style*='#a6824a'][style*='background'],
+.btn-gold, .btn--gold {
+  background: var(--color-primary) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-text-inverse) !important;
+  box-shadow: inset 0 0 0 1px var(--color-accent) !important;
+}
+
+/* --------------------------------------------------------------------------
+   2. Shape — everything interactive is a pill
+   -------------------------------------------------------------------------- */
+
+button, .btn, [role='button'], a.button,
+input[type='text'], input[type='search'], input[type='number'],
+input[type='date'], input[type='email'], input[type='tel'],
+select, .pill, .chip, .tab {
+  border-radius: var(--radius-full) !important;
+}
+textarea { border-radius: var(--radius-lg) !important; }
+
+button, .btn, [role='button'], a.button { min-height: var(--tap) !important; }
+
+input, select, textarea {
+  min-height: var(--tap) !important;
+  padding: 10px 15px !important;
+  background: var(--color-surface-2) !important;
+  border: 1px solid var(--color-border) !important;
+  color: var(--color-text) !important;
+  font-family: inherit !important;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none !important;
+  border-color: var(--color-accent) !important;
+  box-shadow: 0 0 0 3px var(--color-primary-ring) !important;
+}
+
+/* --------------------------------------------------------------------------
+   3. The last <select> — Review › Board order › Waste
+   The patch makes it survivable. The FIX is to replace it with a .chipset;
+   see the markup at the bottom of this file.
+   -------------------------------------------------------------------------- */
+
+select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  padding-right: 34px !important;
+  background-image: linear-gradient(45deg, transparent 50%, var(--color-text-faint) 50%),
+                    linear-gradient(135deg, var(--color-text-faint) 50%, transparent 50%) !important;
+  background-position: calc(100% - 18px) 50%, calc(100% - 13px) 50% !important;
+  background-size: 5px 5px, 5px 5px !important;
+  background-repeat: no-repeat !important;
+}
+
+/* --------------------------------------------------------------------------
+   4. Cards, panels and rows
+   -------------------------------------------------------------------------- */
+
+.card, .panel, .accordion, .tile, .job-card, .box {
+  background: var(--color-surface) !important;
+  border: 1px solid var(--color-divider) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: none !important;
+  min-width: 0 !important;
+}
+
+/* Job cards: the action row is flush, neutral, one green and one alert */
+.job-card__actions, .card__actions, .actions-row {
+  display: flex !important;
+  border-top: 1px solid var(--color-divider) !important;
+  background: none !important;
+}
+.job-card__actions > *, .card__actions > *, .actions-row > * {
+  flex: 1 !important;
+  min-height: var(--tap) !important;
+  border: 0 !important;
+  border-right: 1px solid var(--color-divider) !important;
+  border-radius: 0 !important;
+  background: none !important;
+  box-shadow: none !important;
+  color: var(--color-text-muted) !important;
+  font-size: var(--text-xs) !important;
+  font-weight: 600 !important;
+}
+.job-card__actions > :last-child,
+.card__actions > :last-child,
+.actions-row > :last-child { border-right: 0 !important; }
+.job-card__actions > :first-child,
+.card__actions > :first-child { color: var(--color-primary) !important; }
+[class*='delete'], [class*='danger'] { color: var(--color-danger) !important; }
+
+/* Long job names must wrap, never overflow */
+.job-card *, .row *, .card-head h1, .card-head h2, .card-head h3 {
+  overflow-wrap: anywhere !important;
+}
+
+/* --------------------------------------------------------------------------
+   5. No fades, no gradients
+   The app dims disabled/inactive regions with opacity. Use tokens.
+   -------------------------------------------------------------------------- */
+
+*:not(:disabled):not([aria-disabled='true']):not(.dialog-backdrop):not([class*='backdrop']):not([class*='overlay']) {
+  opacity: 1 !important;
+}
+[class*='gradient'], [style*='linear-gradient'], [style*='radial-gradient'] {
+  background-image: none !important;
+}
+
+/* --------------------------------------------------------------------------
+   6. Emoji
+   The app uses 📊 💰 📋 🎨 🔒 ⚡ as section marks. They are not in the system.
+   This hides emoji spans that carry a class; anything inline in a text node
+   has to come out of the markup by hand — see the checklist.
+   -------------------------------------------------------------------------- */
+
+.emoji, [class*='emoji'], [class*='icon-emoji'] { display: none !important; }
+
+/* --------------------------------------------------------------------------
+   7. The Shadow-check card's collapsed columns
+   Screenshot 6: the text wraps to 8-character columns because the grid gives
+   the label track all the width. Give the prose the remaining space.
+   -------------------------------------------------------------------------- */
+
+[class*='shadow'] [class*='row'],
+[class*='shadow-check'] li,
+[class*='benchmark'] [class*='row'] {
+  display: grid !important;
+  grid-template-columns: minmax(90px, auto) minmax(56px, auto) minmax(0, 1fr) !important;
+  gap: var(--space-3) !important;
+  align-items: baseline !important;
+}
+[class*='shadow'] [class*='row'] > :last-child,
+[class*='benchmark'] [class*='row'] > :last-child {
+  min-width: 0 !important;
+  text-wrap: pretty !important;
+}
+
+/* --------------------------------------------------------------------------
+   8. Touch — this is a phone app first
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 620px) {
+  button, .btn, [role='button'], a.button, input, select, textarea,
+  .chip, .tab, .pill { min-height: var(--tap) !important; }
+  .job-card__actions > *, .card__actions > * { min-height: var(--tap) !important; }
+}

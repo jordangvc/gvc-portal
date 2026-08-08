@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC Takeoff — Drywall measuring (reference build)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gvc-ui.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="rail">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <span class="kicker">Takeoff</span>
+        <button class="btn btn-icon btn-ghost phone-only" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="rail__job">9999 Keep Testing St, Brookville, IN 47012 | Brad Hahn | Hahn residence</div>
+      <div class="progress"><i style="width:44%"></i></div>
+      <span class="mono muted" style="font-size:11px">14 bd so far &middot; autosaved 5:43 AM</span>
+    </div>
+    <nav class="rail__nav">
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Setup</span>
+        <a class="nav-item"><span class="nav-item__name">Project</span><span class="nav-item__done">&#10003;</span></a>
+        <a class="nav-item"><span class="nav-item__name">Scope</span><span class="nav-item__done">&#10003;</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Measure</span>
+        <a class="nav-item is-active"><span class="nav-item__name">Drywall</span><span class="nav-item__qty">14 bd</span></a>
+        <a class="nav-item"><span class="nav-item__name">Bead</span></a>
+        <a class="nav-item"><span class="nav-item__name">Framing</span></a>
+        <a class="nav-item"><span class="nav-item__name">ACT</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Finish</span>
+        <a class="nav-item"><span class="nav-item__name">Estimate</span></a>
+        <a class="nav-item"><span class="nav-item__name">Review</span></a>
+      </div>
+    </nav>
+    <div class="rail__foot">
+      <span class="avatar">JD</span>
+      <span class="row__main"><b class="row__title">Jordan</b><span class="row__sub">Autosaved 5:43 AM</span></span>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button class="btn btn-icon btn-ghost" aria-label="Back">&larr;</button>
+      <div class="topbar__title">
+        <span class="kicker">Step 3 of 9</span>
+        <h1>Drywall</h1>
+      </div>
+      <div class="topbar__actions">
+        <span class="tag tag-green">14 bd so far</span>
+        <button class="btn btn-sm">Save</button>
+      </div>
+    </header>
+
+    <div class="stale">Working offline &mdash; last synced 22 minutes ago. Measurements save to this phone and upload when you have signal.</div>
+
+    <div class="page">
+
+      <section class="card card-pad card-note" style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <div class="row__main">
+          <b class="row__title">Measure ceilings first, then walls</b>
+          <span class="row__sub">Length &times; width, pick the board, name the area. Deduct openings over 32 SF.</span>
+        </div>
+        <div class="chipset">
+          <span class="chipset__label kicker">Waste</span>
+          <div class="chipset__opts">
+            <button class="chip" aria-pressed="false">0%</button>
+            <button class="chip is-active" aria-pressed="true">5%</button>
+            <button class="chip" aria-pressed="false">10%</button>
+            <button class="chip" aria-pressed="false">15%</button>
+          </div>
+        </div>
+      </section>
+
+      <section class="cluster-split">
+        <div class="chipset">
+          <span class="chipset__label kicker">Floor</span>
+          <div class="chipset__opts">
+            <button class="chip is-active" aria-pressed="true">Garage</button>
+            <button class="chip" aria-pressed="false">2nd floor</button>
+            <button class="chip" aria-pressed="false">Basement</button>
+          </div>
+        </div>
+        <button class="btn btn-sm btn-dashed">+ Floor</button>
+      </section>
+
+      <!-- ============ CEILINGS ============ -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Ceilings</h2>
+            <span class="row__sub">Garage &middot; 3 measurements</span>
+          </div>
+          <button class="btn btn-sm">+ Add</button>
+        </div>
+
+        <div class="card-foot" style="border-top:0;border-bottom:1px solid var(--color-divider)">
+          <div class="chipset">
+            <span class="chipset__label kicker">Set all boards</span>
+            <div class="chipset__opts">
+              <button class="chip" aria-pressed="false">4&times;8 &frac12;"</button>
+              <button class="chip is-active" aria-pressed="true">4&times;12 &frac12;"</button>
+              <button class="chip" aria-pressed="false">54" &frac12;"</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card-pad">
+
+          <div class="mrow">
+            <div class="mrow__dims">
+              <input class="input-num" inputmode="decimal" value="24" aria-label="Length">
+              <span class="mrow__x">&times;</span>
+              <input class="input-num" inputmode="decimal" value="22" aria-label="Width">
+            </div>
+            <button class="chip" aria-pressed="false">4&times;12 &frac12;"</button>
+            <input class="input mrow__label" value="Main bay" aria-label="Area label">
+            <div class="mrow__tags">
+              <button class="tchip" aria-pressed="false">FO</button>
+              <button class="tchip" aria-pressed="false">MD</button>
+              <button class="tchip is-active" aria-pressed="true">RC1</button>
+            </div>
+            <div class="mrow__end">
+              <button class="btn btn-sm btn-dashed">&minus; Deduct</button>
+              <button class="btn btn-icon btn-ghost" aria-label="Remove row">&times;</button>
+            </div>
+          </div>
+
+          <div class="mrow">
+            <div class="mrow__dims">
+              <input class="input-num" inputmode="decimal" value="12" aria-label="Length">
+              <span class="mrow__x">&times;</span>
+              <input class="input-num" inputmode="decimal" value="8" aria-label="Width">
+            </div>
+            <button class="chip" aria-pressed="false">4&times;12 &frac12;"</button>
+            <input class="input mrow__label" value="Storage bay" aria-label="Area label">
+            <div class="mrow__tags">
+              <button class="tchip" aria-pressed="false">FO</button>
+              <button class="tchip" aria-pressed="false">MD</button>
+              <button class="tchip" aria-pressed="false">RC1</button>
+            </div>
+            <div class="mrow__end">
+              <button class="btn btn-sm btn-dashed">&minus; Deduct</button>
+              <button class="btn btn-icon btn-ghost" aria-label="Remove row">&times;</button>
+            </div>
+          </div>
+
+          <div class="mrow">
+            <div class="mrow__dims">
+              <input class="input-num is-invalid" inputmode="decimal" value="0" aria-label="Length">
+              <span class="mrow__x">&times;</span>
+              <input class="input-num" inputmode="decimal" value="14" aria-label="Width">
+            </div>
+            <button class="chip" aria-pressed="false">4&times;12 &frac12;"</button>
+            <input class="input mrow__label" placeholder="Name this area" aria-label="Area label">
+            <div class="mrow__tags">
+              <button class="tchip" aria-pressed="false">FO</button>
+              <button class="tchip is-active" aria-pressed="true">MD</button>
+              <button class="tchip" aria-pressed="false">RC1</button>
+            </div>
+            <div class="mrow__end">
+              <button class="btn btn-sm btn-dashed">&minus; Deduct</button>
+              <button class="btn btn-icon btn-ghost" aria-label="Remove row">&times;</button>
+            </div>
+            <span class="field__error" style="flex:1 1 100%">Length can't be zero &mdash; this row won't count toward the total.</span>
+          </div>
+
+          <div class="mtotal">
+            <span class="mtotal__name">Ceilings &mdash; Garage</span>
+            <span class="mtotal__val">624 SF &middot; 14 bd</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ EXTERIOR WALLS — empty ============ -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Exterior walls</h2>
+            <span class="row__sub">Garage</span>
+          </div>
+          <button class="btn btn-sm">+ Add</button>
+        </div>
+        <div class="empty empty-inline">
+          <b class="empty__title">No exterior walls measured yet</b>
+          <p class="empty__body">Add a run for each wall, or copy the ceiling dimensions and adjust the height.</p>
+          <div class="empty__actions">
+            <button class="btn btn-primary btn-sm">+ Add a run</button>
+            <button class="btn btn-sm">Copy from ceilings</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============ INTERIOR WALLS — loading ============ -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Interior walls</h2>
+            <span class="row__sub">Loading last session&hellip;</span>
+          </div>
+        </div>
+        <div class="card-pad">
+          <div class="skel skel-row"></div>
+          <div class="skel skel-row"></div>
+          <div class="skel skel-title" style="margin-top:var(--space-4)"></div>
+          <div class="skel skel-sub"></div>
+        </div>
+      </section>
+
+      <!-- ============ error ============ -->
+      <section class="errorbox">
+        <b class="errorbox__title">Couldn't reach the plan file</b>
+        <p class="errorbox__body">The PDF for this job is on Drive and your phone is offline. Your measurements are safe on this device &mdash; you just can't open the plan right now.</p>
+        <div class="errorbox__actions">
+          <button class="btn btn-sm">Try again</button>
+          <button class="btn btn-sm">Keep measuring without it</button>
+        </div>
+      </section>
+
+      <section class="cluster-split">
+        <span class="row__sub">Garage subtotal &middot; 624 SF &middot; 14 boards including 5% waste</span>
+        <div class="cluster">
+          <button class="btn">Back to Scope</button>
+          <button class="btn btn-primary is-working">Saving</button>
+        </div>
+      </section>
+
+    </div>
+
+    <nav class="tabbar">
+      <a>Steps</a>
+      <a class="is-active">Drywall</a>
+      <a>Bead</a>
+      <a>Review</a>
+    </nav>
+  </main>
+</div>
+
+</body>
+</html>
