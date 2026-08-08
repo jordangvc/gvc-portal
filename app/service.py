@@ -1474,6 +1474,51 @@ def ui_billing_hub_data(request: Request) -> dict:
     return _attach_monday_trace(payload)
 
 
+@app.get("/ui/api/billing/ready-worksheets")
+def ui_billing_ready_worksheets(
+    request: Request,
+    persist: int = 1,
+    limit: int = 25,
+) -> dict:
+    """
+    Progressive P5 costing for Ready-to-Invoice cards.
+
+    Hub first paint stays fast (staged summaries only). This endpoint pulls
+    Payroll + company rates for linked Ready rows still missing a proposed $,
+    optionally stages worksheets so Invoice ?ops_ready= prefills lines.
+    Never Stripe / never auto-send.
+    """
+    email = require_feature(request, "invoice")
+    if monday_trace_enabled():
+        reset_monday_trace()
+    try:
+        payload = billing_flow.compute_ready_worksheets(
+            persist=bool(int(persist)),
+            limit=limit,
+        )
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Ask an admin to set MONDAY_API_TOKEN."},
+        )
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "READY_WORKSHEETS_FAILED",
+                    "detail": f"{type(e).__name__}: {e}",
+                    "advice": "Retry, or open Invoice and enter lines by hand."},
+        )
+    activity.log_event(
+        "billing.ready_worksheets", actor=email,
+        result="ok" if payload.get("ok") else "partial",
+        computed=payload.get("computed"),
+        reused=payload.get("reused"),
+        skipped=payload.get("skipped"),
+    )
+    return _attach_monday_trace(payload)
+
+
 @app.get("/ui/api/billing/search")
 def ui_billing_search(request: Request, q: str = "") -> dict:
     """Multi-field search across Projects + Bid Board for the Billing hub."""

@@ -78,17 +78,33 @@ def shape_ready_to_invoice(row: dict) -> dict:
             proposed_total = None
     if project_number:
         note = "Project # known — invoice form will look it up."
+        primary_href = href
+        primary_label = "Open invoice"
     elif monday_for_invoice:
         note = "Opens invoice from the linked Projects item."
+        primary_href = href
+        primary_label = "Open invoice"
     else:
         note = (
-            "No Projects link yet — opens invoice search with the job name. "
-            "Link the Ops task to Projects so one-tap invoice works."
+            "No Projects link yet — open Job Check to link this Ops task, "
+            "then one-tap invoice works. Invoice search by job name is still "
+            "available as a fallback."
         )
+        primary_href = (
+            f"/ui/jobcheck?item={int(ops_item_id)}" if ops_item_id else href
+        )
+        primary_label = "Link Projects" if ops_item_id else "Open invoice"
+    jobcheck_href = (
+        f"/ui/jobcheck?item={int(ops_item_id)}"
+        if ops_item_id and not project_number and not monday_for_invoice
+        else None
+    )
     if proposed_total is not None and price_label:
         note = f"Proposed ${proposed_total:,.2f} ({price_label}). {note}"
     elif proposed_total is not None:
-        note = f"Proposed ${proposed_total:,.2f} from staged worksheet. {note}"
+        note = f"Proposed ${proposed_total:,.2f} from costing worksheet. {note}"
+    if proposed_total is not None and primary_label == "Open invoice":
+        primary_label = f"Open invoice (${proposed_total:,.2f})"
     return {
         "kind": "ready_to_invoice",
         "name": _clean(row.get("name")) or "(unnamed)",
@@ -111,9 +127,11 @@ def shape_ready_to_invoice(row: dict) -> dict:
         "invoice_href": href,
         "estimate_href": None,
         "jobstart_href": None,
-        "primary_href": href,
-        "primary_label": "Open invoice",
+        "jobcheck_href": jobcheck_href,
+        "primary_href": primary_href,
+        "primary_label": primary_label,
         "note": note,
+        "needs_project_link": bool(jobcheck_href),
     }
 
 

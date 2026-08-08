@@ -271,6 +271,9 @@ function rowHtml(item) {
   if (item.jobstart_href && item.jobstart_href !== item.primary_href) {
     secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobstart_href)}">Job Start</a>`);
   }
+  if (item.jobcheck_href && item.jobcheck_href !== item.primary_href) {
+    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobcheck_href)}">Job Check</a>`);
+  }
   return `<div class="queue-row">
     <div class="title">${title}</div>
     <div class="queue-meta">${metaBits(item)}</div>
@@ -388,6 +391,65 @@ function renderActivity(filter) {
   }).join("");
 }
 
+let READY_ROWS = [];
+
+function mergeWorksheetOntoRow(item, ws) {
+  if (!item || !ws) return item;
+  const next = Object.assign({}, item);
+  if (ws.proposed_total != null) next.proposed_total = ws.proposed_total;
+  if (ws.model) next.model = ws.model;
+  if (ws.price_label) next.price_label = ws.price_label;
+  if (ws.proposed_total != null && next.primary_label
+      && /^Open invoice/i.test(next.primary_label)) {
+    const n = Number(ws.proposed_total);
+    const money = Number.isFinite(n)
+      ? n.toLocaleString("en-US", { style: "currency", currency: "USD" })
+      : String(ws.proposed_total);
+    next.primary_label = `Open invoice (${money})`;
+  }
+  if (ws.proposed_total != null) {
+    const money = Number(ws.proposed_total).toLocaleString("en-US", {
+      style: "currency", currency: "USD",
+    });
+    const label = ws.price_label ? ` (${ws.price_label})` : "";
+    const base = (item.note || "").replace(/^Proposed \$[\d,]+\.\d{2}[^.]*\.\s*/, "");
+    next.note = `Proposed ${money}${label}. ${base}`.trim();
+  }
+  return next;
+}
+
+async function enrichReadyWorksheets() {
+  if (!READY_ROWS.length) return;
+  const needs = READY_ROWS.filter(
+    (r) => r.project_item_id && (r.proposed_total == null || r.proposed_total === "")
+  );
+  if (!needs.length) return;
+  try {
+    const r = await fetch("/ui/api/billing/ready-worksheets?persist=1&limit=25");
+    const body = await r.json();
+    if (!r.ok || body.ok === false) return;
+    const map = body.worksheets || {};
+    READY_ROWS = READY_ROWS.map((item) => {
+      const key = String(item.ops_item_id || item.item_id || "");
+      return mergeWorksheetOntoRow(item, map[key]);
+    });
+    renderQueue($("#queue-ready"), READY_ROWS,
+      "Nothing in Ready to Invoice. When Ops moves a finished job into that Monday group, it appears here — then open Invoice from the row.");
+    if ((body.notes || []).length) {
+      const ul = $("#status").querySelector("ul");
+      const extra = body.notes.map((n) => `<li>${esc(n)}</li>`).join("");
+      if (ul) {
+        ul.insertAdjacentHTML("beforeend", extra);
+      } else {
+        showStatus("warn", "<b>Costing</b><ul style='margin:6px 0 0;padding-left:18px;'>" +
+          extra + "</ul>");
+      }
+    }
+  } catch (_e) {
+    /* Ready queue already painted — costing is progressive / best-effort. */
+  }
+}
+
 async function loadHub() {
   try {
     const r = await fetch("/ui/api/billing/hub");
@@ -408,7 +470,8 @@ async function loadHub() {
     $("#count-bids").textContent = String(c.accepted_bids ?? (q.accepted_bids || []).length);
     $("#count-projects").textContent = String(c.projects_billing ?? (q.projects_billing || []).length);
 
-    renderQueue($("#queue-ready"), q.ready_to_invoice,
+    READY_ROWS = q.ready_to_invoice || [];
+    renderQueue($("#queue-ready"), READY_ROWS,
       "Nothing in Ready to Invoice. When Ops moves a finished job into that Monday group, it appears here — then open Invoice from the row.");
     renderQueue($("#queue-bids"), q.accepted_bids,
       "No accepted bids waiting. Won deals that still need a Job Start handoff will list here.");
@@ -421,6 +484,8 @@ async function loadHub() {
     }
     $("#hub-meta").textContent =
       `Updated ${body.generated_at || "—"} · search ${body.search_backend || "—"}`;
+    // Progressive: Payroll costing after first paint (does not block queues).
+    enrichReadyWorksheets();
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}. Reload the page, or open /ui/invoice and look up by Project # until Billing is back.`);
   }

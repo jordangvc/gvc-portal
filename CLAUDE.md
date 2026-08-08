@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ BILLING READY ON-DEMAND COSTING (r87) — BUILT 2026-08-08
+Billing Hub Ready cards no longer wait on the P5 scheduler for proposed $.
+After first paint, `GET /ui/api/billing/ready-worksheets` costs linked Ready
+rows from Payroll (company rates), stages worksheets (GCS/memory) so
+`?ops_ready=` prefills Invoice lines, and patches Proposed $ onto the cards.
+Unlinked Ready rows primary-CTA to Job Check Link Projects. Never Stripe /
+never auto-send. Hub **r87**.
+
 ## ✨ FIELD GUIDE RATED WALLS CATALOG (r86) — BUILT 2026-08-08
 Catalog gains **ratedwalls** (fire walls / shaftwall) under firestop
 `rated-assemblies`, beside firestop. Hub **r86**.

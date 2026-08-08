@@ -75,7 +75,7 @@ def test_shape_ready_to_invoice_with_project_number():
         "/ui/invoice?project_number=C-100&monday_item_id=20&ops_ready=10"
     )
     assert item["primary_href"] == item["invoice_href"]
-    assert item["primary_label"] == "Open invoice"
+    assert item["primary_label"] == "Open invoice ($15,442.83)"
     assert item["builder"] == "Zicka"
     assert item["proposed_total"] == 15442.83
     assert item["model"] == "by_sheet"
@@ -112,6 +112,10 @@ def test_shape_ready_to_invoice_ops_only_uses_search_q():
     )
     assert "monday_item_id" not in item["invoice_href"]
     assert "No Projects link" in item["note"]
+    assert item["primary_href"] == "/ui/jobcheck?item=10"
+    assert item["primary_label"] == "Link Projects"
+    assert item["jobcheck_href"] == "/ui/jobcheck?item=10"
+    assert item["needs_project_link"] is True
 
 
 def test_shape_accepted_bid_needs_handoff():
@@ -540,6 +544,68 @@ def test_billing_hub_payload_survives_partial_failures():
         bf.monday_billing.fetch_ready_to_invoice = orig_ready
         bf.monday_billing.fetch_accepted_bids = orig_bids
         bf.monday_billing.fetch_projects_billing = orig_proj
+
+
+def test_compute_ready_worksheets_reuses_staged_and_computes():
+    """Staged hit → reuse; missing → Payroll + build + persist (memory)."""
+    from subsystems.invoice import ready_stage
+    from unittest.mock import patch
+
+    ready_stage.clear_memory_for_tests()
+    ready_stage.save_worksheet(11, {
+        "job_name": "Already staged",
+        "proposed_invoice_total": 1000.0,
+        "pricing": {"model": "by_sheet", "price_label": "staged"},
+        "payroll_labor_cost": 0,
+        "auto_send": False,
+    })
+
+    rows = [
+        {"item_id": 11, "name": "Already staged", "project_item_id": 100,
+         "builder": "JDC"},
+        {"item_id": 12, "name": "Needs compute", "project_item_id": 200,
+         "builder": "JDC Homes"},
+        {"item_id": 13, "name": "No link", "project_item_id": None},
+    ]
+    fake_payroll = {
+        "board_count_hint": 100,
+        "labor_cost": 5000.0,
+        "rows": [],
+    }
+
+    class _MC:
+        pass
+
+    with patch("adapters.monday.payroll.fetch_payroll_for_project",
+               lambda _mc, _pid: fake_payroll):
+        out = bf.compute_ready_worksheets(
+            rows, persist=True, limit=10, mc=_MC())
+    assert out["auto_send"] is False
+    assert out["reused"] == 1
+    assert out["computed"] == 1
+    assert out["skipped"] == 1
+    assert out["worksheets"]["11"]["proposed_total"] == 1000.0
+    assert out["worksheets"]["11"]["source"] == "staged"
+    assert out["worksheets"]["12"]["source"] == "computed"
+    assert out["worksheets"]["12"]["proposed_total"] > 0
+    stored = ready_stage.get_worksheet(12)
+    assert stored is not None
+    assert stored["proposed_invoice_total"] == out["worksheets"]["12"]["proposed_total"]
+    ready_stage.clear_memory_for_tests()
+
+
+def test_ready_worksheets_route_registered():
+    src = (Path(__file__).resolve().parents[1] / "app" / "service.py").read_text()
+    assert '@app.get("/ui/api/billing/ready-worksheets")' in src
+    assert "compute_ready_worksheets" in src
+
+
+def test_billing_page_enriches_worksheets_progressively():
+    html = (Path(__file__).resolve().parents[1] / "web" / "billing.html").read_text()
+    assert "enrichReadyWorksheets" in html
+    assert "/ui/api/billing/ready-worksheets" in html
+    assert "mergeWorksheetOntoRow" in html
+    assert "jobcheck_href" in html
 
 
 # ----------------------------------------------------------------- runner

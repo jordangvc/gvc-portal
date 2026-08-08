@@ -14,6 +14,7 @@ hits into deep-linked hub cards.
 Routes (wired by integrator in app/service.py, not this module):
   GET  /ui/billing
   GET  /ui/api/billing/hub
+  GET  /ui/api/billing/ready-worksheets  — on-demand P5 costing (progressive)
   GET  /ui/api/billing/search?q=
   GET  /ui/api/billing/activity?limit=30
 """
@@ -29,6 +30,8 @@ from adapters.monday.client import MondayClient
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
 from subsystems.invoice import billing_queue as bq
+from subsystems.invoice import ready_stage
+from orchestrators.invoice_ready_flow import build_item_worksheet
 
 # Optional rich search — another agent owns adapters/monday/search.py.
 # When missing, we fall back to co.search_projects + estimate.search_bids.
@@ -78,7 +81,6 @@ def billing_hub_payload(mc=None) -> dict:
         # show proposed $ without another Monday round-trip.
         staged: dict = {}
         try:
-            from subsystems.invoice import ready_stage
             ids = [r.get("item_id") for r in (raw or []) if r.get("item_id")]
             staged = ready_stage.get_summaries(ids)
         except Exception as exc:  # noqa: BLE001
@@ -184,6 +186,228 @@ def billing_hub_payload(mc=None) -> dict:
             "projects_billing": len(queues["projects_billing"]),
             "needs_handoff": needs_handoff,
         },
+    }
+
+
+def compute_ready_worksheets(
+    ready_rows: Optional[list[dict]] = None,
+    *,
+    persist: bool = True,
+    limit: int = 25,
+    mc=None,
+) -> dict:
+    """
+    On-demand P5 costing for Billing Ready cards (progressive paint).
+
+    Prefer already-staged portal worksheets. For linked Ops rows still
+    missing a proposed $, pull Payroll + build_item_worksheet. When
+    persist=True, save so Invoice ``?ops_ready=`` can prefill lines.
+    Never Stripe, never auto-send.
+
+    ``ready_rows`` may be shaped hub cards or raw Monday ready rows.
+    When None, fetches Ready-to-Invoice from Monday (cached SWR).
+    """
+    from adapters.monday import payroll as monday_payroll
+
+    limit = max(1, min(int(limit or 25), 50))
+    notes: list[str] = []
+    worksheets: dict[str, dict] = {}
+    reused = computed = skipped = 0
+    errors: list[dict] = []
+
+    if ready_rows is None:
+        client = _client(mc)
+        try:
+            ready_rows = monday_billing.fetch_ready_to_invoice(client) or []
+        except Exception as exc:  # noqa: BLE001
+            return {
+                "ok": False,
+                "code": "MONDAY_FETCH_FAILED",
+                "error": f"{type(exc).__name__}: {exc}",
+                "worksheets": {},
+                "reused": 0,
+                "computed": 0,
+                "skipped": 0,
+                "errors": [],
+                "notes": ["Couldn't load Ready to Invoice from Monday."],
+                "auto_send": False,
+            }
+
+    candidates: list[dict] = []
+    for row in ready_rows or []:
+        ops_id = row.get("ops_item_id") or row.get("item_id")
+        if ops_id is None:
+            continue
+        try:
+            ops_id = int(ops_id)
+        except (TypeError, ValueError):
+            continue
+        pid = row.get("project_item_id")
+        if not pid:
+            skipped += 1
+            continue
+        try:
+            pid = int(pid)
+        except (TypeError, ValueError):
+            skipped += 1
+            continue
+        candidates.append({
+            "ops_item_id": ops_id,
+            "project_item_id": pid,
+            "name": row.get("name") or row.get("project_name") or "",
+            "builder": row.get("builder"),
+            "project_number": row.get("project_number"),
+            "ready_date": row.get("ready_date"),
+            "url": row.get("url") or row.get("monday_url"),
+            "existing_total": row.get("proposed_total"),
+            "existing_model": row.get("model"),
+            "existing_label": row.get("price_label"),
+        })
+        if len(candidates) >= limit:
+            break
+
+    if not candidates:
+        return {
+            "ok": True,
+            "worksheets": {},
+            "reused": 0,
+            "computed": 0,
+            "skipped": skipped,
+            "errors": [],
+            "notes": notes or [
+                "No linked Ready-to-Invoice rows to cost yet."
+            ],
+            "auto_send": False,
+        }
+
+    # Reuse staged (or already-shaped) proposed $ first — zero Monday calls.
+    try:
+        staged = ready_stage.get_summaries(
+            [c["ops_item_id"] for c in candidates])
+    except Exception as exc:  # noqa: BLE001
+        print(f"[billing] ready_stage get_summaries: {exc}", file=sys.stderr)
+        staged = {}
+
+    need_compute: list[dict] = []
+    for c in candidates:
+        key = str(c["ops_item_id"])
+        summary = staged.get(key) or {}
+        if summary.get("proposed_total") is not None:
+            worksheets[key] = {
+                "ops_item_id": c["ops_item_id"],
+                "project_item_id": c["project_item_id"],
+                "proposed_total": summary["proposed_total"],
+                "model": summary.get("model"),
+                "price_label": summary.get("price_label"),
+                "source": "staged",
+                "status": summary.get("status") or "staged_worksheet",
+            }
+            reused += 1
+            continue
+        if c.get("existing_total") is not None:
+            worksheets[key] = {
+                "ops_item_id": c["ops_item_id"],
+                "project_item_id": c["project_item_id"],
+                "proposed_total": c["existing_total"],
+                "model": c.get("existing_model"),
+                "price_label": c.get("existing_label"),
+                "source": "hub",
+                "status": "hub_card",
+            }
+            reused += 1
+            continue
+        need_compute.append(c)
+
+    def _one(c: dict, client: Any) -> tuple[str, Optional[dict], Optional[str]]:
+        key = str(c["ops_item_id"])
+        try:
+            payroll = monday_payroll.fetch_payroll_for_project(
+                client, c["project_item_id"])
+            sheet = build_item_worksheet({
+                "item_id": c["ops_item_id"],
+                "name": c["name"],
+                "builder": c.get("builder"),
+                "project_item_id": c["project_item_id"],
+                "project_number": c.get("project_number"),
+                "ready_date": c.get("ready_date"),
+                "url": c.get("url"),
+            }, payroll)
+            if persist:
+                ready_stage.save_worksheet(
+                    c["ops_item_id"], sheet,
+                    actor="billing:ready-worksheets")
+            summary = ready_stage.summary_from_sheet(sheet)
+            return key, {
+                "ops_item_id": c["ops_item_id"],
+                "project_item_id": c["project_item_id"],
+                "proposed_total": summary.get("proposed_total"),
+                "model": summary.get("model"),
+                "price_label": summary.get("price_label"),
+                "source": "computed",
+                "status": "staged_worksheet" if persist else "draft_worksheet",
+                "payroll_labor_cost": sheet.get("payroll_labor_cost"),
+            }, None
+        except Exception as exc:  # noqa: BLE001
+            return key, None, f"{type(exc).__name__}: {exc}"
+
+    if need_compute:
+        if mc is not None:
+            for c in need_compute:
+                key, hit, err = _one(c, mc)
+                if hit:
+                    worksheets[key] = hit
+                    computed += 1
+                elif err:
+                    errors.append({"ops_item_id": c["ops_item_id"], "error": err})
+        else:
+            workers = min(6, len(need_compute))
+            with ThreadPoolExecutor(max_workers=workers) as pool:
+                futs = {
+                    pool.submit(_one, c, MondayClient()): c
+                    for c in need_compute
+                }
+                for fut in as_completed(futs):
+                    c = futs[fut]
+                    try:
+                        key, hit, err = fut.result()
+                    except Exception as exc:  # noqa: BLE001
+                        errors.append({
+                            "ops_item_id": c["ops_item_id"],
+                            "error": f"{type(exc).__name__}: {exc}",
+                        })
+                        continue
+                    if hit:
+                        worksheets[key] = hit
+                        computed += 1
+                    elif err:
+                        errors.append({
+                            "ops_item_id": c["ops_item_id"],
+                            "error": err,
+                        })
+
+    if computed:
+        notes.append(
+            f"Costed {computed} Ready job(s) from Payroll "
+            f"(company rates — human reviews before send)."
+        )
+    if reused and not computed:
+        notes.append("Proposed amounts loaded from staged worksheets.")
+    if skipped:
+        notes.append(
+            f"{skipped} Ready row(s) skipped — no Projects link yet "
+            "(use Job Check → Link Projects)."
+        )
+
+    return {
+        "ok": len(errors) == 0,
+        "worksheets": worksheets,
+        "reused": reused,
+        "computed": computed,
+        "skipped": skipped,
+        "errors": errors,
+        "notes": notes,
+        "auto_send": False,
+        "persist": persist,
     }
 
 

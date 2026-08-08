@@ -45,6 +45,10 @@ Dry-run replay of 3 already-invoiced jobs; drafted amounts within ±5%; zero wri
   `portal/invoice-ready-worksheets.json` (memory fallback). Billing Hub Ready
   cards show proposed $; `/ui/invoice?ops_ready=` prefills editable lines.
   **Still never creates Stripe drafts or auto-sends.**
+- **On-demand costing (r87):** Billing Hub calls
+  `GET /ui/api/billing/ready-worksheets` after first paint to compute + stage
+  worksheets for linked Ready rows still missing proposed $ (Payroll + company
+  rates). Office sees $ without waiting on the scheduler.
 - **Stripe draft staging / scheduler live flip:** after dry-run gauntlet on
   real Ready queue + deliberate env/body change (workflow stays `dry_run: true`).
 
