@@ -275,6 +275,7 @@
     <button class="btn gold" id="send" type="button" disabled>Send to Operations</button>
     <button class="btn gold" id="accept" type="button" style="display:none;">Accept this job</button>
     <button class="btn ghost" id="sendback" type="button" style="display:none;">Send back</button>
+    <button class="btn ghost" id="nudge" type="button" style="display:none;">Nudge Ops</button>
   </div>
   <div id="savestate"></div>
 </div>
@@ -667,10 +668,13 @@ function renderState() {
   $("#send").style.display = d.editable ? "" : "none";
   $("#accept").style.display = d.can_accept ? "" : "none";
   $("#sendback").style.display = d.can_send_back ? "" : "none";
+  // Sender (or admin viewing self-sent) can re-ping Slack — never a recall.
+  $("#nudge").style.display =
+    (status === "with_ops" && d.self_sent) ? "" : "none";
 
   if (status === "with_ops" && !d.can_accept && d.self_sent) {
     $("#savestate").textContent =
-      "You sent this packet — Operations must accept it. Slack was pinged; if nobody picks it up, message Ops or an admin from the hub.";
+      "You sent this packet — Operations must accept it. Slack was pinged; use Nudge Ops if nobody picks it up.";
     // Keep the sender oriented: packet is read-only, but they can still leave
     // safely and open Job Check later once Ops accepts.
     const hint = document.createElement("div");
@@ -679,7 +683,7 @@ function renderState() {
     hint.innerHTML =
       `Waiting on Ops. <a href="/">Back to hub</a> · ` +
       `<a href="/ui/jobcheck">Job Check</a> (after accept) · ` +
-      `ask an admin if the wrong person was expected to accept.`;
+      `Nudge Ops re-pings Slack (once every 15 min).`;
     $("#statebox").appendChild(hint);
   }
 
@@ -1042,6 +1046,21 @@ function sendBackToSales() {
   });
 }
 
+function nudgeOps() {
+  // Empty JSON body — route takes no payload. Soft confirm so a mis-tap
+  // doesn't burn the 15-min cooldown.
+  if (!window.confirm("Ping Operations again in Slack that this packet is still waiting?")) {
+    return;
+  }
+  act("remind", {}, $("#nudge"), "Nudging…", (body) => {
+    const slack = body.slack || "";
+    showStatus("ok",
+      "✔ <strong>Ops nudged</strong> — Slack " +
+      (slack === "posted" ? "was pinged again." : "notice: " + esc(slack || "skipped") + ".") +
+      " You can nudge again in about 15 minutes.");
+  });
+}
+
 /* ---------- boot ---------- */
 
 async function checkHealth() {
@@ -1057,6 +1076,7 @@ $("#changebid").addEventListener("click", backToList);
 $("#send").addEventListener("click", sendToOps);
 $("#accept").addEventListener("click", acceptJob);
 $("#sendback").addEventListener("click", sendBackToSales);
+$("#nudge").addEventListener("click", nudgeOps);
 $("#gcemail").addEventListener("click", draftGcEmail);
 $("#jobname").addEventListener("input", () => {
   jobName = $("#jobname").value;

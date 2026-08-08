@@ -989,6 +989,76 @@ def send_back(bid_id: int, note: str, actor: str) -> dict:
     return {"ok": True, "status": record["status"], "slack": slack_status}
 
 
+# Sender wait recovery — nudge Ops without undoing the two-party gate.
+_REMIND_COOLDOWN_SEC = 15 * 60
+
+
+def remind_ops(bid_id: int, actor: str) -> dict:
+    """
+    Sales (or admin) re-pings Slack that a with_ops packet is still waiting.
+
+    Does NOT change status, Bid Board stage, or editability. Rate-limited so
+    a nervous sender can't flood the channel. Non-senders are refused (admins
+    excepted) — Ops already sees Accept on their hub.
+    """
+    from subsystems.jobstart import drafts
+    from shared import access
+
+    bid_id = int(bid_id)
+    actor_l = (actor or "").strip().lower()
+    record = drafts.get_draft(bid_id)
+    if record is None:
+        return {"ok": False, "detail": "No handoff packet exists for this bid."}
+
+    status = record.get("status")
+    if status != drafts.STATUS_WITH_OPS:
+        return {"ok": False,
+                "detail": f"This packet is '{status}', not waiting on Operations."}
+
+    sent_by = (record.get("sent_by") or "").strip().lower()
+    is_admin = access.has_feature(actor, "admin")
+    if actor_l and sent_by and actor_l != sent_by and not is_admin:
+        return {"ok": False, "not_sender": True,
+                "detail": "Only the person who sent this packet (or an admin) "
+                          "can nudge Operations."}
+
+    now = datetime.now(timezone.utc)
+    last_raw = (record.get("last_reminded_at") or "").strip()
+    if last_raw:
+        try:
+            last = datetime.fromisoformat(last_raw.replace("Z", "+00:00"))
+            if last.tzinfo is None:
+                last = last.replace(tzinfo=timezone.utc)
+            age = (now - last).total_seconds()
+            if age < _REMIND_COOLDOWN_SEC:
+                wait = int(_REMIND_COOLDOWN_SEC - age)
+                return {"ok": False, "rate_limited": True, "retry_after_sec": wait,
+                        "detail": f"Already nudged — try again in about "
+                                  f"{max(1, wait // 60)} min."}
+        except ValueError:
+            pass
+
+    stamp = now.isoformat()
+    # patch_record — never set_status(with_ops), which would rewrite sent_by
+    # and break the two-party accept gate (especially on admin nudges).
+    record = drafts.patch_record(
+        bid_id, actor=actor, extra={"last_reminded_at": stamp},
+    )
+    activity.log_event("jobstart.reminded", actor=actor, target=str(bid_id),
+                       result="ok", severity="INFO",
+                       job=record.get("job_name"))
+
+    slack_status = _notify(lambda sn: sn.notify_job_start_reminded({
+        "job": record.get("job_name"), "actor": actor,
+        "sent_by": record.get("sent_by"),
+        "preview_url": record.get("preview_url"),
+        "start_date": (record.get("values") or {}).get("start_date"),
+        "supervisor": (record.get("values") or {}).get("supervisor"),
+    }))
+    return {"ok": True, "status": record["status"], "slack": slack_status,
+            "last_reminded_at": stamp}
+
+
 def _conflict_warning(row: dict) -> str:
     """One human line for a Monday cell the packet was not allowed to overwrite."""
     board = {"projects": "Projects", "operations": "Operations"}.get(

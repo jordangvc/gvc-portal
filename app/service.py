@@ -4334,6 +4334,39 @@ def ui_jobstart_send_back(bid_id: int, req: JobStartSendBackRequest,
     return _jobstart_guard(result)
 
 
+@app.post("/ui/api/jobstart/bid/{bid_id}/remind")
+def ui_jobstart_remind(bid_id: int, request: Request) -> dict:
+    """Sender (or admin) re-pings Slack that a with_ops packet is still waiting."""
+    actor = require_feature(request, "jobstart")
+    try:
+        result = jobstart_flow.remind_ops(bid_id, actor)
+    except HTTPException:
+        raise
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:jobstart] remind error: {type(e).__name__}: {e}", file=sys.stderr)
+        status, code, detail, advice = _friendly_error(e)
+        raise HTTPException(
+            status_code=status,
+            detail={"ok": False, "code": code, "detail": detail, "advice": advice},
+        )
+    if result.get("rate_limited"):
+        raise HTTPException(
+            status_code=429,
+            detail={"ok": False, "code": "REMIND_RATE_LIMITED",
+                    "detail": result.get("detail") or "Already nudged recently.",
+                    "advice": "Wait a few minutes, or message Ops directly.",
+                    "retry_after_sec": result.get("retry_after_sec")},
+        )
+    if result.get("not_sender"):
+        raise HTTPException(
+            status_code=403,
+            detail={"ok": False, "code": "NOT_SENDER",
+                    "detail": result.get("detail") or "Only the sender can nudge.",
+                    "advice": "Open Accept on your hub if you're Ops, or ask an admin."},
+        )
+    return _jobstart_guard(result)
+
+
 # ---------------------------------------------------------------------------
 # Paid-by-Check routes (read-only path: OCR → parse → match → confirm modal).
 # Gated by the `invoice` grant. The commit step (writes) is not enabled yet.

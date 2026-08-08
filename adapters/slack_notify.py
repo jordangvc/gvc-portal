@@ -650,6 +650,33 @@ def notify_job_start_sent(info: dict, *,
     return post_message(_job_start_sent_message(info), channel=target)
 
 
+def _job_start_reminded_message(info: dict) -> str:
+    """PURE. Sender nudged Ops — same channel, clearer 'still waiting' lead."""
+    parts = [f"🔔 *Still waiting on Operations* — {info.get('job', 'Unknown job')}"]
+    actor = (info.get("actor") or "").split("@")[0] or "someone"
+    parts.append(f"_{actor} nudged — packet is still with Ops (accept or send back)_")
+    if info.get("start_date"):
+        parts.append(f"• Start date: {info['start_date']}")
+    if info.get("supervisor"):
+        parts.append(f"• Site contact: {info['supervisor']}")
+    links = []
+    if info.get("preview_url"):
+        links.append(f"<{info['preview_url']}|Read the packet>")
+    if links:
+        parts.append("• " + " · ".join(links))
+    return "\n".join(parts)
+
+
+def notify_job_start_reminded(info: dict, *,
+                              channel: Optional[str] = None) -> Optional[dict]:
+    """Re-ping Ops that a with_ops packet is still waiting (sender nudge)."""
+    target = _jobstart_channel(channel)
+    if not target:
+        raise SlackNotConfigured(
+            "Neither GVC_JOBSTART_SLACK_CHANNEL nor GVC_JOBCHECK_SLACK_CHANNEL is set.")
+    return post_message(_job_start_reminded_message(info), channel=target)
+
+
 def _gc_scope_emailed_message(info: dict) -> str:
     """PURE. The GC scope confirmation actually LEFT hello@ — posted by the
     sent-watcher, never at draft time. The 3-business-day reply window starts

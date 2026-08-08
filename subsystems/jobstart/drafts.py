@@ -381,6 +381,31 @@ def set_status(bid_id: Any, *, status: str, actor: str,
     return _commit(mut)
 
 
+def patch_record(bid_id: Any, *, actor: str, extra: dict) -> dict:
+    """
+    Merge fields onto an existing packet WITHOUT a status transition.
+
+    Used for metadata like last_reminded_at. Unlike set_status(..., with_ops),
+    this never rewrites sent_by / sent_at — critical for the two-party gate.
+    """
+    if not isinstance(extra, dict) or not extra:
+        raise DraftValidationError("patch_record requires a non-empty extra map.")
+    key = draft_key(bid_id)
+
+    def mut(doc: dict):
+        drafts = dict(doc.get("drafts") or {})
+        existing = drafts.get(key)
+        if existing is None:
+            raise DraftValidationError("No handoff packet exists for this bid.")
+        now = _now_iso()
+        record = {**existing, "updated_at": now, "updated_by": actor}
+        record.update(extra)
+        drafts[key] = record
+        return {**doc, "version": DOC_VERSION, "drafts": drafts}, record
+
+    return _commit(mut)
+
+
 def remove_draft(bid_id: Any) -> bool:
     """Delete a packet outright. True if it existed. NOT used by the accept
     path — an accepted packet is kept as the record of what was handed over."""
