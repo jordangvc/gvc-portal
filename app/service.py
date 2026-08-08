@@ -52,6 +52,9 @@ from adapters.monday.client import (
     MondayClient,
     MondayInsufficientData,
     MondayNotConfigured,
+    monday_trace_enabled,
+    monday_trace_summary,
+    reset_monday_trace,
 )
 
 API_KEY = (os.environ.get("GVC_SERVICE_API_KEY") or "").strip() or None
@@ -1139,13 +1142,37 @@ def _portal_home_impl(request: Request) -> HTMLResponse:
     return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
 
+def _attach_monday_trace(payload: dict) -> dict:
+    """When GVC_MONDAY_TRACE=1, attach request count/timing for measurement."""
+    if not monday_trace_enabled():
+        return payload
+    summary = monday_trace_summary()
+    out = dict(payload)
+    out["monday_trace"] = {
+        "count": summary["count"],
+        "total_ms": summary["total_ms"],
+        "max_ms": summary["max_ms"],
+        "error_count": summary["error_count"],
+        "rate_limited": summary["rate_limited"],
+    }
+    print(
+        f"[monday:trace] count={summary['count']} total_ms={summary['total_ms']} "
+        f"max_ms={summary['max_ms']} errors={summary['error_count']} "
+        f"rate_limited={summary['rate_limited']}",
+        file=sys.stderr,
+    )
+    return out
+
+
 @app.get("/ui/api/hub")
 def ui_hub_payload(request: Request) -> dict:
     """Personal hub home payload — one document renders the whole screen."""
     email = require_ui_access(request)
     from orchestrators import hub_flow
+    if monday_trace_enabled():
+        reset_monday_trace()
     try:
-        return hub_flow.build_hub_payload(email)
+        return _attach_monday_trace(hub_flow.build_hub_payload(email))
     except Exception as e:  # noqa: BLE001 — never blank the home screen
         print(f"[hub] payload error: {type(e).__name__}: {e}", file=sys.stderr)
         # Minimal degradable shell so the rail still works from FEATURES_JSON.
@@ -1198,8 +1225,10 @@ def ui_hub_refresh(request: Request) -> dict:
     """Light hub poll — badges / needs / queue only (skips activity + pins + nav)."""
     email = require_ui_access(request)
     from orchestrators import hub_flow
+    if monday_trace_enabled():
+        reset_monday_trace()
     try:
-        return hub_flow.build_hub_refresh(email)
+        return _attach_monday_trace(hub_flow.build_hub_refresh(email))
     except Exception as e:  # noqa: BLE001
         print(f"[hub] refresh error: {type(e).__name__}: {e}", file=sys.stderr)
         return {"ok": False, "badges": {}, "needs": [], "needs_clear": False,
@@ -1357,6 +1386,8 @@ def ui_billing_hub(request: Request) -> HTMLResponse:
 def ui_billing_hub_data(request: Request) -> dict:
     """Queue payload for the Billing hub (Ready to Invoice + Accepted bids…)."""
     email = require_feature(request, "invoice")
+    if monday_trace_enabled():
+        reset_monday_trace()
     try:
         payload = billing_flow.billing_hub_payload()
     except MondayNotConfigured as e:
@@ -1379,7 +1410,7 @@ def ui_billing_hub_data(request: Request) -> dict:
         accepted=counts.get("accepted_bids"),
         projects=counts.get("projects_billing"),
     )
-    return payload
+    return _attach_monday_trace(payload)
 
 
 @app.get("/ui/api/billing/search")
