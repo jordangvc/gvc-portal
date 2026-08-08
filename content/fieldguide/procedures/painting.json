@@ -1,0 +1,353 @@
+{
+  "id": "painting",
+  "slug": "painting",
+  "title": "Painting",
+  "short_answer": "Protect, prep, prime every bare surface, then cut in and roll while wet. Paint reveals — it doesn't hide. Two coats means two coats.",
+  "summary": "Paint doesn't hide anything. It reveals. Every hour of prep buys back more than an hour of paint, and no amount of good paint rescues bad preparation.",
+  "plain_words": "Protect everything, clean everything, prime everything bare. Then cut in the edges and roll while the cut-in is still wet so it blends. Two coats means two coats — one heavy coat is not the same thing. Check the sheen on the drawings before you start, because the shinier the paint, the more it shows every flaw underneath it.",
+  "when_to_use": [
+    "Production paint on new board after drywall finish and clean-out",
+    "Prime and finish coats per finish schedule and specification",
+    "Before punch — full-room or full-plane coating, not spot touch-up"
+  ],
+  "prerequisites": [
+    "Drywall finished to the specified GA-214 level",
+    "Room clean, dust-free, and conditions within product limits",
+    "Finish schedule: products, sheen, and coat count confirmed"
+  ],
+  "trade_id": "drywall",
+  "category_id": "production-finishes",
+  "template": "task_guide",
+  "stage_line": "Finishes · production painting",
+  "role_tags": [
+    "finisher",
+    "lead",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Brushes and rollers matched to prior application method",
+      "optional": false
+    },
+    {
+      "name": "Roller covers in correct nap for texture",
+      "optional": false
+    },
+    {
+      "name": "Cut-in brush and trim tools",
+      "optional": false
+    },
+    {
+      "name": "Vacuum and tack cloths for dust removal",
+      "optional": false
+    },
+    {
+      "name": "Raking light for prep walk",
+      "optional": true
+    },
+    {
+      "name": "Spray rig with masking and containment (when method is spray)",
+      "optional": true
+    },
+    {
+      "name": "Humidity thermometer / moisture meter for conditions",
+      "optional": true
+    }
+  ],
+  "materials": [
+    {
+      "name": "Primer matched to substrate (drywall, stain-blocking, bonding, block filler)",
+      "optional": false
+    },
+    {
+      "name": "Finish paint per schedule — product, sheen, and batch",
+      "optional": false
+    },
+    {
+      "name": "Masking tape, poly, and floor protection",
+      "optional": false
+    },
+    {
+      "name": "Acoustic sealant or caulk where detail requires",
+      "optional": true
+    },
+    {
+      "name": "Labeled leftover paint samples for future touch-up",
+      "optional": false
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Protect",
+      "body": "Floors, glass, hardware, fixtures, casework, and anything already finished. The cheapest insurance on the job.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Protect",
+      "body": "Mask rather than rely on a steady hand for anything that's expensive to fix.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Protect",
+      "body": "Remove or mask hardware, plates, and covers instead of cutting around them.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Prep",
+      "body": "Get the sanding dust off. Paint over drywall dust is an adhesion failure waiting to peel. Vacuum and wipe, don't just blow it around.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Prep",
+      "body": "Walk it with a raking light and fix what you find now — see Drywall Touch-Up.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Prep",
+      "body": "Caulk where the detail calls for it. Clean, tooled joints only.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Prep",
+      "body": "Confirm temperature, humidity, and surface moisture are within the product's stated range. Cold or damp will cost you a coat.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Prime",
+      "body": "New board always gets primed. Board face and joint compound absorb at different rates — without primer, every joint and every screw photographs through the finish coats.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Prime",
+      "body": "Match the primer to the problem: drywall primer/sealer on new board, stain-blocking over water stains, marker, smoke or tannin, bonding primer over glossy or unknown coatings, block filler on CMU.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Prime",
+      "body": "Spot-prime every repair, even small ones.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "Finish coats",
+      "body": "Cut in, then roll into the wet cut-in. If the cut-in dries first you get a visible band around the whole room.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Finish coats",
+      "body": "Maintain a wet edge and work in manageable sections. Lap marks come from rolling into paint that's already setting.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Finish coats",
+      "body": "Correct roller nap for the texture — too short starves it, too long stipples it.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "Finish coats",
+      "body": "Respect the spread rate on the can. Stretching coverage to save material costs you a third coat.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "Finish coats",
+      "body": "Full dry time between coats, not \"it feels dry.\"",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "Finish coats",
+      "body": "De-nib lightly between coats where needed.",
+      "checklist": true
+    },
+    {
+      "order": 17,
+      "title": "Finish coats",
+      "body": "Keep a labeled sample of every colour and product used — that's what makes future touch-up possible. See Paint Touch-Up.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "The handoff that decides the whole job",
+      "body": "The paint job is only as good as the drywall under it, and the drywall is only as good as the finish level that was specified. A Level 4 wall under semi-gloss paint in raking light will generate complaints that look like painting defects and aren't. See Finishing Drywall levels of finish. Catch that mismatch before the first coat, not after."
+    }
+  ],
+  "experts": [
+    {
+      "id": "paint-sheen",
+      "tag": "Full detail · sheen and method",
+      "summary": "Sheen decides how forgiving the wall is: flat/matte hides flaws best but is hardest to clean; eggshell is the common commercial compromise; satin is more washable and less forgiving; semi-gloss and gloss are durable but show everything — every flaw, roller mark, and touch-up. If the finish schedule shows semi-gloss on a Level 4 wall, that's a conversation before anyone paints. Spray is fastest on open unoccupied space but overspray travels further than expected — containment and masking eat the gain. Backrolling (spray then immediately roll) works coating into the surface and evens texture — often right on new board. Rolling gives the most control and is usually correct in occupied buildings and tight spaces. Match the method between coats and between areas — a sprayed wall next to a rolled wall in the same colour reads as two different colours because the textures differ."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "paint-dust",
+      "prompt": "Substrate dust-free — vacuumed and wiped, not blown around",
+      "severity": "required"
+    },
+    {
+      "id": "paint-prime",
+      "prompt": "New board and every repair primed before finish coats",
+      "severity": "required"
+    },
+    {
+      "id": "paint-sheen",
+      "prompt": "Sheen and finish level match spec — mismatch escalated before coating",
+      "severity": "required"
+    },
+    {
+      "id": "paint-coats",
+      "prompt": "Coat count, spread rate, and dry times per product data sheet",
+      "severity": "required"
+    },
+    {
+      "id": "paint-sample",
+      "prompt": "Labeled leftover paint retained for future touch-up",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Painting over dust",
+      "wrong": "Roll finish over sanding dust",
+      "right": "Vacuum and wipe substrate before primer",
+      "why": "Adhesion failure that shows after handover"
+    },
+    {
+      "title": "Skipping primer on new board",
+      "wrong": "Finish directly on new board or repairs",
+      "right": "Drywall primer on all bare surfaces; spot-prime repairs",
+      "why": "Every joint and screw telegraphs through finish"
+    },
+    {
+      "title": "Sheen and finish-level mismatch",
+      "wrong": "Paint semi-gloss over Level 4 without escalation",
+      "right": "Match GA-214 level to sheen before first coat",
+      "why": "Complaints look like paint defects but are drywall scope"
+    },
+    {
+      "title": "Cut-in drying before roll",
+      "wrong": "Cut in entire room then roll hours later",
+      "right": "Roll into wet cut-in section by section",
+      "why": "Visible band around the room"
+    },
+    {
+      "title": "Stretching spread rate",
+      "wrong": "Thin coats to save material",
+      "right": "Apply per can spread rate",
+      "why": "Buys a third coat and uneven colour"
+    },
+    {
+      "title": "Recoating before dry",
+      "wrong": "Second coat when surface feels dry",
+      "right": "Full dry time per data sheet",
+      "why": "Failure shows later, not during application"
+    },
+    {
+      "title": "Inadequate protection",
+      "wrong": "Spray or roll without masking adjacent finishes",
+      "right": "Protect floors, glass, casework, and overspray paths",
+      "why": "Overspray and drips on someone else's work"
+    },
+    {
+      "title": "Mixing spray and roll in same field",
+      "wrong": "Spray one wall, roll the adjacent wall same colour",
+      "right": "Match method between coats and visible areas",
+      "why": "Different texture reads as two colours"
+    },
+    {
+      "title": "No labeled leftovers",
+      "wrong": "Finish job without retaining labeled paint",
+      "right": "Label and retain sample of every colour and product",
+      "why": "Every future touch-up starts wrong without the right can"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "finish",
+    "touchup-drywall",
+    "touchup-paint",
+    "cleanout",
+    "qc-walk",
+    "job-conditions"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "touchup-paint",
+      "label": "Paint Touch-Up",
+      "why": "Punch-phase defects after production coats — same product, same tool"
+    },
+    {
+      "procedure_id": "touchup-drywall",
+      "label": "Drywall Touch-Up",
+      "why": "Wall defects found in raking-light walk before paint mobilizes"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Honest pass on finish quality before stages advance"
+    },
+    {
+      "procedure_id": "cleanout",
+      "label": "Clean-Out Between Stages",
+      "why": "Dust and protection removal after paint before next trade"
+    }
+  ],
+  "search_tags": [
+    "painting",
+    "paint",
+    "primer",
+    "sheen",
+    "eggshell",
+    "satin",
+    "semi-gloss",
+    "cut in",
+    "wet edge",
+    "backroll",
+    "spray paint",
+    "finish schedule",
+    "GA-214"
+  ],
+  "synonyms": [
+    "painting",
+    "paint",
+    "production painting",
+    "prime and paint",
+    "finish paint",
+    "interior paint",
+    "wall paint",
+    "cut in",
+    "roller",
+    "primer"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Sequence, primer selection, wet-edge and cut-in practice, and sheen behaviour follow paint manufacturer application guidance and standard commercial painting practice. Products, spread rates, dry and recoat times, and temperature and humidity limits are product-specific from the data sheet for the actual specified coating — those numbers are never carried between products. The finish-level and sheen interaction is documented in Finishing Drywall; the flashing mechanism behind the priming requirement is in Paint Touch-Up.",
+    "sources": [
+      "Paint manufacturer application guides",
+      "GA-214 finish levels (reference)",
+      "GVC Field Manual"
+    ]
+  }
+}

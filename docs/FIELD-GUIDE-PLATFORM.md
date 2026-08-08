@@ -30,7 +30,12 @@ looks like, what changes on site, and what to open next.
 **Rated walls** — `ratedwalls` (shaftwall / fire walls);
 **Safety orientation** — `safety-orient` (ops safety-basics);
 **Change orders** — `changeorder` (ops money-scope);
-**Touch-up** — `touchup-drywall` + `touchup-paint` (repair-punch).
+**Touch-up** — `touchup-drywall` + `touchup-paint` (repair-punch);
+**Stocking** — `stock-drywall` (pre-hang board staging);
+**Insulation / Painting / Demo** — `insulation`, `painting`, `demo`.
+
+Coach: catalog-only procedure ids synthesize checklist steps from catalog
+`steps` (no home-tile FALLBACK) so Job Check / deep-link coach never dead-ends.
 
 ## 2. Assumptions
 

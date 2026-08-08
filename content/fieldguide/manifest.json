@@ -9,7 +9,9 @@
       "icon": "drywall",
       "procedure_ids": [
         "framing",
+        "insulation",
         "preboard-walk",
+        "stock-drywall",
         "hang",
         "scrape",
         "finish",
@@ -17,6 +19,7 @@
         "cleanout",
         "qc-walk",
         "closeout-rhythm",
+        "painting",
         "touchup-drywall",
         "touchup-paint"
       ],
@@ -34,7 +37,8 @@
         "window-returns",
         "scaffold-lifts",
         "changeorder",
-        "safety-orient"
+        "safety-orient",
+        "demo"
       ],
       "search_tags": ["ops", "job start", "logistics", "access", "conditions", "safety"],
       "synonyms": ["field ops", "job start", "handoff", "mobilize"]
@@ -66,7 +70,9 @@
       "summary": "Ordered passes that match Job Check stage columns.",
       "procedure_ids": [
         "framing",
+        "insulation",
         "preboard-walk",
+        "stock-drywall",
         "hang",
         "scrape",
         "finish",
@@ -127,9 +133,17 @@
       "id": "safety-basics",
       "trade_id": "ops",
       "title": "Safety basics",
-      "summary": "PPE, access, silica, and hard stops — field orientation every job.",
-      "procedure_ids": ["safety-orient"],
+      "summary": "PPE, access, silica, hard stops, and selective demo — field orientation every job.",
+      "procedure_ids": ["safety-orient", "demo"],
       "order": 6
+    },
+    {
+      "id": "production-finishes",
+      "trade_id": "drywall",
+      "title": "Production finishes",
+      "summary": "Prime and paint the plane — sheen, flashing, and handoff from drywall.",
+      "procedure_ids": ["painting"],
+      "order": 7
     },
     {
       "id": "repair-punch",
@@ -137,7 +151,7 @@
       "title": "Repair & punch",
       "summary": "Raking-light walk, drywall finish repair, and primer before paint.",
       "procedure_ids": ["touchup-drywall", "touchup-paint"],
-      "order": 6
+      "order": 8
     }
   ],
   "featured_procedure_ids": ["framing", "hang", "scrape", "finish"],
@@ -230,6 +244,21 @@
     "ul assembly": "ratedwalls",
     "ul-assembly": "ratedwalls",
     "fire rated": "ratedwalls",
-    "fire-rated": "ratedwalls"
+    "fire-rated": "ratedwalls",
+    "stock": "stock-drywall",
+    "stocking": "stock-drywall",
+    "board-stock": "stock-drywall",
+    "drywall-stock": "stock-drywall",
+    "stock drywall": "stock-drywall",
+    "stocking drywall": "stock-drywall",
+    "demo": "demo",
+    "demolition": "demo",
+    "tear-out": "demo",
+    "insulation": "insulation",
+    "insulate": "insulation",
+    "batt": "insulation",
+    "painting": "painting",
+    "paint": "painting",
+    "prime and paint": "painting"
   }
 }

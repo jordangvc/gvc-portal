@@ -102,6 +102,24 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "shaftwall": "ratedwalls",
     "shaft-wall": "ratedwalls",
     "ul-assembly": "ratedwalls",
+    "stock": "stock-drywall",
+    "stocking": "stock-drywall",
+    "board-stock": "stock-drywall",
+    "drywall-stock": "stock-drywall",
+    # Demolition / insulation / production painting
+    "demolition": "demo",
+    "demolish": "demo",
+    "tear-out": "demo",
+    "selective-demo": "demo",
+    "insulate": "insulation",
+    "batt": "insulation",
+    "thermal-batt": "insulation",
+    "sab": "insulation",
+    "sound-batt": "insulation",
+    "paint": "painting",
+    "paints": "painting",
+    "production-painting": "painting",
+    "prime-and-paint": "painting",
 }
 
 _CACHE: dict[str, Any] = {

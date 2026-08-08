@@ -1,0 +1,360 @@
+{
+  "id": "insulation",
+  "slug": "insulation",
+  "title": "Insulation",
+  "short_answer": "Trap still air — fill every cavity completely and never compress the batt. Gaps and compression are the only two ways to fail, and both are invisible an hour later.",
+  "summary": "The fastest trade in this manual to install badly in a way nobody can see. It gets covered the same day, and it either performs or it doesn't.",
+  "plain_words": "Insulation works by trapping still air. That means it has to fill the cavity completely and it must not be squashed. Cut batts to fit snug — a batt jammed in behind a pipe or stuffed short at the top is doing a fraction of its job. Gaps and compression are the only two ways to get this wrong, and they're both invisible an hour later.",
+  "when_to_use": [
+    "MEP rough-in complete and inspected; before the second side of board goes on",
+    "Thermal batts in exterior walls and anywhere an R-value is specified",
+    "Sound attenuation batts (SAB) in partitions with STC requirements",
+    "Fire safing at slab edges, shafts, and rated penetrations per listed assembly"
+  ],
+  "prerequisites": [
+    "MEP rough-in complete and inspected in the cavity",
+    "Wall type schedule identifies batt type, facing, and R-value or STC",
+    "Fire safing material and listed assembly identified when safing is in scope"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "stage_line": "In the wall · insulation",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Utility knife and spare blades for batt cutting",
+      "optional": false
+    },
+    {
+      "name": "Tape measure",
+      "optional": false
+    },
+    {
+      "name": "Staple gun for faced batt flanges (when spec requires)",
+      "optional": true
+    },
+    {
+      "name": "Long sleeves, gloves, and eye protection",
+      "optional": false
+    },
+    {
+      "name": "Respirator per manufacturer guidance and GVC program",
+      "optional": true
+    }
+  ],
+  "materials": [
+    {
+      "name": "Thermal batt (faced or unfaced per schedule)",
+      "optional": false
+    },
+    {
+      "name": "Sound attenuation batt (SAB) for STC partitions",
+      "optional": true
+    },
+    {
+      "name": "Rigid board insulation for Z-furring and slab edges",
+      "optional": true
+    },
+    {
+      "name": "Mineral wool fire safing per listed assembly",
+      "optional": true
+    },
+    {
+      "name": "Acoustic sealant at perimeter and penetrations (when detail requires)",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Only after MEP rough-in is complete and inspected, and before the second side of board goes on.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Friction fit — cut slightly wide of the cavity so it holds itself, then let it relax to full thickness.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Fill the cavity top to bottom. If the wall runs to deck, the insulation runs to deck — including the part above the ceiling nobody will ever look at.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Never compress to get around something. At pipes and conduit, split the batt and pass half behind and half in front. Compressing in front of a pipe leaves a cold, loud void behind it.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "At electrical boxes, cut the batt to fit around the box, not squash against it.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Cut narrow cavities to fit rather than folding a full-width batt into them.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "On faced batts, confirm the facing direction from the drawings and staple the flanges without compressing the batt.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Don't leave batts sagging or falling out ahead of the board crew — support them if there's any delay.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Every cavity full, top to bottom, no gaps at the track.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "No compression anywhere — especially behind pipe, conduit, and boxes.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Correct type in the correct wall, and facing the correct direction.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Sound walls: perimeter and penetrations sealed per the detail.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "To-deck walls insulated above the ceiling line.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "Safing installed as the listed assembly requires, and photographed.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "Photos of insulated walls by room before they're closed.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "note",
+      "title": "Why care when nobody will ever see it",
+      "body": "The two things insulation is usually there for are energy bills and sound. A sound wall with a two-inch gap at the top of every cavity is not a sound wall — the complaint arrives after the building is occupied, when opening the wall costs a hundred times what filling the gap would have."
+    },
+    {
+      "severity": "stop",
+      "title": "Safing is not the same as insulation",
+      "body": "Fire safing looks like insulation and isn't. It's a rated component in a listed assembly, with specified material, density, thickness, and compression. Substituting a thermal batt for mineral wool safing, or packing it loose, is a rated-assembly failure, not an insulation shortcut. See Firestopping."
+    }
+  ],
+  "experts": [
+    {
+      "id": "ins-sound",
+      "tag": "Full detail · sound walls",
+      "summary": "An STC rating belongs to the whole assembly, not the insulation. Board layers, stud type and spacing, whether the wall runs to deck, and whether the assembly is sealed all matter as much as the batt. Seal the perimeter with acoustic sealant where the detail calls for it; seal penetrations at boxes, sleeves, and conduit; offset back-to-back electrical boxes on sound walls. A partition stopped at a suspended ceiling with an open plenum transmits over the top — if drawings show STC and the wall stops at the ceiling, ask the question. Full-height insulation above the ceiling line on to-deck walls is not optional detail work — it's what makes the rating real."
+    }
+  ],
+  "variations": [
+    {
+      "id": "ins-thermal",
+      "title": "Thermal batt",
+      "when": "Exterior walls and anywhere an R-value is specified",
+      "changes": [
+        "Faced or unfaced per schedule — confirm facing direction from drawings",
+        "Friction fit full cavity height including above ceiling on to-deck walls"
+      ]
+    },
+    {
+      "id": "ins-sab",
+      "title": "Sound attenuation batt (SAB)",
+      "when": "Interior partitions with STC — offices, exam rooms, restrooms, corridors",
+      "changes": [
+        "Usually unfaced; full height matters more than anything else",
+        "Perimeter and penetration sealing per acoustic detail"
+      ]
+    },
+    {
+      "id": "ins-rigid",
+      "title": "Rigid board",
+      "when": "Behind Z-furring on masonry, slab edges, under some assemblies",
+      "changes": [
+        "Cut tight between furring — see Metal Stud Framing Z-furring guidance"
+      ]
+    },
+    {
+      "id": "ins-safing",
+      "title": "Fire safing",
+      "when": "Slab edges, shafts, and rated penetrations",
+      "changes": [
+        "Mineral wool per listed assembly — not interchangeable with thermal batt",
+        "Photograph before cover; see Firestopping"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "ins-full",
+      "prompt": "Every cavity full top to bottom with no gaps at track",
+      "severity": "required"
+    },
+    {
+      "id": "ins-compress",
+      "prompt": "No compression behind pipes, conduit, or boxes",
+      "severity": "required"
+    },
+    {
+      "id": "ins-type",
+      "prompt": "Correct batt type, facing direction, and wall assignment",
+      "severity": "required"
+    },
+    {
+      "id": "ins-sound-seal",
+      "prompt": "Sound walls: perimeter and penetrations sealed per detail",
+      "severity": "required"
+    },
+    {
+      "id": "ins-photos",
+      "prompt": "Insulated walls photographed by room before board closes",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Gap at top of cavity",
+      "wrong": "Batt stuffed short or missing above ceiling line",
+      "right": "Full height to deck on to-deck walls",
+      "why": "Sound and thermal performance fail invisible until occupied"
+    },
+    {
+      "title": "Compressing around pipe",
+      "wrong": "Jam full batt in front of pipe or conduit",
+      "right": "Split batt — half behind, half in front",
+      "why": "Cold and loud void behind the obstruction"
+    },
+    {
+      "title": "Squashing at electrical box",
+      "wrong": "Fold batt against box face",
+      "right": "Cut batt to fit around box",
+      "why": "Compression void at every box"
+    },
+    {
+      "title": "Wrong facing direction",
+      "wrong": "Install faced batt without checking drawings",
+      "right": "Confirm vapor retarder orientation from spec and climate",
+      "why": "Moisture and warranty issues — never a field guess"
+    },
+    {
+      "title": "Thermal batt for fire safing",
+      "wrong": "Substitute fiberglass batt at slab edge or shaft",
+      "right": "Mineral wool per listed assembly; photograph",
+      "why": "Rated assembly failure, not an insulation shortcut"
+    },
+    {
+      "title": "Sound wall with open plenum",
+      "wrong": "Insulate partition that stops at ceiling without asking",
+      "right": "Ask when STC is specified and wall doesn't run to deck",
+      "why": "Sound flanks over the ceiling — batt below cannot fix it"
+    },
+    {
+      "title": "Sagging batts before board",
+      "wrong": "Leave batts unsupported while waiting for board crew",
+      "right": "Support or install board promptly",
+      "why": "Falls out or compresses before close"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "hang",
+    "preboard-walk",
+    "firestop",
+    "finish"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "hang",
+      "label": "Hanging Drywall",
+      "why": "Second side of board closes the cavity — insulation must be done first"
+    },
+    {
+      "procedure_id": "firestop",
+      "label": "Firestopping",
+      "why": "Safing and rated penetrations share listed assemblies"
+    },
+    {
+      "procedure_id": "preboard-walk",
+      "label": "Pre-Board Walk",
+      "why": "Hold point for insulation before burying cavities"
+    },
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "Z-furring and cavity dimensions drive rigid board and batt fit"
+    }
+  ],
+  "search_tags": [
+    "insulation",
+    "batt",
+    "thermal",
+    "R-value",
+    "SAB",
+    "sound",
+    "STC",
+    "safing",
+    "friction fit",
+    "faced batt",
+    "mineral wool",
+    "cavity fill"
+  ],
+  "synonyms": [
+    "insulation",
+    "insulate",
+    "batt",
+    "batts",
+    "thermal insulation",
+    "sound batt",
+    "SAB",
+    "sound attenuation",
+    "fire safing",
+    "cavity insulation"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Friction fit, full-cavity coverage, splitting batts around obstructions, and avoiding compression follow standard manufacturer installation guidance — trapped still air is the physics. R-values, STC ratings, facing and vapor retarder direction, and safing materials are project-specific from the wall type schedule, specification, and listed assembly. Vapor retarder orientation depends on climate zone and assembly design and should never be decided in the field. Safing requirements come from the listed firestop assembly, not from this page.",
+    "sources": [
+      "Batt manufacturer installation guides",
+      "GVC Field Manual",
+      "Listed firestop assemblies"
+    ]
+  }
+}

@@ -329,6 +329,25 @@ def test_shell_catalog_nav_wiring() -> None:
     act_coach = coach_payload("act")
     check("act catalog_backed", act_coach.get("catalog_backed") is True)
 
+    touch_coach = coach_payload("touchup-drywall")
+    check("touchup catalog_backed", touch_coach.get("catalog_backed") is True)
+    check("touchup coach not home fallback",
+          all(s.get("anchor") != "#home" for s in touch_coach.get("next_steps") or []))
+    check("touchup coach has procedure anchors",
+          any(s.get("anchor") == "#touchup-drywall"
+              for s in touch_coach.get("next_steps") or []))
+
+    stock = get_procedure("stock-drywall")
+    check("stock-drywall in catalog", stock is not None and len(stock.get("steps") or []) >= 5)
+    for pid in ("demo", "insulation", "painting", "stock-drywall"):
+        check(f"{pid} loads", get_procedure(pid) is not None)
+
+    from subsystems.fieldguide.catalog import audit_link_targets
+    audit = audit_link_targets()
+    check("no dangling next_steps", audit.get("ok") is True)
+    check("catalog ungrouped empty",
+          load_catalog()["manifest"].get("ungrouped") == [])
+
 def main() -> None:
     print("test_fieldguide_platform")
     test_normalize_authoring_aliases()

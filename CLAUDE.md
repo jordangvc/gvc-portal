@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE COACH↔CATALOG + STOCK/INS/PAINT/DEMO (r88) — BUILT 2026-08-08
+Coach no longer dead-ends catalog-only ids (`touchup-*`, `safety-orient`, …) on
+home-tile FALLBACK — synthesizes checklist from catalog `steps`. Catalog gains
+**stock-drywall**, **insulation**, **painting**, **demo**; nextpath baked.
+Hub **r88**.
+
 ## ✨ FIELD GUIDE RATED WALLS CATALOG (r86) — BUILT 2026-08-08
 Catalog gains **ratedwalls** (fire walls / shaftwall) under firestop
 `rated-assemblies`, beside firestop. Hub **r86**.
