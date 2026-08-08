@@ -1,0 +1,162 @@
+{
+  "id": "cleanout",
+  "slug": "cleanout",
+  "title": "Clean-Out Between Stages",
+  "short_answer": "Clean-out is how the next trade starts without eating our dust \u2014 flip Cleaned Out on Job Check only when it\u2019s true.",
+  "summary": "What \"clean\" means after hang, scrape, sand, ACT, and paint \u2014 and when Cleaned Out on Job Check is honest.",
+  "plain_words": "Clean-out is not a courtesy to the GC. It is how the next trade (or our own finisher) starts without eating our dust and scrap. Marking Cleaned Out while screw points and mud buckets are still on the floor teaches Monday a lie.",
+  "when_to_use": [
+    "After hang, scrape, sand, ACT, or stage completion",
+    "Job Check Cleaned Out chip",
+    "Before inviting the next trade into the room"
+  ],
+  "prerequisites": [
+    "Stage work actually complete enough to clear the floor"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "Cleaned Out",
+  "role_tags": [
+    "laborer",
+    "finisher",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Broom / vacuum"
+    },
+    {
+      "name": "Magnet wand",
+      "optional": true
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "After hang: scrap board out; screws picked; boxes clear of paper; paths open.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "After scrape / before tape: dust wiped from joints; debris that would ride into mud gone.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "After sand: vacuum preferred; no leaf-blower show; contain if other trades are adjacent.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "After ACT: tile boxes out; wire offcuts; grid cutoffs; floor magnet for screws.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "End of day vs end of stage: daily tidy keeps you fast; stage clean-out is what Job Check means.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Flip Cleaned Out only when true \u2014 then the office and GC can trust the board.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "Lying to Monday",
+      "body": "Marking Cleaned Out with scrap and mud buckets still on the floor teaches the board a lie the GC will remember."
+    }
+  ],
+  "variations": [
+    {
+      "id": "clean-hang",
+      "title": "After hang",
+      "when": "Hanging Status done",
+      "changes": [
+        "Scrap board out",
+        "Screws picked",
+        "Boxes clear of paper"
+      ]
+    },
+    {
+      "id": "clean-sand",
+      "title": "After sand",
+      "when": "Sanded / skim done",
+      "changes": [
+        "Vacuum preferred",
+        "No leaf-blower show next to other trades"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "prompt": "Floor and paths clear for the next trade"
+    },
+    {
+      "prompt": "Cleaned Out chip matches reality"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Daily tidy \u2260 stage clean-out",
+      "wrong": "Flip chip after a quick sweep with piles left",
+      "right": "Stage clean-out means Job Check-true",
+      "why": "Office and GC trust the board"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "hang",
+    "scrape",
+    "finish"
+  ],
+  "next_steps": [
+    {
+      "id": "finish",
+      "label": "If coats remain",
+      "why": "Back to finishing sequence"
+    },
+    {
+      "id": "hang",
+      "label": "If next area hang",
+      "why": "Continue the spine"
+    }
+  ],
+  "search_tags": [
+    "cleanout",
+    "clean out",
+    "sweep",
+    "vacuum",
+    "debris"
+  ],
+  "synonyms": [
+    "cleaned out",
+    "clean-out",
+    "cleanup",
+    "housekeeping",
+    "broom out"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Migrated from Field Manual HTML #cleanout; aligned with Job Check where applicable.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check stage columns"
+    ]
+  }
+}

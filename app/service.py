@@ -2687,6 +2687,24 @@ def ui_fieldguide_procedure(procedure_id: str, request: Request) -> dict:
     }
 
 
+@app.get("/ui/api/fieldguide/audit")
+def ui_fieldguide_audit(request: Request) -> dict:
+    """Content-link audit: next_steps must resolve; related may be HTML-only."""
+    require_feature(request, "fieldguide")
+    try:
+        return fieldguide_catalog.audit_link_targets()
+    except FileNotFoundError as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"code": "FIELDGUIDE_CATALOG_MISSING", "detail": str(e)},
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=500,
+            detail={"code": "FIELDGUIDE_CATALOG_INVALID", "detail": str(e)},
+        )
+
+
 # ---------------------------------------------------------------------------
 # Change Order routes — standalone CO program. Gated by the `estimate` grant
 # (a CO is estimate-adjacent; Jake already has estimate). Mirrors /ui/estimate:

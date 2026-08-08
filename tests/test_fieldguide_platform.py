@@ -90,16 +90,24 @@ def test_validate_approved_requires_field_language() -> None:
 
 
 def test_repo_catalog_hang_scrape() -> None:
-    from subsystems.fieldguide.catalog import clear_cache, load_catalog, catalog_summary
+    from subsystems.fieldguide.catalog import (
+        clear_cache, load_catalog, catalog_summary, audit_link_targets,
+        get_procedure, resolve_procedure_id,
+    )
     from subsystems.fieldguide.search import search_procedures, related_suggestions
     from subsystems.fieldguide.render import render_procedure_article
 
     clear_cache()
     cat = load_catalog(strict=True)
-    check("two pilots", set(cat["by_id"]) >= {"hang", "scrape"})
-    check("approved cards", len(cat["cards"]) >= 2)
+    spine = {"framing", "preboard-walk", "hang", "scrape", "finish",
+             "level5-skim", "cleanout"}
+    check("job-check spine migrated", spine <= set(cat["by_id"]))
+    check("approved cards", len(cat["cards"]) >= 7)
     check("jobcheck hang", cat["jobcheck_anchors"].get("Hanging Status") == "hang")
     check("jobcheck scrape", cat["jobcheck_anchors"].get("Scrapping Status") == "scrape")
+    check("jobcheck taped→finish", cat["jobcheck_anchors"].get("Taped Status") == "finish")
+    check("jobcheck framing", cat["jobcheck_anchors"].get("Framing Status") == "framing")
+    check("jobcheck skim", cat["jobcheck_anchors"].get("Text/Skim") == "level5-skim")
 
     hits = search_procedures("scrapping")
     check("scrapping → scrape first", hits and hits[0]["id"] == "scrape")
@@ -107,9 +115,18 @@ def test_repo_catalog_hang_scrape() -> None:
     check("hang rock → hang", hits2 and hits2[0]["id"] == "hang")
     hits3 = search_procedures("knockdown")
     check("knockdown → scrape", hits3 and hits3[0]["id"] == "scrape")
+    hits4 = search_procedures("taped")
+    check("taped alias → finish", hits4 and hits4[0]["id"] == "finish")
+    hits5 = search_procedures("frame")
+    check("frame alias → framing", hits5 and hits5[0]["id"] == "framing")
+
+    check("resolve frame", resolve_procedure_id("frame") == "framing")
+    check("get_procedure taped", get_procedure("taped")["id"] == "finish")
 
     rel = related_suggestions("hang")
-    check("hang has next/related", any(r["id"] == "scrape" for r in rel))
+    check("hang has next scrape", any(r["id"] == "scrape" for r in rel))
+    rel_f = related_suggestions("scrape")
+    check("scrape next reaches finish", any(r["id"] == "finish" for r in rel_f))
 
     html = render_procedure_article(cat["by_id"]["hang"])
     check("article doc class", 'class="doc"' in html and 'id="hang"' in html)
@@ -117,6 +134,10 @@ def test_repo_catalog_hang_scrape() -> None:
     check("steps checklist", 'class="steps"' in html)
     check("nextpath", "nextpath" in html)
     check("no dead end — next scrape", "#scrape" in html)
+
+    audit = audit_link_targets()
+    check("next_steps audit clean", audit["ok"] is True)
+    check("audit counts spine", audit["procedure_count"] >= 7)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)

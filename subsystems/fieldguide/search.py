@@ -7,7 +7,10 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
-from subsystems.fieldguide.catalog import load_catalog
+from subsystems.fieldguide.catalog import (
+    load_catalog,
+    resolve_procedure_id,
+)
 from subsystems.fieldguide.schema import card_view, procedure_search_blob
 
 
@@ -69,6 +72,10 @@ def search_procedures(
     """Return ranked card_view dicts with ``score`` + ``match_reason``."""
     cat = load_catalog(path)
     q = (query or "").strip()
+    # Exact alias hit → boost that procedure to the top of consideration
+    alias_hit = resolve_procedure_id(q) if q else ""
+    if alias_hit == q:
+        alias_hit = ""  # no alias mapping applied
     results: list[dict] = []
     for proc in cat["procedures"]:
         gov = (proc.get("governance") or {}).get("status")
@@ -83,11 +90,16 @@ def search_procedures(
             results.append(card)
             continue
         sc = score_procedure(proc, q)
+        if alias_hit and proc.get("id") == alias_hit:
+            sc = max(sc, 95)
         if sc <= 0:
             continue
         card = card_view(proc)
         card["score"] = sc
-        card["match_reason"] = _match_reason(proc, q)
+        card["match_reason"] = (
+            "alias" if alias_hit and proc.get("id") == alias_hit
+            else _match_reason(proc, q)
+        )
         results.append(card)
     results.sort(key=lambda c: (-int(c.get("score") or 0), c.get("title") or ""))
     return results[: max(1, min(limit, 50))]
@@ -111,13 +123,13 @@ def _match_reason(proc: dict, query: str) -> str:
 def related_suggestions(procedure_id: str, *, limit: int = 6, path=None) -> list[dict]:
     """People-also-look-up: next_steps + related + same-trade siblings."""
     cat = load_catalog(path)
-    proc = cat["by_id"].get((procedure_id or "").strip())
+    proc = cat["by_id"].get(resolve_procedure_id(procedure_id))
     if not proc:
         return []
     seen = {proc["id"]}
     out: list[dict] = []
     for link in (proc.get("next_steps") or []) + (proc.get("related") or []):
-        pid = link.get("procedure_id")
+        pid = resolve_procedure_id(link.get("procedure_id") or "")
         if not pid or pid in seen:
             continue
         other = cat["by_id"].get(pid)

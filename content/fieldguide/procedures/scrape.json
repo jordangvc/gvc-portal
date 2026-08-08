@@ -135,7 +135,7 @@
   "related_ids": [
     "hang",
     "finish",
-    "taped"
+    "cleanout"
   ],
   "next_steps": [
     {
@@ -144,9 +144,9 @@
       "why": "Taped Status and coat sequence"
     },
     {
-      "id": "taped",
-      "label": "Coat sequence detail",
-      "why": "If coat-stage chips need the deeper finish path"
+      "id": "cleanout",
+      "label": "Clean-out before tape if dusty",
+      "why": "Debris under tape blisters"
     }
   ],
   "search_tags": [

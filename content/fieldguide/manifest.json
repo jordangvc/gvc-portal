@@ -1,27 +1,23 @@
 {
   "version": "2026-08-08",
+  "title": "GVC Field Guide",
   "trades": [
     {
       "id": "drywall",
       "title": "Drywall",
-      "summary": "Frame \u2192 hang \u2192 scrape \u2192 finish \u2014 the Job Check spine.",
+      "summary": "Frame → pre-board → hang → scrape → finish → skim → clean-out — the Job Check spine.",
       "icon": "drywall",
       "procedure_ids": [
+        "framing",
+        "preboard-walk",
         "hang",
-        "scrape"
+        "scrape",
+        "finish",
+        "level5-skim",
+        "cleanout"
       ],
-      "search_tags": [
-        "drywall",
-        "rock",
-        "board",
-        "gypsum"
-      ],
-      "synonyms": [
-        "sheetrock",
-        "sheet rock",
-        "gypsum board",
-        "hang rock"
-      ]
+      "search_tags": ["drywall", "rock", "board", "gypsum"],
+      "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
     }
   ],
   "categories": [
@@ -31,18 +27,36 @@
       "title": "Drywall sequence",
       "summary": "Ordered passes that match Job Check stage columns.",
       "procedure_ids": [
+        "framing",
+        "preboard-walk",
         "hang",
-        "scrape"
+        "scrape",
+        "finish",
+        "level5-skim",
+        "cleanout"
       ],
       "order": 1
     }
   ],
-  "featured_procedure_ids": [
-    "hang",
-    "scrape"
-  ],
+  "featured_procedure_ids": ["framing", "hang", "scrape", "finish"],
   "jobcheck_anchors": {
+    "Framing Status": "framing",
     "Hanging Status": "hang",
-    "Scrapping Status": "scrape"
+    "Scrapping Status": "scrape",
+    "Taped Status": "finish",
+    "2nd Bed Coat": "finish",
+    "3rd Coat": "finish",
+    "Sanded": "finish",
+    "Finishing Stage": "finish",
+    "Text/Skim": "level5-skim",
+    "Cleaned Out": "cleanout"
+  },
+  "synonym_hints": {
+    "frame": "framing",
+    "taped": "finish",
+    "scrapping": "scrape",
+    "knockdown": "scrape",
+    "hang rock": "hang",
+    "level 5": "level5-skim"
   }
 }
