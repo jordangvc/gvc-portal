@@ -733,6 +733,7 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
     ready = ((billing or {}).get("queues") or {}).get("ready_to_invoice") or []
     ready_n = int(counts.get("ready_to_invoice") or len(ready))
     safety = (pulse or {}).get("safety_stops") or []
+    decisions = (pulse or {}).get("owner_decisions") or []
     prep_alerts = (pulse or {}).get("prep_alerts") or []
     planning = (pulse or {}).get("planning_signals") or []
     team_pct = (pulse or {}).get("team_preparation_pct")
@@ -747,26 +748,41 @@ def _build_owner(email: str, pulse: Optional[dict], billing: Optional[dict],
                 "ops ready for huddle"),
         _metric("Safety / stop-work", len(safety) if pulse else "—",
                 "owner-visible holds"),
-        _metric("Planning flags", len(planning) if pulse else "—",
-                "route override signals"),
+        _metric("Owner decisions", len(decisions) if pulse else "—",
+                "Action Requests waiting on you"),
     ]
     if ready_n and billing:
         badges["invoice"] = ready_n
-    if safety and pulse:
-        badges["morning_owner"] = len(safety)
+    if pulse and (safety or decisions):
+        badges["morning_owner"] = len(safety) + len(decisions)
 
     for row in safety[:3]:
         sid = str(row.get("item_id") or "").strip()
-        jc = f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-owner"
+        jc = row.get("href") or (
+            f"/ui/jobcheck?item={sid}" if sid else "/ui/morning-owner"
+        )
         needs.append(_need(
             kind="Safety",
             amount="Stop-work",
             title=row.get("name") or "Job",
             detail=row.get("blocked") or "Safety hold on Operations.",
-            action="Open Owner Pulse",
-            href="/ui/morning-owner",
-            secondary_href=jc,
+            action="Open Job Check",
+            href=jc,
+            secondary_href="/ui/morning-owner",
             sort_key="",
+        ))
+
+    for row in decisions[: max(0, 3 - len(needs))]:
+        href = row.get("href") or "/ui/morning-owner"
+        needs.append(_need(
+            kind="Decision",
+            amount=(row.get("escalation") or "open").replace("_", " "),
+            title=row.get("project_name") or row.get("need") or "Owner decision",
+            detail=row.get("need") or "Action Request waiting on you.",
+            action="Open Job Check" if row.get("project_item_id") else "Open Owner Pulse",
+            href=href if row.get("project_item_id") else "/ui/morning-owner",
+            secondary_href="/ui/morning-owner",
+            sort_key=str(row.get("due_at") or row.get("created_at") or ""),
         ))
 
     ready_sorted = sorted(
