@@ -1,0 +1,323 @@
+{
+  "id": "stock-drywall",
+  "slug": "stock-drywall",
+  "title": "Stocking Drywall",
+  "short_answer": "Board goes in the room where it gets hung, stacked in hang order — flat, off the slab, out of the weather, with specialty types separated and labeled.",
+  "summary": "Board is heavy, fragile, awkward, and moisture-sensitive all at once. Nothing else we handle punishes a bad plan this hard — in damaged material and in backs.",
+  "plain_words": "Board goes in the room where it gets hung, stacked in the order it gets hung. Flat, off the floor, out of the weather. On a good job the hanger's first move of the day is picking up a sheet, not looking for one.",
+  "when_to_use": [
+    "Drywall delivery day — before the driver leaves",
+    "Staging board to rooms before hang mobilizes",
+    "Any time specialty board (MR, abuse-resistant, rated, shaftwall) must be separated from standard stock"
+  ],
+  "prerequisites": [
+    "Room-by-room quantities from the takeoff — not one pile per floor",
+    "Delivery method arranged (boom truck, telehandler, or window stocking — not stairs as the plan)",
+    "GC confirmation of allowable floor loading on suspended slabs before staging",
+    "Weather-tight storage area or cover plan if board cannot get wet"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "stage_line": "Pre-production · drywall",
+  "role_tags": [
+    "laborer",
+    "hanger",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Panel carts",
+      "optional": false
+    },
+    {
+      "name": "Panel carriers / dollies",
+      "optional": false
+    },
+    {
+      "name": "Work gloves",
+      "optional": false
+    },
+    {
+      "name": "Sleepers / dunnage",
+      "optional": false
+    },
+    {
+      "name": "Marker for stack labels",
+      "optional": false
+    },
+    {
+      "name": "Camera / phone for delivery photos",
+      "optional": false
+    }
+  ],
+  "materials": [
+    {
+      "name": "Gypsum board per takeoff (standard and specialty types separated)",
+      "optional": false
+    },
+    {
+      "name": "Working overage per room (avoid end-of-job sheet hunts)",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Flat, not on edge, for anything but short-term staging. Board stored on edge bows, and a bowed sheet fights you all day.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Off the slab on sleepers or dunnage — concrete wicks moisture into the bottom sheets.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "On a flat, level base. A stack on uneven ground bows every sheet in it.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "If it must lean, lean it close to vertical against something solid.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Away from unsealed exterior walls, open windows, and anywhere water can find it.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Stacked in the order it gets used, with the first sheets on top.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Out of the middle of the room where it blocks layout and ceiling work.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Count matches the ticket; ticket matches the order.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Damaged sheets pulled out and noted — not buried mid-stack for a hanger to find.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Specialty board separated and labeled.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Nothing blocking egress, panels, or another trade.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Stacks stable, flat, off the slab, out of the weather.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Photos taken, ticket to the office.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Floor loading — ask, don't assume",
+      "body": "A stack of board is one of the heaviest concentrated loads that will ever sit on a suspended floor. Confirm the allowable load with the GC before staging, and spread stacks out rather than piling one large stack in a single spot. Keep stacks away from the middle of long unsupported spans. If nobody can tell you the number, that's your answer — split the load."
+    },
+    {
+      "severity": "stop",
+      "title": "Injury — the real cost center",
+      "body": "Board handling is where our people get hurt: backs, hands, and crush injuries when a stack shifts. Use panel carts and panel carriers, two-person lifts on full sheets, gloves, and a stable stack that can't tip. A single lost-time back injury costs more than the equipment for a whole year — and costs the person a great deal more than that."
+    }
+  ],
+  "variations": [
+    {
+      "id": "sd-boom",
+      "title": "Boom truck / crane delivery",
+      "when": "Above grade or multi-story — default when possible",
+      "changes": [
+        "Places board directly on the working floor or through a window opening",
+        "Safer than people carrying board up stairs"
+      ]
+    },
+    {
+      "id": "sd-window",
+      "title": "Window stocking",
+      "when": "Before glazing closes the opening",
+      "changes": [
+        "Coordinate well in advance — the window open today may be glazed next week",
+        "Telehandler or forklift where site and openings allow"
+      ]
+    },
+    {
+      "id": "sd-stairs",
+      "title": "Hand-carry up stairs",
+      "when": "Only when no mechanical delivery path exists",
+      "changes": [
+        "Last resort, not the plan — if this is the plan, the labor number is wrong",
+        "Two-person carries; never the default delivery method"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "sd-room-split",
+      "prompt": "Board split per room or zone from takeoff — not one pile per floor",
+      "severity": "required"
+    },
+    {
+      "id": "sd-specialty",
+      "prompt": "MR, abuse-resistant, rated, and shaftwall board separated and labeled on the top sheet",
+      "severity": "required"
+    },
+    {
+      "id": "sd-flat-dry",
+      "prompt": "Stacks flat, off slab, level base, out of weather",
+      "severity": "required"
+    },
+    {
+      "id": "sd-floor-load",
+      "prompt": "GC confirmed allowable floor loading before heavy staging on suspended slabs",
+      "severity": "required"
+    },
+    {
+      "id": "sd-receiving",
+      "prompt": "Count, damage notes, and photos documented before driver leaves",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "id": "cm-sd-floor-pile",
+      "title": "One pile per floor",
+      "wrong": "All board dropped at the elevator or stair landing",
+      "right": "Split per room or zone from the takeoff",
+      "why": "Every extra carry is unpaid labor and damage risk"
+    },
+    {
+      "id": "cm-sd-specialty",
+      "title": "Mixed specialty stacks",
+      "wrong": "MR, rated, and standard board in one pile",
+      "right": "Separate stacks with a marker on the top sheet",
+      "why": "Wrong board on a rated wall fails inspection or forces tear-out"
+    },
+    {
+      "id": "cm-sd-edge",
+      "title": "Long-term edge storage",
+      "wrong": "Board leaned on edge for days",
+      "right": "Flat storage except brief staging",
+      "why": "Edge storage bows sheets — bowed board fights the hanger all day"
+    },
+    {
+      "id": "cm-sd-stairs",
+      "title": "Stairs as the delivery plan",
+      "wrong": "Schedule assumes hand-carry up multiple flights",
+      "right": "Boom truck, telehandler, or window stocking ordered in advance",
+      "why": "Labor number is wrong and injury risk is high"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related": [
+    {
+      "procedure_id": "preboard-walk",
+      "label": "Pre-Board Walk",
+      "why": "Confirm board types match spec before hang consumes the stack"
+    },
+    {
+      "procedure_id": "scaffold-lifts",
+      "label": "Scaffold & lifts",
+      "why": "Mechanical delivery and safe access for high-floor stocking"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Jobsite Safety Orientation",
+      "why": "Two-person lifts, panel carts, and refuse unsafe access"
+    },
+    {
+      "procedure_id": "job-conditions",
+      "label": "Cold & wet conditions",
+      "why": "Protect stocked board from moisture after delivery"
+    }
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "preboard-walk",
+      "label": "Pre-Board Walk",
+      "why": "Last gate before hang — backing, ROs, and MEP ready"
+    },
+    {
+      "procedure_id": "hang",
+      "label": "Hanging Drywall",
+      "why": "Consumer of what you staged — hanger picks up a sheet, not a hunt"
+    },
+    {
+      "procedure_id": "scaffold-lifts",
+      "label": "Scaffold & lifts",
+      "why": "Ceiling and high-wall hang needs the right access after stock is in place"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Safety orientation",
+      "why": "Panel handling, two-person lifts, and floor-loading discipline"
+    }
+  ],
+  "search_tags": [
+    "stock",
+    "stocking",
+    "drywall stock",
+    "board stock",
+    "delivery",
+    "boom truck",
+    "floor loading",
+    "panel cart",
+    "pre-production",
+    "material staging"
+  ],
+  "synonyms": [
+    "stock drywall",
+    "stocking drywall",
+    "board stock",
+    "drywall stock",
+    "stage board",
+    "stock rock",
+    "material staging"
+  ],
+  "owner": "field-manual",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Manufacturer storage-and-handling guidance (keep board flat, dry, off the ground, supported) is consistent across USG, National Gypsum, and CertainTeed. Boom-truck and specialty delivery practice is standard supplier-side material handling. Floor-loading limits are project-specific.",
+    "sources": [
+      "USG storage and handling guidance",
+      "National Gypsum handling practice",
+      "CertainTeed board storage guidance",
+      "GVC Field Manual"
+    ]
+  }
+}

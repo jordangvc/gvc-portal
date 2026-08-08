@@ -85,6 +85,21 @@ def test_orchestrator_get_coach_hang():
     assert "preboard-walk" in {r["id"] for r in out["related"]}
 
 
+def test_catalog_only_procedure_uses_steps_not_home_fallback():
+    """Migrated catalog ids without PROCEDURE_COACH must still coach from steps."""
+    for pid in ("touchup-drywall", "touchup-paint", "safety-orient", "demo",
+                "insulation", "painting"):
+        out = fg_coach.build_coach_response(procedure=pid)
+        assert out["ok"] is True, pid
+        assert out["known"] is True, pid
+        assert out["catalog_backed"] is True, pid
+        assert out["procedure"] == pid
+        anchors = {s["anchor"] for s in out["next_steps"]}
+        assert "#home" not in anchors, pid
+        assert any(s["anchor"] == f"#{pid}" for s in out["next_steps"]), pid
+        assert len(out["next_steps"]) >= 3, pid
+
+
 def test_bans_never_empty():
     out = fieldguide_coach_flow.get_coach(procedure="firestop")
     assert len(out["bans"]) == 3
@@ -96,6 +111,7 @@ if __name__ == "__main__":
         test_normalize_procedure_id,
         test_curated_procedures_present,
         test_unknown_procedure_falls_back_to_home_and_ai_rules,
+        test_catalog_only_procedure_uses_steps_not_home_fallback,
         test_stage_alias_resolves_finish,
         test_column_id_resolves_hang_on_projects,
         test_ops_status_19_does_not_resolve_to_hang,

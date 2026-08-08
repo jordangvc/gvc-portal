@@ -1,0 +1,375 @@
+{
+  "id": "demo",
+  "slug": "demo",
+  "title": "Demolition",
+  "short_answer": "Before anything comes down, find out what's in it — asbestos, lead, live utilities, and what stays. The first step is a legal question, not a construction one.",
+  "summary": "The only procedure in this manual where the first step is a legal question, not a construction one. Get that part wrong and nothing else matters.",
+  "plain_words": "Before anything comes down, find out what's in it. In an older building that means asbestos and lead, and that is not a judgment call — there's a survey and a paper trail, and somebody has to hand it to you. Then protect what's staying, contain the dust, kill the power, and take it apart in the reverse order it went together. If you find something you don't recognize, stop and don't disturb it.",
+  "when_to_use": [
+    "Selective demolition before new framing, board, or finishes",
+    "Occupied-building demo with containment requirements",
+    "Any tear-out where hazardous materials, salvage, or live utilities may be present"
+  ],
+  "prerequisites": [
+    "Hazardous materials survey in hand or written GC confirmation none required",
+    "Scope walk with GC — what comes out, what stays, marked on the walls",
+    "Utilities isolated and verified dead",
+    "Debris route, dumpster, and building rules confirmed"
+  ],
+  "trade_id": "ops",
+  "category_id": "safety-basics",
+  "template": "task_guide",
+  "stage_line": "Before construction · selective demolition",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Camera for pre-demo condition photos",
+      "optional": false
+    },
+    {
+      "name": "Lockout/tagout kit for utilities",
+      "optional": false
+    },
+    {
+      "name": "Tape, tags, or paint for scope marking",
+      "optional": false
+    },
+    {
+      "name": "Poly sheeting, tape, and zipper doors for containment",
+      "optional": false
+    },
+    {
+      "name": "HEPA negative-air unit when required",
+      "optional": true
+    },
+    {
+      "name": "Floor protection (ram board, masonite, drop cloths)",
+      "optional": false
+    },
+    {
+      "name": "Silica controls for concrete/masonry cutting (water or vacuum)",
+      "optional": false
+    }
+  ],
+  "materials": [
+    {
+      "name": "Containment poly and zipper doors",
+      "optional": false
+    },
+    {
+      "name": "Masking tape and caution signage",
+      "optional": false
+    },
+    {
+      "name": "Dumpster or debris chute per project plan",
+      "optional": false
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Hazardous materials survey in hand, or written confirmation from the GC that none is required.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Walk the scope with the GC and mark it — what comes out, what stays, and where the line is. Tape, paint, or tags on the actual walls.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Photograph existing conditions before you touch anything — every room, every finished surface that's staying, every pre-existing crack, stain, and dent. See Spotting a Change Order.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Confirm utilities are isolated and locked out, and verify dead rather than trusting a label.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Confirm what's designated for salvage — doors, hardware, fixtures, ceiling tile. Salvage broken by demo is a back-charge.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Confirm the debris route and the dumpster, and the building's rules on freight elevator use and hours.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Confirm whether the building is occupied — that changes containment, noise windows, and everything about the schedule.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Fire watch and hot work permit if anything cuts or sparks. Sprinkler impairment coordinated if applicable.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Protect what's staying before you start — floors, casework, glass, elevator cabs, finished walls at the boundary.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Dust containment — poly walls with zipper doors, taped seams, and a real boundary rather than a suggestion.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Negative air with HEPA filtration in occupied buildings and anywhere the GC requires it.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Mask return air grilles and shut down affected HVAC — otherwise the building distributes your dust into finished space.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Protect egress — exits stay clear and exit signage stays visible, even mid-demo.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "Walk the containment boundary daily and re-tape what's come loose.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "Reverse order of construction: loose fixtures and salvage, then finishes, then board, then framing. Working out of order creates unsupported material overhead.",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "",
+      "body": "Pull ceilings and tile before wall demo where possible, so nothing lands on a finished grid.",
+      "checklist": true
+    },
+    {
+      "order": 17,
+      "title": "",
+      "body": "Cut board out in manageable pieces rather than wrecking it — less dust, faster cleanup, and you can see what's behind it before it's gone.",
+      "checklist": true
+    },
+    {
+      "order": 18,
+      "title": "",
+      "body": "Watch for MEP inside walls as you open them. Something unmarked and live is the normal case, not the exception.",
+      "checklist": true
+    },
+    {
+      "order": 19,
+      "title": "",
+      "body": "De-nail and de-screw as you go so the debris pile isn't a hazard.",
+      "checklist": true
+    },
+    {
+      "order": 20,
+      "title": "",
+      "body": "Don't overload the floor with debris — a concentrated debris pile is a structural load.",
+      "checklist": true
+    },
+    {
+      "order": 21,
+      "title": "",
+      "body": "Haul continuously. Debris that accumulates costs more to move and hides trip hazards.",
+      "checklist": true
+    },
+    {
+      "order": 22,
+      "title": "",
+      "body": "Sort for recycling if the project has a waste diversion requirement — many do, and it's a documentation item.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Hard stops — do not proceed, call the office",
+      "body": "Pre-1981 construction: OSHA presumes thermal system insulation and surfacing material contain asbestos (PACM) until a survey proves otherwise. Pre-1978 housing and child-occupied facilities: EPA lead RRP rules apply — certified renovator and containment required. Anything structural: never remove a wall, post, beam, or bearing element without an engineer's direction in writing. Any pipe, conduit, or wire you can't positively trace: assume it's live and in service. Disturbing suspect material turns a survey into an abatement with our name on it — there is no version where guessing is cheaper than asking."
+    },
+    {
+      "severity": "warn",
+      "title": "Silica on everyday work too",
+      "body": "OSHA 1926.1153 Table 1 applies to cutting concrete and masonry during demo and to cutting board and sanding joints on drywall work. For handheld grinders the control is continuous water or vacuum collection. Whether GVC has a written exposure control plan and fit-tested respirators is a question for the office, not a field improvisation."
+    }
+  ],
+  "experts": [
+    {
+      "id": "demo-regs",
+      "tag": "Full detail · who regulates what",
+      "summary": "Two agencies, two different concerns, both apply: OSHA 29 CFR 1926.1101 protects the worker (PACM presumption for pre-1981 thermal system insulation and surfacing material; removal includes demolition operations). EPA NESHAP protects the air and governs notification and work practices for structural changes to regulated facilities — complying with one does not satisfy the other. State and local rules are often stricter, with their own notification windows before demolition begins. The field's job is not to decide whether something is asbestos — it is to recognize that a decision is required and stop. Silica: OSHA 1926.1153 and Table 1 cover respirable crystalline silica from cutting, grinding, and breaking concrete and masonry; full Table 1 implementation for the task is the practical compliance path. Drywall cutting and power sanding are live exposures — prefer vacuum-assisted sanding; see Finishing Drywall."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "demo-survey",
+      "prompt": "Hazardous materials survey or written GC waiver documented before work starts",
+      "severity": "required"
+    },
+    {
+      "id": "demo-mark",
+      "prompt": "Scope marked on walls and photographed before first swing",
+      "severity": "required"
+    },
+    {
+      "id": "demo-contain",
+      "prompt": "Containment intact; negative air and HVAC isolation where required",
+      "severity": "required"
+    },
+    {
+      "id": "demo-egress",
+      "prompt": "Egress clear and signage visible throughout demo",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Disturbing suspect hazardous material",
+      "wrong": "Cut or remove without survey or stop when material is suspect",
+      "right": "Stop, call the office, do not disturb until authority clears",
+      "why": "Turns a survey into an abatement with liability attached"
+    },
+    {
+      "title": "Skipping pre-demo photos",
+      "wrong": "Start tear-out without documenting existing conditions",
+      "right": "Photograph every staying surface before the first swing",
+      "why": "Every pre-existing defect becomes ours without proof"
+    },
+    {
+      "title": "Cutting something live",
+      "wrong": "Assume conduit or pipe is abandoned",
+      "right": "Trace and verify dead before cutting",
+      "why": "Safety incident and service disruption"
+    },
+    {
+      "title": "Removing what was supposed to stay",
+      "wrong": "Rely on memory instead of marked scope",
+      "right": "Walk-and-mark with GC; photograph the line",
+      "why": "Back-charge and rebuild cost"
+    },
+    {
+      "title": "Damaging designated salvage",
+      "wrong": "Demo through doors, fixtures, or tile marked for salvage",
+      "right": "Confirm salvage list and protect before demo",
+      "why": "Salvage broken by demo is a back-charge"
+    },
+    {
+      "title": "Containment failure in occupied buildings",
+      "wrong": "Loose poly or open HVAC during demo",
+      "right": "Real boundary, negative air, masked grilles, daily walk",
+      "why": "Dust in finished space is usually our cleanup bill"
+    },
+    {
+      "title": "Silica exposure with no controls",
+      "wrong": "Dry cut concrete or masonry without Table 1 controls",
+      "right": "Continuous water or vacuum collection per Table 1",
+      "why": "Regulatory exposure and crew health risk"
+    },
+    {
+      "title": "Overloading the floor with debris",
+      "wrong": "Pile debris in one area without hauling",
+      "right": "Haul continuously; respect floor loading limits",
+      "why": "Structural load and trip hazards"
+    },
+    {
+      "title": "Blocking egress",
+      "wrong": "Debris or barriers obscure exits or signage",
+      "right": "Keep exits clear throughout demo",
+      "why": "Stops the whole job when spotted"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "safety-orient",
+    "changeorder",
+    "finish",
+    "framing"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "safety-orient",
+      "label": "Jobsite Safety Orientation",
+      "why": "Hard stops and silica controls before and during demo"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Pre-demo photos and scope documentation protect against back-charges"
+    },
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "Typical next construction pass after selective demo"
+    },
+    {
+      "procedure_id": "preboard-walk",
+      "label": "Pre-Board Walk",
+      "why": "Gate before hang once rough-in and framing are ready"
+    }
+  ],
+  "search_tags": [
+    "demo",
+    "demolition",
+    "selective demo",
+    "tear out",
+    "asbestos",
+    "PACM",
+    "lead",
+    "RRP",
+    "silica",
+    "containment",
+    "negative air",
+    "salvage",
+    "lockout"
+  ],
+  "synonyms": [
+    "demolition",
+    "demo",
+    "tear out",
+    "tear-out",
+    "selective demolition",
+    "demo work",
+    "asbestos stop",
+    "PACM",
+    "lead paint demo"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Orientation, not compliance advice, and deliberately conservative. Asbestos content follows OSHA 29 CFR 1926.1101 (PACM presumption for thermal system insulation and surfacing material in buildings constructed no later than 1980) and EPA NESHAP for air emissions and notification. Lead follows EPA's RRP rule for pre-1978 housing and child-occupied facilities. Silica follows OSHA 29 CFR 1926.1153 and Table 1. Actual obligations depend on building age, jurisdiction, and project — state and local rules are frequently stricter. Determining what applies is the office's job with the GC; the field's job is to recognize a stop condition and stop. Written programs (hazcom, respiratory protection with fit testing, silica exposure control plan) need to exist before GVC takes on more demo, not after.",
+    "sources": [
+      "OSHA 29 CFR 1926.1101",
+      "EPA NESHAP",
+      "EPA lead RRP rule",
+      "OSHA 29 CFR 1926.1153 Table 1",
+      "GVC Field Manual"
+    ]
+  }
+}

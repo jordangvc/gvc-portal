@@ -65,6 +65,20 @@ STAGE_ALIASES: dict[str, str] = {
     "heat": "job-conditions",
     "window-returns": "window-returns",
     "windows": "window-returns",
+    "touchup": "touchup-drywall",
+    "touch-up": "touchup-drywall",
+    "touchup-drywall": "touchup-drywall",
+    "touchup-paint": "touchup-paint",
+    "paint-touchup": "touchup-paint",
+    "safety": "safety-orient",
+    "safety-orient": "safety-orient",
+    "ppe": "safety-orient",
+    "demo": "demo",
+    "demolition": "demo",
+    "insulation": "insulation",
+    "insulate": "insulation",
+    "painting": "painting",
+    "paint": "painting",
 }
 
 PROCEDURE_COACH: dict[str, dict[str, Any]] = {
@@ -500,6 +514,52 @@ def normalize_procedure_id(raw: Optional[str]) -> Optional[str]:
     return proc or None
 
 
+def _lookup_catalog(procedure_id: Optional[str]) -> Optional[dict[str, Any]]:
+    """Return catalog procedure or None (never raises for missing ids)."""
+    if not procedure_id or procedure_id == "unknown":
+        return None
+    try:
+        return get_procedure(procedure_id)
+    except (FileNotFoundError, ValueError, OSError, KeyError, TypeError):
+        return None
+
+
+def _coach_steps_from_catalog(
+    proc: dict[str, Any],
+    pid: str,
+    *,
+    limit: int = 8,
+) -> list[dict[str, str]]:
+    """Synthesize coach checklist rows from catalog steps (and quality checks)."""
+    out: list[dict[str, str]] = []
+    for step in proc.get("steps") or []:
+        text = (step.get("text") or "").strip()
+        title = (step.get("title") or "").strip()
+        if title and text and not text.lower().startswith(title.lower()):
+            display = f"{title} — {text}"
+        else:
+            display = text or title
+        if not display:
+            continue
+        if len(display) > 180:
+            display = display[:177].rstrip() + "…"
+        out.append({"text": display, "anchor": f"#{pid}"})
+        if len(out) >= limit:
+            return out
+    if len(out) < 3:
+        for qc in proc.get("quality_checks") or []:
+            prompt = qc if isinstance(qc, str) else (qc.get("text") or qc.get("prompt") or "")
+            prompt = str(prompt).strip()
+            if not prompt:
+                continue
+            if len(prompt) > 180:
+                prompt = prompt[:177].rstrip() + "…"
+            out.append({"text": prompt, "anchor": f"#{pid}"})
+            if len(out) >= limit:
+                break
+    return out
+
+
 def resolve_procedure_id(
     procedure: Optional[str] = None,
     stage: Optional[str] = None,
@@ -512,8 +572,10 @@ def resolve_procedure_id(
     `anchor_resolver(column_id, board)` returns an anchor like '#hang' or None.
     """
     proc = normalize_procedure_id(procedure)
-    if proc and proc in PROCEDURE_COACH:
-        return proc
+    if proc:
+        resolved = catalog_resolve(proc) or proc
+        if resolved in PROCEDURE_COACH or _lookup_catalog(resolved):
+            return resolved
 
     if stage:
         alias = STAGE_ALIASES.get(stage.strip().lower())
@@ -526,49 +588,49 @@ def resolve_procedure_id(
         if anchor:
             from_col = normalize_procedure_id(anchor)
             if from_col:
-                return from_col
+                return catalog_resolve(from_col) or from_col
 
     if proc:
-        return proc
+        return catalog_resolve(proc) or proc
     return None
 
 
 def coach_payload(procedure_id: Optional[str]) -> dict[str, Any]:
     """Build the coach content dict for one procedure (or fallback).
 
-    Stand-behind checklist steps stay in ``PROCEDURE_COACH``. When the
-    Field Guide catalog has the same id, merge its ``next_steps`` /
-    ``related`` into the related list so coach navigation matches the
-    catalog spine (no dual next-path drift).
+    Prefer curated ``PROCEDURE_COACH`` stand-behind checklists when present.
+    Catalog-only ids (migrated JSON, no coach dict yet) synthesize checklist
+    rows from catalog ``steps`` so the coach never dead-ends on home tiles.
+    Catalog ``next_steps`` / ``related`` always merge into related navigation.
     """
     pid = procedure_id
     if pid:
         pid = catalog_resolve(pid) or pid
 
-    if pid and pid in PROCEDURE_COACH:
+    curated = bool(pid and pid in PROCEDURE_COACH)
+    if curated:
         entry = PROCEDURE_COACH[pid]
         related = [dict(r) for r in entry["related"]]
         summary = entry["summary"]
         title = entry["title"]
         next_steps = list(entry["next_steps"])
     else:
-        fb = FALLBACK_COACH
-        related = [dict(r) for r in fb["related"]]
-        summary = fb["summary"]
-        title = fb["title"]
-        next_steps = list(fb["next_steps"])
+        related = []
+        summary = ""
+        title = ""
+        next_steps = []
         pid = pid or "unknown"
 
-    proc = None
-    try:
-        proc = get_procedure(pid) if pid and pid != "unknown" else None
-    except (FileNotFoundError, ValueError, OSError):
-        proc = None
+    proc = _lookup_catalog(pid)
     if proc:
         if proc.get("short_answer"):
             summary = proc["short_answer"]
+        elif proc.get("summary") and not curated:
+            summary = proc["summary"]
         if proc.get("title"):
             title = proc["title"]
+        if not curated:
+            next_steps = _coach_steps_from_catalog(proc, pid)
         seen = {str(r.get("id") or "") for r in related}
         for link in (proc.get("next_steps") or []) + (proc.get("related") or []):
             target = link.get("procedure_id") or ""
@@ -580,6 +642,13 @@ def coach_payload(procedure_id: Optional[str]) -> dict[str, Any]:
                 "why": link.get("why") or "",
             })
             seen.add(target)
+
+    if not curated and not proc:
+        fb = FALLBACK_COACH
+        related = [dict(r) for r in fb["related"]]
+        summary = fb["summary"]
+        title = fb["title"]
+        next_steps = list(fb["next_steps"])
 
     return {
         "procedure": pid,
@@ -609,7 +678,13 @@ def build_coach_response(
         anchor_resolver=anchor_resolver,
     )
     body = coach_payload(proc_id)
-    known = proc_id is not None and proc_id in PROCEDURE_COACH
+    known = bool(
+        proc_id
+        and (
+            proc_id in PROCEDURE_COACH
+            or body.get("catalog_backed")
+        )
+    )
 
     jobcheck_hint = None
     if column_id and anchor_resolver:
