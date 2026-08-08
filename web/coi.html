@@ -2,10 +2,10 @@
 <html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC COI Generator</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
   try {
     var k = "gvc-theme", v = localStorage.getItem(k);
@@ -19,45 +19,78 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
+<style>
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page { max-width: 760px; margin: 0 auto; padding: var(--space-5) var(--space-4) var(--space-12); display: grid; gap: var(--space-4); }
+  .page > .card { padding: var(--space-5); }
+  .page > .card > h2 {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); margin: 0 0 var(--space-3); font-weight: 700;
+  }
+  .opt { font-weight: 400; color: var(--color-text-muted); text-transform: none; }
+  .hint { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.45; }
+  .intro { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); }
+  #status { padding: 12px 14px; border-radius: var(--radius-md); font-size: var(--text-sm); display: none; }
+  #status.show { display: block; }
+  #status.info { background: var(--color-primary-soft); border: 1px solid var(--color-primary); }
+  #status.warn { background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink); }
+  #status.ok  { background: var(--color-primary-soft); border: 1px solid var(--color-primary); color: var(--color-primary); }
+  #status.err { background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger); }
+  #status ul { margin: 6px 0 0; padding-left: 20px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 619px) { .grid { grid-template-columns: 1fr; } }
+  label { display: block; font-size: var(--text-xs); font-weight: 700; margin-bottom: 6px;
+    color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em; }
+  .actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .spinner { display: none; color: var(--color-text-muted); font-size: var(--text-sm); }
+  .spinner.show { display: inline; }
+  .result-line { padding: 4px 0; }
+  .result-line a { color: var(--color-primary); font-weight: 600; }
+  .msg-warn { color: var(--color-accent-ink); }
+  .msg-danger { color: var(--color-danger); }
+  .msg-muted { color: var(--color-text-muted); }
+  .msg-ok { color: var(--color-primary); }
+  .row-link { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; }
+  .row-link > div:first-child { flex: 1; min-width: 200px; }
+  #tmpl-state.ok { color: var(--color-primary); }
+  #tmpl-state.warn { color: var(--color-accent-ink); }
+  #preview-card { display: none; }
+  #preview-card.show { display: block; }
+  #preview-frame { width: 100%; min-height: 480px; border: 1px solid var(--color-divider); border-radius: var(--radius-md); background: var(--color-surface-2); }
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; background: var(--color-text-faint); vertical-align: middle; }
+  .dot.ok { background: var(--color-primary); }
+  .dot.bad { background: var(--color-danger); }
+  #health { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+</style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">COI Generator</span>
-    <div class="gvc-topbar-right">
-      <div id="health">Checking service…</div>
-      <span class="gvc-topbar-sep"></span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>COI Generator</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" id="health" style="font-size:var(--text-xs)">Checking…</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="gvc-shell gvc-moneyform">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Insurance</p>
-    <h1 class="gvc-h1">COI Generator</h1>
-    <p class="gvc-sub">Fill a blank ACORD 25 for a certificate holder — preview, then create the PDF and hello@ draft.</p>
-  </div>
+<div class="page">
+  <p class="intro">Fill a blank ACORD 25 for a certificate holder — preview, then create the PDF and hello@ draft.</p>
 
-  <div class="gvc-stack">
-
-  <div class="gvc-banner" id="status"></div>
+  <div id="status"></div>
 
   <form id="coi-form" autocomplete="off">
     <div class="card">
       <h2>Certificate holder <span class="opt">— printed in the COI's holder box, exactly as entered</span></h2>
       <div class="grid">
         <div class="full"><label>Name / Project Name</label>
-          <input name="holder_name" required placeholder="CMsquared LLC" /></div>
+          <input class="input" name="holder_name" required placeholder="CMsquared LLC" /></div>
         <div class="full"><label>Address <span class="opt">(one line per address line)</span></label>
-          <textarea name="holder_address" required placeholder="5777 Kellogg Ave&#10;Cincinnati, OH 45230"></textarea>
+          <textarea class="input" name="holder_address" required placeholder="5777 Kellogg Ave&#10;Cincinnati, OH 45230"></textarea>
           <div class="hint">Line breaks are kept — enter it the way it should read on the certificate.</div></div>
       </div>
     </div>
@@ -65,15 +98,15 @@
     <div class="card">
       <h2>Send to <span class="opt">— the hello@ draft is addressed here</span></h2>
       <div class="grid">
-        <div><label>Contact name</label><input name="contact_name" required placeholder="Jane Smith" /></div>
-        <div><label>Contact email</label><input name="contact_email" type="email" required placeholder="jane@cm2builders.com" /></div>
+        <div><label>Contact name</label><input class="input" name="contact_name" required placeholder="Jane Smith" /></div>
+        <div><label>Contact email</label><input class="input" name="contact_email" type="email" required placeholder="jane@cm2builders.com" /></div>
       </div>
     </div>
 
     <div class="card">
       <div class="actions">
-        <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-        <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
+        <button type="button" class="btn btn-primary" id="btn-generate">Generate Preview</button>
+        <button type="button" class="btn btn-ghost" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
         <span class="spinner" id="spinner">⏳ Working…</span>
       </div>
       <div class="hint" style="margin-top:10px;">
@@ -93,8 +126,8 @@
     <div id="bulk-panel" style="display:none;margin-top:14px;">
       <div class="row-link">
         <div><label>Google Sheet link <span class="opt">(Annual COI List)</span></label>
-          <input id="bulk-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" /></div>
-        <div><button type="button" class="btn secondary" id="btn-bulk-review">Load &amp; review</button></div>
+          <input class="input" id="bulk-sheet-url" placeholder="https://docs.google.com/spreadsheets/d/…" /></div>
+        <div><button type="button" class="btn btn-ghost" id="btn-bulk-review">Load &amp; review</button></div>
       </div>
       <div class="hint">Columns: Client/Builder Name · Mailing Address · Contact Name · Contact Email · Sent.
         The sheet must be shared (Editor) with <code>gvc-invoice-bot@gvc-invoice-system.iam.gserviceaccount.com</code>.
@@ -102,17 +135,17 @@
       <div id="bulk-review" style="display:none;margin-top:14px;">
         <div id="bulk-summary" style="font-weight:600;"></div>
         <div class="actions" style="margin:10px 0;">
-          <button type="button" class="btn gold" id="btn-bulk-run" disabled>Create drafts</button>
+          <button type="button" class="btn btn-primary" id="btn-bulk-run" disabled>Create drafts</button>
           <span class="spinner" id="bulk-spinner">⏳ Working…</span>
           <span id="bulk-progress" class="hint"></span>
         </div>
-        <div style="max-height:340px;overflow:auto;border:1px solid var(--gvc-line);border-radius:8px;">
+        <div style="max-height:340px;overflow:auto;border:1px solid var(--color-divider);border-radius:var(--radius-md);">
           <table id="bulk-table" style="width:100%;border-collapse:collapse;font-size:13px;">
             <thead><tr>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">Row</th>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">Builder / Name</th>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">Contact</th>
-              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--gvc-line);">State</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--color-divider);">Row</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--color-divider);">Builder / Name</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--color-divider);">Contact</th>
+              <th style="text-align:left;padding:7px 8px;border-bottom:1px solid var(--color-divider);">State</th>
             </tr></thead>
             <tbody id="bulk-rows"></tbody>
           </table>
@@ -133,11 +166,10 @@
     <h2>Preview</h2>
     <iframe id="preview-frame" title="COI PDF preview"></iframe>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+  </div>
+</div>
 
 <script src="/ui/gvc-theme.js"></script>
-<script src="/ui/gvc-command.js"></script>
 <script>
 if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 
@@ -163,12 +195,11 @@ function validateData(d) {
 
 function setStatus(kind, html) {
   const el = $("#status");
-  const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
-  el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+  el.className = "show " + (kind || "info");
   el.innerHTML = "<div>" + html + "</div>";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function clearStatus() { $("#status").className = "gvc-banner"; }
+function clearStatus() { const el = $("#status"); el.className = ""; el.innerHTML = ""; }
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 let lastPreviewOk = false;
@@ -209,9 +240,9 @@ async function run(mode) {
       let html = `<strong>✅ COI created for ${escapeHtml(wb.holder_name || "")}.</strong><br />`;
       if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
       if (wb.gmail_draft_url) html += `<div class="result-line">📧 <a href="${wb.gmail_draft_url}" target="_blank" rel="noopener">Open the draft in hello@</a> — review, then click Send.</div>`;
-      if (wb.gmail_status) html += `<div class="result-line gvc-msg--warn">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
+      if (wb.gmail_status) html += `<div class="result-line msg-warn">⚠️ ${escapeHtml(wb.gmail_status)}</div>`;
       if (wb.drive_pdf_url) html += `<div class="result-line">📁 <a href="${wb.drive_pdf_url}" target="_blank" rel="noopener">COI in Drive</a> (${escapeHtml(wb.drive_folder_path || "COIs Sent/")})</div>`;
-      if (wb.drive_status) html += `<div class="result-line gvc-msg--warn">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
+      if (wb.drive_status) html += `<div class="result-line msg-warn">⚠️ Drive: ${escapeHtml(wb.drive_status)}</div>`;
       html += `<div class="result-line">Slack notice: ${wb.slack_notified ? "posted ✅" : escapeHtml(wb.slack_status || wb.slack_error || "not sent")}</div>`;
       if (wb.monday_status) html += `<div class="result-line">Monday: ${escapeHtml(wb.monday_status)}</div>`;
       html += `<div class="result-line">Next: <a href="/">hub</a> · <a href="/ui/admin">Admin</a> (swap blank template) · another COI above.</div>`;
@@ -268,11 +299,11 @@ function bulkSpinner(on) {
 function stateBadge(e) {
   if (e.state === "ready") {
     return e.duplicate_of
-      ? `<span class="gvc-msg--warn">ready ⚠ dup of row ${e.duplicate_of}</span>`
-      : `<span class="gvc-msg--ok">ready</span>`;
+      ? `<span class="msg-warn">ready ⚠ dup of row ${e.duplicate_of}</span>`
+      : `<span class="msg-ok">ready</span>`;
   }
-  if (e.state === "skip_sent") return `<span class="opt gvc-msg--muted">already sent (YES)</span>`;
-  return `<span class="gvc-msg--danger">needs attention — ${escapeHtml((e.reasons || []).join("; "))}</span>`;
+  if (e.state === "skip_sent") return `<span class="msg-muted">already sent (YES)</span>`;
+  return `<span class="msg-danger">needs attention — ${escapeHtml((e.reasons || []).join("; "))}</span>`;
 }
 
 async function bulkReview() {
@@ -303,10 +334,10 @@ async function bulkReview() {
       const tr = document.createElement("tr");
       tr.id = "bulk-row-" + e.row_number;
       tr.innerHTML =
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);">${e.row_number}</td>` +
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);">${escapeHtml(e.name || "—")}</td>` +
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);">${escapeHtml(e.contact_name || "")} ${escapeHtml(e.contact_email ? "<" + e.contact_email + ">" : "")}</td>` +
-        `<td style="padding:6px 8px;border-bottom:1px solid var(--gvc-line);" class="bulk-state">${stateBadge(e)}</td>`;
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--color-divider);">${e.row_number}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--color-divider);">${escapeHtml(e.name || "—")}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--color-divider);">${escapeHtml(e.contact_name || "")} ${escapeHtml(e.contact_email ? "<" + e.contact_email + ">" : "")}</td>` +
+        `<td style="padding:6px 8px;border-bottom:1px solid var(--color-divider);" class="bulk-state">${stateBadge(e)}</td>`;
       tb.appendChild(tr);
     });
     $("#btn-bulk-run").textContent = `Create ${bulkReady} draft${bulkReady === 1 ? "" : "s"}`;
@@ -328,13 +359,13 @@ function markRowResult(res) {
   if (!tr) return;
   const cell = tr.querySelector(".bulk-state");
   if (res.ok) {
-    let html = `<span class="gvc-msg--ok">✅ drafted</span>`;
+    let html = `<span class="msg-ok">✅ drafted</span>`;
     if (res.gmail_draft_url) html += ` <a href="${res.gmail_draft_url}" target="_blank" rel="noopener">draft</a>`;
     if (res.drive_pdf_url) html += ` · <a href="${res.drive_pdf_url}" target="_blank" rel="noopener">Drive</a>`;
-    if (res.writeback_error) html += ` <span class="gvc-msg--warn">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
+    if (res.writeback_error) html += ` <span class="msg-warn">⚠ YES not written: ${escapeHtml(res.writeback_error)}</span>`;
     cell.innerHTML = html;
   } else {
-    cell.innerHTML = `<span class="gvc-msg--danger">❌ NO — ${escapeHtml(res.error || "failed")}</span>`;
+    cell.innerHTML = `<span class="msg-danger">❌ NO — ${escapeHtml(res.error || "failed")}</span>`;
   }
 }
 
@@ -343,8 +374,8 @@ function markInvalidRowsSkipped(marked) {
     const tr = document.getElementById("bulk-row-" + m.row_number);
     if (!tr) return;
     const cell = tr.querySelector(".bulk-state");
-    let html = `<span class="gvc-msg--warn">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
-    if (m.writeback_error) html += ` <span class="gvc-msg--danger">⚠ NO not written: ${escapeHtml(m.writeback_error)}</span>`;
+    let html = `<span class="msg-warn">⏭ skipped — marked NO (${escapeHtml((m.reasons || []).join("; ") || "missing info")})</span>`;
+    if (m.writeback_error) html += ` <span class="msg-danger">⚠ NO not written: ${escapeHtml(m.writeback_error)}</span>`;
     cell.innerHTML = html;
   });
 }
@@ -373,7 +404,7 @@ function bulkFinish(b) {
   }
   html += `<div class="result-line">Drafts are waiting in hello@ — review and send.</div>`;
   if (b.slack_notified) html += `<div class="result-line">Slack summary posted ✅</div>`;
-  else if (b.slack_status || b.slack_error) html += `<div class="result-line gvc-msg--warn">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
+  else if (b.slack_status || b.slack_error) html += `<div class="result-line msg-warn">Slack summary: ${escapeHtml(b.slack_status || b.slack_error)}</div>`;
   html += `<div class="result-line">Next: <a href="/">hub</a> · <a href="/ui/admin">Admin</a> (template) · start another sheet above.</div>`;
   $("#bulk-result").innerHTML = html;
   setStatus(st.failed ? "warn" : "info",

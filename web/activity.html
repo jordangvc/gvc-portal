@@ -2,10 +2,10 @@
 <html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>Activity · GVC Portal</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. Command: docs/GVC-COMMAND-STYLE.md -->
 <script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
   try {
     var k = "gvc-theme", v = localStorage.getItem(k);
@@ -19,125 +19,122 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-
-  /* Activity ledger widgets */
-  .intro { margin-bottom: var(--gvc-space-2); }
-  .intro h2 { display:none; } /* page-hd owns the title now */
-  .intro p { margin:0; color:var(--gvc-muted); font-size:var(--gvc-fs-small); }
-  .banner { display:none; }
-  .banner.warn, .banner.show { display:flex; }
-  .banner.warn { /* reuse gvc banner look */
-    align-items:flex-start; gap:var(--gvc-space-3);
-    padding:12px 14px; border-radius:var(--gvc-r-md);
-    background:var(--gvc-warn-tint); border:1px solid var(--color-warn-border, #E3CFA0); color:var(--color-warn-ink, #9A3412);
-    font-size:var(--gvc-fs-small); margin-bottom:var(--gvc-space-3);
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page {
+    max-width: 960px; margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+    display: grid; gap: var(--space-4);
   }
-  .controls { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:var(--gvc-space-3);
-    margin-bottom:var(--gvc-space-4); padding:16px 18px; background:var(--gvc-surface);
-    border:1px solid var(--gvc-line); border-radius:var(--gvc-r-lg); }
-  @media (max-width:900px){ .controls { grid-template-columns:1fr 1fr; } }
-  @media (max-width:560px){ .controls { grid-template-columns:1fr; } }
-  .controls .field label { display:block; font-size:var(--gvc-fs-caption); font-weight:600;
-    color:var(--gvc-ink-soft); margin-bottom:4px; }
-  .controls .field.span-all { grid-column:1 / -1; }
-  .controls input, .controls select {
-    width:100%; padding:9px 12px; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
-    font:inherit; background:var(--gvc-surface); min-height:var(--gvc-ctl-h);
+  .page > .card { padding: var(--space-5); }
+  .page > .card > h2 {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); margin: 0 0 var(--space-3); font-weight: 700;
   }
-  .controls input[type=search] { font-size:var(--gvc-fs-body); }
-  .meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin:0 0 10px; }
-  .ledger { background:var(--gvc-surface); border:1px solid var(--gvc-line);
-    border-radius:var(--gvc-r-lg); overflow:hidden; }
-  .ledger table { width:100%; border-collapse:collapse; }
-  .ledger thead th { position:sticky; top:0; z-index:2; background:var(--gvc-tint-green);
-    font-size:var(--gvc-fs-micro); text-transform:uppercase; letter-spacing:.05em; font-weight:700;
-    color:var(--gvc-green-dark); text-align:left; padding:10px 14px; border-bottom:1px solid var(--gvc-line); }
-  .ledger thead th.num { text-align:right; }
-  .ledger tbody td { padding:12px 14px; border-bottom:1px solid var(--gvc-line-soft);
-    vertical-align:top; font-size:var(--gvc-fs-small); }
-  .ledger tbody tr:last-child td { border-bottom:none; }
-  .ledger tbody tr.row:hover { background:var(--gvc-bg); }
-  tr.daysep td { background:var(--gvc-tint-sand, #F3EBDD); color:var(--gvc-muted);
-    font-size:var(--gvc-fs-caption); font-weight:700; letter-spacing:.04em; text-transform:uppercase; }
-  .pill, .chip { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill);
-    font-weight:600; border:1px solid var(--gvc-line); background:var(--gvc-bg); }
-  .chips { display:flex; gap:6px; flex-wrap:wrap; }
-  .kind { font-weight:700; }
-  .doc a { color:var(--gvc-green-dark); font-weight:600; text-decoration:none; }
-  .doc a:hover { text-decoration:underline; }
-  .to, .sub { color:var(--gvc-muted); font-size:var(--gvc-fs-caption); }
-  .empty, .loading { padding:28px 18px; text-align:center; color:var(--gvc-muted); }
-  .errline { color:var(--gvc-danger); font-size:var(--gvc-fs-caption); }
-  .footer-row { display:flex; gap:12px; align-items:center; margin-top:14px; flex-wrap:wrap; }
-  .toggle { font-size:var(--gvc-fs-caption); }
-  .who { display:none; }
-  .btn { display:inline-flex; align-items:center; justify-content:center;
-    border:1px solid transparent; border-radius:var(--gvc-r-md); padding:0 16px; min-height:var(--gvc-ctl-h);
-    font:inherit; font-size:var(--gvc-fs-small); font-weight:700; cursor:pointer;
-    background:var(--gvc-green); color:#fff; }
-  .btn.secondary { background:var(--gvc-surface); color:var(--gvc-green-dark); border-color:var(--gvc-line); }
-  .js-summary { margin-bottom:var(--gvc-space-4); display:none; }
-  .js-stats { display:flex; flex-wrap:wrap; gap:var(--gvc-space-3); margin-bottom:var(--gvc-space-3); }
-  .js-stat { flex:1 1 120px; padding:10px 14px; background:var(--gvc-bg); border:1px solid var(--gvc-line);
-    border-radius:var(--gvc-r-md); }
-  .js-stat b { display:block; font-size:var(--gvc-fs-caption); color:var(--gvc-muted); font-weight:600; }
-  .js-stat span { font-size:var(--gvc-fs-body); font-weight:700; color:var(--gvc-green-dark); }
-  .js-notes { margin:0; padding:0; list-style:none; font-size:var(--gvc-fs-small); }
-  .js-notes li { padding:8px 0; border-bottom:1px solid var(--gvc-line-soft); }
-  .js-notes li:last-child { border-bottom:none; }
-  .js-notes .sub { color:var(--gvc-muted); font-size:var(--gvc-fs-caption); }
-
+  .intro { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); line-height: 1.45; }
+  #banner { display: none; padding: 12px 14px; border-radius: var(--radius-md); font-size: var(--text-sm);
+    background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink); }
+  #banner.show { display: block; }
+  .controls {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-3);
+    padding: var(--space-5); background: var(--color-surface);
+    border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+  }
+  @media (max-width: 900px) { .controls { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 560px) { .controls { grid-template-columns: 1fr; } }
+  .controls .field label, .field-label {
+    display: block; font-size: var(--text-xs); font-weight: 700;
+    color: var(--color-text-muted); margin-bottom: 6px;
+    text-transform: uppercase; letter-spacing: .06em;
+  }
+  .controls .field.span-all { grid-column: 1 / -1; }
+  .controls .field-actions {
+    grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+  }
+  .meta { font-size: var(--text-xs); color: var(--color-text-muted); margin: 0; }
+  .ledger {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); overflow: hidden;
+  }
+  .ledger table { width: 100%; border-collapse: collapse; }
+  .ledger thead th {
+    position: sticky; top: 0; z-index: 2; background: var(--color-primary-soft);
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .05em; font-weight: 700;
+    color: var(--color-primary); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--color-divider);
+  }
+  .ledger thead th.num { text-align: right; }
+  .ledger tbody td {
+    padding: 12px 14px; border-bottom: 1px solid var(--color-divider);
+    vertical-align: top; font-size: var(--text-sm);
+  }
+  .ledger tbody tr:last-child td { border-bottom: none; }
+  .ledger tbody tr.row:hover { background: var(--color-bg); }
+  tr.daysep td {
+    background: var(--color-surface-2); color: var(--color-text-muted);
+    font-size: var(--text-xs); font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+  }
+  .pill, .chip {
+    display: inline-block; font-size: 11px; padding: 1px 7px; border-radius: var(--radius-full);
+    font-weight: 600; border: 1px solid var(--color-border); background: var(--color-bg);
+  }
+  .pill.ok, .chip:not(.bad):not(.info) { border-color: var(--color-primary); color: var(--color-primary); }
+  .pill.partial, .pill.warn { background: var(--color-warn-soft); color: var(--color-accent-ink); border-color: var(--color-warn); }
+  .pill.denied, .pill.error, .chip.bad { background: var(--color-danger-soft); color: var(--color-danger); border-color: var(--color-danger); }
+  .chip.info { background: var(--color-info-soft); color: var(--color-info); border-color: var(--color-info); }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .kind { font-weight: 700; }
+  .doc a { color: var(--color-primary); font-weight: 600; text-decoration: none; }
+  .doc a:hover { text-decoration: underline; }
+  .to, .sub { color: var(--color-text-muted); font-size: var(--text-xs); }
+  .empty, .loading { padding: 28px 18px; text-align: center; color: var(--color-text-muted); }
+  .errline { color: var(--color-danger); font-size: var(--text-xs); }
+  .footer-row { display: flex; gap: 12px; align-items: center; margin-top: 14px; flex-wrap: wrap; }
+  .toggle { font-size: var(--text-xs); display: inline-flex; align-items: center; gap: 6px; }
+  .js-summary { display: none; }
+  .js-summary.show { display: block; }
+  .js-stats { display: flex; flex-wrap: wrap; gap: var(--space-3); margin-bottom: var(--space-3); }
+  .js-stat {
+    flex: 1 1 120px; padding: 10px 14px; background: var(--color-bg);
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+  }
+  .js-stat b { display: block; font-size: var(--text-xs); color: var(--color-text-muted); font-weight: 600; }
+  .js-stat span { font-size: var(--text-sm); font-weight: 700; color: var(--color-primary); }
+  .js-notes { margin: 0; padding: 0; list-style: none; font-size: var(--text-sm); }
+  .js-notes li { padding: 8px 0; border-bottom: 1px solid var(--color-divider); }
+  .js-notes li:last-child { border-bottom: none; }
 </style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Activity</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user">{{EMAIL}}</span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Activity</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="gvc-shell">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Operations</p>
-    <h1 class="gvc-h1">Activity</h1>
-    <p class="gvc-sub">Every document the portal produced — who ran it, for which customer, and whether draft, Drive, and Monday all landed.</p>
-  </div>
+<div class="page">
+  <p class="intro">Every document the portal produced — who ran it, for which customer, and whether draft, Drive, and Monday all landed. Read live from Cloud Logging (60 days).</p>
 
-  <div class="gvc-stack">
+  <div id="banner"></div>
 
-  <div class="intro">
-    <h2>Portal activity</h2>
-    <p>Every document the portal produced — who ran it, for which customer, how much, where it was
-       emailed, and whether the draft, Drive copy and Monday row all landed. Sign-ins and access
-       denials are here too. Read live from Cloud Logging (60 days).</p>
-  </div>
-
-  <div id="banner" class="gvc-banner gvc-banner--warn banner warn"></div>
-
-  <div class="controls">
+  <div class="card controls">
     <div class="field span-all">
       <label for="f-q">Search loaded events</label>
-      <input id="f-q" type="search" placeholder="qa, builder name, estimate #, customer, job…" autocomplete="off" />
+      <input class="input" id="f-q" type="search" placeholder="qa, builder name, estimate #, customer, job…" autocomplete="off" />
     </div>
     <div class="field">
       <label for="f-actor">Who</label>
-      <input id="f-actor" type="text" placeholder="anyone" autocomplete="off" />
+      <input class="input" id="f-actor" type="text" placeholder="anyone" autocomplete="off" />
     </div>
     <div class="field">
       <label for="f-action">Activity</label>
-      <input id="f-action" type="text" list="actions" placeholder="everything" autocomplete="off" />
+      <input class="input" id="f-action" type="text" list="actions" placeholder="everything" autocomplete="off" />
       <datalist id="actions">
         <option value="invoice.run">Invoice</option>
         <option value="estimate.run">Estimate</option>
@@ -166,37 +163,27 @@
     </div>
     <div class="field">
       <label for="f-result">Outcome</label>
-      <select id="f-result" name="result">
-        <option value="">any</option>
-        <option value="ok">ok</option>
-        <option value="partial">partial — a step failed</option>
-        <option value="error">error</option>
-        <option value="denied">denied</option>
-        <option value="noop">noop</option>
-      </select>
+      <div id="f-result-host"></div>
+      <input type="hidden" id="f-result" name="result" value="" />
     </div>
     <div class="field">
       <label for="f-range">Range</label>
-      <select id="f-range" name="range">
-        <option value="24h">Last 24 hours</option>
-        <option value="7d" selected>Last 7 days</option>
-        <option value="30d">Last 30 days</option>
-        <option value="90d">Last 90 days</option>
-        <option value="all">All</option>
-      </select>
+      <div id="f-range-host"></div>
+      <input type="hidden" id="f-range" name="range" value="7d" />
     </div>
-    <button id="apply">Apply</button>
-    <button id="refresh" class="ghost">↻ Refresh</button>
-    <div class="spacer"></div>
-    <label class="toggle"><input id="auto" type="checkbox" /> Auto-refresh (30s)</label>
-    <button id="export" class="ghost">⬇ CSV</button>
+    <div class="field-actions">
+      <button type="button" class="btn btn-primary" id="apply">Apply</button>
+      <button type="button" class="btn btn-ghost" id="refresh">↻ Refresh</button>
+      <label class="toggle"><input id="auto" type="checkbox" /> Auto-refresh (30s)</label>
+      <button type="button" class="btn btn-ghost" id="export">⬇ CSV</button>
+    </div>
   </div>
 
   <p class="meta" id="meta"></p>
 
-  <div id="jobstart-summary" class="gvc-card js-summary" aria-live="polite">
-    <div class="gvc-card-hd"><span class="gvc-card-title">Job Start (loaded window)</span></div>
-    <div class="gvc-card-bd" id="jobstart-summary-body"></div>
+  <div class="card js-summary" id="jobstart-summary" aria-live="polite">
+    <h2>Job Start (loaded window)</h2>
+    <div id="jobstart-summary-body"></div>
   </div>
 
   <div class="ledger">
@@ -221,11 +208,10 @@
   </div>
 
   <div class="footer-row">
-    <button id="more" class="ghost" style="display:none;">Load more</button>
+    <button type="button" class="btn btn-ghost" id="more" style="display:none;">Load more</button>
     <span class="loading" id="loading"></span>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+</div>
 
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-command.js"></script>
@@ -416,7 +402,7 @@ if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-togg
     const body = $('jobstart-summary-body');
     const hasJobstart = loadedEvents.some((ev) => ev.action && ev.action.startsWith('jobstart.'));
     if (!hasJobstart) {
-      card.style.display = 'none';
+      card.classList.remove('show');
       return;
     }
     const s = jobstartMetrics(loadedEvents);
@@ -439,7 +425,7 @@ if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-togg
       `<div class="js-stat"><b>First-pass rate</b><span>${pct(s.first_pass_rate)}</span></div>` +
       `<div class="js-stat"><b>Avg send → accept</b><span>${esc(avgH)}</span></div>` +
       `</div>${notesHtml}`;
-    card.style.display = 'block';
+    card.classList.add('show');
   }
 
   function updateMeta() {
@@ -543,7 +529,7 @@ if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-togg
   async function load(reset) {
     if (reset) { nextToken = null; lastDay = null; loadedEvents = []; $('rows').innerHTML = ''; }
     $('loading').textContent = 'Loading…';
-    $('banner').style.display = 'none';
+    $('banner').classList.remove('show');
     const p = filters();
     if (nextToken) p.set('page_token', nextToken);
     try {
@@ -554,7 +540,7 @@ if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-togg
         const d = body.detail || {};
         $('banner').textContent = (d.detail || 'Could not load activity.') +
           (d.advice ? '  ' + d.advice : '');
-        $('banner').style.display = 'block';
+        $('banner').classList.add('show');
         $('loading').textContent = '';
         return;
       }
@@ -565,15 +551,39 @@ if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-togg
       $('loading').textContent = '';
     } catch (e) {
       $('banner').textContent = 'Network error loading activity. Try Refresh.';
-      $('banner').style.display = 'block';
+      $('banner').classList.add('show');
       $('loading').textContent = '';
     }
   }
 
-  // Outcome + Range → Command chips (hidden inputs keep id/name for filters()/CSV).
-  // Do NOT convert #f-action (datalist text field).
-  GvcChips.replaceSelect($('f-result'), { segmented: false });
-  GvcChips.replaceSelect($('f-range'), { segmented: false });
+  // Outcome + Range chip pickers (hidden inputs keep id/name for filters()/CSV).
+  $('f-result-host').appendChild(GvcChips.mount({
+    name: 'result',
+    input: $('f-result'),
+    segmented: false,
+    options: [
+      { value: '', label: 'any' },
+      { value: 'ok', label: 'ok' },
+      { value: 'partial', label: 'partial — a step failed' },
+      { value: 'error', label: 'error' },
+      { value: 'denied', label: 'denied' },
+      { value: 'noop', label: 'noop' },
+    ],
+    value: '',
+  }));
+  $('f-range-host').appendChild(GvcChips.mount({
+    name: 'range',
+    input: $('f-range'),
+    segmented: false,
+    options: [
+      { value: '24h', label: 'Last 24 hours' },
+      { value: '7d', label: 'Last 7 days' },
+      { value: '30d', label: 'Last 30 days' },
+      { value: '90d', label: 'Last 90 days' },
+      { value: 'all', label: 'All' },
+    ],
+    value: '7d',
+  }));
 
   $('apply').addEventListener('click', () => load(true));
   $('refresh').addEventListener('click', () => load(true));

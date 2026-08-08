@@ -2,10 +2,10 @@
 <html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Portal — Time Off</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
   try {
     var k = "gvc-theme", v = localStorage.getItem(k);
@@ -19,51 +19,55 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-  /* Page-local: the embedded Google Form iframe + the "not configured" notice
-     (the notice markup is injected server-side as .notice/.muted, so those
-     class names are styled here rather than swapped for gvc-banner). */
-  .to-embed { width:100%; height:1200px; border:1px solid var(--gvc-line);
-    border-radius:var(--gvc-r-lg); background:var(--gvc-surface); }
-  .notice { background:var(--gvc-warn-tint); border:1px solid #E0CDA9;
-    border-left:4px solid var(--gvc-gold-dark); border-radius:var(--gvc-r);
-    padding:var(--gvc-space-5); font-size:var(--gvc-fs-body); }
-  .notice h2 { margin:0 0 var(--gvc-space-2); font-size:var(--gvc-fs-lead); }
-  .muted { color:var(--gvc-muted); }
-  /* The server injects the iframe with class="form"; alias it to the sized box. */
-  iframe.form { width:100%; height:1200px; border:1px solid var(--gvc-line);
-    border-radius:var(--gvc-r-lg); background:var(--gvc-surface); }
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page {
+    max-width: 760px; margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+    display: grid; gap: var(--space-4);
+  }
+  .page > .card { padding: var(--space-5); }
+  .page > .card > h2 {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); margin: 0 0 var(--space-3); font-weight: 700;
+  }
+  .intro { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); line-height: 1.45; }
+  .notice {
+    background: var(--color-warn-soft); border: 1px solid var(--color-warn);
+    border-left: 4px solid var(--color-accent); border-radius: var(--radius-md);
+    padding: var(--space-5); font-size: var(--text-sm);
+  }
+  .notice h2 { margin: 0 0 var(--space-2); font-size: var(--text-base); }
+  iframe.form, .to-embed {
+    width: 100%; height: 1200px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); background: var(--color-surface);
+  }
 </style>
 </head>
 <body>
 
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Time Off</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user">{{EMAIL}}</span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Time Off</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="gvc-shell">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">People</p>
-    <h1 class="gvc-h1">Time Off</h1>
-    <p class="gvc-sub">Request time off. Submissions go to the office for scheduling.</p>
+<div class="page">
+  <div class="card">
+    <h2>Request time off</h2>
+    <p class="intro">Submissions go to the office for scheduling.</p>
   </div>
   {{FORM_IFRAME}}
-</main>
+</div>
+
 <script src="/ui/gvc-theme.js"></script>
-<script src="/ui/gvc-command.js"></script>
 <script>
 if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
