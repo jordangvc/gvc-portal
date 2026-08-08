@@ -7,6 +7,7 @@ role-shaped zeros and a clear or soft summary line.
 """
 from __future__ import annotations
 
+import os
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime
@@ -16,6 +17,44 @@ from zoneinfo import ZoneInfo
 from shared import access, hub_nav
 
 _ET = ZoneInfo("America/New_York")
+
+
+# ---------------------------------------------------------------------------
+# Config cliffs — hub "Setup" badges (never secrets; bool flags only)
+# ---------------------------------------------------------------------------
+
+def _timeoff_ready() -> bool:
+    """Mirror app.service.ui_timeoff — must be an https Form URL."""
+    return (os.environ.get("GVC_TIMEOFF_FORM_URL") or "").strip().startswith("https://")
+
+
+def _coi_template_ready() -> bool:
+    """COI blank uploaded in Admin; soft-fail missing store / errors."""
+    try:
+        from subsystems.coi import template as coi_template
+        return coi_template.template_info() is not None
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _admin_writable() -> bool:
+    """Grant editing only works when the grants backend is GCS."""
+    return access.backend() == "gcs"
+
+
+def setup_flags() -> dict[str, bool]:
+    """
+    Sparse map of feature → True when that granted tool needs setup.
+    Missing key = ready. Never includes URLs or secret material.
+    """
+    out: dict[str, bool] = {}
+    if not _timeoff_ready():
+        out["timeoff"] = True
+    if not _coi_template_ready():
+        out["coi"] = True
+    if not _admin_writable():
+        out["admin"] = True
+    return out
 
 
 def _person_record(email: str) -> dict:
@@ -1138,6 +1177,7 @@ def build_hub_refresh(email: str) -> dict[str, Any]:
             "rows": shaped["queue_rows"],
         },
         "badges": shaped["badges"],
+        "setup": setup_flags(),
     }
 
 
@@ -1220,6 +1260,7 @@ def build_hub_payload(email: str) -> dict[str, Any]:
         "activity": activity_rows,
         "recent": [],  # client fills from localStorage
         "badges": shaped["badges"],
+        "setup": setup_flags(),
         "nav": {
             "groups": hub_nav.groups_for_client(feats),
             "features": sorted(feats),
