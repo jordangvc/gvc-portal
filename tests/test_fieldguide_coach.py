@@ -89,7 +89,7 @@ def test_catalog_only_procedure_uses_steps_not_home_fallback():
     """Migrated catalog ids without PROCEDURE_COACH must still coach from steps."""
     for pid in ("touchup-drywall", "touchup-paint", "safety-orient", "demo",
                 "insulation", "painting", "escalate", "inspection-hold",
-                "punch-cadence"):
+                "punch-cadence", "onboard-week1", "frp", "doors", "patch"):
         out = fg_coach.build_coach_response(procedure=pid)
         assert out["ok"] is True, pid
         assert out["known"] is True, pid

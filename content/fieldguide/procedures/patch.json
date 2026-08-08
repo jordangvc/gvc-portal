@@ -1,0 +1,301 @@
+{
+  "id": "patch",
+  "slug": "patch",
+  "title": "Drywall Patch",
+  "short_answer": "Patching is judgment work. Picking the right method for the size of the hole is most of the job.",
+  "summary": "Small hole, one method. Big hole, a different one. Spread the mud out much wider than you think you need to and feather it to nothing.",
+  "plain_words": "Small hole, one method. Big hole, a different one. Then spread the mud out much wider than you think you need to and feather it to nothing. Patches show because the mud stopped too soon, not because the hole was too big.",
+  "when_to_use": [
+    "Repair holes from fist-size down to nail pops",
+    "Medium and large openings needing backing",
+    "Rated wall breaches — full assembly restoration only"
+  ],
+  "prerequisites": [
+    "Know what is behind the wall before cutting (wiring, plumbing, conduit)",
+    "Rated assembly identified before any breach repair"
+  ],
+  "trade_id": "drywall",
+  "category_id": "repair-punch",
+  "template": "task_guide",
+  "stage_line": "Repair · patch work",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Utility knife and keyhole saw"
+    },
+    {
+      "name": "Setting compound (fill coats)"
+    },
+    {
+      "name": "Topping or lightweight (final coat)"
+    },
+    {
+      "name": "Raking work light"
+    },
+    {
+      "name": "Primer"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Scrap board for butterfly patch"
+    },
+    {
+      "name": "Backing / furring for large patches"
+    },
+    {
+      "name": "Tape for backed patches"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Nail pops and dings",
+      "body": "Set or replace the fastener, then two to three thin coats, each wider than the last. No tape needed unless the paper is broken.",
+      "checklist": false
+    },
+    {
+      "order": 2,
+      "title": "Small holes (butterfly)",
+      "body": "California / butterfly patch: scrap 3–4\" larger than the hole, score back 1½–2\" in, leave face paper as flange, butter, set, squeeze excess from under flange, coat out wider each pass.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Square the hole",
+      "body": "Square up the hole and cut back to sound board before butterfly or backed patch.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Check before cutting",
+      "body": "Check for wiring, plumbing, and conduit before cutting. Always, no exceptions.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Backed patch",
+      "body": "Cut to a clean rectangle, install backing screwed through existing board, fit piece with small gap, screw to backing, tape all four sides, coat in progressively wider passes.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Match thickness",
+      "body": "Match the existing board thickness. A patch sitting proud or low cannot be hidden.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Setting compound",
+      "body": "Setting compound for fill coats — same-day recoats. Clean tools before it sets.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Final coat",
+      "body": "Topping or lightweight for the final coat even if fills were hot mud — the last coat is the one you sand.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Batch the work",
+      "body": "Walk the area, mark every patch, then all cut-outs, all fills, all coats — same logic as production framing.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Feather wide",
+      "body": "Feather wider than feels necessary. This is the difference between an invisible patch and a callback.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "Sand and texture",
+      "body": "Sand smooth with raking light. Match surrounding texture before paint.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Prime",
+      "body": "Prime the patch. Bare compound absorbs paint differently — the #1 cause of a repair showing through.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Photo T&M",
+      "body": "Photograph before and after, room identified. On T&M work that is the backup for the ticket.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "note",
+      "title": "Why we work this way",
+      "body": "The patch fails at its edges, not in its middle. Almost every visible patch is visible because the mud was feathered over too small an area."
+    },
+    {
+      "severity": "stop",
+      "title": "Rated walls and smoke barriers",
+      "body": "A hole in a fire-rated wall is a breach of a tested assembly — a cosmetic patch does not restore it. Repair with the same board type and thickness, same layers, same fastener pattern, and specified joint treatment. Penetrations get the listed firestop system. If you do not know the assembly, stop and find out."
+    }
+  ],
+  "experts": [
+    {
+      "id": "patch-methods",
+      "tag": "Full detail · method by size",
+      "summary": "Nail pops/dings: reset fastener, thin coats wider each pass. Small (up to fist-size): California/butterfly — paper flange is the tape, squeeze trapped mud out or it bubbles later. Medium/large: clean square, backing, tape four sides, coat out. Very large / rated: cut to framing and restore full listed assembly — reconstruction, not patching."
+    }
+  ],
+  "variations": [
+    {
+      "id": "patch-butterfly",
+      "title": "California / butterfly patch",
+      "when": "Small holes up to about fist-size",
+      "changes": [
+        "Scrap 3–4\" larger than hole both ways",
+        "Score back 1½–2\" from each edge; snap gypsum, leave face paper flange",
+        "Butter hole, set plug, press flange, squeeze excess mud out",
+        "Coat over whole flange, each coat wider, then feather"
+      ]
+    },
+    {
+      "id": "patch-rated",
+      "title": "Rated assembly repair",
+      "when": "Fire-rated or smoke barrier breach",
+      "changes": [
+        "Same board type, thickness, layer count, fastener pattern",
+        "Specified joint treatment and listed firestop at penetrations",
+        "Stop if assembly is unknown — life safety"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "patch-method",
+      "prompt": "Method matches hole size (butterfly vs backed vs full assembly)",
+      "severity": "required"
+    },
+    {
+      "id": "patch-feather",
+      "prompt": "Mud feathered wide — edges invisible in raking light",
+      "severity": "required"
+    },
+    {
+      "id": "patch-prime",
+      "prompt": "Patch primed before paint handoff",
+      "severity": "required"
+    },
+    {
+      "id": "patch-rated",
+      "prompt": "Rated breaches restored per listed assembly — not cosmetic only",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Feather too small",
+      "wrong": "Small thick bump at the repair edge",
+      "right": "Wide thin feather to nothing",
+      "why": "Visible halo is the #1 patch callback"
+    },
+    {
+      "title": "Trapped mud under butterfly flange",
+      "wrong": "Leave excess compound under paper",
+      "right": "Squeeze excess out with knife before coating",
+      "why": "Blisters later"
+    },
+    {
+      "title": "Cosmetic rated repair",
+      "wrong": "Mud over a rated breach without restoring assembly",
+      "right": "Full listed assembly or stop for engineering",
+      "why": "Life safety and inspection failure"
+    },
+    {
+      "title": "Skip primer",
+      "wrong": "Paint straight over bare compound",
+      "right": "Prime patch before Paint Touch-Up",
+      "why": "Flashing through finish coat"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-patch-bubble",
+      "symptom": "Bubble under butterfly paper flange",
+      "likely_cause": "Trapped mud under flange",
+      "fix": "Cut out blistered section, re-bed flange, squeeze excess out"
+    },
+    {
+      "id": "ts-patch-halo",
+      "symptom": "Visible ring around repair",
+      "likely_cause": "Feather stopped too soon",
+      "fix": "Skim wider with topping; re-check in raking light"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "touchup-drywall",
+    "touchup-paint",
+    "finish",
+    "ratedwalls",
+    "firestop",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "touchup-paint",
+      "label": "Paint Touch-Up",
+      "why": "After prime — same product, same tool, recoat the plane"
+    },
+    {
+      "procedure_id": "touchup-drywall",
+      "label": "Drywall Touch-Up",
+      "why": "Punch-phase defects before paint mobilizes"
+    },
+    {
+      "procedure_id": "ratedwalls",
+      "label": "Fire Walls & Shaftwall",
+      "why": "Rated breach is assembly restoration"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Raking light before calling patch done"
+    }
+  ],
+  "search_tags": [
+    "patch",
+    "drywall patch",
+    "butterfly patch",
+    "california patch",
+    "backed patch",
+    "hole repair",
+    "setting compound",
+    "feather"
+  ],
+  "synonyms": [
+    "patch",
+    "drywall patch",
+    "drywall-patch",
+    "butterfly patch",
+    "california patch",
+    "hole repair",
+    "backed patch"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "California/butterfly patch dimensions (scrap 3–4\" oversize with 1½–2\" paper flange) are standard published method. Setting-compound behavior follows manufacturer guidance. Rated-assembly repair requirements come from the listing for the specific assembly.",
+    "sources": [
+      "GVC Field Manual",
+      "GA-216 / standard patch practice",
+      "Listed assembly requirements"
+    ]
+  }
+}

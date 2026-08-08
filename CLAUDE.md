@@ -11,6 +11,11 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE ONBOARD + FRP/DOORS/PATCH (r95) — BUILT 2026-08-08
+Catalog gains **onboard-week1**, **morning-rhythm**, **lead-day**,
+**skill-ladder**, **patch**, **frp**, **doors** (45 procedures). Coach
+FALLBACK related `onboard-week1` now catalog-backed. Hub **r95**.
+
 ## ✨ Hub/Billing honest on Monday auth failure (r94) — BUILT 2026-08-08
 Dead Monday token no longer paints Billing as an empty Ready queue or Hub
 "You're clear". Auth failures re-raise from billing fetches; payload sets

@@ -1,0 +1,281 @@
+{
+  "id": "doors",
+  "slug": "doors",
+  "title": "Doors & Hardware",
+  "short_answer": "The frame decides everything. Set it plumb, square, and the right width, anchored to real framing — and the door hangs and latches.",
+  "summary": "Get the frame right and the rest is easy. Both jambs plumb, head level, throat correct, anchored at the frame's anchor points. If a door won't latch, the problem is almost always the frame.",
+  "plain_words": "Get the frame right and the rest is easy. Both jambs plumb, the head level, the throat the right width, and anchored where the frame is made to be anchored. Keep the spreader on the bottom until it is fastened so the frame cannot pinch in. Then hang the door, fit hardware off the template, and adjust the closer last.",
+  "when_to_use": [
+    "Setting hollow metal frames in steel stud walls during framing",
+    "Hanging doors and installing hardware per schedule",
+    "Rated or accessible openings — listed assembly and drawing dimensions"
+  ],
+  "prerequisites": [
+    "Door and frame schedule (not plan alone)",
+    "Rough opening per manufacturer clearance",
+    "Scope confirmed: frames only vs full hardware — see provenance"
+  ],
+  "trade_id": "ops",
+  "category_id": "trade-stubs",
+  "template": "task_guide",
+  "stage_line": "Openings · doors, frames & hardware",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Level and square"
+    },
+    {
+      "name": "Manufacturer hardware templates"
+    },
+    {
+      "name": "Shipping spreader (leave until anchored)"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Hollow metal frame per schedule"
+    },
+    {
+      "name": "Door, hinges, lockset, closer per hardware set"
+    },
+    {
+      "name": "Grout fill when schedule or label requires"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Door and frame schedule",
+      "body": "Work off the door and frame schedule — size, handing, frame type, throat depth, label, and hardware prep. Never off the plan alone.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Rough opening",
+      "body": "Confirm rough opening is frame dimension plus manufacturer's clearance.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Plumb and level",
+      "body": "Set frame, plumb both jambs, level the head, check throat width at top, middle, and bottom.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Spreader",
+      "body": "Leave shipping spreader on the bottom until the frame is anchored so jambs cannot pull in.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Anchor",
+      "body": "Anchor at the frame's own anchor locations into jamb studs — not wherever is convenient.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Diagonals",
+      "body": "Check diagonals. A frame can be plumb and level and still be racked.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Grout",
+      "body": "Grout-fill where the schedule or label requires it.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Protect frame",
+      "body": "Protect the frame — a dented frame at a main entrance is a replacement, not a repair.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Hang and hardware",
+      "body": "Install order: hinges, lock or latch, closer, stop and silencers. Use manufacturer template for every prep. Adjust closer last.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Opening done",
+      "body": "Frame plumb/square, door latches without push/pull, gaps consistent, hardware set complete, rated labels legible with no field mods, accessible clearances per drawings.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "note",
+      "title": "Connects to our framing",
+      "body": "Hollow metal frames in steel stud walls get set while the wall is being framed and anchor into jamb studs we build. Rough opening, jamb stud detail, and anchor locations are part of the framing pass."
+    },
+    {
+      "severity": "stop",
+      "title": "Rated openings",
+      "body": "Door, frame, hardware, and gasketing are one listed assembly. Labels must stay legible. No field modification of labeled door or frame — wrong prep is a supplier problem."
+    },
+    {
+      "severity": "note",
+      "title": "Scope question for GVC",
+      "body": "Doors & Hardware is title-only in the portal estimate scope catalog. Before pricing, confirm: frames only vs hang and hardware; furnish vs install-only; keying and closer adjustment ownership. Setting frames and installing finish hardware are very different scopes."
+    }
+  ],
+  "experts": [
+    {
+      "id": "doors-rated",
+      "tag": "Full detail · labeled openings and ADA",
+      "summary": "Rated: whole opening is one assembly — labels legible, no field mods, self-closing and positive-latching, limited undercut, wall around opening rated too. Accessibility: clear width, maneuvering clearance per approach, opening force, lever hardware height, threshold limits, closer timing — exact numbers from project drawings, not memory. Hardware: work from hardware sets; confirm handing; template every prep; adjust closer last; verify full swing clearance."
+    }
+  ],
+  "variations": [
+    {
+      "id": "doors-frames-only",
+      "title": "Frames only (GVC framing extension)",
+      "when": "Scope is set frames in our walls",
+      "changes": [
+        "RO and jamb studs during framing pass",
+        "Anchor at frame locations into our studs",
+        "Protect until door trade hangs"
+      ]
+    },
+    {
+      "id": "doors-rated",
+      "title": "Fire-rated opening",
+      "when": "Labeled door/frame on rated wall",
+      "changes": [
+        "Listed assembly for door + frame + hardware + gasketing",
+        "No field cuts or new preps on labeled components",
+        "Coordinate firestopping at rated wall"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "dr-schedule",
+      "prompt": "Work from door/frame schedule — not plan guess",
+      "severity": "required"
+    },
+    {
+      "id": "dr-frame",
+      "prompt": "Frame plumb, level, square, correct throat, anchored at frame points",
+      "severity": "required"
+    },
+    {
+      "id": "dr-latch",
+      "prompt": "Door latches without being pushed or pulled",
+      "severity": "required"
+    },
+    {
+      "id": "dr-rated",
+      "prompt": "Rated openings: labels legible, no field mods, self-closing/latching verified",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Plan-only sizing",
+      "wrong": "Size frame from floor plan without schedule",
+      "right": "Door and frame schedule is SoT",
+      "why": "Wrong RO and hardware preps"
+    },
+    {
+      "title": "Remove spreader early",
+      "wrong": "Pull shipping spreader before anchors",
+      "right": "Spreader stays until frame is anchored",
+      "why": "Pinched jambs — door never latches right"
+    },
+    {
+      "title": "Field mod on labeled door",
+      "wrong": "Drill new prep in labeled door or frame",
+      "right": "Supplier replacement — label voided otherwise",
+      "why": "Rated assembly fails inspection"
+    },
+    {
+      "title": "Adjust lock instead of frame",
+      "wrong": "Fight hardware when frame is racked",
+      "right": "Re-square frame first",
+      "why": "Latch problems are usually frame problems"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-dr-latch",
+      "symptom": "Door will not latch without force",
+      "likely_cause": "Frame racked, jambs not plumb, or spreader removed early",
+      "fix": "Re-check diagonals and throat; re-anchor before hardware fight"
+    },
+    {
+      "id": "ts-dr-rub",
+      "symptom": "Door rubs head or jamb",
+      "likely_cause": "Frame not level/plumb or wrong hinge adjustment",
+      "fix": "Level head and jambs; shim hinges only after frame is true"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "firestop",
+    "ratedwalls",
+    "changeorder"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "RO, jamb studs, and anchors live in the framing pass"
+    },
+    {
+      "procedure_id": "firestop",
+      "label": "Firestopping",
+      "why": "Rated openings sit in rated walls"
+    },
+    {
+      "procedure_id": "ratedwalls",
+      "label": "Fire Walls & Shaftwall",
+      "why": "Wall around the opening matters"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Scope on title-only catalog trades"
+    }
+  ],
+  "search_tags": [
+    "doors",
+    "hardware",
+    "hollow metal frame",
+    "door schedule",
+    "handing",
+    "closer",
+    "rated door",
+    "accessibility",
+    "rough opening"
+  ],
+  "synonyms": [
+    "doors",
+    "doors and hardware",
+    "doors-hardware",
+    "door frame",
+    "hollow metal frame",
+    "hardware schedule",
+    "door hanging"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Frame setting, spreader use, anchoring at frame anchor locations, and hardware install order are standard hollow metal and door hardware practice; manufacturer instructions govern specifics. Rated requirements come from individual listings and applicable codes — no field modification of labeled assemblies. Accessibility dimensions deliberately omitted here — take from project drawings. Scope question for GVC: title-only stub in estimate scope catalog — confirm frames-only vs full hardware, furnish vs install-only, and keying/closer ownership before pricing.",
+    "sources": [
+      "Hollow metal frame manufacturer instructions",
+      "Door hardware templates",
+      "GVC Field Manual",
+      "Portal estimate scope catalog (stub)"
+    ]
+  }
+}

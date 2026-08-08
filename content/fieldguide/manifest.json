@@ -24,6 +24,7 @@
         "touchup-drywall",
         "touchup-paint",
         "punch-cadence",
+        "patch",
         "protection"
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
@@ -51,7 +52,13 @@
         "exclusions-walk",
         "garage-finish",
         "residential-field",
-        "rfi-field"
+        "rfi-field",
+        "onboard-week1",
+        "morning-rhythm",
+        "lead-day",
+        "skill-ladder",
+        "frp",
+        "doors"
       ],
       "search_tags": ["ops", "job start", "logistics", "access", "conditions", "safety"],
       "synonyms": ["field ops", "job start", "handoff", "mobilize"]
@@ -85,6 +92,18 @@
         "drawings"
       ],
       "order": 0
+    },
+    {
+      "id": "onboarding",
+      "trade_id": "ops",
+      "title": "Onboarding",
+      "summary": "First week, morning rhythm, and skill ladder — how we decide before speed.",
+      "procedure_ids": [
+        "onboard-week1",
+        "morning-rhythm",
+        "skill-ladder"
+      ],
+      "order": 0.25
     },
     {
       "id": "drywall-sequence",
@@ -175,7 +194,7 @@
       "trade_id": "drywall",
       "title": "Repair & punch",
       "summary": "Raking-light walk, drywall finish repair, and primer before paint.",
-      "procedure_ids": ["touchup-drywall", "touchup-paint", "punch-cadence"],
+      "procedure_ids": ["touchup-drywall", "touchup-paint", "punch-cadence", "patch"],
       "order": 8
     },
     {
@@ -223,8 +242,16 @@
       "trade_id": "ops",
       "title": "Field leadership",
       "summary": "Who to call, channel rules, and climbing the ladder to real authority.",
-      "procedure_ids": ["escalate"],
+      "procedure_ids": ["escalate", "lead-day"],
       "order": 9
+    },
+    {
+      "id": "trade-stubs",
+      "trade_id": "ops",
+      "title": "Trade stubs",
+      "summary": "FRP and doors — confirm scope inclusions before pricing.",
+      "procedure_ids": ["frp", "doors"],
+      "order": 11
     },
     {
       "id": "hold-points",
@@ -403,6 +430,31 @@
     "other trade damage": "protection",
     "corner guards": "protection",
     "floor protection": "protection",
-    "photo before touch": "protection"
+    "photo before touch": "protection",
+    "onboard": "onboard-week1",
+    "onboard week 1": "onboard-week1",
+    "first week": "onboard-week1",
+    "new hire": "onboard-week1",
+    "onboarding": "onboard-week1",
+    "morning rhythm": "morning-rhythm",
+    "morning prep": "morning-rhythm",
+    "morning huddle": "morning-rhythm",
+    "huddle": "morning-rhythm",
+    "lead day": "lead-day",
+    "lead carpenter": "lead-day",
+    "owning the room": "lead-day",
+    "skill ladder": "skill-ladder",
+    "training ladder": "skill-ladder",
+    "patch": "patch",
+    "drywall patch": "patch",
+    "butterfly patch": "patch",
+    "california patch": "patch",
+    "frp": "frp",
+    "frp panels": "frp",
+    "fiber reinforced plastic": "frp",
+    "doors": "doors",
+    "doors and hardware": "doors",
+    "door frame": "doors",
+    "hollow metal frame": "doors"
   }
 }

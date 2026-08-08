@@ -1,0 +1,257 @@
+{
+  "id": "onboard-week1",
+  "slug": "onboard-week1",
+  "title": "Your First Week at GVC",
+  "short_answer": "Who we are, who to call, what to open on your phone, and the non-negotiables that keep you — and the company — out of trouble.",
+  "summary": "Day one through day five: learn how we decide, where the truth lives, and when to stop and ask. Speed without that is expensive.",
+  "plain_words": "Green Valley Contractors builds walls and ceilings: metal framing, drywall, insulation, ACT, paint, demo, and patch. We work in Ohio, Indiana, and Kentucky. Your first week is not about being fast — it is about learning how we decide, where the truth lives (drawings + Job Start packet + Job Check), and when to stop and ask. Speed without that is expensive.",
+  "when_to_use": [
+    "Day one through day five for every new crew member",
+    "Before unsupervised work on any trade pass",
+    "When a lead onboards someone new to GVC systems"
+  ],
+  "prerequisites": [
+    "Portal sign-in on your GVC Google account",
+    "Phone with Field Manual and Job Check access"
+  ],
+  "trade_id": "ops",
+  "category_id": "onboarding",
+  "template": "task_guide",
+  "stage_line": "Onboarding · day one through day five",
+  "role_tags": [
+    "crew",
+    "laborer",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Field Manual / Field Guide on phone"
+    },
+    {
+      "name": "Job Check (observe a save before you tap yourself)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Glossary",
+      "body": "Read the Glossary once in the Field Manual index — half the manual opens up after you know what \"on center,\" \"butt joint,\" and \"raking light\" mean.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Reading Drawings",
+      "body": "Read Reading Drawings in Plain mode. Never scale with a ruler; find the sheet that owns the answer.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Spotting a Change Order",
+      "body": "Read Spotting a Change Order. If it is not on our drawings, stop, photo, write it down, call.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Safety Orientation",
+      "body": "Complete Safety Orientation before you climb, cut, sand, or demo anything unsupervised.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Portal tools",
+      "body": "Open the portal on your phone: Field Manual, Job Check, Morning Brief, Time Off — start with Portal Tools for the Field.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Shadow one stage",
+      "body": "Shadow one full stage with a lead — stocking, hang, scrape, or finish — and ask why each step exists.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Job Check save",
+      "body": "Watch a Job Check save — pick the job, change only what you did, Save once. Monday is the office truth.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "QC walk",
+      "body": "Walk a QC pass with a lead under raking light. See what \"done\" actually looks like before you claim a stage.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "note",
+      "title": "The chain of call",
+      "body": "Crew → your lead → superintendent / ops lead → office (scope and money) → owner only for owner-level exceptions. Skipping the chain wastes time and gets people conflicting answers."
+    },
+    {
+      "severity": "stop",
+      "title": "Non-negotiables from day one",
+      "body": "Never guess on a rated wall, shaftwall, or firestop. Never invent scope or promise the GC we will \"just take care of it.\" Never skip the stop when work is not on our drawings. Asking is the job."
+    }
+  ],
+  "experts": [],
+  "variations": [
+    {
+      "id": "path-laborer",
+      "title": "Laborer / helper reading path",
+      "when": "First week on a helper lane",
+      "changes": [
+        "Stocking Any Material → Stocking Drywall → Scraping → Clean-Out → QC Walk"
+      ]
+    },
+    {
+      "id": "path-hanger",
+      "title": "Hanger reading path",
+      "when": "First week on hang",
+      "changes": [
+        "Drawings → Pre-Board Walk → Hanging → Scraping → Insulation"
+      ]
+    },
+    {
+      "id": "path-finisher",
+      "title": "Finisher reading path",
+      "when": "First week on finish",
+      "changes": [
+        "Scraping → Finishing → Drywall Touch-Up → Painting"
+      ]
+    },
+    {
+      "id": "path-act",
+      "title": "ACT / ceilings reading path",
+      "when": "First week on ceilings",
+      "changes": [
+        "Drawings → Acoustical Ceilings → Tectum"
+      ]
+    },
+    {
+      "id": "path-lead",
+      "title": "Lead (new to GVC) reading path",
+      "when": "First week as a lead carpenter new to GVC",
+      "changes": [
+        "Change Order → Lead Day → Portal Tools → Rated Walls → Firestop → Framing → Hang → Finish"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "ow1-drawings",
+      "prompt": "Reading Drawings completed in Plain mode",
+      "severity": "required"
+    },
+    {
+      "id": "ow1-safety",
+      "prompt": "Safety Orientation read before unsupervised cut/sand/climb/demo",
+      "severity": "required"
+    },
+    {
+      "id": "ow1-portal",
+      "prompt": "Portal tiles opened and Job Check save observed",
+      "severity": "required"
+    },
+    {
+      "id": "ow1-qc",
+      "prompt": "QC walk under raking light with a lead",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Speed before judgment",
+      "wrong": "Start production before reading drawings and CO rules",
+      "right": "Complete the Day 1–5 checklist in order",
+      "why": "Rework and free work cost more than a slow first week"
+    },
+    {
+      "title": "Skipping the chain of call",
+      "wrong": "Call the office or owner for a field layout question",
+      "right": "Lead first, then ops, then office for scope/money",
+      "why": "Conflicting answers and wasted escalations"
+    },
+    {
+      "title": "Guessing on rated work",
+      "wrong": "Patch or frame a rated wall from habit",
+      "right": "Stop and read Fire Walls and Firestopping",
+      "why": "Life safety and inspection failures"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "drawings",
+    "changeorder",
+    "safety-orient",
+    "portal-field-tools",
+    "dont",
+    "qc-walk",
+    "skill-ladder"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "drawings",
+      "label": "Reading Drawings",
+      "why": "First technical read — Plain mode"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Stop discipline before scope creep"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Safety Orientation",
+      "why": "Hard stops before unsupervised work"
+    },
+    {
+      "procedure_id": "portal-field-tools",
+      "label": "Portal Tools for the Field",
+      "why": "Job Check and Morning Brief on your phone"
+    },
+    {
+      "procedure_id": "dont",
+      "label": "Don't Do This",
+      "why": "Failure modes with links to fixes"
+    },
+    {
+      "procedure_id": "skill-ladder",
+      "label": "Skill Ladder",
+      "why": "Observable skills tied to Job Check stages"
+    }
+  ],
+  "search_tags": [
+    "onboarding",
+    "first week",
+    "new hire",
+    "orientation",
+    "day one",
+    "chain of call",
+    "reading path",
+    "start here"
+  ],
+  "synonyms": [
+    "onboard week 1",
+    "onboard-week1",
+    "your first week",
+    "first week at gvc",
+    "new hire orientation",
+    "day one through day five",
+    "onboarding"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice. This page is an orientation path, not an HR handbook and not a signed safety acknowledgment. Written programs (respiratory protection, silica exposure control, hazcom) live with the office; the field's job is to recognize stop conditions and escalate.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check build spec",
+      "Morning Brief build spec"
+    ]
+  }
+}
