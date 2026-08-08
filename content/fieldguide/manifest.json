@@ -53,7 +53,7 @@
       "title": "Firestopping",
       "summary": "Listed joint and penetration systems — head-of-wall, annular space, photo before cover.",
       "icon": "firestop",
-      "procedure_ids": ["firestop"],
+      "procedure_ids": ["firestop", "ratedwalls"],
       "search_tags": ["firestop", "fire stop", "head of wall", "HW-D", "rated assembly", "UL"],
       "synonyms": ["firestopping", "head-of-wall", "through-penetration", "annular space"]
     }
@@ -112,7 +112,7 @@
       "trade_id": "firestop",
       "title": "Rated assemblies",
       "summary": "Listed firestop systems — joint numbers, movement class, install and photo record.",
-      "procedure_ids": ["firestop"],
+      "procedure_ids": ["firestop", "ratedwalls"],
       "order": 5
     },
     {
@@ -217,6 +217,19 @@
     "standing by": "changeorder",
     "standing-by": "changeorder",
     "flashing": "touchup-paint",
-    "paint punch": "touchup-paint"
+    "paint punch": "touchup-paint",
+    "rated wall": "ratedwalls",
+    "rated walls": "ratedwalls",
+    "rated-wall": "ratedwalls",
+    "rated-walls": "ratedwalls",
+    "firewall": "ratedwalls",
+    "fire-wall": "ratedwalls",
+    "shaftwall": "ratedwalls",
+    "shaft wall": "ratedwalls",
+    "shaft-wall": "ratedwalls",
+    "ul assembly": "ratedwalls",
+    "ul-assembly": "ratedwalls",
+    "fire rated": "ratedwalls",
+    "fire-rated": "ratedwalls"
   }
 }

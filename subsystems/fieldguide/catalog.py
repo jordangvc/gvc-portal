@@ -95,6 +95,13 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "paint-touch-up": "touchup-paint",
     "flashing": "touchup-paint",
     "paint-punch": "touchup-paint",
+    "rated-wall": "ratedwalls",
+    "rated-walls": "ratedwalls",
+    "firewall": "ratedwalls",
+    "fire-wall": "ratedwalls",
+    "shaftwall": "ratedwalls",
+    "shaft-wall": "ratedwalls",
+    "ul-assembly": "ratedwalls",
 }
 
 _CACHE: dict[str, Any] = {

@@ -1,0 +1,331 @@
+{
+  "id": "ratedwalls",
+  "slug": "ratedwalls",
+  "title": "Fire Walls & Shaftwall",
+  "short_answer": "A rated wall only works if it is built exactly as the tested assembly says — and how high it goes depends on which kind of rated wall it is. Never guess from the last job.",
+  "summary": "Everyone calls anything rated a fire wall. The code does not — fire wall, fire barrier, fire partition, and smoke barrier have different continuity rules. Shaftwall is built entirely from one side: J-runner, C-H stud, liner, stud, repeat.",
+  "plain_words": "A rated wall only works if it is built exactly as the tested assembly says — board type, layers, screws, spacing, joints, and the top of the wall. And the one that catches people: how high it has to go depends on which kind of rated wall it is. Some stop at a rated ceiling, most go all the way to the deck. Read the life safety plan; do not guess from the fact that it is a fire wall. Shaftwall is a different animal — you cannot get inside an elevator shaft, so shaftwall is designed to be built entirely from the outside with a special J-track, special studs, and a 1-inch liner panel that slides in from your side.",
+  "when_to_use": [
+    "Any wall tagged rated on the life safety plan or wall type schedule",
+    "Shaft enclosures, stairwells, and elevator hoistway walls",
+    "Before closing face layers or covering head-of-wall and firestop"
+  ],
+  "prerequisites": [
+    "Listed assembly number from drawings matches the condition in the field",
+    "Life safety plan and wall type schedule cross-checked for continuity height",
+    "Wall type confirmed: fire wall vs barrier vs partition vs smoke — not assumed from habit"
+  ],
+  "trade_id": "firestop",
+  "category_id": "rated-assemblies",
+  "template": "task_guide",
+  "stage_line": "Rated assemblies · fire walls & shaftwall",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman",
+    "hanger"
+  ],
+  "tools": [
+    {
+      "name": "Life safety plan and wall type schedule"
+    },
+    {
+      "name": "Listed assembly submittal for the specified system"
+    },
+    {
+      "name": "Camera for photo record before cover"
+    },
+    {
+      "name": "Tape measure for liner cuts and stud module"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Board type and thickness per listing (Type X vs Type C are not interchangeable)"
+    },
+    {
+      "name": "Fasteners at listed type, length, and spacing per layer"
+    },
+    {
+      "name": "Shaftwall: J-runner, C-H / CT / I-studs, 1\" × 24\" shaftliner"
+    },
+    {
+      "name": "Insulation where the listed assembly includes it"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Board type and thickness match the listing — Type X and Type C are not interchangeable.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Number of layers and joint offset between layers — layer two's joints must not land on layer one's.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Fastener type, length, and spacing per the listing — usually different between base and face layers.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Framing — stud type, gauge, and spacing are in the listing, not just the board.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Joint treatment correct, including whether base-layer joints get treated.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Insulation installed where the listed assembly includes it.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Head-of-wall built as a listed joint system — dynamic where the wall moves. See Firestopping.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Every penetration firestopped to a listed system matched to the penetrant.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Both sides finished — a rated wall shortcut on one face is not rated.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Assembly built to the listed number on the drawings — board, layers, fasteners, framing, joints.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Wall carried to the height its type requires, confirmed against the life safety plan.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Head-of-wall built as a listed dynamic joint system where the partition moves.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Joint offsets between layers correct; base layer treated where required.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "Shaftwall: liner continuous and tight, J-runner long flange toward shaft, studs at the system's 24\" module.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "All penetrations firestopped to a matching listed system.",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "",
+      "body": "Photographed: base layer before face layer, head of wall along its length, shaft side before it is unreachable.",
+      "checklist": true
+    },
+    {
+      "order": 17,
+      "title": "",
+      "body": "Inspection scheduled and passed before anything covers it.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Photograph layer one before layer two covers it",
+      "body": "Once the face layer is on, there is no way to prove the base layer was right — not to an inspector, not to the GC, and not to us a year later. A photo of each rated wall with the base layer exposed, tagged by room, is the cheapest insurance in this whole manual."
+    },
+    {
+      "severity": "stop",
+      "title": "Fall protection at open shafts",
+      "body": "Shaftwall gets installed early at an open shaft, often many floors up. Guarding or fall protection at the shaft opening is not optional. If the opening is not protected, that is a stop-work condition, not an inconvenience."
+    },
+    {
+      "severity": "warn",
+      "title": "Never carry continuity rules from the last job",
+      "body": "Hour ratings, continuity rules, and where each type is required are set by the building code edition in force on the project. A wall you can stop at a rated ceiling and a wall that must seal to the deck look identical on a floor plan and are not the same scope."
+    },
+    {
+      "severity": "note",
+      "title": "Who firestops penetrations",
+      "body": "When nobody claims penetration firestopping, it lands on the drywall contractor by default. Confirm in writing at job start. If unclaimed work shows up later, see Spotting a Change Order."
+    }
+  ],
+  "experts": [
+    {
+      "id": "rw-taxonomy",
+      "tag": "Full detail · which rated wall is it",
+      "summary": "Four different things, all called fire wall on site: Fire wall — heaviest; divides one building into separate buildings; runs continuous through the whole structure; rare in interior work. Fire barrier — continuous floor-to-floor or floor-to-roof-deck; workhorse of commercial interiors (shaft enclosures, exit stairs, occupancy separations). Fire partition — lighter; may terminate at a rated ceiling membrane rather than deck (corridor walls, tenant separations). Smoke barrier / smoke partition — about smoke, not just flame; sealing and continuity matter more than thickness. The field differences are how far up it goes and how fussy the top is. Answer lives in the life safety plan and wall type schedule cross-checked against the specific listed assembly — never from the last job or this page."
+    },
+    {
+      "id": "rw-shaft-install",
+      "tag": "Full detail · shaftwall sequence",
+      "summary": "You do not frame the wall and then board it. Build one bay at a time, alternating liner and stud: (1) J-runner top and bottom, long flange toward shaft. (2) First C-H stud at end of run. (3) Slide 24\" liner into J-runner and stud slot from your side. (4) Next C-H stud captures the free edge. (5) Repeat liner, stud down the run. (6) Face board on room side, joints offset per listing. Liner is 24\" wide so studs land at 24\" o.c. by the system — not a spacing choice. Common failures: sloppy liner cuts (gap on shaft side you cannot reach), liner not full height, screwing liner when friction-fit holds it, J-runner long flange not toward shaft, missing deflection head, uncoordinated shaft penetrations and elevator rail brackets. Coordinate with elevator contractor before closing the shaft."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "rw-assembly-match",
+      "prompt": "Listed assembly number on drawings matches board, layers, fasteners, framing, and joints in the field",
+      "severity": "required"
+    },
+    {
+      "id": "rw-continuity",
+      "prompt": "Wall height and continuity match wall type per life safety plan",
+      "severity": "required"
+    },
+    {
+      "id": "rw-shaft-module",
+      "prompt": "Shaftwall liner continuous, J-runner oriented, studs at 24\" system module",
+      "severity": "required"
+    },
+    {
+      "id": "rw-photo",
+      "prompt": "Base layer, head-of-wall, and shaft side photographed before cover",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Wrong wall type continuity",
+      "wrong": "Assume all rated walls go to deck",
+      "right": "Confirm type on life safety plan — partition may stop at rated ceiling",
+      "why": "Unpaid work or failed inspection"
+    },
+    {
+      "title": "Type X / Type C swap",
+      "wrong": "Treat rated board types as interchangeable",
+      "right": "Use the exact board type in the listing",
+      "why": "Voids the tested assembly"
+    },
+    {
+      "title": "Shaftliner cut sloppy",
+      "wrong": "Short-cut liner panels",
+      "right": "Cut accurately first time — no second access to shaft side",
+      "why": "Gap in rated barrier you cannot fix"
+    },
+    {
+      "title": "Wrong J-runner orientation",
+      "wrong": "Long flange toward room",
+      "right": "Long flange faces the shaft and supports the liner",
+      "why": "Nothing supports the liner on shaft side"
+    },
+    {
+      "title": "Normal partition layout on shaft",
+      "wrong": "Frame wall then board; 16\" stud spacing",
+      "right": "Liner, stud, liner, stud — 24\" module per system",
+      "why": "Studs do not capture liner; assembly fails"
+    },
+    {
+      "title": "No photo before cover",
+      "wrong": "Close face layer without base-layer photos",
+      "right": "Photo each rated wall tagged by room before cover",
+      "why": "Cannot prove compliance after the fact"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "firestop",
+    "framing",
+    "hang",
+    "inspection-hold",
+    "changeorder"
+  ],
+  "next_steps": [
+    {
+      "id": "firestop",
+      "label": "Firestopping",
+      "why": "Head-of-wall and penetrations need listed systems"
+    },
+    {
+      "id": "framing",
+      "label": "Framing",
+      "why": "Deflection track and stud spec feed rated heads"
+    },
+    {
+      "id": "hang",
+      "label": "Hanging",
+      "why": "Layer count, offsets, and fasteners from the listing"
+    },
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Verify before cover and stage advance"
+    }
+  ],
+  "search_tags": [
+    "rated wall",
+    "fire wall",
+    "shaftwall",
+    "shaft wall",
+    "UL assembly",
+    "fire-rated",
+    "fire barrier",
+    "fire partition",
+    "smoke barrier",
+    "shaftliner",
+    "C-H stud",
+    "J-runner",
+    "Type X",
+    "life safety"
+  ],
+  "synonyms": [
+    "rated wall",
+    "rated walls",
+    "fire wall",
+    "firewall",
+    "shaftwall",
+    "shaft wall",
+    "UL assembly",
+    "fire-rated",
+    "fire barrier",
+    "fire partition",
+    "smoke barrier",
+    "shaftliner"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Shaftwall component descriptions — J-runner uneven flanges with long flange to shaft, C-H / CT / I-studs friction-fit with slots supporting liner, 1\" × 24\" shaftliner on shaft side — from manufacturer shaftwall literature (ClarkDietrich, National Gypsum / Gold Bond, USG, Georgia-Pacific). Fire wall / fire barrier / fire partition / smoke barrier distinctions are code concepts described here without hour ratings or continuity rules — those come from the building code edition and life safety plan on each project. Fall protection at open shafts is OSHA and GC site-plan scope.",
+    "sources": [
+      "GVC Field Manual",
+      "ClarkDietrich shaftwall literature",
+      "National Gypsum / Gold Bond shaftwall literature",
+      "USG shaftwall literature",
+      "Project life safety plan and listed assemblies"
+    ]
+  }
+}

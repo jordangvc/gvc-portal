@@ -117,6 +117,15 @@ def test_repo_catalog_hang_scrape() -> None:
     check("touchup-paint expert block",
           any(e.get("id") == "tu-why" for e in (tup.get("experts") or [])))
     check("firestop migrated", "firestop" in cat["by_id"])
+    check("ratedwalls migrated", "ratedwalls" in cat["by_id"])
+    rw = cat["by_id"]["ratedwalls"]
+    check("ratedwalls 17 steps", len(rw.get("steps") or []) == 17)
+    check("ratedwalls expert taxonomy",
+          any(e.get("id") == "rw-taxonomy" for e in (rw.get("experts") or [])))
+    check("ratedwalls expert shaft",
+          any(e.get("id") == "rw-shaft-install" for e in (rw.get("experts") or [])))
+    check("ratedwalls firestop trade", rw.get("trade") == "firestop")
+    check("ratedwalls rated-assemblies category", rw.get("category") == "rated-assemblies")
     check("safety-orient migrated", "safety-orient" in cat["by_id"])
     check("approved cards", len(cat["cards"]) >= 15)
     check("act migrated", "act" in cat["by_id"])
@@ -156,6 +165,14 @@ def test_repo_catalog_hang_scrape() -> None:
     check("resolve paint-touchup", resolve_procedure_id("paint-touchup") == "touchup-paint")
     check("resolve flashing", resolve_procedure_id("flashing") == "touchup-paint")
     check("resolve paint-punch", resolve_procedure_id("paint-punch") == "touchup-paint")
+    check("resolve rated-wall", resolve_procedure_id("rated-wall") == "ratedwalls")
+    check("resolve firewall", resolve_procedure_id("firewall") == "ratedwalls")
+    check("resolve shaftwall", resolve_procedure_id("shaftwall") == "ratedwalls")
+    check("resolve ul-assembly", resolve_procedure_id("ul-assembly") == "ratedwalls")
+    hits_rw = search_procedures("shaft wall")
+    check("shaft wall → ratedwalls", hits_rw and hits_rw[0]["id"] == "ratedwalls")
+    hits_ul = search_procedures("UL assembly")
+    check("UL assembly → ratedwalls", hits_ul and hits_ul[0]["id"] == "ratedwalls")
     hits7 = search_procedures("flashing")
     check("flashing → touchup-paint", hits7 and hits7[0]["id"] == "touchup-paint")
     check("get_procedure taped", get_procedure("taped")["id"] == "finish")
@@ -175,8 +192,8 @@ def test_repo_catalog_hang_scrape() -> None:
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
-    check("audit counts spine + ops + act + firestop + changeorder",
-          audit["procedure_count"] >= 15)
+    check("audit counts spine + ops + act + firestop + ratedwalls + changeorder",
+          audit["procedure_count"] >= 16)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)
