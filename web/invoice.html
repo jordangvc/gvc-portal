@@ -1271,10 +1271,53 @@ async function lookupProject() {
   return findProject();
 }
 
+let pendingOpsReadyId = "";
+
+function formHasMeaningfulLines() {
+  return Array.from(lineItemsEl.querySelectorAll(".line-item")).some((row) => {
+    const desc = (row.querySelector(".li-desc")?.value || "").trim();
+    const amt = parseFloat(row.querySelector(".li-amount")?.value || "");
+    return desc || (Number.isFinite(amt) && amt > 0);
+  });
+}
+
+async function applyReadyWorksheet(opsId) {
+  // P5 staged costing → editable lines. Never overwrites lines the user typed.
+  if (!opsId || formHasMeaningfulLines()) return;
+  try {
+    const r = await fetch(
+      "/ui/api/invoice/ready-worksheet?ops_item_id=" + encodeURIComponent(opsId)
+    );
+    const body = await r.json();
+    if (!r.ok || !body.ok) return;
+    const lines = body.line_items || [];
+    if (!lines.length) return;
+    lineItemsEl.innerHTML = "";
+    lines.forEach((li) => addLineItem({
+      description: li.description,
+      amount: li.amount,
+      detail: li.detail || "",
+    }));
+    const note = $("#prefill-note");
+    if (note) {
+      const total = body.proposed_total != null
+        ? Number(body.proposed_total).toLocaleString("en-US", {
+            style: "currency", currency: "USD",
+          })
+        : "";
+      note.textContent =
+        "Staged Ready-to-Invoice worksheet loaded" +
+        (total ? ` (${total})` : "") +
+        " — edit before Accept & Create. Never auto-sent.";
+    }
+  } catch (_e) { /* optional prefill */ }
+}
+
 function bootInvoiceFromUrl() {
   // Deep links from Billing Hub / Change Order / other tools:
   //   ?project_number=C-005
   //   ?monday_item_id=123  (or ?item_id=123)
+  //   ?ops_ready=456  (P5 staged worksheet → line items after project lookup)
   //   ?co=CO.1-2026-0603-004  (auto-add after project lookup + billable list load)
   //   ?q=builder+or+address
   // Prefer Monday Projects item id when present (skips Project # re-search).
@@ -1282,6 +1325,7 @@ function bootInvoiceFromUrl() {
   const params = new URLSearchParams(location.search);
   const co = (params.get("co") || "").trim();
   if (co) pendingCoFromUrl = co;
+  pendingOpsReadyId = (params.get("ops_ready") || "").trim();
   const pn = (params.get("project_number") || "").trim();
   const mondayItemId = (
     params.get("monday_item_id") || params.get("item_id") || ""
@@ -1295,7 +1339,9 @@ function bootInvoiceFromUrl() {
       if (pnInput) pnInput.value = pn;
     }
     if ($("#project-search")) $("#project-search").value = pn || mondayItemId;
-    lookupProjectByItemId(mondayItemId);
+    Promise.resolve(lookupProjectByItemId(mondayItemId)).finally(() => {
+      if (pendingOpsReadyId) applyReadyWorksheet(pendingOpsReadyId);
+    });
     return;
   }
   if (pn) {
@@ -1304,13 +1350,16 @@ function bootInvoiceFromUrl() {
     const pnInput = $("#invoice-form").elements["project_number_lookup"];
     if (pnInput) pnInput.value = pn;
     if ($("#project-search")) $("#project-search").value = pn;
-    lookupProjectByNumber(pn);
+    Promise.resolve(lookupProjectByNumber(pn)).finally(() => {
+      if (pendingOpsReadyId) applyReadyWorksheet(pendingOpsReadyId);
+    });
     return;
   }
   if (q) {
     if ($("#project-search")) $("#project-search").value = q;
     findProject();
   }
+  if (pendingOpsReadyId) applyReadyWorksheet(pendingOpsReadyId);
 }
 
 /* ---- Customer search (Customer & Vendor Directory) ---- */

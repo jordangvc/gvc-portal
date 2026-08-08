@@ -1901,6 +1901,38 @@ def ui_invoice_customer_search(request: Request, q: str = "") -> dict:
     return {"ok": True, "customers": customers}
 
 
+@app.get("/ui/api/invoice/ready-worksheet")
+def ui_invoice_ready_worksheet(request: Request, ops_item_id: int) -> dict:
+    """
+    P5 staged costing worksheet for an Operations Ready-to-Invoice item.
+
+    Used by /ui/invoice?ops_ready=… to prefill editable line items after the
+    project lookup. Never creates Stripe invoices and never auto-sends.
+    """
+    require_feature(request, "invoice")
+    from subsystems.invoice import ready_stage
+    sheet = ready_stage.get_worksheet(ops_item_id)
+    if not sheet:
+        raise HTTPException(
+            status_code=404,
+            detail={"ok": False, "code": "WORKSHEET_NOT_FOUND",
+                    "detail": f"No staged worksheet for Ops item {ops_item_id}.",
+                    "advice": "Run the Ready-to-Invoice sweep (live mode) first, "
+                              "or enter line items by hand."},
+        )
+    lines = ready_stage.worksheet_to_line_items(sheet)
+    return {
+        "ok": True,
+        "ops_item_id": int(ops_item_id),
+        "worksheet": sheet,
+        "line_items": lines,
+        "proposed_total": sheet.get("proposed_invoice_total"),
+        "model": (sheet.get("pricing") or {}).get("model"),
+        "price_label": (sheet.get("pricing") or {}).get("price_label"),
+        "auto_send": False,
+    }
+
+
 @app.get("/ui/api/invoice/drafts")
 def ui_invoice_drafts_list(request: Request) -> dict:
     """List the shared, resumable invoice drafts (server copy of the browser

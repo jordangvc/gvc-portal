@@ -38,7 +38,12 @@ Dry-run replay of 3 already-invoiced jobs; drafted amounts within ±5%; zero wri
 ## Status
 
 - **Code:** dry-run consumer shipped (`check_ready_to_invoice`, default `dry_run=true`).
-- **Live staging / scheduler activate:** after dry-run gauntlet on real Ready queue.
+- **Portal staging (r84):** `dry_run=false` persists worksheets to
+  `portal/invoice-ready-worksheets.json` (memory fallback). Billing Hub Ready
+  cards show proposed $; `/ui/invoice?ops_ready=` prefills editable lines.
+  **Still never creates Stripe drafts or auto-sends.**
+- **Stripe draft staging / scheduler live flip:** after dry-run gauntlet on
+  real Ready queue + deliberate env/body change (workflow stays `dry_run: true`).
 
 ## Activate (Jordan — GitHub Actions; no local gcloud)
 

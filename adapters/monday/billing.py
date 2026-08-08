@@ -481,7 +481,8 @@ def _normalize_project_billing(item: dict) -> Optional[dict]:
 
 def invoice_href(*, project_number: Optional[str] = None,
                  monday_item_id: Optional[Any] = None,
-                 q: Optional[str] = None) -> str:
+                 q: Optional[str] = None,
+                 ops_item_id: Optional[Any] = None) -> str:
     """
     Portal deep link into the invoice generator.
 
@@ -490,6 +491,7 @@ def invoice_href(*, project_number: Optional[str] = None,
       - project_number (preferred lookup)
       - monday_item_id (Projects item id when Project # missing)
       - q (name/builder/address fallback search)
+      - ops_item_id (P5 staged worksheet → editable line prefill)
     """
     params: list[str] = []
     pn = (project_number or "").strip()
@@ -502,6 +504,8 @@ def invoice_href(*, project_number: Optional[str] = None,
     # already has a precise key and q just adds noise.
     if needle and not pn:
         params.append(f"q={quote(needle)}")
+    if ops_item_id is not None and str(ops_item_id).strip():
+        params.append(f"ops_ready={quote(str(ops_item_id))}")
     if not params:
         return "/ui/invoice"
     return "/ui/invoice?" + "&".join(params)
