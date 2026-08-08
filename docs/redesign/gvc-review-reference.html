@@ -1,0 +1,514 @@
+<!doctype html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC Takeoff — Review (reference build)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gvc-ui.css">
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ===================== RAIL ===================== -->
+  <aside class="rail">
+    <div class="rail__head">
+      <a href="#" class="kicker">&larr; Jobs</a>
+      <div class="rail__job">9999 Keep Testing St, Brookville, IN 47012 | Brad Hahn | Hahn residence</div>
+      <div class="progress"><i style="width:78%"></i></div>
+      <span class="mono faint" style="font-size:11px">108 boards &middot; 7 of 9 done &middot; autosaved 5:43 AM</span>
+    </div>
+
+    <nav class="rail__nav">
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Jobs</span>
+        <a class="nav-item"><span class="nav-item__name">Takeoffs</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Setup</span>
+        <a class="nav-item"><span class="nav-item__name">Project</span><span class="nav-item__done">&#10003;</span></a>
+        <a class="nav-item"><span class="nav-item__name">Scope</span><span class="nav-item__done">&#10003;</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Measure</span>
+        <a class="nav-item"><span class="nav-item__name">Drywall</span><span class="nav-item__qty">108 bd</span></a>
+        <a class="nav-item"><span class="nav-item__name">Bead</span><span class="nav-item__qty">144 pc</span></a>
+        <a class="nav-item"><span class="nav-item__name">ACT</span></a>
+        <a class="nav-item"><span class="nav-item__name">Equipment</span><span class="nav-item__done">&#10003;</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Finish</span>
+        <a class="nav-item"><span class="nav-item__name">Photos</span></a>
+        <a class="nav-item"><span class="nav-item__name">Estimate</span><span class="nav-item__done">&#10003;</span></a>
+        <a class="nav-item is-active"><span class="nav-item__name">Review</span><span class="nav-item__done">&#10003;</span></a>
+      </div>
+    </nav>
+
+    <div class="rail__foot">
+      <span class="avatar">JD</span>
+      <span class="row__main">
+        <b class="row__title">Jordan</b>
+        <span class="row__sub">Autosaved 5:43 AM</span>
+      </span>
+    </div>
+  </aside>
+
+  <!-- ===================== MAIN ===================== -->
+  <main>
+
+    <header class="topbar">
+      <button class="btn btn-icon btn-ghost" aria-label="Back">&larr;</button>
+      <div class="topbar__title">
+        <span class="kicker">Review</span>
+        <h1>Review before sending</h1>
+      </div>
+      <div class="topbar__actions">
+        <button class="btn btn-sm">Update</button>
+        <button class="btn btn-icon btn-ghost" aria-label="More">&#8943;</button>
+      </div>
+    </header>
+
+    <div class="page">
+
+      <p class="muted" style="max-width:60ch">Everything this takeoff produces &mdash; check it, confirm it, send it. Nothing leaves here without a person pressing send.</p>
+
+      <!-- ---------- confirmation banner ---------- -->
+      <section class="card card-pad card-note" style="display:flex;flex-direction:column;gap:var(--space-2)">
+        <div class="cluster" style="justify-content:space-between">
+          <b>2 of 7 outputs confirmed &mdash; ready to copy, paste or send as-is</b>
+          <span class="tag tag-gold">1 warn</span>
+        </div>
+        <div class="cluster">
+          <span class="tag tag-green">Stocking email</span>
+          <span class="tag tag-green">Estimate sheet</span>
+          <span class="tag">Materials list &mdash; sent</span>
+        </div>
+        <p class="muted" style="font-size:var(--text-xs)">Save the draft to share these confirmations with the team.</p>
+      </section>
+
+      <!-- ---------- three check cards ---------- -->
+      <section class="grid-cards">
+
+        <div class="card card-flush">
+          <div class="card-head"><h2>Board order</h2></div>
+          <div class="card-pad" style="padding-top:var(--space-2)">
+            <div class="drow"><span class="drow__name">4&times;12 &frac12;"</span><span class="drow__val">81</span></div>
+            <div class="drow"><span class="drow__name">54&times;12 &frac12;"</span><span class="drow__val">16</span></div>
+            <div class="drow"><span class="drow__name">4&times;10 &frac12;"</span><span class="drow__val">11</span></div>
+            <div class="drow"><span class="drow__name">Counted</span><span class="drow__val">108 bd</span></div>
+
+            <div class="chipset" style="margin:var(--space-4) 0 var(--space-3)">
+              <span class="chipset__label kicker">Waste</span>
+              <div class="chipset__opts">
+                <button class="chip" aria-pressed="false">0%</button>
+                <button class="chip is-active" aria-pressed="true">5%</button>
+                <button class="chip" aria-pressed="false">10%</button>
+                <button class="chip" aria-pressed="false">15%</button>
+              </div>
+            </div>
+
+            <div class="drow drow-total">
+              <span class="drow__name">Ordering &mdash; includes 5% waste</span>
+              <span class="drow__val">114 bd</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-flush">
+          <div class="card-head"><h2>Bead order</h2></div>
+          <div class="card-pad" style="padding-top:var(--space-2)">
+            <div class="drow"><span class="drow__name">8' no-coat</span><span class="drow__val">114 pcs</span></div>
+            <div class="drow"><span class="drow__name">9' no-coat</span><span class="drow__val">5 pcs</span></div>
+            <div class="drow"><span class="drow__name">10' no-coat</span><span class="drow__val">4 pcs</span></div>
+            <div class="drow"><span class="drow__name">12' no-coat</span><span class="drow__val">5 pcs</span></div>
+            <div class="drow"><span class="drow__name">J-Bead</span><span class="drow__val">16 pcs</span></div>
+            <div class="drow"><span class="drow__name">Flex 325</span><span class="drow__val">1 roll</span></div>
+            <div class="drow"><span class="drow__name">Flex 450</span><span class="drow__val">1 roll</span></div>
+            <div class="drow"><span class="drow__name">No-coat &mdash; 2 boxes of 50 + 28 loose</span><span class="drow__val">128 pc</span></div>
+            <div class="drow drow-total"><span class="drow__name">All bead pieces &mdash; plus 2 rolls</span><span class="drow__val">144 pc</span></div>
+          </div>
+        </div>
+
+        <div class="card card-flush">
+          <div class="card-head"><h2>Ready check</h2></div>
+          <div class="card-pad" style="padding-top:var(--space-2)">
+            <div class="notes">
+              <div class="note"><span class="note__kind is-warn">Warn</span><span class="note__text">No supplier email &mdash; stocking can't auto-stage to Gmail.</span></div>
+              <div class="note"><span class="note__kind">Note</span><span class="note__text">Plan revision not recorded &mdash; which set was this measured from?</span></div>
+              <div class="note"><span class="note__kind">Note</span><span class="note__text">Ready-to-stock date not set.</span></div>
+              <div class="note"><span class="note__kind">Note</span><span class="note__text">Estimate confirmed but not marked sent to customer.</span></div>
+            </div>
+            <div class="drow" style="margin-top:var(--space-3)"><span class="drow__name">Outputs confirmed</span><span class="drow__val">2 of 7</span></div>
+            <div class="drow"><span class="drow__name">Outputs sent</span><span class="drow__val">1</span></div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ---------- shadow check ---------- -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Shadow check</h2>
+            <span class="row__sub">Measured against 422 jobs on record</span>
+          </div>
+          <button class="btn btn-sm">Show the 5 closest past jobs</button>
+        </div>
+        <div class="card-pad" style="padding-top:var(--space-2)">
+          <div class="notes">
+            <div class="note note-3">
+              <span class="note__kind">Board total</span>
+              <span class="num num-sm">108 bd</span>
+              <span class="note__text muted">Below the middle band of comparable jobs (143&ndash;389, median 270).</span>
+            </div>
+            <div class="note note-3">
+              <span class="note__kind is-warn">MD board</span>
+              <span class="num num-sm">0</span>
+              <span class="note__text muted">No moisture board. Comparable jobs typically run about 3% for baths and laundry.</span>
+            </div>
+            <div class="note note-3">
+              <span class="note__kind">$ / board</span>
+              <span class="num num-sm">$198.15</span>
+              <span class="note__text muted">Above the band on record ($82&ndash;$95). Justified by MD or high work?</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- pricing notes ---------- -->
+      <section class="card card-pad" style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <div class="row__main">
+          <h2>Pricing notes</h2>
+          <span class="row__sub">Sales to ops &mdash; rate agreements, exclusions, back-and-forth. Travels with the job.</span>
+        </div>
+        <textarea class="input" rows="2" placeholder="Zicka lot 18 — $40 rate locked. Garage 5/8 included, no extra trips. Jake: confirm patch rate before send."></textarea>
+      </section>
+
+      <!-- ---------- ONE outputs card, replacing seven repeated toolbars ---------- -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Outputs</h2>
+            <span class="row__sub">Everything this takeoff produces. Pick one &mdash; one toolbar, one preview, one confirm.</span>
+          </div>
+          <span class="tag tag-gold">2 of 7 confirmed</span>
+        </div>
+
+        <div class="card-pad" style="padding-bottom:var(--space-3);display:flex;flex-direction:column;gap:var(--space-3)">
+
+          <div class="chipset">
+            <span class="chipset__label kicker">Office</span>
+            <div class="chipset__opts">
+              <button class="chip chip-lg is-active" aria-pressed="true">Stocking email <span class="chip__state">Confirmed</span></button>
+              <button class="chip chip-lg" aria-pressed="false">Office email <span class="chip__state">Draft</span></button>
+              <button class="chip chip-lg" aria-pressed="false">Estimate sheet <span class="chip__state">Confirmed</span></button>
+            </div>
+          </div>
+
+          <div class="chipset">
+            <span class="chipset__label kicker">Crew</span>
+            <div class="chipset__opts">
+              <button class="chip chip-lg" aria-pressed="false">Hang <span class="chip__state">Draft</span></button>
+              <button class="chip chip-lg" aria-pressed="false">Scrap <span class="chip__state">Draft</span></button>
+              <button class="chip chip-lg" aria-pressed="false">Finish <span class="chip__state">Draft</span></button>
+              <button class="chip chip-lg" aria-pressed="false">Materials <span class="chip__state">Sent</span></button>
+              <button class="btn btn-sm btn-dashed">+ Add</button>
+            </div>
+          </div>
+
+          <div class="chipset">
+            <span class="chipset__label kicker">Language</span>
+            <div class="chipset__opts">
+              <button class="chip is-active" aria-pressed="true">Both</button>
+              <button class="chip" aria-pressed="false">Espanol</button>
+              <button class="chip" aria-pressed="false">English</button>
+            </div>
+          </div>
+
+          <div class="cluster-split">
+            <div class="cluster">
+              <button class="btn btn-sm">Email</button>
+              <button class="btn btn-sm">Copy</button>
+              <button class="btn btn-sm">PDF</button>
+              <button class="btn btn-sm">Edit</button>
+              <button class="btn btn-sm">Reset</button>
+            </div>
+            <div class="cluster">
+              <span class="tag tag-gold">Modified</span>
+              <span class="tag tag-green">Confirmed</span>
+            </div>
+          </div>
+
+          <p class="muted" style="font-size:var(--text-xs)">Email, Copy and PDF all use the edited version. Reset reverts to auto-generated.</p>
+        </div>
+
+        <pre class="preview">[Supplier contact],
+
+Here is the stocking list for the next Brad Hahn house. This is a ranch.
+Everything on this list goes on GVC's account. Thank you.
+
+9999 Keep Testing St, Brookville, IN 47012
+Lot / Job 098
+
+DRYWALL
+  Garage                            36 &times; 4&times;12 &frac12;"
+  Total, includes 5% waste          38 boards
+
+BOARD TOTALS &mdash; supplier use only
+  4&times;12 &frac12;"                          38
+  36 counted + 5% waste = 38 grand total
+
+ACCESSORIES &mdash; GVC account
+  Nails                              1 box
+  Screws                             1 box
+  Tape                               4 rolls
+  All-purpose                        2 cartons
+  Proform Lite                       4 cartons
+  Topping                            1 carton
+  Easy Sand 45                       1 bag
+  8' no-coat corner bead            10 pcs
+  9' no-coat corner bead             5 pcs
+  10' no-coat corner bead            2 pcs
+  12' no-coat corner bead            5 pcs
+  J-Bead                            12 pcs
+  Flex 325                           1 roll
+  Flex 450                           1 roll
+  1-1/4" archway bead                2
+  Super arch window bead             2
+  Giant arch window bead             4
+  1" wood screws, pocket doors       2</pre>
+
+        <div class="card-foot">
+          <span class="row__main">
+            <b class="row__title">Confirmed &mdash; not sent</b>
+            <span class="row__sub">By Jordan &middot; Jul 25, 11:25 AM. No supplier email on the job, so the draft can't stage itself.</span>
+          </span>
+          <button class="btn btn-primary">Mark sent</button>
+          <button class="btn">Undo</button>
+        </div>
+      </section>
+
+      <!-- ---------- seven identical disclosures ---------- -->
+      <section>
+        <div class="cluster-split" style="padding-bottom:var(--space-3)">
+          <span class="kicker">Detail &mdash; 6 sections</span>
+          <div class="cluster">
+            <button class="btn btn-sm btn-ghost">Collapse all</button>
+            <button class="btn btn-sm btn-ghost">Expand all</button>
+          </div>
+        </div>
+
+        <div class="disclosure" data-open="true">
+          <button class="disclosure__head">
+            <span class="disclosure__main">
+              <span class="disclosure__title">Takeoff summary</span>
+              <span class="disclosure__sub">108 boards &middot; 3 areas</span>
+            </span>
+            <span class="disclosure__caret">&#9662;</span>
+          </button>
+          <div class="disclosure__body stack">
+            <div class="grid-3">
+              <div class="stat"><span class="stat__label">Total boards</span><span class="stat__value">108</span></div>
+              <div class="stat"><span class="stat__label">Total SF</span><span class="stat__value">4800</span></div>
+              <div class="stat"><span class="stat__label">Areas</span><span class="stat__value">3</span></div>
+            </div>
+
+            <div>
+              <span class="kicker kicker-sm">Board types &mdash; all areas combined</span>
+              <div style="margin-top:var(--space-2)">
+                <div class="drow"><span class="drow__name">4&times;12 &frac12;"</span><span class="drow__val">81</span></div>
+                <div class="drow"><span class="drow__name">54" &frac12;"</span><span class="drow__val">16</span></div>
+                <div class="drow"><span class="drow__name">4&times;10 &frac12;"</span><span class="drow__val">11</span></div>
+                <div class="drow drow-total"><span class="drow__name">Grand total</span><span class="drow__val">108 boards</span></div>
+              </div>
+            </div>
+
+            <div>
+              <span class="kicker kicker-sm">By area</span>
+              <div class="stack" style="gap:var(--space-3);margin-top:var(--space-2)">
+
+                <div class="card card-pad" style="padding:var(--space-4)">
+                  <div class="cluster" style="justify-content:space-between">
+                    <b>Garage</b>
+                    <span class="num num-sm">36 boards</span>
+                  </div>
+                  <div class="cluster" style="margin-top:var(--space-2)">
+                    <span class="tag">9 &times; 4&times;12 &frac12;"</span>
+                    <span class="tag">16 &times; 54" &frac12;"</span>
+                    <span class="tag">11 &times; 4&times;10 &frac12;"</span>
+                  </div>
+                  <span class="row__sub" style="display:block;margin-top:var(--space-2)">1600 SF net</span>
+                </div>
+
+                <div class="card card-pad" style="padding:var(--space-4)">
+                  <div class="cluster" style="justify-content:space-between">
+                    <b>2nd floor</b>
+                    <span class="num num-sm">36 boards</span>
+                  </div>
+                  <div class="cluster" style="margin-top:var(--space-2)">
+                    <span class="tag">36 &times; 4&times;12 &frac12;"</span>
+                  </div>
+                  <span class="row__sub" style="display:block;margin-top:var(--space-2)">1600 SF net</span>
+                </div>
+
+                <div class="card card-pad" style="padding:var(--space-4)">
+                  <div class="cluster" style="justify-content:space-between">
+                    <b>Basement</b>
+                    <span class="num num-sm">36 boards</span>
+                  </div>
+                  <div class="cluster" style="margin-top:var(--space-2)">
+                    <span class="tag">36 &times; 4&times;12 &frac12;"</span>
+                  </div>
+                  <span class="row__sub" style="display:block;margin-top:var(--space-2)">1600 SF net</span>
+                </div>
+
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="disclosure" data-open="false">
+          <button class="disclosure__head">
+            <span class="disclosure__main">
+              <span class="disclosure__title">Print / save PDF</span>
+              <span class="disclosure__sub">Open the formatted report for printing</span>
+            </span>
+            <span class="disclosure__caret">&#9662;</span>
+          </button>
+          <div class="disclosure__body">
+            <div class="cluster-split">
+              <span class="row__sub">Board counts by area, bead schedule, equipment list and pricing notes on one sheet.</span>
+              <button class="btn">Open report</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="disclosure" data-open="false">
+          <button class="disclosure__head">
+            <span class="disclosure__main">
+              <span class="disclosure__title">Recipients</span>
+              <span class="disclosure__sub">Who the office email and crew copies go to</span>
+            </span>
+            <span class="disclosure__caret">&#9662;</span>
+          </button>
+          <div class="disclosure__body stack" style="gap:var(--space-3)">
+            <div class="drow"><span class="drow__name">To</span><span class="drow__val">office@greenvalleycontractors.com</span></div>
+            <div class="drow"><span class="drow__name">CC</span><span class="drow__val">jordan@greenvalleycontractors.com</span></div>
+            <div class="drow"><span class="drow__name">Crew copy</span><span class="drow__val">Robert R, Mark W</span></div>
+            <div class="drow"><span class="drow__name">Supplier</span><span class="drow__val">Not on file</span></div>
+            <p class="muted" style="font-size:var(--text-xs)">Addresses only. Outputs and their states live in one place &mdash; the Outputs card above.</p>
+          </div>
+        </div>
+
+        <div class="disclosure" data-open="false">
+          <button class="disclosure__head">
+            <span class="disclosure__main">
+              <span class="disclosure__title">Sales</span>
+              <span class="disclosure__sub">3 scopes &middot; $21,400 total bid</span>
+            </span>
+            <span class="disclosure__caret">&#9662;</span>
+          </button>
+          <div class="disclosure__body">
+            <div class="drow"><span class="drow__name">Hang &amp; finish &mdash; 108 bd</span><span class="drow__val">$16,200</span></div>
+            <div class="drow"><span class="drow__name">Garage 5/8 upgrade</span><span class="drow__val">$3,100</span></div>
+            <div class="drow"><span class="drow__name">Touch-up allowance</span><span class="drow__val">$2,100</span></div>
+            <div class="drow drow-total"><span class="drow__name">Total bid &mdash; 3 scopes</span><span class="drow__val">$21,400</span></div>
+          </div>
+        </div>
+
+        <div class="disclosure" data-open="false">
+          <button class="disclosure__head">
+            <span class="disclosure__main">
+              <span class="disclosure__title">Payroll</span>
+              <span class="disclosure__sub">Hanging, scrapping, finishing, RC1, supervision, touch-up, stocking</span>
+            </span>
+            <span class="disclosure__caret">&#9662;</span>
+          </button>
+          <div class="disclosure__body">
+            <div class="drow"><span class="drow__name">Hanging</span><span class="drow__val">108 bd</span></div>
+            <div class="drow"><span class="drow__name">Scrapping</span><span class="drow__val">108 bd</span></div>
+            <div class="drow"><span class="drow__name">Finishing</span><span class="drow__val">108 bd</span></div>
+            <div class="drow"><span class="drow__name">RC1</span><span class="drow__val">36 bd</span></div>
+            <div class="drow"><span class="drow__name">Supervision</span><span class="drow__val">6 hrs</span></div>
+            <div class="drow"><span class="drow__name">Touch-up</span><span class="drow__val">4 hrs</span></div>
+            <div class="drow"><span class="drow__name">Stocking</span><span class="drow__val">1 drop</span></div>
+          </div>
+        </div>
+
+        <div class="disclosure" data-open="false">
+          <button class="disclosure__head">
+            <span class="disclosure__main">
+              <span class="disclosure__title">Monday export</span>
+              <span class="disclosure__sub">Project board, payroll board and operations board fields</span>
+            </span>
+            <span class="disclosure__caret">&#9662;</span>
+          </button>
+          <div class="disclosure__body stack" style="gap:var(--space-3)">
+            <div class="drow"><span class="drow__name">Project board</span><span class="drow__val">14 fields</span></div>
+            <div class="drow"><span class="drow__name">Payroll board</span><span class="drow__val">7 fields</span></div>
+            <div class="drow"><span class="drow__name">Operations board</span><span class="drow__val">9 fields</span></div>
+            <div class="cluster">
+              <button class="btn btn-sm">Copy project fields</button>
+              <button class="btn btn-sm">Copy payroll fields</button>
+            </div>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ---------- drive ---------- -->
+      <section class="card card-pad">
+        <div class="cluster-split">
+          <span class="row__main">
+            <b class="row__title">Saved to Drive</b>
+            <span class="row__sub">5 files saved &middot; <a href="#">Open folder</a></span>
+          </span>
+          <button class="btn">Re-save to Drive</button>
+        </div>
+      </section>
+
+      <!-- ---------- actions: LAST on the page, ONE green button ---------- -->
+      <section class="card card-pad" style="display:flex;flex-direction:column;gap:var(--space-3)">
+        <div class="row__main">
+          <span class="kicker">Send</span>
+          <h2>Hand this takeoff to the office</h2>
+          <span class="row__sub">2 of 7 outputs confirmed. Unconfirmed drafts go along as drafts.</span>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block">Approve and send to office</button>
+        <p class="muted" style="font-size:var(--text-xs);text-align:center">Creates an office email. Does not contact the supplier.</p>
+        <div class="cluster-split">
+          <div class="cluster">
+            <button class="btn">Copy all data</button>
+            <button class="btn">Monday &mdash; Project</button>
+            <button class="btn">Monday &mdash; Payroll</button>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <nav class="tabbar">
+      <a class="is-active">Review</a>
+      <a>Drywall</a>
+      <a>Estimate</a>
+      <a>Steps</a>
+    </nav>
+
+  </main>
+</div>
+
+<script>
+// The only script this screen needs.
+document.addEventListener('click', (e) => {
+  const head = e.target.closest('.disclosure__head');
+  if (!head) return;
+  const d = head.closest('.disclosure');
+  d.dataset.open = d.dataset.open === 'true' ? 'false' : 'true';
+});
+</script>
+
+</body>
+</html>

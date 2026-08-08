@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en" data-palette="emerald" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GVC Portal — Takeoff (reference build)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="gvc-ui.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="rail">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <span class="kicker">GVC Portal</span>
+        <button class="btn btn-icon btn-ghost phone-only" id="close" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="rail__job">Jordan Doyle &middot; Owner</div>
+    </div>
+    <nav class="rail__nav">
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Today</span>
+        <a class="nav-item"><span class="nav-item__name">Your Morning Brief</span></a>
+        <a class="nav-item"><span class="nav-item__name">Owner Pulse</span><span class="badge">4</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Estimating &amp; bids</span>
+        <a class="nav-item is-active"><span class="nav-item__name">Takeoff</span><span class="badge">3</span></a>
+        <a class="nav-item"><span class="nav-item__name">Estimate Generator</span></a>
+        <a class="nav-item"><span class="nav-item__name">Change Order</span></a>
+        <a class="nav-item"><span class="nav-item__name">Job Start</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Money</span>
+        <a class="nav-item"><span class="nav-item__name">Billing Hub</span><span class="badge">7</span></a>
+        <a class="nav-item"><span class="nav-item__name">Invoice Generator</span></a>
+        <a class="nav-item"><span class="nav-item__name">Paid by Check</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Field</span>
+        <a class="nav-item"><span class="nav-item__name">Job Check</span></a>
+        <a class="nav-item"><span class="nav-item__name">Field Manual</span></a>
+      </div>
+    </nav>
+    <div class="rail__foot">
+      <span class="avatar">JD</span>
+      <span class="row__main">
+        <b class="row__title">Jordan Doyle</b>
+        <span class="row__sub" title="jordan@greenvalleycontractors.com">jordan@greenvalleycontractors.com</span>
+      </span>
+      <button class="btn btn-sm btn-ghost">Sign out</button>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button class="btn btn-icon btn-ghost phone-only" id="menu" aria-label="All tools">&#8801;</button>
+      <div class="topbar__title">
+        <span class="kicker">Estimating &amp; bids</span>
+        <h1>Takeoff</h1>
+      </div>
+      <div class="topbar__actions">
+        <span class="tag">Auto</span>
+        <button class="btn btn-icon btn-ghost" aria-label="Refresh">&#8635;</button>
+      </div>
+    </header>
+
+    <div class="page">
+
+      <!-- ============ the path, as a track and not a sentence ============ -->
+      <section style="display:flex;flex-direction:column;gap:var(--space-2)">
+        <span class="kicker">The money path</span>
+        <nav class="path" aria-label="Money path">
+          <button class="path__step is-done">Hub</button>
+          <button class="path__step is-here">Takeoff</button>
+          <button class="path__step">Estimate</button>
+          <button class="path__step">Job Start</button>
+          <button class="path__step">Job Check</button>
+          <button class="path__step">CO</button>
+          <button class="path__step">Billing</button>
+          <button class="path__step">Invoice</button>
+          <button class="path__step">Check</button>
+        </nav>
+        <span class="row__sub">Jump anywhere from here &mdash; you don't have to walk the rail.</span>
+      </section>
+
+      <!-- ============ the two things this page exists to do ============ -->
+      <section class="handoff">
+        <a class="handoff__card is-primary">
+          <span class="handoff__kicker">Measure</span>
+          <b class="handoff__title">Open the Takeoff app &rarr;</b>
+          <span class="handoff__body">Boards, bead and scope. Opens in a new tab &mdash; this portal tab stays put, so you can come straight back.</span>
+        </a>
+        <a class="handoff__card">
+          <span class="handoff__kicker">Come back with numbers</span>
+          <b class="handoff__title">Import into Estimate</b>
+          <span class="handoff__body">Pull in a JSON export, or pick up a draft that was sent to the portal queue.</span>
+        </a>
+      </section>
+
+      <!-- ============ what is actually waiting ============ -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Waiting to come back</h2>
+            <span class="row__sub">3 takeoffs staged in the portal queue &mdash; measured, not yet estimated</span>
+          </div>
+          <a href="#">All takeoffs</a>
+        </div>
+
+        <a class="row">
+          <span class="row__main">
+            <b class="row__title">1246 Meriweather Avenue</b>
+            <span class="row__sub">Cincinnati, OH 45248 &middot; Willow Creek | Meriweather residence</span>
+          </span>
+          <span class="cluster row__end">
+            <span class="mono muted" style="font-size:var(--text-xs);min-width:48px;text-align:right">108 bd</span>
+            <button class="btn btn-sm">Import</button>
+          </span>
+        </a>
+
+        <a class="row">
+          <span class="row__main">
+            <b class="row__title">4115 Witler Road</b>
+            <span class="row__sub">Cincinnati, OH 45248 &middot; Drees | Witler residence</span>
+          </span>
+          <span class="cluster row__end">
+            <span class="mono muted" style="font-size:var(--text-xs);min-width:48px;text-align:right">64 bd</span>
+            <button class="btn btn-sm">Import</button>
+          </span>
+        </a>
+
+        <a class="row">
+          <span class="row__main">
+            <b class="row__title">300 Tiger Boulevard</b>
+            <span class="row__sub">Lawrenceburg, IN 47025 &middot; Maxwell Construction | First Financial Bank</span>
+          </span>
+          <span class="cluster row__end">
+            <span class="tag tag-gold">Needs ZIP</span>
+            <button class="btn btn-sm">Finish the name</button>
+          </span>
+        </a>
+      </section>
+
+      <!-- ============ the prose list, as the sequence it describes ============ -->
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>What happens after this</h2>
+            <span class="row__sub">Each step hands the job to the next one. Nothing sends itself.</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">01</span>
+          <span class="row__main">
+            <b class="row__title">Takeoff</b>
+            <span class="row__sub">Measure boards and scope, then export or send to the portal queue.</span>
+          </span>
+          <span class="tag tag-green row__end">You are here</span>
+        </div>
+
+        <a class="row">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">02</span>
+          <span class="row__main">
+            <b class="row__title">Estimate Generator</b>
+            <span class="row__sub">Import the JSON or resume the staged draft, preview, then approve to send.</span>
+          </span>
+          <span class="badge row__end">3</span>
+        </a>
+
+        <a class="row">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">03</span>
+          <span class="row__main">
+            <b class="row__title">Job Start</b>
+            <span class="row__sub">Bid won &mdash; hand the packet to Ops, and Ops accepts it.</span>
+          </span>
+        </a>
+
+        <a class="row">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">04</span>
+          <span class="row__main">
+            <b class="row__title">Job Check</b>
+            <span class="row__sub">Field stages on the live job. Mark Ready to Invoice when billing can start.</span>
+          </span>
+        </a>
+
+        <a class="row">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">05</span>
+          <span class="row__main">
+            <b class="row__title">Billing Hub</b>
+            <span class="row__sub">The ready queue feeds Invoice Generator and Paid by Check.</span>
+          </span>
+          <span class="badge row__end">7</span>
+        </a>
+      </section>
+
+    </div>
+
+    <nav class="tabbar">
+      <a>Home</a>
+      <a class="is-active">Takeoff</a>
+      <a>Estimate</a>
+      <a>Billing</a>
+    </nav>
+  </main>
+</div>
+
+<script>
+  var rail = document.querySelector('.rail');
+  document.getElementById('menu').addEventListener('click', function () { rail.classList.add('is-open'); });
+  document.getElementById('close').addEventListener('click', function () { rail.classList.remove('is-open'); });
+</script>
+
+</body>
+</html>

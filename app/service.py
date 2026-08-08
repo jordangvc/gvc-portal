@@ -1150,6 +1150,45 @@ def portal_stylesheet() -> Response:
                     headers={"Cache-Control": "public, max-age=3600"})
 
 
+@app.get("/ui/gvc-ui.css")
+def portal_redesign_stylesheet() -> Response:
+    """Redesign SoT stylesheet from docs/redesign handoff (web/gvc-ui.css).
+
+    Ungated like gvc.css. Pages opt in during conversion; do not load both
+    competing sheets on a page without neutralizing old rules.
+    """
+    path = WEB_DIR / "gvc-ui.css"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(content=path.read_text(encoding="utf-8"),
+                    media_type="text/css",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
+@app.get("/ui/gvc-v2-patch.css")
+def portal_redesign_patch_stylesheet() -> Response:
+    """Temporary corrective layer for live takeoff/portal during redesign.
+
+    Load last. Delete blocks as screens convert. Ungated like gvc.css.
+    """
+    path = WEB_DIR / "gvc-v2-patch.css"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(content=path.read_text(encoding="utf-8"),
+                    media_type="text/css",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
 _UI_FONT_ALLOWLIST = frozenset({
     "montserrat-600.woff2",
     "montserrat-700.woff2",
