@@ -263,6 +263,9 @@ function rowHtml(item) {
   if (item.jobstart_href && item.jobstart_href !== item.primary_href) {
     secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobstart_href)}">Job Start</a>`);
   }
+  if (item.jobcheck_href && item.jobcheck_href !== item.primary_href) {
+    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobcheck_href)}">Job Check</a>`);
+  }
   return `<div class="queue-row">
     <div class="title">${title}</div>
     <div class="queue-meta">${metaBits(item)}</div>

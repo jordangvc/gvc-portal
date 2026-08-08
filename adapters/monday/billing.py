@@ -188,31 +188,47 @@ def _fetch_ready_to_invoice_uncached(mc) -> list[dict]:
             cursor = page.get("cursor")
             if not cursor:
                 break
-    except Exception as exc:  # noqa: BLE001 — fall back to full walk + filter
+    except Exception as exc:  # noqa: BLE001 — fall back to group-scoped page
         print(
             f"[monday-billing] group-filtered Ready-to-Invoice fetch failed "
-            f"({type(exc).__name__}: {exc}); falling back to full board walk",
+            f"({type(exc).__name__}: {exc}); falling back to groups(ids:) page",
             file=sys.stderr,
         )
-        rows = _fetch_ready_to_invoice_by_walk(mc)
+        try:
+            rows = _fetch_ready_to_invoice_by_group(mc)
+        except Exception as exc2:  # noqa: BLE001 — never walk the full ~2k board
+            print(
+                f"[monday-billing] Ready-to-Invoice group page also failed "
+                f"({type(exc2).__name__}: {exc2}); returning empty queue",
+                file=sys.stderr,
+            )
+            rows = []
 
     _enrich_project_numbers(mc, rows)
     return rows
 
 
-def _fetch_ready_to_invoice_by_walk(mc) -> list[dict]:
-    """Fallback: page the Ops board and keep only the Ready-to-Invoice group."""
+def _fetch_ready_to_invoice_by_group(mc) -> list[dict]:
+    """Fallback: page ONLY the Ready-to-Invoice group (never the whole board).
+
+    Same anti-pattern fix as Morning Ops (r82): full-board walk + Python
+    filter costs tens of seconds on ~2k Completed Tasks. Prefer boards →
+    groups(ids:) → items_page when the items_page query_params filter fails.
+    """
     col_ids = json.dumps(list(OPS_READ_COLUMNS))
     query = """
-    query ($boardId: [ID!], $cursor: String) {
+    query ($boardId: [ID!], $groupIds: [String], $cursor: String) {
       boards(ids: $boardId) {
-        items_page(limit: 200, cursor: $cursor) {
-          cursor
-          items {
-            id
-            name
-            group { id title }
-            column_values(ids: %s) { %s }
+        groups(ids: $groupIds) {
+          id
+          items_page(limit: 200, cursor: $cursor) {
+            cursor
+            items {
+              id
+              name
+              group { id title }
+              column_values(ids: %s) { %s }
+            }
           }
         }
       }
@@ -221,16 +237,19 @@ def _fetch_ready_to_invoice_by_walk(mc) -> list[dict]:
     rows: list[dict] = []
     cursor: Optional[str] = None
     while True:
-        data = mc._query(query, {"boardId": [str(OPERATIONS_BOARD_ID)],
-                                 "cursor": cursor})
+        data = mc._query(query, {
+            "boardId": [str(OPERATIONS_BOARD_ID)],
+            "groupIds": [READY_TO_INVOICE_GROUP_ID],
+            "cursor": cursor,
+        })
         board_list = data.get("boards") or []
         if not board_list:
             break
-        page = board_list[0]["items_page"]
+        groups = board_list[0].get("groups") or []
+        if not groups:
+            break
+        page = groups[0].get("items_page") or {}
         for item in page.get("items") or []:
-            group = item.get("group") or {}
-            if group.get("id") != READY_TO_INVOICE_GROUP_ID:
-                continue
             row = _normalize_ops_ready(item)
             if row is not None:
                 rows.append(row)

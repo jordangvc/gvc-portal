@@ -101,6 +101,11 @@ def test_shape_ready_to_invoice_ops_only_uses_search_q():
     assert item["invoice_href"] == "/ui/invoice?q=Ops%20only%20job"
     assert "monday_item_id" not in item["invoice_href"]
     assert "No Projects link" in item["note"]
+    # Dead-end fix: primary CTA recovers the Projects link via Job Check.
+    assert item["primary_href"] == "/ui/jobcheck?item=10"
+    assert item["primary_label"] == "Link Projects"
+    assert item["jobcheck_href"] == "/ui/jobcheck?item=10"
+    assert item["needs_project_link"] is True
 
 
 def test_shape_accepted_bid_needs_handoff():
@@ -529,6 +534,57 @@ def test_billing_hub_payload_survives_partial_failures():
         bf.monday_billing.fetch_ready_to_invoice = orig_ready
         bf.monday_billing.fetch_accepted_bids = orig_bids
         bf.monday_billing.fetch_projects_billing = orig_proj
+
+
+def test_ready_to_invoice_fallback_is_group_scoped_not_full_walk():
+    """Group-filter failure must NOT reintroduce the full Ops board walk."""
+    src = (Path(__file__).resolve().parents[1]
+           / "adapters" / "monday" / "billing.py").read_text()
+    assert "_fetch_ready_to_invoice_by_group" in src
+    assert "_fetch_ready_to_invoice_by_walk" not in src
+    assert "falling back to groups(ids:) page" in src
+    assert "returning empty queue" in src
+    # Prefer groups(ids:) items_page — never items_page without group scope
+    # as the only fallback after filter failure.
+    chunk = src.split("def _fetch_ready_to_invoice_by_group")[1].split(
+        "def _normalize_ops_ready")[0]
+    assert "groups(ids: $groupIds)" in chunk
+    assert "READY_TO_INVOICE_GROUP_ID" in chunk
+
+
+def test_fetch_ready_to_invoice_by_group_pages_only_ready():
+    """Fake client: group-scoped fallback returns Ready rows only."""
+    class _MC:
+        def __init__(self):
+            self.queries = []
+
+        def _query(self, q, v):
+            self.queries.append((q, v))
+            assert v.get("groupIds") == [mb.READY_TO_INVOICE_GROUP_ID]
+            return {
+                "boards": [{
+                    "groups": [{
+                        "id": mb.READY_TO_INVOICE_GROUP_ID,
+                        "items_page": {
+                            "cursor": None,
+                            "items": [{
+                                "id": "55",
+                                "name": "Ready job",
+                                "group": {
+                                    "id": mb.READY_TO_INVOICE_GROUP_ID,
+                                    "title": "Ready to Invoice",
+                                },
+                                "column_values": [],
+                            }],
+                        },
+                    }],
+                }],
+            }
+
+    rows = mb._fetch_ready_to_invoice_by_group(_MC())
+    assert len(rows) == 1
+    assert rows[0]["item_id"] == 55
+    assert rows[0]["name"] == "Ready job"
 
 
 # ----------------------------------------------------------------- runner

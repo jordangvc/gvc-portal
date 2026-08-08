@@ -3354,8 +3354,14 @@ def ui_morning_owner_page(request: Request) -> HTMLResponse:
 @app.get("/ui/api/morning/brief")
 def ui_morning_brief(request: Request) -> dict:
     email = require_feature(request, "morning")
+    # First paint skips Open Drive (2 GraphQL × unique cards). Client calls
+    # /ui/api/morning/gfolders after render — same progressive pattern as hub
+    # attach_gfolder=False. Pass ?gfolder=1 to force sync attach (debug).
+    gfolder_q = (request.query_params.get("gfolder") or "").strip().lower()
+    attach_gfolder = gfolder_q in ("1", "true", "yes")
     try:
-        return morning_flow.build_employee_brief(email)
+        return morning_flow.build_employee_brief(
+            email, attach_gfolder=attach_gfolder)
     except MondayNotConfigured as e:
         raise HTTPException(
             status_code=503,
@@ -3369,6 +3375,39 @@ def ui_morning_brief(request: Request) -> dict:
             detail={"ok": False, "code": "MORNING_BRIEF_FAILED",
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Check Cloud Run logs for [morning] / Monday errors."},
+        )
+
+
+@app.get("/ui/api/morning/gfolders")
+def ui_morning_gfolders(request: Request, item_ids: str = "") -> dict:
+    """Batch Open Drive URLs for Ops item ids (progressive Morning paint)."""
+    require_feature(request, "morning")
+    raw = (item_ids or "").strip()
+    ids: list[int] = []
+    for part in raw.replace(";", ",").split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            ids.append(int(part))
+        except (TypeError, ValueError):
+            continue
+    # Cap — brief cards are rarely >40 unique; avoid runaway GraphQL.
+    ids = ids[:60]
+    try:
+        return morning_flow.gfolder_urls_for_items(ids)
+    except MondayNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e),
+                    "advice": "Set GVC_MONDAY_TOKEN (or MONDAY_API_TOKEN) on the service."},
+        )
+    except Exception as e:  # noqa: BLE001
+        print(f"[ui:morning] gfolders error: {type(e).__name__}: {e}", file=sys.stderr)
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "MORNING_GFOLDERS_FAILED",
+                    "detail": f"{type(e).__name__}: {e}"},
         )
 
 

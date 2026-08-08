@@ -65,15 +65,29 @@ def shape_ready_to_invoice(row: dict) -> dict:
         _clean(row.get("project_status")),
         _clean(row.get("ready_date")) and f"Ready {row.get('ready_date')}",
     ) if s]
+    # Unlinked Ready rows: Job Check owns Link-Projects recovery (same deep
+    # link Morning / hub use). Searching invoice by job name is a dead end —
+    # primary CTA must recover the link, with invoice search as secondary.
+    jobcheck_href = (
+        f"/ui/jobcheck?item={int(ops_item_id)}" if ops_item_id else None
+    )
+    needs_link = not project_number and not monday_for_invoice
     if project_number:
         note = "Project # known — invoice form will look it up."
+        primary_href = href
+        primary_label = "Open invoice"
     elif monday_for_invoice:
         note = "Opens invoice from the linked Projects item."
+        primary_href = href
+        primary_label = "Open invoice"
     else:
         note = (
-            "No Projects link yet — opens invoice search with the job name. "
-            "Link the Ops task to Projects so one-tap invoice works."
+            "No Projects link yet — open Job Check to link this Ops task, "
+            "then one-tap invoice works. Invoice search by job name is still "
+            "available as a fallback."
         )
+        primary_href = jobcheck_href or href
+        primary_label = "Link Projects" if jobcheck_href else "Open invoice"
     return {
         "kind": "ready_to_invoice",
         "name": _clean(row.get("name")) or "(unnamed)",
@@ -93,9 +107,11 @@ def shape_ready_to_invoice(row: dict) -> dict:
         "invoice_href": href,
         "estimate_href": None,
         "jobstart_href": None,
-        "primary_href": href,
-        "primary_label": "Open invoice",
+        "jobcheck_href": jobcheck_href if needs_link else None,
+        "primary_href": primary_href,
+        "primary_label": primary_label,
         "note": note,
+        "needs_project_link": needs_link,
     }
 
 

@@ -198,6 +198,30 @@ def _attach_gfolder_urls(mc, cards: list[dict]) -> None:
             card["gfolder_url"] = cache[iid]
 
 
+def gfolder_urls_for_items(item_ids: list[int]) -> dict[str, Any]:
+    """
+    Resolve Open Drive URLs for Ops item ids (progressive Morning paint).
+
+    Returns {ok, urls: {str(item_id): url|None}}. Soft-fails per item.
+    """
+    cards = [{"item_id": int(i)} for i in item_ids if i]
+    if not cards:
+        return {"ok": True, "urls": {}}
+    mc = MondayClient()
+    try:
+        _attach_gfolder_urls(mc, cards)
+    except Exception as e:  # noqa: BLE001
+        print(f"[morning] gfolder batch skipped: {e}", file=sys.stderr)
+        return {"ok": True, "urls": {}}
+    urls: dict[str, Optional[str]] = {}
+    for card in cards:
+        iid = card.get("item_id")
+        if iid is None:
+            continue
+        urls[str(int(iid))] = card.get("gfolder_url")
+    return {"ok": True, "urls": urls}
+
+
 def build_employee_brief(
     email: str,
     *,

@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Morning progressive GFolder + Billing RTI harden (r83) — BUILT 2026-08-08
+Follow-on to r82. (1) Morning brief first paint defaults `attach_gfolder=False`;
+`web/morning.html` calls `/ui/api/morning/gfolders` after render (Open Drive
+buttons patch in place). (2) Billing Ready-to-Invoice fallback no longer walks
+the full Ops board — `groups(ids:)` page of Ready only, else empty. (3) Unlinked
+Ready rows primary-CTA to `/ui/jobcheck?item=` (Link Projects) instead of dead-
+end invoice search. Hub **r83**.
+
 ## ⚡ Morning Ops active-group fetch (r82) — BUILT 2026-08-08
 Cold Morning/Job Check was walking the entire Operations board (~2.1k items,
 mostly Completed Tasks) then filtering skip-groups in Python (~30s). Now lists
