@@ -1,0 +1,265 @@
+{
+  "id": "changeorder",
+  "slug": "changeorder",
+  "title": "Spotting a Change Order",
+  "short_answer": "The work we don't get paid for is almost never work we did badly. It's work nobody wrote down.",
+  "summary": "The work we don't get paid for is almost never work we did badly. It's work nobody wrote down.",
+  "plain_words": "If somebody asks you to do something that isn't on our drawings, stop. Take a photo, write down who asked and what they asked for, and call the office. Don't do it as a favor — a favor costs GVC real money and gets you no credit for it. You are not being difficult. You are doing your job.",
+  "when_to_use": [
+    "Any time someone asks for work not on our drawings or bid revision",
+    "Verbal adds, standing-by, or another trade's mistake in our way",
+    "Before starting work you are not sure is in scope"
+  ],
+  "prerequisites": [
+    "Know what drawings and revision the job was bid on",
+    "Office contact for same-day escalation"
+  ],
+  "trade_id": "ops",
+  "category_id": "money-scope",
+  "template": "task_guide",
+  "stage_line": "Every job · scope & money",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Phone camera"
+    },
+    {
+      "name": "T&M ticket (same day, signed by GC rep)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Stop",
+      "body": "Don't start the work. Stopping costs an hour; proceeding can cost days.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Photograph it",
+      "body": "The condition, the location, wide enough to know where you are, close enough to see the issue.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Write it down",
+      "body": "Who asked, their exact words, the date and time, the room or grid location, and what it's holding up.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Call the office",
+      "body": "Not a text into a group chat that scrolls away — a call, so someone with authority actually knows today.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Wait for written authorization",
+      "body": "\"Go ahead, we'll take care of it\" is not authorization.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "If directed to proceed anyway",
+      "body": "That call is the office's, not yours — then track it as time and material from the first minute.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Why this page exists",
+      "body": "Everything else in this manual saves money by making the work faster. This one saves money by getting us paid for work we already did. There's no efficiency gain anywhere in this manual as large as the cost of a crew spending two days on something nobody ever billed — and that happens because a good hand wanted to be helpful and didn't know he was supposed to stop. Nobody gets in trouble here for asking. People get in trouble for finding out three weeks later."
+    },
+    {
+      "severity": "stop",
+      "title": "Who can actually authorize extra work",
+      "body": "The GC's superintendent or project manager, or the owner's representative, depending on our contract. Another subcontractor can never authorize our extra work, no matter how confidently they ask — and the electrician who asks you to move a wall six inches is not going to be the one paying for it. If you're not certain the person asking has authority, that's the clearest possible signal to call the office before doing anything."
+    },
+    {
+      "severity": "warn",
+      "title": "Never invent free work",
+      "body": "Do not do out-of-scope work as a favor. Verbal adds performed and never billed are the single largest silent margin loss on most jobs. Report the same day — many subcontracts contain a written-notice deadline measured in days from when the condition was discovered; missing that window can forfeit the claim no matter how legitimate it is."
+    },
+    {
+      "severity": "warn",
+      "title": "Time and material tickets",
+      "body": "Filled out the same day while you remember the hours. Names, hours, and what they did — not \"crew, 8 hours.\" Material actually used, with quantities. Signed by the GC's rep before you leave site — an unsigned ticket found in a truck two weeks later is a negotiation; a signed one is a bill. Photos attached same day. Then it goes to the office and into the Change Order tool — that's how it becomes money instead of a story."
+    }
+  ],
+  "experts": [
+    {
+      "id": "co-five",
+      "tag": "Full detail · how it actually shows up",
+      "summary": "It almost never arrives as someone saying \"here is a change order.\" The five ways: (1) \"While you're in there, can you just…\" — the verbal add; small adds across a whole job are enormous. (2) \"Didn't you get the updated set?\" — a revision we were never issued; check your revision against theirs. (3) \"Can you work around that / fix that for us?\" — another trade's mistake; document before you touch it. (4) \"We'll need you to come back for that area.\" — forced remobilization; two trips is a real cost. (5) \"It's supposed to be like that.\" — existing conditions or substrate that don't match the drawings. The two nobody ever bills: Standing by — crew unable to work because another trade isn't finished, area isn't released, or no power/heat/access; recoverable only if someone wrote down date, hours, crew, and reason on the day. Working out of sequence or stacked with other trades — three trades in one room is slower; almost impossible to claim after the fact. If the crew is standing around, that's not a break — that's a documentation event."
+    }
+  ],
+  "variations": [
+    {
+      "id": "co-test-drawings",
+      "title": "Is it on our drawings?",
+      "when": "The test — question 1 of 3. If any answer is no, stop and call.",
+      "changes": [
+        "Not \"is it reasonable\" or \"is it small\" — is it drawn, scheduled, or specified in the set we bid?"
+      ]
+    },
+    {
+      "id": "co-test-trade",
+      "title": "Is it our trade?",
+      "when": "The test — question 2 of 3.",
+      "changes": [
+        "We do drywall, metal framing, ACT, insulation, paint, demo and patch.",
+        "Somebody handing us a different trade's work is a change, even if we're capable of it."
+      ]
+    },
+    {
+      "id": "co-test-revision",
+      "title": "Is it at the revision we bid?",
+      "when": "The test — question 3 of 3.",
+      "changes": [
+        "A wall that moved on a revised sheet is a change even though the wall was always on the drawings."
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "co-stop",
+      "prompt": "Stopped before starting out-of-scope work",
+      "severity": "required"
+    },
+    {
+      "id": "co-photo",
+      "prompt": "Condition photographed with enough context to locate it",
+      "severity": "required"
+    },
+    {
+      "id": "co-call",
+      "prompt": "Office called same day (not only a scrolling group text)",
+      "severity": "required"
+    },
+    {
+      "id": "co-written",
+      "prompt": "Written authorization received before starting (or T&M from minute one if office directs proceed)",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Our own rework",
+      "wrong": "Claim a wall we built in the wrong place as a change order",
+      "right": "Fix our own layout or hang error at our cost",
+      "why": "Claiming things that aren't changes costs credibility for the real ones"
+    },
+    {
+      "title": "Our own damage",
+      "wrong": "Bill the GC for something we scratched or broke",
+      "right": "Repair our own damage without a CO",
+      "why": "Honest scope boundaries keep real claims approvable"
+    },
+    {
+      "title": "Missed-at-bid scope",
+      "wrong": "Call it a change when it was in the set and we missed it",
+      "right": "Eat it as an estimating lesson",
+      "why": "A change order is for work that genuinely wasn't in what we agreed to do"
+    },
+    {
+      "title": "Normal coordination",
+      "wrong": "CO every back-and-forth with another trade",
+      "right": "Some coordination is just the job",
+      "why": "Over-claiming spends the credibility needed for real extras"
+    },
+    {
+      "title": "Verbal add performed, never billed",
+      "wrong": "\"While you're in there\" work done as a favor",
+      "right": "Stop, document, call — same day",
+      "why": "Single largest silent margin loss on most jobs"
+    },
+    {
+      "title": "Standing-by time never recorded",
+      "wrong": "Crew idle with no daily record of hours and reason",
+      "right": "Document date, hours, crew, and why — on the day",
+      "why": "Paid hours with zero recovery"
+    },
+    {
+      "title": "Unsigned T&M tickets",
+      "wrong": "Ticket found in the truck two weeks later",
+      "right": "GC rep signature before leaving site, photos attached same day",
+      "why": "Turns a bill into a negotiation"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "escalate",
+    "rfi-field",
+    "exclusions-walk",
+    "residential-field",
+    "jobstart-firstday"
+  ],
+  "next_steps": [
+    {
+      "id": "safety-orient",
+      "label": "Safety Orientation",
+      "why": "Next in your first week after scope discipline"
+    },
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Honest documentation habit carries into quality passes"
+    },
+    {
+      "id": "jobstart-firstday",
+      "label": "Job Start first day",
+      "why": "Exclusions and open questions at mobilization prevent free work"
+    },
+    {
+      "id": "closeout-rhythm",
+      "label": "Closeout rhythm",
+      "why": "End-of-day notes catch standing-by and extras before they age out"
+    }
+  ],
+  "search_tags": [
+    "change order",
+    "CO",
+    "extras",
+    "T&M",
+    "verbal add",
+    "standing by",
+    "scope",
+    "extra work",
+    "documentation",
+    "written notice"
+  ],
+  "synonyms": [
+    "CO",
+    "change order",
+    "change-order",
+    "T&M",
+    "t-and-m",
+    "extras",
+    "verbal add",
+    "verbal-add",
+    "standing by",
+    "standing-by",
+    "extra work",
+    "time and material"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice and standard subcontract administration, not a technical standard. What counts as extra work is decided by our contract on each individual job — the scope, the drawings and revisions listed in it, and its notice provisions. Many subcontracts contain a written-notice deadline for claiming extra work, measured in days from when the condition was discovered; missing that window can forfeit the claim no matter how legitimate it is. That's the strongest possible reason to report the same day rather than at the end of the month. Andrea and the office own the contractual side; the field's job is to notice, stop, document, and call.",
+    "sources": [
+      "GVC Field Manual",
+      "Standard subcontract administration",
+      "Job Start exclusions and open questions"
+    ]
+  }
+}

@@ -16,7 +16,8 @@
         "level5-skim",
         "cleanout",
         "qc-walk",
-        "closeout-rhythm"
+        "closeout-rhythm",
+        "touchup-drywall"
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
       "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
@@ -31,6 +32,7 @@
         "job-conditions",
         "window-returns",
         "scaffold-lifts",
+        "changeorder",
         "safety-orient"
       ],
       "search_tags": ["ops", "job start", "logistics", "access", "conditions", "safety"],
@@ -113,11 +115,27 @@
       "order": 5
     },
     {
+      "id": "money-scope",
+      "trade_id": "ops",
+      "title": "Scope & money",
+      "summary": "Spot extra work, document it, and get paid — change orders and T&M.",
+      "procedure_ids": ["changeorder"],
+      "order": 5
+    },
+    {
       "id": "safety-basics",
       "trade_id": "ops",
       "title": "Safety basics",
       "summary": "PPE, access, silica, and hard stops — field orientation every job.",
       "procedure_ids": ["safety-orient"],
+      "order": 6
+    },
+    {
+      "id": "repair-punch",
+      "trade_id": "drywall",
+      "title": "Repair & punch",
+      "summary": "Raking-light walk, drywall finish repair, and primer before paint.",
+      "procedure_ids": ["touchup-drywall"],
       "order": 6
     }
   ],
@@ -186,6 +204,16 @@
     "orientation": "safety-orient",
     "ppe": "safety-orient",
     "silica": "safety-orient",
-    "refuse unsafe": "safety-orient"
+    "refuse unsafe": "safety-orient",
+    "co": "changeorder",
+    "change order": "changeorder",
+    "change-order": "changeorder",
+    "tm": "changeorder",
+    "t-and-m": "changeorder",
+    "extras": "changeorder",
+    "verbal add": "changeorder",
+    "verbal-add": "changeorder",
+    "standing by": "changeorder",
+    "standing-by": "changeorder"
   }
 }
