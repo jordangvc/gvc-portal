@@ -50,6 +50,24 @@ def worksheet_key(ops_item_id: Any) -> str:
     return str(int(ops_item_id))
 
 
+def _gcs_usable() -> bool:
+    """False → memory only (no network). Prevents pytest/CI hangs on GCS.
+
+    Set ``GVC_READY_STAGE_MEMORY=1`` to force. Pytest auto-forces via
+    ``PYTEST_CURRENT_TEST``. Missing bucket/creds also force memory.
+    """
+    if os.environ.get("GVC_READY_STAGE_MEMORY") == "1":
+        return False
+    if os.environ.get("PYTEST_CURRENT_TEST"):
+        return False
+    try:
+        portal_store._bucket_name()
+        portal_store._creds_path()
+        return True
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def worksheet_to_line_items(sheet: dict) -> list[dict]:
     """
     PURE. Costing worksheet → editable invoice line items (human reviews).
@@ -175,6 +193,9 @@ def save_worksheet(ops_item_id: Any, sheet: dict, *,
     stamped["auto_send"] = False
     stamped["status"] = "staged_worksheet"
 
+    if not _gcs_usable():
+        _MEMORY[key] = stamped
+        return stamped
     try:
         from google.api_core.exceptions import PreconditionFailed
 
@@ -202,15 +223,16 @@ def save_worksheet(ops_item_id: Any, sheet: dict, *,
 def get_worksheet(ops_item_id: Any) -> Optional[dict]:
     """Load one staged worksheet. Soft-fail → memory → None."""
     key = worksheet_key(ops_item_id)
-    try:
-        doc, _ = _read()
-        hit = (doc.get("worksheets") or {}).get(key)
-        if hit:
-            _MEMORY[key] = hit
-            return dict(hit)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[ready_stage] GCS read skipped ({type(exc).__name__}: {exc})",
-              flush=True)
+    if _gcs_usable():
+        try:
+            doc, _ = _read()
+            hit = (doc.get("worksheets") or {}).get(key)
+            if hit:
+                _MEMORY[key] = hit
+                return dict(hit)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ready_stage] GCS read skipped ({type(exc).__name__}: {exc})",
+                  flush=True)
     mem = _MEMORY.get(key)
     return dict(mem) if mem else None
 
@@ -222,11 +244,12 @@ def get_summaries(ops_item_ids: list[Any]) -> dict[str, dict]:
         return out
     keys = {worksheet_key(i) for i in ops_item_ids}
     doc_map: dict[str, dict] = {}
-    try:
-        doc, _ = _read()
-        doc_map = dict(doc.get("worksheets") or {})
-    except Exception:  # noqa: BLE001
-        doc_map = {}
+    if _gcs_usable():
+        try:
+            doc, _ = _read()
+            doc_map = dict(doc.get("worksheets") or {})
+        except Exception:  # noqa: BLE001
+            doc_map = {}
     for key in keys:
         sheet = doc_map.get(key) or _MEMORY.get(key)
         if sheet:
@@ -251,24 +274,25 @@ def mark_consumed(ops_item_id: Any, *,
     stamped["status"] = "consumed"
     stamped["consumed_at"] = _now_iso()
     stamped["consumed_by"] = actor
-    try:
-        from google.api_core.exceptions import PreconditionFailed
-
-        doc, gen = _read()
-        worksheets = dict(doc.get("worksheets") or {})
-        worksheets[key] = stamped
+    if _gcs_usable():
         try:
-            _write({"version": DOC_VERSION, "worksheets": worksheets},
-                   if_generation_match=gen)
-        except PreconditionFailed:
+            from google.api_core.exceptions import PreconditionFailed
+
             doc, gen = _read()
             worksheets = dict(doc.get("worksheets") or {})
             worksheets[key] = stamped
-            _write({"version": DOC_VERSION, "worksheets": worksheets},
-                   if_generation_match=gen)
-    except Exception as exc:  # noqa: BLE001
-        print(f"[ready_stage] consume GCS skipped ({type(exc).__name__}: {exc})",
-              flush=True)
+            try:
+                _write({"version": DOC_VERSION, "worksheets": worksheets},
+                       if_generation_match=gen)
+            except PreconditionFailed:
+                doc, gen = _read()
+                worksheets = dict(doc.get("worksheets") or {})
+                worksheets[key] = stamped
+                _write({"version": DOC_VERSION, "worksheets": worksheets},
+                       if_generation_match=gen)
+        except Exception as exc:  # noqa: BLE001
+            print(f"[ready_stage] consume GCS skipped ({type(exc).__name__}: {exc})",
+                  flush=True)
     _MEMORY[key] = stamped
     return stamped
 

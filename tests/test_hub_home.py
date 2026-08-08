@@ -115,6 +115,8 @@ def test_hub_brief_billing_parallel_contract() -> None:
     check("hub enrichment pool", "ThreadPoolExecutor(max_workers=5)" in chunk)
     check("submits morning brief", "pool.submit(_try_morning_brief" in chunk)
     check("submits billing", "pool.submit(_try_billing)" in chunk)
+    try_billing = src.split("def _try_billing")[1].split("def _try_owner_pulse")[0]
+    check("hub billing slim for_hub", "for_hub=True" in try_billing)
     check("submits owner pulse", "pool.submit(_try_owner_pulse" in chunk)
     check("submits gm view", "pool.submit(_try_gm_view" in chunk)
     check("submits jobstart drafts", "pool.submit(_try_jobstart_drafts)" in chunk)

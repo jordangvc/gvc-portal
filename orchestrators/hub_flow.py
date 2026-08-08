@@ -238,7 +238,8 @@ def _try_morning_brief(email: str) -> Optional[dict]:
 def _try_billing() -> Optional[dict]:
     try:
         from orchestrators import billing_flow
-        return billing_flow.billing_hub_payload()
+        # Slim slice: Ready + Accepted only (no Projects board walk / P5 enrich).
+        return billing_flow.billing_hub_payload(for_hub=True)
     except Exception as exc:  # noqa: BLE001
         print(f"[hub] billing skipped: {type(exc).__name__}: {exc}",
               file=sys.stderr)
@@ -540,9 +541,21 @@ def _build_office(email: str, billing: Optional[dict],
         _metric("Accepted bids",
                 counts.get("accepted_bids", "—") if billing else "—",
                 "on the Bid Board"),
-        _metric("Projects billing",
-                counts.get("projects_billing", "—") if billing else "—",
-                "invoice status on Projects"),
+        _metric(
+            "Projects billing",
+            (
+                "—"
+                if (not billing)
+                or counts.get("projects_billing_skipped")
+                or counts.get("projects_billing") is None
+                else counts.get("projects_billing", "—")
+            ),
+            (
+                "open Billing Hub"
+                if billing and counts.get("projects_billing_skipped")
+                else "invoice status on Projects"
+            ),
+        ),
     ]
     if ready_n:
         badges["invoice"] = ready_n

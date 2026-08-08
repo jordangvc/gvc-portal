@@ -549,6 +549,56 @@ def test_billing_hub_payload_survives_partial_failures():
         bf.monday_billing.fetch_projects_billing = orig_proj
 
 
+def test_billing_hub_payload_for_hub_skips_projects():
+    """Personal hub must not walk Projects billing or touch ready_stage."""
+    ready = [{
+        "item_id": 10, "name": "Ready Job", "project_item_id": 20,
+        "project_number": "C-1", "url": "https://monday.example/10",
+        "builder": "X", "ready_date": "2026-08-01",
+    }]
+    bids = [{
+        "item_id": 30, "name": "Won", "url": "https://monday.example/30",
+        "needs_handoff": True, "accepted_date": "2026-08-01",
+    }]
+    calls = {"proj": 0, "stage": 0}
+    orig_ready = bf.monday_billing.fetch_ready_to_invoice
+    orig_bids = bf.monday_billing.fetch_accepted_bids
+    orig_proj = bf.monday_billing.fetch_projects_billing
+    orig_sum = bf.ready_stage.get_summaries
+    bf.monday_billing.fetch_ready_to_invoice = lambda mc: ready
+    bf.monday_billing.fetch_accepted_bids = lambda mc: bids
+    def _proj(mc):
+        calls["proj"] += 1
+        return [{"item_id": 99}]
+    def _sum(ids):
+        calls["stage"] += 1
+        return {}
+    bf.monday_billing.fetch_projects_billing = _proj
+    bf.ready_stage.get_summaries = _sum
+    try:
+        out = bf.billing_hub_payload(mc=_FakeMC(), for_hub=True)
+        assert out["ok"] is True
+        assert out.get("for_hub") is True
+        assert len(out["queues"]["ready_to_invoice"]) == 1
+        assert len(out["queues"]["accepted_bids"]) == 1
+        assert out["queues"]["projects_billing"] == []
+        assert out["counts"].get("projects_billing_skipped") is True
+        assert out["counts"].get("projects_billing") is None
+        assert calls["proj"] == 0
+        assert calls["stage"] == 0
+        # Full path still hits projects + stage
+        out2 = bf.billing_hub_payload(mc=_FakeMC(), for_hub=False)
+        assert calls["proj"] == 1
+        assert calls["stage"] == 1
+        assert out2["counts"]["projects_billing"] == 1
+    finally:
+        bf.monday_billing.fetch_ready_to_invoice = orig_ready
+        bf.monday_billing.fetch_accepted_bids = orig_bids
+        bf.monday_billing.fetch_projects_billing = orig_proj
+        bf.ready_stage.get_summaries = orig_sum
+
+
+
 def test_invoice_page_boots_monday_item_id_deep_link():
     """Billing Hub emits ?monday_item_id= — Invoice must consume it on boot."""
     html = (Path(__file__).resolve().parents[1] / "web" / "invoice.html").read_text()

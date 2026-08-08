@@ -20,6 +20,8 @@ The hub is still the personal home — not a separate marketing landing — but
 3. `GET /ui/api/hub` hydrates Needs / Metrics / Queue (Monday parallel slice).
 4. `GET /ui/api/hub/activity` fills Activity after paint (Cloud Logging).
 5. Hub brief/GM paths skip GFolder attach **and** Open-Meteo weather.
+6. Hub billing uses ``billing_hub_payload(for_hub=True)`` — Ready + Accepted
+   only (no Projects board walk, no P5 worksheet enrich).
 
 ## Shell
 
