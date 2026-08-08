@@ -1,0 +1,217 @@
+{
+  "id": "lead-day",
+  "slug": "lead-day",
+  "title": "Lead Carpenter Day",
+  "short_answer": "What \"owning the room\" means before the first screw: packet, crew brief, stage plan, QC, Job Check, and the stops that protect margin.",
+  "summary": "A lead makes sure the crew does the right work, in the right order, to the right standard, and that Monday and the office know the truth.",
+  "plain_words": "A lead is not the fastest hanger. A lead is the person who makes sure the crew does the right work, in the right order, to the right standard, and that Monday and the office know the truth. Full detail in this manual is written for you — use Plain when you teach.",
+  "when_to_use": [
+    "Every day you are lead on a GVC job",
+    "Opening and closing a production day",
+    "Before advancing Job Check stages or calling a stage done"
+  ],
+  "prerequisites": [
+    "Job Start packet accepted and read",
+    "Morning Brief and huddle complete"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-leadership",
+  "template": "task_guide",
+  "stage_line": "Leadership · lead carpenter",
+  "role_tags": [
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Handoff PDF / Job Start packet"
+    },
+    {
+      "name": "Job Check (stage writes)"
+    },
+    {
+      "name": "Phone camera"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Open the packet",
+      "body": "Open the Job Start / handoff packet — exclusions, open questions, lock box, board count, window/ceiling notes. Do not invent missing facts.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Walk the area",
+      "body": "Walk the area before the crew dumps material. Photo conditions you will be blamed for later.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Crew brief",
+      "body": "Brief the crew in five minutes: today's stage, what \"done\" looks like, what is out of scope, who to call.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Stage the work",
+      "body": "Stock to the work, not the door. Split the crew so hangers are not waiting on layout and finishers are not standing in scrap.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Mid-day QC",
+      "body": "Short walk; catch butt-joint layout sins and dirty boxes before mud.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Job Check",
+      "body": "Update Job Check when a stage is actually done — not when you hope it is done.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "CO / stop events",
+      "body": "Photo, write, call. Standing-by is a documentation event.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "End of day",
+      "body": "Photos to the job Pictures habit, leftover material staged, tomorrow's first hour set, Action Requests cleared.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Never advance Job Check for the GC",
+      "body": "Never advance Job Check to make a GC happy if the stage is not true. Monday truth is the office SoT."
+    },
+    {
+      "severity": "warn",
+      "title": "Open questions from handoff",
+      "body": "If open questions from the handoff are unanswered, that is Ops/Sales work — not a field improvisation contest."
+    }
+  ],
+  "experts": [
+    {
+      "id": "lead-split",
+      "tag": "Full detail · splitting a crew without rework",
+      "summary": "Batch by operation — layout first, then batch — scales to the whole day. One person chasing punch while three hang the next floor is fine; three people each \"finishing their own room\" to different standards is how touch-up explodes. Teach with Plain mode; decide with Full detail. Never advance Job Check to make a GC happy if the stage is not true. If open questions from the handoff are unanswered, that is Ops/Sales work — not a field improvisation contest."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "ld-packet",
+      "prompt": "Handoff packet opened; exclusions and open questions reviewed",
+      "severity": "required"
+    },
+    {
+      "id": "ld-brief",
+      "prompt": "Five-minute crew brief: stage, done, out-of-scope, who to call",
+      "severity": "required"
+    },
+    {
+      "id": "ld-qc",
+      "prompt": "Mid-day QC walk before mud closes layout sins",
+      "severity": "required"
+    },
+    {
+      "id": "ld-jobcheck",
+      "prompt": "Job Check updated only when stage is actually true",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Fastest hanger ≠ lead",
+      "wrong": "Outproduce the crew without briefing or QC",
+      "right": "Own order, standard, and Monday truth",
+      "why": "Touch-up and callbacks eat margin"
+    },
+    {
+      "title": "Hope-based Job Check",
+      "wrong": "Flip Hanging to done before scrape is ready",
+      "right": "Save when the stage is actually complete",
+      "why": "Office plans from false status"
+    },
+    {
+      "title": "Field invention on open questions",
+      "wrong": "Build through an unanswered handoff blocker",
+      "right": "Send back to Ops/Sales until answered",
+      "why": "Free work and CO fights"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "morning-rhythm",
+    "jobstart-firstday",
+    "portal-field-tools",
+    "changeorder",
+    "qc-walk",
+    "escalate",
+    "closeout-rhythm"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "morning-rhythm",
+      "label": "Morning Prep & Huddle",
+      "why": "Opens the day before you own the room"
+    },
+    {
+      "procedure_id": "jobstart-firstday",
+      "label": "Job Start → First Day",
+      "why": "Packet truth before production"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk Before Done",
+      "why": "Honest pass before stages advance"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "CO discipline and standing-by documentation"
+    },
+    {
+      "procedure_id": "closeout-rhythm",
+      "label": "End-of-day closeout",
+      "why": "Close the loop every night"
+    }
+  ],
+  "search_tags": [
+    "lead carpenter",
+    "lead day",
+    "crew brief",
+    "job check",
+    "own the room",
+    "end of day",
+    "field leadership"
+  ],
+  "synonyms": [
+    "lead day",
+    "lead-day",
+    "lead carpenter day",
+    "owning the room",
+    "lead carpenter",
+    "crew lead day"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice. Ties Job Start handoff, Job Check, Morning Brief, and the Change Order page into one daily ownership loop.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start build spec",
+      "Job Check build spec"
+    ]
+  }
+}

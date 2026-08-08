@@ -1,0 +1,198 @@
+{
+  "id": "skill-ladder",
+  "slug": "skill-ladder",
+  "title": "Skill Ladder",
+  "short_answer": "Observable skills tied to this manual and Job Check — not hours alone, not invented certifications.",
+  "summary": "Move up when a lead can see you do the work to standard: stocking without wrecking board, hang without forced sheets, coats that match Job Check, and the judgment to stop for COs and rated walls.",
+  "plain_words": "Move up when a lead can see you do the work to standard: stocking without wrecking board, hang without forced sheets, coats that match Job Check, and the judgment to stop for COs and rated walls. Titles vary; the skills below are what we will stand behind.",
+  "when_to_use": [
+    "Training conversations between lead and crew",
+    "Deciding readiness for independent trade work",
+    "Pairing with first-week onboarding paths"
+  ],
+  "prerequisites": [
+    "Your First Week checklist in progress or complete",
+    "Lead available for QC sign-off walks"
+  ],
+  "trade_id": "ops",
+  "category_id": "onboarding",
+  "template": "reference",
+  "stage_line": "Training · progression",
+  "role_tags": [
+    "crew",
+    "laborer",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Field Manual checklist runs (shared per job)"
+    },
+    {
+      "name": "Job Check (stage SoT — not training checklists)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Checklist runs",
+      "body": "Use Field Manual checklist runs on a real job — shared with the crew.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Lead QC walk",
+      "body": "Lead walks QC with you before calling a stage done.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Training vs Job Check",
+      "body": "No Monday writeback from training checklists — Job Check stays the stage SoT.",
+      "checklist": true
+    }
+  ],
+  "warnings": [],
+  "experts": [],
+  "variations": [
+    {
+      "id": "level-helper",
+      "title": "Helper",
+      "when": "Entry level",
+      "changes": [
+        "You can show: safe stocking, scrape assist, clean-out, stop when unsure",
+        "Manual path: Stocking Any Material + Safety Orientation + Don't Do This"
+      ]
+    },
+    {
+      "id": "level-trade-hand",
+      "title": "Trade hand",
+      "when": "Independent on one lane",
+      "changes": [
+        "You can show: independent hang OR finish coats OR ACT layout to QC standard",
+        "Manual path: Hanging OR Finishing OR Acoustical Ceilings (one lane)"
+      ]
+    },
+    {
+      "id": "level-multi-trade",
+      "title": "Multi-trade",
+      "when": "Two lanes plus honesty",
+      "changes": [
+        "You can show: two of the above + pre-board walk + honest Job Check updates",
+        "Manual path: Pre-Board Walk + Portal Tools + QC Walk"
+      ]
+    },
+    {
+      "id": "level-lead",
+      "title": "Lead",
+      "when": "Owning the room",
+      "changes": [
+        "You can show: crew brief, CO discipline, rated stop authority, end-of-day close",
+        "Manual path: Lead Day + Escalation Ladder + Change Order"
+      ]
+    },
+    {
+      "id": "level-ops-lead",
+      "title": "Ops lead",
+      "when": "Multi-job prep truth",
+      "changes": [
+        "You can show: multi-job prep truth, pull criteria, private brief discipline",
+        "Manual path: Morning Prep & Huddle + Escalation + Portal Tools"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "sl-observable",
+      "prompt": "Promotion based on observable work to standard — not hours alone",
+      "severity": "required"
+    },
+    {
+      "id": "sl-qc",
+      "prompt": "Lead QC walk before stage sign-off",
+      "severity": "required"
+    },
+    {
+      "id": "sl-no-monday-training",
+      "prompt": "Training checklists do not write Job Check stages",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Hours without standard",
+      "wrong": "Promote because someone has been on site six months",
+      "right": "Lead can see the skill at QC standard",
+      "why": "Callbacks and false Job Check status"
+    },
+    {
+      "title": "Training checklist → Monday",
+      "wrong": "Use practice checklist to flip Job Check",
+      "right": "Job Check only when production stage is true",
+      "why": "Two writers on the same column"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "onboard-week1",
+    "lead-day",
+    "qc-walk",
+    "escalate",
+    "safety-orient",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "onboard-week1",
+      "label": "Your First Week",
+      "why": "Start here for day-one through day-five path"
+    },
+    {
+      "procedure_id": "lead-day",
+      "label": "Lead Carpenter Day",
+      "why": "Lead level ownership loop"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Observable standard for every level"
+    },
+    {
+      "procedure_id": "escalate",
+      "label": "Escalation Ladder",
+      "why": "Who can authorize stops and extras"
+    }
+  ],
+  "search_tags": [
+    "skill ladder",
+    "training",
+    "progression",
+    "helper",
+    "trade hand",
+    "lead",
+    "observable skills",
+    "job check stages"
+  ],
+  "synonyms": [
+    "skill ladder",
+    "skill-ladder",
+    "training ladder",
+    "progression",
+    "helper to lead",
+    "observable skills"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC training design wrapping existing procedures and Job Check stages. Not an apprenticeship accreditation and not tied to published production rates (Sources & Method — we deliberately publish none).",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check stage columns"
+    ]
+  }
+}

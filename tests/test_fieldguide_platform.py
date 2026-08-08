@@ -349,7 +349,8 @@ def test_shell_catalog_nav_wiring() -> None:
     check("catalog ungrouped empty",
           load_catalog()["manifest"].get("ungrouped") == [])
     for pid in ("escalate", "inspection-hold", "punch-cadence",
-                "rfi-field", "exclusions-walk", "tectum"):
+                "rfi-field", "exclusions-walk", "tectum",
+                "onboard-week1", "frp", "doors", "patch"):
         check(f"{pid} catalog", get_procedure(pid) is not None)
 
 def main() -> None:

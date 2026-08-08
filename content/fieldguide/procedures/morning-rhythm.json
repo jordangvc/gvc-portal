@@ -1,0 +1,186 @@
+{
+  "id": "morning-rhythm",
+  "slug": "morning-rhythm",
+  "title": "Morning Prep & Huddle",
+  "short_answer": "How the day starts: private brief → prep readiness → huddle → field. The expensive mistakes happen before the first screw when nobody read the packet.",
+  "summary": "Know where you are going, what is ready, and what is blocked before the trucks roll. Morning Brief is for you and your lead — not a public Slack announcement.",
+  "plain_words": "Know where you are going, what is ready, and what is blocked before the trucks roll. Your Morning Brief is for you and your lead — it is not a public Slack announcement. If prep is red, fix prep or change the plan; do not invent a third job on the way.",
+  "when_to_use": [
+    "Every production morning before trucks roll",
+    "When prep, access, or heat looks wrong on the brief",
+    "Lead and ops lead huddle before splitting the crew"
+  ],
+  "prerequisites": [
+    "Morning Brief available on portal (private — never #operations)",
+    "Job Start packet read for today's jobs"
+  ],
+  "trade_id": "ops",
+  "category_id": "onboarding",
+  "template": "task_guide",
+  "stage_line": "How we run the day · rhythm",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman",
+    "ops"
+  ],
+  "tools": [
+    {
+      "name": "Morning Brief on phone (portal)"
+    },
+    {
+      "name": "Job Start / handoff packet for today's jobs"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Read the Morning Brief",
+      "body": "Read the Morning Brief on your phone (portal). Note job, address, access, and any Action Requests.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Check prep",
+      "body": "Material on site or loaded? Scaffold/lift as noted? Heat/cans if finishing? Lock box code current?",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Huddle",
+      "body": "Huddle with the lead / GM — who goes where, what \"done\" means today, what is out of scope.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Action Requests",
+      "body": "Ack Action Requests in the window you were given. Silence is not a plan.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Unscheduled work last",
+      "body": "Unscheduled work goes last unless the ops lead rearranges for a hard stop (inspection, owner walk).",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Why this page exists",
+      "body": "Rework from \"we went to the wrong building\" or \"heat was never on for mud\" costs more than a five-minute brief. Standing-by because prep was fake is a documentation event — see Spotting a Change Order — but the better move is not to create it."
+    },
+    {
+      "severity": "stop",
+      "title": "Never #operations",
+      "body": "Field brief, huddle summary, route sheet, and prep status are always a side chat or DM. Do not post them to Slack #operations — not for review, not temporarily."
+    }
+  ],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "mr-brief",
+      "prompt": "Morning Brief read before mobilizing",
+      "severity": "required"
+    },
+    {
+      "id": "mr-prep",
+      "prompt": "Prep verified: material, access, heat/cans, lock box",
+      "severity": "required"
+    },
+    {
+      "id": "mr-huddle",
+      "prompt": "Lead huddle defines done and out-of-scope for the day",
+      "severity": "required"
+    },
+    {
+      "id": "mr-actions",
+      "prompt": "Action Requests acknowledged in the given window",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Driving without reading the brief",
+      "wrong": "Show up at yesterday's address or wrong building",
+      "right": "Read Morning Brief before wheels roll",
+      "why": "Wrong-building rework is pure waste"
+    },
+    {
+      "title": "Posting brief to #operations",
+      "wrong": "Broadcast huddle or route content to the ops channel",
+      "right": "Side chat or DM only — locked GVC rule",
+      "why": "Channel noise and policy violation"
+    },
+    {
+      "title": "Fake prep",
+      "wrong": "Start finish coats when heat was never on",
+      "right": "Fix prep or change the plan before production",
+      "why": "Standing-by and remobilization cost margin"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "portal-field-tools",
+    "jobstart-firstday",
+    "changeorder",
+    "lead-day",
+    "closeout-rhythm"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "lead-day",
+      "label": "Lead Carpenter Day",
+      "why": "Own the room after the brief"
+    },
+    {
+      "procedure_id": "job-conditions",
+      "label": "Cold & wet conditions",
+      "why": "Heat and ventilate before coats when prep was red"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Standing-by and fake prep are documentation events"
+    },
+    {
+      "procedure_id": "closeout-rhythm",
+      "label": "End-of-day closeout",
+      "why": "Morning opens the day; closeout closes the loop"
+    }
+  ],
+  "search_tags": [
+    "morning brief",
+    "huddle",
+    "morning prep",
+    "action requests",
+    "prep readiness",
+    "route",
+    "start of day"
+  ],
+  "synonyms": [
+    "morning rhythm",
+    "morning-rhythm",
+    "morning prep",
+    "morning huddle",
+    "huddle",
+    "daily brief",
+    "start of day"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC ops practice + Morning Brief build spec. Reminder: never post brief/huddle/route/prep content to Slack #operations.",
+    "sources": [
+      "GVC Field Manual",
+      "docs/MORNING_BRIEF_BUILD_SPEC.md",
+      "AGENTS.md locked rule #0"
+    ]
+  }
+}

@@ -1,0 +1,265 @@
+{
+  "id": "frp",
+  "slug": "frp",
+  "title": "FRP Panels",
+  "short_answer": "A plastic panel glued to a wall — punishes two mistakes: a substrate that is not flat, and not leaving room for the panel to move.",
+  "summary": "FRP is a tough plastic sheet glued flat to the wall with trim at joints. The wall behind it must be genuinely flat, and you must leave expansion gaps or panels buckle.",
+  "plain_words": "FRP is a tough plastic sheet, glued flat to the wall, with plastic trim covering the joints. It goes in kitchens, restrooms and anywhere that gets hosed down. Two things decide whether it looks right: the wall behind it has to be genuinely flat, and you have to leave gaps at the edges, because the panels grow and shrink. Butt them tight and they buckle.",
+  "when_to_use": [
+    "Kitchen, restroom, and washdown FRP panel installs per submittal",
+    "After substrate is verified flat and adhesive-rated",
+    "Before pricing — confirm GVC scope inclusions first"
+  ],
+  "prerequisites": [
+    "Manufacturer installation guide for the specified FRP line",
+    "Substrate flatness verified (furring over CMU when needed)",
+    "Scope confirmed: furnish vs install-only, substrate prep, sealant ownership"
+  ],
+  "trade_id": "ops",
+  "category_id": "trade-stubs",
+  "template": "task_guide",
+  "stage_line": "Wall panels · FRP",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Notched trowel per adhesive manufacturer"
+    },
+    {
+      "name": "Laminate roller"
+    },
+    {
+      "name": "Fine-tooth blade (face-up cuts)"
+    },
+    {
+      "name": "String line or straightedge"
+    }
+  ],
+  "materials": [
+    {
+      "name": "FRP panels and trim (per submittal)"
+    },
+    {
+      "name": "Adhesive rated for substrate and panel"
+    },
+    {
+      "name": "Silicone sealant for molding channels"
+    },
+    {
+      "name": "Furring and substrate over CMU when required"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Acclimate",
+      "body": "Acclimate panels in the space they will be installed, flat, per manufacturer's stated period.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "String the wall",
+      "body": "String or straightedge the wall. Level high and low spots first — this is the step that gets skipped.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Substrate ready",
+      "body": "Confirm substrate is adhesive-rated, clean, dry, and free of dust and debris that would break the bond.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Layout",
+      "body": "Plan layout so joints land sensibly and you do not finish on a sliver.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Dry-fit",
+      "body": "Dry-fit and mark every penetration — fixtures, outlets, plumbing — before adhesive is on anything.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Adhesive coverage",
+      "body": "100% coverage on panel back in cross-hatch with specified trowel. Roll from center outward with laminate roller.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Expansion gaps",
+      "body": "Typical 4×8 panel: minimum 1/4\" gap top and bottom, 1/8\" between panels, clearance at penetrations and molding stem — confirm manufacturer instructions.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Moldings and silicone",
+      "body": "Silicone in every molding channel; in washdown areas, silicone moldings to floor and ceiling as well.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Done checks",
+      "body": "No bubbles (sound the face), gaps present, silicone continuous, moldings straight, faces clean, film removed.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Uneven substrate",
+      "body": "On CMU or brick, furring with suitable substrate — not FRP straight onto masonry. A wavy wall reads as a wavy glossy wall."
+    },
+    {
+      "severity": "stop",
+      "title": "No expansion allowance",
+      "body": "FRP moves with temperature and humidity. Panels installed tight buckle outward — gaps are not optional."
+    },
+    {
+      "severity": "note",
+      "title": "Scope question for GVC",
+      "body": "FRP is title-only in the portal estimate scope catalog. Before pricing, confirm: furnish panels and trim or install owner-furnished material; who prepares substrate; who owns sealant work. Those three answers change the number substantially."
+    }
+  ],
+  "experts": [
+    {
+      "id": "frp-install",
+      "tag": "Full detail · adhesive, gaps, moldings",
+      "summary": "Adhesive: 100% cross-hatch coverage, laminate roll from center out, respect open time. Expansion: typical 1/4\" top/bottom and 1/8\" between panels on 4×8 — manufacturer governs. Moldings: silicone in channel for moisture resistance; 1/8\" between panel edge and molding stem. Cutting: fine-tooth blade face-up; support fully; penetrations slightly generous. Incomplete adhesive contact causes permanent bubbles."
+    }
+  ],
+  "variations": [
+    {
+      "id": "frp-cmu",
+      "title": "CMU / masonry substrate",
+      "when": "Block or brick walls",
+      "changes": [
+        "Furring strips with suitable substrate over masonry",
+        "Never glue FRP directly to uneven CMU"
+      ]
+    },
+    {
+      "id": "frp-washdown",
+      "title": "Washdown areas",
+      "when": "Kitchens, restrooms, hose-down rooms",
+      "changes": [
+        "Silicone in every molding channel",
+        "Silicone moldings to floor and ceiling",
+        "Water behind panel cannot be inspected later"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "frp-flat",
+      "prompt": "Substrate stringed and leveled before adhesive",
+      "severity": "required"
+    },
+    {
+      "id": "frp-bond",
+      "prompt": "Full adhesive contact — no hollow spots when sounded",
+      "severity": "required"
+    },
+    {
+      "id": "frp-gaps",
+      "prompt": "Expansion gaps at top, bottom, between panels, and penetrations",
+      "severity": "required"
+    },
+    {
+      "id": "frp-seal",
+      "prompt": "Silicone continuous in molding channels (washdown: floor/ceiling too)",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Skip flatness prep",
+      "wrong": "Glue FRP over wavy CMU or high spots",
+      "right": "Fur, substrate, string and shim first",
+      "why": "Gloss telegraphs every bump"
+    },
+    {
+      "title": "Butt panels tight",
+      "wrong": "No gap at joints or perimeter",
+      "right": "Manufacturer expansion gaps at every edge",
+      "why": "Thermal buckle is permanent"
+    },
+    {
+      "title": "Starved adhesive",
+      "wrong": "Spot glue or incomplete trowel coverage",
+      "right": "100% cross-hatch and laminate roll",
+      "why": "Bubbles cannot be fixed — panel comes off"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-frp-bubble",
+      "symptom": "Hollow spot or bubble in panel face",
+      "likely_cause": "Incomplete adhesive contact",
+      "fix": "Remove and replace panel — bubbles are not repairable in place"
+    },
+    {
+      "id": "ts-frp-buckle",
+      "symptom": "Panel bowed off wall at joint",
+      "likely_cause": "Insufficient expansion gap",
+      "fix": "Remove affected panels; reinstall with correct gaps per manufacturer"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "framing",
+    "changeorder",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "Furring and flat substrate prep often starts here"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Scope gaps on title-only catalog trades"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Sound panels and verify gaps before handoff"
+    }
+  ],
+  "search_tags": [
+    "frp",
+    "fiber reinforced plastic",
+    "wall panels",
+    "kitchen panels",
+    "restroom panels",
+    "expansion gap",
+    "laminate roller",
+    "washdown"
+  ],
+  "synonyms": [
+    "frp",
+    "frp panels",
+    "fiber reinforced plastic",
+    "frp wall panels",
+    "glasliner",
+    "plastic wall panels"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Substrate flatness, 100% cross-hatch adhesive, laminate rolling, silicone in molding channels, and typical 1/4\" / 1/8\" expansion gaps for 4×8 panels come from published FRP manufacturer guides (Crane Composites, Glasliner, Marlite and similar). Product-specific numbers govern. Scope question for GVC: FRP is title-only in the estimate scope catalog — confirm furnish vs install-only, substrate prep ownership, and sealant work before pricing.",
+    "sources": [
+      "FRP manufacturer installation guides",
+      "GVC Field Manual",
+      "Portal estimate scope catalog (stub)"
+    ]
+  }
+}
