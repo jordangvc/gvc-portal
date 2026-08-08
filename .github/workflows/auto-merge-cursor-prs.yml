@@ -1,25 +1,32 @@
 name: Auto-merge cursor PRs
 
 # Cloud-agent branches (`cursor/*`) land on master without Jordan clicking Merge.
-# After merge, deploy-cloud-run.yml already deploys on master push.
+# After merge, deploy-cloud-run.yml is dispatched explicitly (GITHUB_TOKEN merges
+# do not fire push-triggered workflows).
 #
 # Gates:
-#   - PR targets master, not draft
+#   - PR targets master
 #   - head branch starts with cursor/
 #   - no hold / do-not-merge labels
 #   - compileall + pytest pass (same bar as deploy)
 #
-# Hold a PR: add label `hold` or `do-not-merge`, or keep it as draft.
+# Drafts are OK — Cursor agents often open draft by default. After the gate
+# passes we mark ready, then squash-merge. Pause = label `hold` or `do-not-merge`
+# (draft alone no longer pauses).
 #
 # One-time repo setup: docs/ops/auto-merge-setup.md
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened, ready_for_review]
+    types: [opened, synchronize, reopened, ready_for_review, unlabeled]
     branches: [master]
+  # Wake drafts that never got ready_for_review (agents that left draft forever).
+  schedule:
+    - cron: "*/20 * * * *"
+  workflow_dispatch:
 
 concurrency:
-  group: auto-merge-pr-${{ github.event.pull_request.number }}
+  group: auto-merge-pr-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 permissions:
@@ -28,9 +35,37 @@ permissions:
   actions: write
 
 jobs:
+  # Schedule / manual: mark eligible drafts ready → fires ready_for_review → gate+merge.
+  wake-drafts:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Mark eligible cursor drafts ready
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          count=0
+          while IFS=$'\t' read -r num; do
+            [[ -z "${num:-}" ]] && continue
+            echo "Marking #$num ready (will trigger gate + merge)."
+            gh pr ready "$num" --repo "$GITHUB_REPOSITORY"
+            count=$((count + 1))
+          done < <(gh pr list --repo "$GITHUB_REPOSITORY" --base master --state open \
+            --json number,isDraft,headRefName,labels,mergeable,mergeStateStatus \
+            --jq '.[]
+              | select(.isDraft == true)
+              | select(.headRefName | startswith("cursor/"))
+              | select((.labels | map(.name) | index("hold") | not)
+                       and (.labels | map(.name) | index("do-not-merge") | not))
+              | select(.mergeable == "MERGEABLE")
+              | select(.mergeStateStatus != "DIRTY")
+              | .number')
+          echo "Woke $count draft PR(s) (skipped hold/conflict)."
+
   gate:
     if: >
-      github.event.pull_request.draft == false &&
+      github.event_name == 'pull_request' &&
       startsWith(github.head_ref, 'cursor/') &&
       !contains(github.event.pull_request.labels.*.name, 'hold') &&
       !contains(github.event.pull_request.labels.*.name, 'do-not-merge')
@@ -70,12 +105,17 @@ jobs:
     needs: gate
     runs-on: ubuntu-latest
     steps:
-      - name: Squash-merge into master
+      - name: Mark ready + squash-merge into master
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           PR: ${{ github.event.pull_request.number }}
+          IS_DRAFT: ${{ github.event.pull_request.draft }}
         run: |
           set -euo pipefail
+          if [[ "$IS_DRAFT" == "true" ]]; then
+            echo "Marking draft PR #$PR ready for review (Cursor default is draft)."
+            gh pr ready "$PR" --repo "$GITHUB_REPOSITORY"
+          fi
           # Wait briefly if GitHub still computing mergeability after the last push.
           for i in 1 2 3 4 5 6; do
             state=$(gh pr view "$PR" --repo "$GITHUB_REPOSITORY" --json mergeable,mergeStateStatus \
@@ -88,6 +128,10 @@ jobs:
               MERGEABLE:BLOCKED)
                 # No required reviewers/checks on this repo today; still try merge.
                 break
+                ;;
+              CONFLICTING:*|*:DIRTY)
+                echo "::error::PR #$PR has merge conflicts — rebase onto master; auto-merge cannot land it."
+                exit 1
                 ;;
               *)
                 sleep 5
