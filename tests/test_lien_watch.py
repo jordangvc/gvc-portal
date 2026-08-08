@@ -306,6 +306,38 @@ def test_alerts_enabled_but_no_channel_is_a_loud_noop():
             os.environ["GVC_LIEN_SLACK_CHANNEL"] = saved_chan
 
 
+def test_lien_alerts_task_route_registered_and_dark():
+    """API-key task route exists; still dark without the Jordan flag."""
+    from fastapi.testclient import TestClient
+    import app.service as svc
+
+    paths = {getattr(r, "path", None) for r in svc.app.routes}
+    assert "/v1/tasks/lien-alerts" in paths
+
+    saved_flag = os.environ.pop("GVC_LIEN_ALERTS_ENABLED", None)
+    saved_api_key = svc.API_KEY
+    svc.API_KEY = "test-lien-alerts-key"
+    try:
+        client = TestClient(svc.app)
+        denied = client.post("/v1/tasks/lien-alerts", json={"dry_run": True})
+        assert denied.status_code == 401
+        ok = client.post(
+            "/v1/tasks/lien-alerts",
+            json={"dry_run": True},
+            headers={"X-API-Key": "test-lien-alerts-key"},
+        )
+        assert ok.status_code == 200
+        body = ok.json()
+        assert body.get("enabled") is False
+        assert body.get("sent") == []
+    finally:
+        svc.API_KEY = saved_api_key
+        if saved_flag is None:
+            os.environ.pop("GVC_LIEN_ALERTS_ENABLED", None)
+        else:
+            os.environ["GVC_LIEN_ALERTS_ENABLED"] = saved_flag
+
+
 def test_alert_key_and_prune():
     from subsystems.lien_watch import alert_state as st
     from datetime import datetime, timezone, timedelta

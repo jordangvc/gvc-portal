@@ -17,10 +17,10 @@ First-furnishing sourcing (investigated live 2026-07-26):
 
 ALERTS ARE BUILT DARK (design amendment, Jordan 2026-07-26 — LAW):
 send_lien_alerts() exists, is tested, and does nothing unless the env var
-GVC_LIEN_ALERTS_ENABLED is exactly "true". There is deliberately NO
-scheduler, NO cron, NO route, and NO wiring into any existing loop calling
-it. ONLY JORDAN enables that flag, and only once the team is ready to
-absorb the pings.
+GVC_LIEN_ALERTS_ENABLED is exactly "true". POST /v1/tasks/lien-alerts is
+wired for Cloud Scheduler but stays inert until that flag flips — do NOT
+create the scheduler job until Jordan enables it. ONLY JORDAN enables that
+flag, and only once the team is ready to absorb the pings.
 
 Dedup (sent-markers) lives in subsystems/lien_watch/alert_state.py so a
 scheduled sweep can run more than once per day without re-pinging the same

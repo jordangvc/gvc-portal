@@ -734,6 +734,30 @@ def tasks_check_sent(
     return check_sent(limit_days=req.limit_days, dry_run=req.dry_run)
 
 
+class LienAlertsRequest(BaseModel):
+    dry_run: bool = Field(
+        False,
+        description="Build the work list only — no Slack posts, no sent-marker writes",
+    )
+
+
+@app.post("/v1/tasks/lien-alerts")
+def tasks_lien_alerts(
+    req: LienAlertsRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """
+    Lien Watch T-14/7/3/1 Slack sweep. BUILT DARK — returns enabled=false
+    unless GVC_LIEN_ALERTS_ENABLED is exactly "true" (Jordan-only flip).
+    Dedup via portal/lien-alert-sent.json so Scheduler retries are safe.
+    Channel ONLY from GVC_LIEN_SLACK_CHANNEL (no named fallback).
+
+    X-API-Key protected like check-sent. Wire Cloud Scheduler only AFTER
+    Jordan enables the flag and the channel is set.
+    """
+    require_api_key(x_api_key)
+    return lien_flow.send_lien_alerts(dry_run=req.dry_run)
+
 
 class PollTakeoffOutboxRequest(BaseModel):
     dry_run: bool = Field(False, description="Read and report only — no draft-store or RTDB writes")
@@ -3178,8 +3202,9 @@ async def ui_coi_template_upload(
 # page pattern. READ-ONLY against Monday: the status page lists every active
 # job's notice/lien/retainage deadlines from shared/lien_rules.json. Slack
 # alerts are BUILT DARK in orchestrators/lien_flow.py behind
-# GVC_LIEN_ALERTS_ENABLED (only Jordan enables it) — deliberately NO route,
-# NO scheduler, NO wiring here.
+# GVC_LIEN_ALERTS_ENABLED (only Jordan enables it). The X-API-Key task route
+# POST /v1/tasks/lien-alerts exists for Scheduler, but stays inert until the
+# flag flips — do NOT wire the job until Jordan says so.
 # ---------------------------------------------------------------------------
 
 @app.get("/ui/lien", response_class=HTMLResponse)
