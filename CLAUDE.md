@@ -11,6 +11,10 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE RATED WALLS CATALOG (r86) — BUILT 2026-08-08
+Catalog gains **ratedwalls** (fire walls / shaftwall) under firestop
+`rated-assemblies`, beside firestop. Hub **r86**.
+
 ## ✨ FIELD GUIDE TOUCH-UP PAIR (r85) — BUILT 2026-08-08
 Catalog gains **touchup-paint** (flashing / sheen / recoat the plane) beside
 already-shipped **touchup-drywall** under drywall `repair-punch`. Hub **r85**.

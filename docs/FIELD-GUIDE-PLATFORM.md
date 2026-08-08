@@ -27,6 +27,7 @@ looks like, what changes on site, and what to open next.
 (Lock Box, Heater/Cans, Window type, Scaffolding, Open questions anchors);
 **ACT ceilings** — `act` (grid layout, hanger wire, tile);
 **Firestopping** — `firestop` (UL HW-D decode, annular space, dynamic joints);
+**Rated walls** — `ratedwalls` (shaftwall / fire walls);
 **Safety orientation** — `safety-orient` (ops safety-basics);
 **Change orders** — `changeorder` (ops money-scope);
 **Touch-up** — `touchup-drywall` + `touchup-paint` (repair-punch).
@@ -136,11 +137,11 @@ Shallow: home → procedure → next procedure. No orphan pages: `next_steps` + 
 
 ## 11. Next highest-leverage steps
 
-1. Migrate high-traffic repair pages (rated walls, touch-up, insulation)
+1. Migrate high-traffic repair pages (insulation, painting, demo)
 2. Diagram assets under `content/fieldguide/diagrams/` with caption contract
 3. Stale-content job: flag `last_reviewed` older than `review_cycle_days`
 
-**Done (r71–r85):** Job Check spine + gates + Ops logistics + ACT + firestop + safety-orient +
+**Done (r71–r86):** Job Check spine + gates + Ops logistics + ACT + firestop + safety-orient +
 changeorder + touch-up pair in catalog; offline-baked `.nextpath`; shell sync inject from
 catalog cards; bake script; alias map; next_steps link audit.
 
