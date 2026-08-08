@@ -290,6 +290,7 @@ let detail = null;      // current bid detail payload
 let values = {};        // field_key -> raw UI value
 let jobName = "";
 let saveTimer = null;   // autosave debounce
+let touchedKeys = new Set(); // fields the user edited since open (Drive hydrate must not clobber)
 let savingNow = false;
 
 function showStatus(kind, html) {
@@ -495,7 +496,7 @@ function wireField(f) {
       onChange: (v) => {
         values[f.key] = v === "" ? "" : v;
         root.classList.toggle("missing", f.required && !String(v ?? "").trim());
-        onEdit();
+        onEdit(f.key);
       },
     });
     chipset.setAttribute("aria-label", f.label || f.key);
@@ -505,7 +506,7 @@ function wireField(f) {
     input.addEventListener("input", () => {
       values[f.key] = input.value;
       root.classList.toggle("missing", f.required && !input.value.trim());
-      onEdit();
+      onEdit(f.key);
     });
   }
 }
@@ -682,9 +683,10 @@ function renderState() {
 
 /* ---------- autosave (the reason a hard gate is survivable in the field) ---------- */
 
-function onEdit() {
+function onEdit(key) {
   // A packet with ops, or already accepted, is a record — never autosave over it.
   if (detail && !detail.editable) { refreshGate(); return; }
+  if (key) touchedKeys.add(key);
   refreshGate();
   $("#savestate").textContent = "Saving…";
   clearTimeout(saveTimer);
@@ -723,8 +725,10 @@ async function loadBid(itemId, opts) {
   const keepStatus = !!(opts && opts.keepStatus);
   if (!keepStatus) hideStatus();
   if (!keepStatus) $("#bidlist").innerHTML = `<div class="hint">Loading bid…</div>`;
+  touchedKeys = new Set();
   try {
-    const r = await fetch(`/ui/api/jobstart/bid/${itemId}`);
+    // First paint: Monday + draft only (skip Drive scope/estimate walks).
+    const r = await fetch(`/ui/api/jobstart/bid/${itemId}?lite=1`);
     const body = await r.json();
     if (!r.ok || !body.ok) {
       const d = body.detail || body;
@@ -744,9 +748,65 @@ async function loadBid(itemId, opts) {
     ["#ctxcard", "#namecard", "#reqcard", "#optcard", "#gccard"].forEach((s) => { $(s).style.display = ""; });
     $("#savebar").classList.add("show");
     if (!keepStatus) { $("#savestate").textContent = ""; window.scrollTo({ top: 0 }); }
+    if (body.drive_pending) {
+      renderSourceNoteDrivePending();
+      hydrateDriveSources(itemId);
+    }
   } catch (e) {
     showStatus("err", `Network error — ${esc(e.message)}`);
     renderBidList();
+  }
+}
+
+function renderSourceNoteDrivePending() {
+  const el = $("#srcnote");
+  if (!el) return;
+  el.className = "srcnote";
+  el.textContent = "Loading scope review / estimate from Drive…";
+}
+
+async function hydrateDriveSources(itemId) {
+  // Full ingest after first paint — fill only empty fields the user hasn't touched.
+  try {
+    const r = await fetch(`/ui/api/jobstart/bid/${itemId}`);
+    const body = await r.json();
+    if (!r.ok || !body.ok || !detail || detail.bid.item_id !== itemId) return;
+    let changed = false;
+    const incoming = body.values || {};
+    const incomingSrc = body.sources || {};
+    Object.keys(incoming).forEach((k) => {
+      const v = incoming[k];
+      if (!String(v ?? "").trim()) return;
+      if (touchedKeys.has(k)) return;
+      if (String(values[k] ?? "").trim()) return;
+      values[k] = v;
+      if (incomingSrc[k]) {
+        detail.sources = detail.sources || {};
+        detail.sources[k] = incomingSrc[k];
+      }
+      changed = true;
+    });
+    detail.scope_review = body.scope_review || detail.scope_review;
+    detail.estimate = body.estimate || detail.estimate;
+    detail.drive_pending = false;
+    if (body.sources) {
+      detail.sources = Object.assign({}, detail.sources || {}, body.sources);
+    }
+    if (!String(jobName || "").trim() && body.job_name) {
+      jobName = body.job_name;
+      $("#jobname").value = jobName;
+      detail.naming = body.naming || detail.naming;
+      renderNameNote();
+    }
+    if (changed) renderForm();
+    else refreshGate();
+    renderSourceNote();
+  } catch (_) {
+    const el = $("#srcnote");
+    if (el && detail && detail.drive_pending) {
+      el.className = "srcnote none";
+      el.textContent = "Drive ingest skipped — fill what Ops needs from the bid.";
+    }
   }
 }
 
@@ -979,7 +1039,7 @@ $("#jobname").addEventListener("input", () => {
     tip = "Add the ZIP (and city/state) — same road names exist in OH, IN, and KY.";
   }
   $("#namenote").textContent = tip;
-  onEdit();
+  onEdit("job_name");
 });
 function bootJobStartFromUrl() {
   // Billing Hub / Estimate Next → Job Start: /ui/jobstart?bid=<monday item id>

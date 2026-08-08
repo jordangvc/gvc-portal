@@ -87,6 +87,8 @@ def test_jobstart_boot_warms_and_parallels_list() -> None:
     check("jobstart warms monday", '/ui/api/monday/warm' in body)
     check("jobstart boot loads bids always", "loadBids()" in body)
     check("deep bid keepStatus", "keepStatus" in body and "bootJobStartFromUrl" in body)
+    check("lite first paint", "?lite=1" in body and "hydrateDriveSources" in body)
+    check("drive_pending banner", "drive_pending" in body)
     for page in ("billing.html", "estimate.html"):
         html = (ROOT / "web" / page).read_text(encoding="utf-8")
         check(f"{page} warms monday", '/ui/api/monday/warm' in html)
