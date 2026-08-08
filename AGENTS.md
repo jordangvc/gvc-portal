@@ -194,15 +194,15 @@ macOS 3.14 quirks noted above — those are for the local Mac dev box, not this 
   `POST /ui/api/monday/warm` on load.
 - **Morning Brief Slack:** never post Morning Brief / field brief / huddle
   content to `#operations`. Side chat / DM only (Jordan 2026-08-05).
-- **Portal UI system:** `docs/UI-SYSTEM.md` + `docs/UX-CHECKLIST.md` are the
-  product-system contract (shells, actions, dead-end rules). Visual tokens stay
-  in `docs/GVC-COMMAND-STYLE.md` / `web/gvc.css`. Dark mode / contrast rules:
-  `docs/UI-DARK-MODE.md` (semantic `--color-*-ink`, `--color-input-bg`,
-  `.gvc-msg--*`; no light-only hex in page CSS/JS). Before shipping UI changes,
-  run `python scripts/ui_consistency_check.py` and complete the UX checklist.
-  Prefer system fixes in `gvc.css` over new page-local dialects. Toggle theme
-  via topbar (`web/gvc-theme.js` → `data-theme`); verify light **and** dark.
+- **Portal UI system:** Redesign SoT is `web/gvc-ui.css` + `docs/redesign/`
+  (copy reference markup; **do not invent a second design system**). Converted
+  screens today: **hub** (`/`) and **takeoff bridge** (`/ui/takeoff`) — those
+  pages load `/ui/gvc-ui.css` only, never stack with `/ui/gvc.css`. Remaining
+  money-spine pages still use `web/gvc.css` until converted. Product contract:
+  `docs/UI-SYSTEM.md` + `docs/UX-CHECKLIST.md` + redesign `UI Checklist.md`.
+  Dark mode: `docs/UI-DARK-MODE.md` / `web/gvc-theme.js` → `data-theme`.
 - **Hub first paint:** HTML injects `HUB_BOOT_JSON` (rail + greeting + quick
   actions — no Monday). Live Needs/Metrics wait on `GET /ui/api/hub`; Activity
-  is deferred to `GET /ui/api/hub/activity`. See `docs/HUB-HOME.md`.
+  is deferred to `GET /ui/api/hub/activity`. See `docs/HUB-HOME.md`. Phone
+  drawer is the same `.rail` with `.is-open` (no second drawer DOM).
 

@@ -214,13 +214,15 @@ def test_hub_boot_shell_is_cheap() -> None:
 
 def test_hub_files_and_route() -> None:
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
-    check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
-    check("brand mark", "hub-rail__brand" in hub)
+    check("hub shell classes", 'class="app"' in hub and 'class="rail"' in hub and 'class="tabbar"' in hub)
+    check("redesign stylesheet only", 'href="/ui/gvc-ui.css"' in hub)
+    check("no competing gvc.css", 'href="/ui/gvc.css"' not in hub)
+    check("topbar + page", 'class="topbar"' in hub and 'class="page"' in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r100 footer", ">r100<" in hub)
+    check("r101 footer", ">r101<" in hub)
     check("boot json placeholder", "{{HUB_BOOT_JSON}}" in hub or "HUB_BOOT" in hub)
     check("instant shell paint", "paintInstantShell" in hub)
-    check("quick actions", "hub-quick" in hub or "quickactions" in hub)
+    check("quick actions", "quickactions" in hub)
     check("deferred activity fetch", "/ui/api/hub/activity" in hub)
     check("setup badge class", "is-setup" in hub)
     check("setup in refresh slice", "payload.setup" in hub)
@@ -245,7 +247,7 @@ def test_hub_files_and_route() -> None:
     check("boot warms after fetchPayload settles",
           "warmMondayAfterPaint()" in boot
           and boot.index("fetchPayload()") < boot.index("warmMondayAfterPaint()"))
-    check("skeleton", "hub-skel" in hub and "hublive" in hub)
+    check("skeleton", 'id="skel"' in hub and "hublive" in hub and "skel-title" in hub)
     check("home cta", "hub-home-cta" in hub)
     check("quiet cta", "hub-home-cta--quiet" in hub)
     check("demo mode", "demoPayload" in hub)
@@ -255,24 +257,14 @@ def test_hub_files_and_route() -> None:
     check("honest clear flag only", "!!payload.needs_clear" in hub)
     check("pin persisted toast", "not saved yet" in hub)
     check("activityall id", "activityall" in hub)
-    css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
-    check("hub css", ".hub-rail" in css and "264px" in css)
-    check("setup badge css", ".hub-rail__badge.is-setup" in css)
-    check("clear gold inset", "hub-clear" in css and "inset 3px" in css)
-    check("desktop header stays", "hub-top { display: none" not in css)
-    check("home cta css", ".hub-home-cta" in css)
-    check("quiet cta css", ".hub-home-cta--quiet" in css)
-    check("unavailable metric", ".hub-metric.is-unavailable" in css)
-    check("urgent need css", ".hub-need.is-urgent" in css)
-    check("tablet dock until 1024",
-          ".hub-dock { display: none" in css.split("@media (min-width: 1024px)")[1].split("@media")[0]
-          or "1024px" in css and "hub-dock" in css)
-    check("solid skel no shimmer",
-          ".hub-skel" in css and "gvc-shimmer" not in css.split("Hub shell")[-1].split("END COMPONENTS")[0])
-    check("rise motion", "@keyframes hub-rise" in css)
-    check("hidden overrides display",
-          ".hub-skel[hidden]" in css and "#hublive[hidden]" in css
-          and ".hub-kicker__count[hidden]" in css)
+    check("single rail drawer", 'id="rail-close"' in hub and 'id="drawer"' not in hub)
+    check("nav-item render", "nav-item" in hub and "is-locked" in hub)
+    css = (ROOT / "web" / "gvc-ui.css").read_text(encoding="utf-8")
+    check("redesign rail", ".rail {" in css and ".tabbar {" in css)
+    check("toast shared", ".toast {" in css and ".toast.is-on" in css)
+    check("empty clear", ".empty-clear" in css)
+    check("skel loading", ".skel {" in css)
+    check("phone drawer", ".rail.is-open" in css)
 
     from app.service import app
     paths = {getattr(r, "path", None) for r in app.routes}

@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Hub shell redesigned on gvc-ui.css (r101) — BUILT 2026-08-08
+`/` converted to redesign SoT from `gvc-shell-demo.html`: `.app` / `.rail` /
+`.topbar` / `.page` / `.tabbar`. One rail (phone drawer = `.rail.is-open`),
+needs as `.grid-cards` / `.card-note`, metrics as `.grid-metrics`, queue as
+`.scroll-rows` + `.row`. Dropped parallel `hub-*` chrome + second drawer DOM.
+Links `/ui/gvc-ui.css` only; shared `.toast` added to the stylesheet. Hub **r101**.
+
 ## ✨ Takeoff bridge redesigned on gvc-ui.css (r100) — BUILT 2026-08-08
 `/ui/takeoff` converted to redesign SoT: `.app`/`.rail`/`.topbar`, handoff
 cards (primary = Open Takeoff app), honest empty "Waiting to come back"

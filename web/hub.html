@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC · Your hub</title>
 <script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
   try {
     var k = "gvc-theme", v = localStorage.getItem(k);
@@ -18,174 +19,161 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 </head>
 <body>
 
-<div class="hub-app" id="app">
-  <aside class="hub-rail" id="rail" aria-label="Tools">
-    <div class="hub-rail__brand">
-      <span class="hub-rail__mark">G</span>
-      <span class="hub-rail__word">Green Valley</span>
-    </div>
-    <div class="hub-rail__search">
-      <input type="search" id="railsearch" placeholder="Find a tool" autocomplete="off" />
-    </div>
-    <nav class="hub-rail__nav" id="railnav"></nav>
-    <div class="hub-rail__user">
-      <span class="hub-avatar" id="railavatar">?</span>
-      <div class="hub-rail__user-meta">
-        <div class="hub-rail__user-name" id="railname">…</div>
-        <div class="hub-rail__user-role" id="railrole"></div>
+<div class="app" id="app">
+  <aside class="rail" id="rail" aria-label="Tools">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <a class="kicker" href="/" style="text-decoration:none;color:inherit">GVC Hub</a>
+        <button type="button" class="btn btn-icon btn-ghost phone-only" id="rail-close" aria-label="Close menu">&times;</button>
       </div>
-      <button type="button" class="hub-rail__signout" id="theme-toggle-rail" data-theme-label>Auto</button>
-      <a class="hub-rail__signout" href="/auth/logout">Sign out</a>
+      <div class="rail__job">All tools</div>
+      <input type="search" id="railsearch" placeholder="Find a tool" autocomplete="off" aria-label="Find a tool" />
+    </div>
+    <nav class="rail__nav" id="railnav" aria-label="Tools"></nav>
+    <div class="rail__foot">
+      <span class="avatar" id="railavatar" aria-hidden="true">?</span>
+      <span class="row__main">
+        <b class="row__title" id="railname">…</b>
+        <span class="row__sub" id="railrole"></span>
+      </span>
+      <button type="button" class="btn btn-sm btn-ghost" id="theme-toggle" data-theme-label>Auto</button>
+      <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
     </div>
   </aside>
 
-  <div class="hub-main">
-    <header class="hub-top">
-      <button type="button" class="hub-top__menu" id="menubtn" aria-label="Open tools">☰</button>
-      <div class="hub-top__title">Your hub</div>
-      <span class="hub-avatar" id="topavatar">?</span>
+  <main>
+    <header class="topbar">
+      <button type="button" class="btn btn-icon phone-only" id="menubtn" aria-label="All tools">&#8801;</button>
+      <div class="topbar__title">
+        <span class="kicker" id="dateline">Today</span>
+        <h1>Your hub</h1>
+      </div>
+      <div class="topbar__actions">
+        <span class="avatar" id="topavatar" aria-hidden="true">?</span>
+      </div>
     </header>
 
-    <div class="hub-body" id="home">
-      <div class="hub-search-panel" id="searchpanel">
-        <input type="search" id="mobilesearch" placeholder="Find a tool" autocomplete="off" />
-        <div class="hub-search-hits" id="searchhits"></div>
+    <div class="page" id="home">
+      <div id="searchpanel" hidden>
+        <section class="stack" style="gap:var(--space-3)">
+          <input type="search" id="mobilesearch" placeholder="Find a tool" autocomplete="off" aria-label="Find a tool" />
+          <div class="card card-flush" id="searchhits"></div>
+        </section>
       </div>
 
-      <div id="skel" class="hub-skel" hidden aria-hidden="true">
-        <div class="hub-skel__title"></div>
-        <div class="hub-skel__line"></div>
-        <div class="hub-skel__line hub-skel__line--short"></div>
-        <div class="hub-skel__row">
-          <div class="hub-skel__card"></div>
-          <div class="hub-skel__card"></div>
-        </div>
-        <div class="hub-skel__metrics">
-          <div class="hub-skel__metric"></div>
-          <div class="hub-skel__metric"></div>
-          <div class="hub-skel__metric"></div>
-          <div class="hub-skel__metric"></div>
+      <div id="skel" hidden aria-hidden="true">
+        <div class="stack" style="gap:var(--space-4)">
+          <span class="skel skel-title"></span>
+          <span class="skel skel-sub"></span>
+          <div class="grid-cards">
+            <span class="skel skel-row"></span>
+            <span class="skel skel-row"></span>
+          </div>
+          <div class="grid-metrics">
+            <span class="skel skel-row"></span>
+            <span class="skel skel-row"></span>
+            <span class="skel skel-row"></span>
+            <span class="skel skel-row"></span>
+          </div>
         </div>
       </div>
 
       <!-- Instant shell: greeting / quick actions / recent paint from HUB_BOOT
            before Monday. Needs/metrics/queue hydrate when /ui/api/hub returns. -->
       <div id="hublive">
-        <p class="hub-greet hub-rise hub-rise--1" id="greeting"></p>
-        <p class="hub-date hub-rise hub-rise--1" id="dateline"></p>
-        <p class="hub-summary hub-rise hub-rise--2" id="summary"></p>
-        <div class="hub-rise hub-rise--2" id="homectawrap" hidden>
-          <a class="hub-home-cta" id="homecta" href="#">Open</a>
-        </div>
-
-        <section class="hub-rise hub-rise--2" aria-labelledby="quick-kicker" id="quicksection">
-          <p class="hub-kicker" id="quick-kicker">Do next</p>
-          <div class="hub-quick" id="quickactions"></div>
+        <section class="stack" style="gap:var(--space-2)">
+          <p id="greeting" style="font-family:var(--font-display);font-size:var(--text-lg);font-weight:600;margin:0"></p>
+          <p class="muted" id="summary" style="margin:0;max-width:52ch"></p>
+          <div id="homectawrap" hidden>
+            <a class="btn btn-primary hub-home-cta" id="homecta" href="#">Open</a>
+          </div>
         </section>
 
-        <section class="hub-rise hub-rise--2" aria-labelledby="recent-kicker">
-          <p class="hub-kicker" id="recent-kicker">Jump back in</p>
-          <div class="hub-recent" id="recent"></div>
+        <section class="stack" style="gap:var(--space-3)" aria-labelledby="quick-kicker" id="quicksection">
+          <span class="kicker" id="quick-kicker">Do next</span>
+          <div class="cluster" id="quickactions"></div>
         </section>
 
-        <section class="hub-rise hub-rise--3" aria-labelledby="needs-kicker">
-          <p class="hub-kicker hub-kicker--needs" id="needs-kicker">
-            Needs you today
-            <span class="hub-kicker__count" id="needscount" hidden></span>
-          </p>
+        <section class="stack" style="gap:var(--space-3)" aria-labelledby="recent-kicker">
+          <span class="kicker" id="recent-kicker">Jump back in</span>
+          <div class="chipset">
+            <div class="chipset__opts" id="recent"></div>
+          </div>
+        </section>
+
+        <section class="stack" style="gap:var(--space-3)" aria-labelledby="needs-kicker">
+          <div class="cluster-split">
+            <span class="kicker" id="needs-kicker">Needs you today</span>
+            <span class="badge" id="needscount" hidden></span>
+          </div>
           <div id="needs"></div>
         </section>
 
-        <section class="hub-rise hub-rise--3" aria-labelledby="metrics-kicker">
-          <p class="hub-kicker" id="metrics-kicker">At a glance</p>
-          <div class="hub-metrics" id="metrics"></div>
+        <section class="stack" style="gap:var(--space-3)" aria-labelledby="metrics-kicker">
+          <span class="kicker" id="metrics-kicker">At a glance</span>
+          <div class="grid-metrics" id="metrics"></div>
         </section>
 
-        <div class="hub-cols hub-rise hub-rise--4">
-          <section class="hub-panel" aria-labelledby="queue-title">
-            <div class="hub-panel__hd">
-              <h2 class="hub-panel__title" id="queue-title">Queue</h2>
-              <a class="hub-panel__link" id="queuelink" href="#">Open</a>
+        <div class="grid-split">
+          <section class="card card-flush" aria-labelledby="queue-title">
+            <div class="card-head">
+              <div class="row__main">
+                <h2 id="queue-title">Queue</h2>
+              </div>
+              <a id="queuelink" href="#">Open</a>
             </div>
-            <div class="hub-queue-scroll" id="queue"></div>
+            <div class="scroll-rows" id="queue"></div>
           </section>
 
-          <div class="hub-stack-side">
-            <section class="hub-panel" aria-labelledby="pinned-title">
-              <div class="hub-panel__hd">
-                <h2 class="hub-panel__title" id="pinned-title">Pinned</h2>
+          <div class="stack" style="gap:var(--space-5)">
+            <section class="card card-flush" aria-labelledby="pinned-title">
+              <div class="card-head">
+                <div class="row__main">
+                  <h2 id="pinned-title">Pinned</h2>
+                </div>
               </div>
-              <div id="pinned"></div>
+              <div class="scroll-rows" id="pinned"></div>
             </section>
-            <section class="hub-panel" aria-labelledby="activity-title">
-              <div class="hub-panel__hd">
-                <h2 class="hub-panel__title" id="activity-title">Activity</h2>
-                <a class="hub-panel__link" id="activityall" href="/ui/activity">All</a>
+            <section class="card card-flush" aria-labelledby="activity-title">
+              <div class="card-head">
+                <div class="row__main">
+                  <h2 id="activity-title">Activity</h2>
+                </div>
+                <a id="activityall" href="/ui/activity">All</a>
               </div>
-              <div class="hub-act-scroll" id="activity"></div>
+              <div class="scroll-rows" id="activity"></div>
             </section>
           </div>
         </div>
 
-        <div class="hub-ft-note">
-          <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r100</b> · Aug 8, 2026</span>
-        </div>
+        <p class="muted" style="font-size:var(--text-xs);margin:0">
+          Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.
+          <span style="float:right">Portal <b>r101</b> · Aug 8, 2026</span>
+        </p>
       </div>
     </div>
-  </div>
 
-  <nav class="hub-dock" aria-label="Phone navigation">
-    <button type="button" class="hub-dock__btn is-active" data-dock="home">
-      <span class="hub-dock__ico" aria-hidden="true">⌂</span>Home
-    </button>
-    <button type="button" class="hub-dock__btn" data-dock="search">
-      <span class="hub-dock__ico" aria-hidden="true">⌕</span>Search
-    </button>
-    <button type="button" class="hub-dock__btn" data-dock="alerts" id="dockalerts">
-      <span class="hub-dock__ico" aria-hidden="true">●</span>Alerts
-      <span class="hub-dock__badge" id="alertbadge" hidden>0</span>
-    </button>
-    <button type="button" class="hub-dock__btn" data-dock="tools">
-      <span class="hub-dock__ico" aria-hidden="true">☰</span>Tools
-    </button>
-  </nav>
+    <nav class="tabbar" aria-label="Phone navigation">
+      <a href="#home" class="is-active" data-dock="home">Home</a>
+      <a href="#search" data-dock="search">Search</a>
+      <a href="#alerts" data-dock="alerts" id="dockalerts">Alerts<span class="badge" id="alertbadge" hidden>0</span></a>
+      <a href="#tools" data-dock="tools" id="tools">Tools</a>
+    </nav>
+  </main>
 </div>
 
-<div class="hub-toast" id="toast" role="status"></div>
-
-<div class="hub-drawer-backdrop" id="drawerbk" hidden></div>
-<aside class="hub-drawer" id="drawer" aria-label="Tools drawer" hidden>
-  <div class="hub-rail__brand">
-    <span class="hub-rail__mark">G</span>
-    <span class="hub-rail__word">Green Valley</span>
-  </div>
-  <div class="hub-rail__search">
-    <input type="search" id="drawersearch" placeholder="Find a tool" autocomplete="off" />
-  </div>
-  <nav class="hub-rail__nav" id="drawernav"></nav>
-  <div class="hub-rail__user">
-    <span class="hub-avatar" id="draweravatar">?</span>
-    <div class="hub-rail__user-meta">
-      <div class="hub-rail__user-name" id="drawername">…</div>
-      <div class="hub-rail__user-role" id="drawerrole"></div>
-    </div>
-    <button type="button" class="hub-rail__signout" id="theme-toggle-drawer" data-theme-label>Auto</button>
-    <a class="hub-rail__signout" href="/auth/logout">Sign out</a>
-  </div>
-</aside>
+<div class="toast" id="toast" role="status"></div>
 
 <script src="/ui/gvc-theme.js"></script>
 <script>
 (function () {
   "use strict";
   if (window.GvcTheme) {
-    window.GvcTheme.mount(document.getElementById("theme-toggle-rail"));
-    window.GvcTheme.mount(document.getElementById("theme-toggle-drawer"));
+    window.GvcTheme.mount(document.getElementById("theme-toggle"));
   }
   const FEATURES = new Set({{FEATURES_JSON}});
   const EMAIL = {{EMAIL_JSON}};
@@ -197,7 +185,6 @@
   let liveHydrated = false;
 
   let payload = null;
-  let drawerOpen = false;
   let pinBusy = false;
   const wantDemo = /(?:\?|&)demo=1(?:&|$)/.test(location.search);
 
@@ -259,14 +246,20 @@
 
   function railBadge(feature, granted) {
     if (!granted) {
-      return `<span class="hub-rail__badge is-dash">—</span>`;
+      return `<span class="faint" aria-hidden="true">&mdash;</span>`;
     }
     if (setupNeeds(feature)) {
       const tip = SETUP_TITLES[feature] || "Needs setup before this tool works";
-      return `<span class="hub-rail__badge is-setup" title="${esc(tip)}">Setup</span>`;
+      return `<span class="tag tag-gold is-setup" title="${esc(tip)}">Setup</span>`;
     }
     const n = badgeFor(feature);
-    return n ? `<span class="hub-rail__badge">${n}</span>` : "";
+    return n ? `<span class="badge">${n}</span>` : "";
+  }
+
+  function setDrawer(open) {
+    const rail = $("rail");
+    if (!rail) return;
+    rail.classList.toggle("is-open", !!open);
   }
 
   function renderNav(into, filter) {
@@ -274,37 +267,38 @@
     const q = (filter || "").trim().toLowerCase();
     const html = [];
     html.push(
-      `<div class="hub-rail__group"><span class="hub-rail__ghead">Home</span>` +
-      `<a class="hub-rail__item is-active" href="/" data-home="1">` +
-      `<span class="hub-rail__item-name">Your hub</span></a></div>`
+      `<div class="rail__group"><span class="kicker kicker-sm">Home</span>` +
+      `<a class="nav-item is-active" href="/" data-home="1" aria-current="page">` +
+      `<span class="nav-item__name">Your hub</span></a></div>`
     );
     groups.forEach((g) => {
       const tools = (g.tools || []).filter((t) =>
         !q || t.name.toLowerCase().includes(q) || t.feature.toLowerCase().includes(q)
       );
       if (!tools.length) return;
-      html.push(`<div class="hub-rail__group"><span class="hub-rail__ghead">${esc(g.name)}</span>`);
+      html.push(`<div class="rail__group"><span class="kicker kicker-sm">${esc(g.name)}</span>`);
       tools.forEach((t) => {
         const granted = !!t.granted;
         const badge = railBadge(t.feature, granted);
-        const cls = "hub-rail__item" + (granted ? "" : " is-dim");
+        const cls = "nav-item" + (granted ? "" : " is-locked");
         if (granted) {
           const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
           html.push(
             `<a class="${cls}" href="${esc(t.href)}" data-feature="${esc(t.feature)}"${ext}>` +
-            `<span class="hub-rail__item-name">${esc(t.name)}</span>${badge}</a>`
+            `<span class="nav-item__name">${esc(t.name)}</span>${badge}</a>`
           );
         } else {
           html.push(
             `<span class="${cls}" role="button" tabindex="0" title="Ask an admin for access" data-feature="${esc(t.feature)}" data-denied="1">` +
-            `<span class="hub-rail__item-name">${esc(t.name)}</span>${badge}</span>`
+            `<span class="nav-item__name">${esc(t.name)}</span>${badge}</span>`
           );
         }
       });
       html.push("</div>");
     });
-    into.innerHTML = html.join("") || `<div class="hub-empty-soft">No tools match.</div>`;
-    into.querySelectorAll("a.hub-rail__item[data-feature]").forEach((a) => {
+    into.innerHTML = html.join("") ||
+      `<div class="empty empty-inline"><div class="empty__title">No tools match</div></div>`;
+    into.querySelectorAll("a.nav-item[data-feature]").forEach((a) => {
       a.addEventListener("click", () => {
         const feat = a.getAttribute("data-feature");
         const tool = flatTools().find((t) => t.feature === feat && t.href === a.getAttribute("href"));
@@ -312,8 +306,8 @@
         setDrawer(false);
       });
     });
-    // Dimmed tools used to be silent — users thought the app was broken.
-    into.querySelectorAll(".hub-rail__item[data-denied]").forEach((el) => {
+    // Locked tools used to be silent — users thought the app was broken.
+    into.querySelectorAll(".nav-item[data-denied]").forEach((el) => {
       const deny = () => toast("Ask an admin for access to this tool");
       el.addEventListener("click", deny);
       el.addEventListener("keydown", (e) => {
@@ -372,50 +366,49 @@
         countEl.textContent = "";
       }
     }
-    const hasUrgent = !clear && list.some((n) => n.urgent || isUrgentKind(n.kind));
-    const kick = $("needs-kicker");
-    if (kick) kick.classList.toggle("has-urgent", !!hasUrgent);
-    const app = $("app");
-    if (app) app.classList.toggle("is-alerts", !!hasUrgent);
-    const badge = $("alertbadge");
-    if (badge) badge.classList.toggle("is-urgent", !!hasUrgent);
     if (clear) {
       const line = (payload.summary || "You're clear.").trim();
       const rest = line.replace(/^you['\u2019]?re clear[.!\u2014\u2013\s-]*/i, "").trim();
       box.innerHTML =
-        `<div class="hub-clear"><strong>You're clear.</strong>` +
-        (rest ? esc(rest) : "") + `</div>`;
+        `<div class="empty empty-clear empty-inline">` +
+        `<div class="empty__title">You're clear.</div>` +
+        (rest ? `<p class="empty__body">${esc(rest)}</p>` : "") +
+        `</div>`;
       return;
     }
     if (!list.length) {
       if (!liveHydrated) {
         box.innerHTML =
-          `<div class="hub-empty-soft hub-empty-soft--loading">` +
-          `<strong>Refreshing live needs…</strong>` +
-          `Open a tool above anytime — you don't have to wait.</div>`;
+          `<div class="empty empty-inline">` +
+          `<div class="empty__title">Refreshing live needs…</div>` +
+          `<p class="empty__body">Open a tool above anytime — you don't have to wait.</p></div>`;
         return;
       }
       const line = (payload.summary ||
         "Live numbers aren't available yet — tools still work from the rail.").trim();
       box.innerHTML =
-        `<div class="hub-empty-soft"><strong>Waiting on live data</strong>` +
-        esc(line) + `</div>`;
+        `<div class="empty empty-inline">` +
+        `<div class="empty__title">Waiting on live data</div>` +
+        `<p class="empty__body">${esc(line)}</p></div>`;
       return;
     }
-    box.innerHTML = `<div class="hub-needs">` + list.map((n) => {
+    box.innerHTML = `<div class="grid-cards">` + list.map((n) => {
       const urgent = n.urgent || isUrgentKind(n.kind);
+      const kindCls = urgent ? "tag tag-alert" : "kicker kicker-sm";
       const sec = n.secondary_href
-        ? `<a class="btn btn--ghost" href="${esc(n.secondary_href)}">Open job</a>`
+        ? `<a class="btn" href="${esc(n.secondary_href)}">Open job</a>`
+        : "";
+      const amount = n.amount
+        ? `<span class="num num-sm" style="color:var(--color-accent-ink)">${esc(n.amount)}</span>`
         : "";
       return (
-        `<article class="hub-need${urgent ? " is-urgent" : ""}">` +
-        `<div class="hub-need__top">` +
-        `<span class="hub-need__kind${urgent ? " is-urgent" : ""}">${esc(n.kind)}</span>` +
-        `<span class="hub-need__amount">${esc(n.amount)}</span></div>` +
-        `<h3 class="hub-need__title">${esc(n.title)}</h3>` +
-        `<p class="hub-need__detail">${esc(n.detail)}</p>` +
-        `<div class="hub-need__actions">` +
-        `<a class="btn btn--primary" href="${esc(n.href)}">${esc(n.action || "Open")}</a>` +
+        `<article class="card card-pad card-note stack" style="gap:var(--space-2)">` +
+        `<div class="cluster-split">` +
+        `<span class="${kindCls}">${esc(n.kind)}</span>${amount}</div>` +
+        `<h3>${esc(n.title)}</h3>` +
+        `<p class="muted" style="font-size:var(--text-sm);margin:0">${esc(n.detail)}</p>` +
+        `<div class="cluster">` +
+        `<a class="btn btn-primary" href="${esc(n.href)}">${esc(n.action || "Open")}</a>` +
         sec + `</div></article>`
       );
     }).join("") + `</div>`;
@@ -424,27 +417,22 @@
   function renderMetrics() {
     const metrics = payload.metrics || [];
     if (!metrics.length && !liveHydrated) {
-      $("metrics").innerHTML =
-        `<div class="hub-metric is-unavailable"><div class="hub-metric__label">Live</div>` +
-        `<div class="hub-metric__value">…</div>` +
-        `<div class="hub-metric__foot">loading</div></div>`.repeat(4);
+      $("metrics").innerHTML = [0, 1, 2, 3].map(() => (
+        `<div class="card card-pad stack" style="gap:4px">` +
+        `<span class="kicker kicker-sm">Live</span>` +
+        `<span class="num num-lg muted">…</span>` +
+        `<span class="muted" style="font-size:var(--text-xs)">loading</span></div>`
+      )).join("");
       return;
     }
     $("metrics").innerHTML = metrics.map((m) => {
       const unavailable = m.unavailable || m.value === "—";
-      const zero = !unavailable && (m.zero || m.value === 0 || m.value === "0");
-      const live = !unavailable && !zero && m.value != null && m.value !== "";
-      const cls = [
-        "hub-metric",
-        zero ? "is-zero" : "",
-        unavailable ? "is-unavailable" : "",
-        live ? "is-live" : "",
-      ].filter(Boolean).join(" ");
+      const valCls = unavailable ? "num num-lg muted" : "num num-lg";
       return (
-        `<div class="${cls}">` +
-        `<div class="hub-metric__label">${esc(m.label)}</div>` +
-        `<div class="hub-metric__value">${esc(m.value)}</div>` +
-        `<div class="hub-metric__foot">${esc(m.foot)}</div></div>`
+        `<div class="card card-pad stack" style="gap:4px">` +
+        `<span class="kicker kicker-sm">${esc(m.label)}</span>` +
+        `<span class="${valCls}">${esc(m.value)}</span>` +
+        `<span class="muted" style="font-size:var(--text-xs)">${esc(m.foot)}</span></div>`
       );
     }).join("");
   }
@@ -474,13 +462,13 @@
     }
     if (sec) sec.hidden = false;
     box.innerHTML = items.map((a, i) => {
-      const primary = i === 0 ? " hub-quick__btn--primary" : "";
+      const cls = i === 0 ? "btn btn-primary" : "btn";
       return (
-        `<a class="hub-quick__btn${primary}" href="${esc(a.href)}" ` +
+        `<a class="${cls}" href="${esc(a.href)}" ` +
         `data-feature="${esc(a.feature || "")}">${esc(a.name)}</a>`
       );
     }).join("");
-    box.querySelectorAll("a.hub-quick__btn").forEach((a) => {
+    box.querySelectorAll("a[data-feature]").forEach((a) => {
       a.addEventListener("click", () => {
         const feat = a.getAttribute("data-feature");
         const tool = flatTools().find((t) => t.href === a.getAttribute("href"))
@@ -494,18 +482,18 @@
     const id = r.id || r.href || "";
     const on = pinIds().has(id);
     const pinBtn = pinable
-      ? `<button type="button" class="hub-pin${on ? " is-on" : ""}" data-pin="${esc(id)}" ` +
+      ? `<button type="button" class="btn btn-icon btn-ghost btn-sm row__end" data-pin="${esc(id)}" ` +
         `aria-label="${on ? "Unpin" : "Pin"}" aria-pressed="${on ? "true" : "false"}" ` +
         `title="${on ? "Unpin" : "Pin"}">${on ? "★" : "☆"}</button>`
       : "";
     const tag = r.tag
-      ? `<span class="hub-qrow__tag${r.flagged ? " is-flag" : ""}">${esc(r.tag)}</span>`
+      ? `<span class="tag${r.flagged ? " tag-alert" : ""} row__end">${esc(r.tag)}</span>`
       : "";
     return (
-      `<div class="hub-qrow">` +
-      `<a class="hub-qrow__meta" href="${esc(r.href || "#")}">` +
-      `<div class="hub-qrow__name">${esc(r.name)}</div>` +
-      `<div class="hub-qrow__sub">${esc(r.sub || "")}</div></a>` +
+      `<div class="row">` +
+      `<a class="row__main" href="${esc(r.href || "#")}" style="text-decoration:none;color:inherit">` +
+      `<b class="row__title">${esc(r.name)}</b>` +
+      `<span class="row__sub">${esc(r.sub || "")}</span></a>` +
       tag + pinBtn + `</div>`
     );
   }
@@ -519,8 +507,9 @@
     const rows = q.rows || [];
     if (!rows.length) {
       $("queue").innerHTML =
-        `<div class="hub-empty-soft"><strong>Queue is empty</strong>` +
-        `When something needs you, it lands here.</div>`;
+        `<div class="empty empty-inline">` +
+        `<div class="empty__title">Queue is empty</div>` +
+        `<p class="empty__body">When something needs you, it lands here.</p></div>`;
       return;
     }
     $("queue").innerHTML = rows.map((r) => rowHtml(r, { pinable: true })).join("");
@@ -531,8 +520,9 @@
     const rows = payload.pinned || [];
     if (!rows.length) {
       $("pinned").innerHTML =
-        `<div class="hub-empty-soft"><strong>No pins yet</strong>` +
-        `Tap ★ on a queue row to keep a job here.</div>`;
+        `<div class="empty empty-inline">` +
+        `<div class="empty__title">No pins yet</div>` +
+        `<p class="empty__body">Tap ★ on a queue row to keep a job here.</p></div>`;
       return;
     }
     $("pinned").innerHTML = rows.map((r) => rowHtml(r, { pinable: true })).join("");
@@ -606,6 +596,7 @@
         allLink.href = "/ui/activity";
         allLink.removeAttribute("aria-disabled");
         allLink.title = "";
+        allLink.onclick = null;
       } else {
         allLink.hidden = false;
         allLink.href = "#";
@@ -620,17 +611,20 @@
     const rows = payload.activity || [];
     if (!rows.length) {
       $("activity").innerHTML =
-        `<div class="hub-empty-soft"><strong>Quiet so far</strong>` +
+        `<div class="empty empty-inline">` +
+        `<div class="empty__title">Quiet so far</div>` +
+        `<p class="empty__body">` +
         (hasActivity
           ? `Sends, approvals, and status changes show up here.`
           : `Your recent work shows here when available. Ask an admin for the full Activity log.`) +
-        `</div>`;
+        `</p></div>`;
       return;
     }
     $("activity").innerHTML = rows.map((r) => (
-      `<a class="hub-act" href="${esc(r.href || (hasActivity ? "/ui/activity" : "#"))}">` +
-      `<div class="hub-act__text">${esc(r.text)}</div>` +
-      `<div class="hub-act__when">${esc(formatWhen(r.when))}</div></a>`
+      `<a class="row" href="${esc(r.href || (hasActivity ? "/ui/activity" : "#"))}">` +
+      `<span class="row__main">` +
+      `<b class="row__title">${esc(r.text)}</b>` +
+      `<span class="row__sub">${esc(formatWhen(r.when))}</span></span></a>`
     )).join("");
   }
 
@@ -648,7 +642,8 @@
     cta.textContent = "Open " + (u.homeToolName || "home tool");
     // Quiet outline when needs compete for attention; solid when clear.
     const busy = !payload.needs_clear && (payload.needs || []).length > 0;
-    cta.classList.toggle("hub-home-cta--quiet", busy);
+    cta.classList.toggle("btn-primary", !busy);
+    cta.classList.toggle("hub-home-cta--quiet", busy); // marker for quiet/outline state
   }
 
   function setDockActive(mode) {
@@ -667,28 +662,25 @@
     const items = recent.length ? recent : (home ? [home] : []);
     if (!items.length) {
       $("recent").innerHTML =
-        `<div class="hub-empty-soft"><strong>No recent tools</strong>` +
-        `Tools you open will land here.</div>`;
+        `<span class="muted" style="font-size:var(--text-sm)">No recent tools yet.</span>`;
       return;
     }
     $("recent").innerHTML = items.map((t) => {
       const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
-      return `<a href="${esc(t.href)}"${ext}>${esc(t.name)}</a>`;
+      return `<a class="chip" href="${esc(t.href)}"${ext}>${esc(t.name)}</a>`;
     }).join("");
   }
 
   function renderUserChrome() {
     const u = payload.user || {};
-    ["rail", "drawer", "top"].forEach((prefix) => {
-      const av = $(prefix === "top" ? "topavatar" : prefix + "avatar");
+    ["railavatar", "topavatar"].forEach((id) => {
+      const av = $(id);
       if (av) av.textContent = u.initials || "?";
     });
-    ["rail", "drawer"].forEach((prefix) => {
-      const nm = $(prefix + "name");
-      const rl = $(prefix + "role");
-      if (nm) nm.textContent = u.name || EMAIL;
-      if (rl) rl.textContent = u.title || u.role || "";
-    });
+    const nm = $("railname");
+    const rl = $("railrole");
+    if (nm) nm.textContent = u.name || EMAIL;
+    if (rl) rl.textContent = u.title || u.role || "";
     const nNeeds = (payload.needs || []).length;
     const badge = $("alertbadge");
     if (badge) {
@@ -712,13 +704,12 @@
     showLive();
     $("greeting").textContent = payload.greeting || "Hello.";
     const dl = $("dateline");
-    if (dl) dl.textContent = formatDateLine(payload.generated_at);
+    if (dl) dl.textContent = formatDateLine(payload.generated_at) || "Today";
     // When clear, summary lives inside the clear banner — don't duplicate.
     $("summary").textContent = payload.needs_clear ? "" : (payload.summary || "");
     renderHomeCta();
     renderUserChrome();
     renderNav($("railnav"));
-    renderNav($("drawernav"));
     renderQuickActions();
     renderNeeds();
     renderMetrics();
@@ -809,24 +800,15 @@
     });
   }
 
-  function setDrawer(open) {
-    drawerOpen = !!open;
-    const d = $("drawer");
-    const bk = $("drawerbk");
-    d.hidden = false;
-    bk.hidden = false;
-    d.classList.toggle("is-open", drawerOpen);
-    bk.classList.toggle("is-open", drawerOpen);
-    if (!drawerOpen) {
-      setTimeout(() => { d.hidden = true; bk.hidden = true; }, 180);
-    }
-  }
-
   function wireChrome() {
     $("menubtn").addEventListener("click", () => setDrawer(true));
-    $("drawerbk").addEventListener("click", () => setDrawer(false));
+    $("rail-close").addEventListener("click", () => setDrawer(false));
+    $("rail").addEventListener("click", (e) => {
+      if (e.target.closest(".nav-item") && !e.target.closest("[data-denied]")) {
+        setDrawer(false);
+      }
+    });
     $("railsearch").addEventListener("input", (e) => renderNav($("railnav"), e.target.value));
-    $("drawersearch").addEventListener("input", (e) => renderNav($("drawernav"), e.target.value));
     $("mobilesearch").addEventListener("input", (e) => {
       const q = e.target.value.trim().toLowerCase();
       const hits = flatTools().filter((t) =>
@@ -834,20 +816,22 @@
       ).slice(0, 12);
       $("searchhits").innerHTML = hits.map((t) => {
         const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
-        return `<a class="hub-qrow" href="${esc(t.href)}"${ext}>` +
-          `<div class="hub-qrow__meta"><div class="hub-qrow__name">${esc(t.name)}</div></div></a>`;
-      }).join("") || `<div class="hub-empty-soft">No tools match that search.</div>`;
+        return `<a class="row" href="${esc(t.href)}"${ext}>` +
+          `<span class="row__main"><b class="row__title">${esc(t.name)}</b></span></a>`;
+      }).join("") ||
+        `<div class="empty empty-inline"><div class="empty__title">No tools match that search.</div></div>`;
     });
     document.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
-        $("searchpanel").classList.remove("is-open");
+        $("searchpanel").hidden = true;
         setDrawer(false);
         setDockActive("home");
       }
     });
 
     document.querySelectorAll("[data-dock]").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
         const mode = btn.getAttribute("data-dock");
         if (mode === "tools") {
           setDockActive("tools");
@@ -856,24 +840,22 @@
         }
         if (mode === "search") {
           setDockActive("search");
-          $("searchpanel").classList.add("is-open");
+          setDrawer(false);
+          $("searchpanel").hidden = false;
           $("mobilesearch").focus();
           window.scrollTo({ top: 0, behavior: "smooth" });
           return;
         }
         if (mode === "alerts") {
           setDockActive("alerts");
-          $("searchpanel").classList.remove("is-open");
+          $("searchpanel").hidden = true;
+          setDrawer(false);
           $("needs-kicker").scrollIntoView({ behavior: "smooth", block: "start" });
-          const kick = $("needs-kicker");
-          if (kick) {
-            kick.classList.add("is-flash");
-            setTimeout(() => kick.classList.remove("is-flash"), 900);
-          }
           return;
         }
         setDockActive("home");
-        $("searchpanel").classList.remove("is-open");
+        $("searchpanel").hidden = true;
+        setDrawer(false);
         window.scrollTo({ top: 0, behavior: "smooth" });
       });
     });
@@ -955,7 +937,6 @@
       liveHydrated = true;
       renderUserChrome();
       renderNav($("railnav"), $("railsearch").value);
-      renderNav($("drawernav"), $("drawersearch").value);
       renderNeeds();
       renderMetrics();
       renderQueue();

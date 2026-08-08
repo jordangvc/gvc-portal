@@ -3,11 +3,11 @@
 The tool grid is no longer the home screen. `/` is the signed-in person's hub;
 tools live in a left rail (desktop) or drawer + bottom bar (phone).
 
-**Files:** `web/hub.html` · hub shell CSS in `web/gvc.css` · `shared/hub_nav.py` ·
+**Files:** `web/hub.html` · redesign shell in `web/gvc-ui.css` · `shared/hub_nav.py` ·
 `orchestrators/hub_flow.py` · `subsystems/hub/pinned.py` · `GET /ui/api/hub` ·
 `PUT /ui/api/hub/pinned`
 
-Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r99**.
+Contract: `docs/redesign/GVC Hub Handoff.md` + `gvc-shell-demo.html`. Footer **r101**.
 
 ## Fast first paint (r90+)
 
@@ -29,17 +29,16 @@ The hub is still the personal home — not a separate marketing landing — but
 
 | Viewport | Chrome |
 |---|---|
-| ≥1024px | Sticky 264px rail (brand + search + groups) + main header + scrolling body |
-| 768–1023 | Hamburger drawer + bottom dock (rail still hidden) |
-| &lt;768px | Hamburger drawer + Home / Search / Alerts / Tools dock |
+| ≥900px | Sticky `.rail` (search + groups) + `.topbar` + `.page` |
+| &lt;900px | Same rail as full-screen drawer (`.is-open`) + `.tabbar` (Home / Search / Alerts / Tools) |
 
-Grants **dim** unreachable tools (em dash badge); they are not removed.
+Grants **lock** unreachable tools (`.nav-item.is-locked` + em dash); they are not removed.
 Active rail item on `/` is **Your hub**.
 
-Loading shows a solid skeleton (no shimmer), then staggered rise-in.
-Needs count chip + burgundy inset for Safety/Blocked. Home-tool CTA under the
-greeting (quiet outline when needs compete). Local `?demo=1` overlays sample
-needs for visual QA (dev bypass).
+Loading uses redesign `.skel`. Needs are `.card.card-note` in `.grid-cards`;
+Safety/Blocked use `.tag-alert`. Home-tool CTA under the greeting drops
+`.btn-primary` when needs compete (`hub-home-cta--quiet` marker). Local
+`?demo=1` overlays sample needs for visual QA (dev bypass).
 
 ## Roles (grant → home shape)
 
