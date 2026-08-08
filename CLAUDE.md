@@ -11,6 +11,10 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE CHANGE ORDER CATALOG (r83) — BUILT 2026-08-08
+Catalog gains **changeorder** (Spotting a Change Order) under ops
+`money-scope` — verbal adds, standing-by, T&M discipline. Hub **r83**.
+
 ## ✨ FIELD GUIDE FIRESTOP + SAFETY ORIENT (r82) — BUILT 2026-08-08
 Catalog gains **firestop** (UL HW-D / annular / dynamic joints) and
 **safety-orient** (ops safety-basics). Aliases + baked nextpath via

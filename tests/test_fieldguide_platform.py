@@ -103,11 +103,12 @@ def test_repo_catalog_hang_scrape() -> None:
              "level5-skim", "cleanout"}
     check("job-check spine migrated", spine <= set(cat["by_id"]))
     ops = {"jobstart-firstday", "job-conditions", "window-returns", "scaffold-lifts",
-           "safety-orient"}
+           "changeorder", "safety-orient"}
     check("ops logistics migrated", ops <= set(cat["by_id"]))
+    check("changeorder migrated", "changeorder" in cat["by_id"])
     check("firestop migrated", "firestop" in cat["by_id"])
     check("safety-orient migrated", "safety-orient" in cat["by_id"])
-    check("approved cards", len(cat["cards"]) >= 14)
+    check("approved cards", len(cat["cards"]) >= 15)
     check("act migrated", "act" in cat["by_id"])
     check("act approved card", any(c["id"] == "act" for c in cat["cards"]))
     check("jobcheck hang", cat["jobcheck_anchors"].get("Hanging Status") == "hang")
@@ -135,6 +136,8 @@ def test_repo_catalog_hang_scrape() -> None:
     check("resolve annular", resolve_procedure_id("annular") == "firestop")
     check("resolve safety", resolve_procedure_id("safety") == "safety-orient")
     check("resolve ppe", resolve_procedure_id("ppe") == "safety-orient")
+    check("resolve standing-by", resolve_procedure_id("standing-by") == "changeorder")
+    check("resolve co", resolve_procedure_id("co") == "changeorder")
     check("get_procedure taped", get_procedure("taped")["id"] == "finish")
     check("get_procedure firestopping", get_procedure("firestopping")["id"] == "firestop")
 
@@ -152,7 +155,8 @@ def test_repo_catalog_hang_scrape() -> None:
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
-    check("audit counts spine + ops + act + firestop", audit["procedure_count"] >= 14)
+    check("audit counts spine + ops + act + firestop + changeorder",
+          audit["procedure_count"] >= 15)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)

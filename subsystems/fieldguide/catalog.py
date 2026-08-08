@@ -79,6 +79,14 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "safety": "safety-orient",
     "ppe": "safety-orient",
     "orientation": "safety-orient",
+    "co": "changeorder",
+    "change-order": "changeorder",
+    "changeorder": "changeorder",
+    "tm": "changeorder",
+    "t-and-m": "changeorder",
+    "extras": "changeorder",
+    "verbal-add": "changeorder",
+    "standing-by": "changeorder",
 }
 
 _CACHE: dict[str, Any] = {
