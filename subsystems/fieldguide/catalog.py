@@ -71,6 +71,14 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "suspended-ceiling": "act",
     "ceiling-grid": "act",
     "ct": "act",
+    "fire-stop": "firestop",
+    "firestopping": "firestop",
+    "head-of-wall": "firestop",
+    "hwd": "firestop",
+    "annular": "firestop",
+    "safety": "safety-orient",
+    "ppe": "safety-orient",
+    "orientation": "safety-orient",
 }
 
 _CACHE: dict[str, Any] = {

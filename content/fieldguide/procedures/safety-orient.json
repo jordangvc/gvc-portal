@@ -1,0 +1,189 @@
+{
+  "id": "safety-orient",
+  "slug": "safety-orient",
+  "title": "Jobsite Safety Orientation",
+  "short_answer": "PPE, ladders and lifts, dust and silica on our everyday tasks, and the hard stops where the right move is to put the tools down.",
+  "summary": "PPE, ladders and lifts, dust and silica on our everyday tasks, and the hard stops where the right move is to put the tools down.",
+  "plain_words": "This is not a full OSHA program — it is the field card. Wear the right PPE for the task, do not climb what you are not cleared for, control dust when you cut or sand, and stop when you hit asbestos/lead/structure/unknown material. Speed never wins against a hospital bill or a failed inspection.",
+  "when_to_use": [
+    "Every job, every day — onboarding and refreshers",
+    "Before demo, sanding, grinding, or overhead ACT work",
+    "When access, scaffold, or material stops look wrong"
+  ],
+  "prerequisites": [
+    "Site-specific PPE rules from the GC",
+    "Lift/scaffold authorization per Job Start and GC policy"
+  ],
+  "trade_id": "ops",
+  "category_id": "safety-basics",
+  "template": "task_guide",
+  "stage_line": "Onboarding · every job, every day",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Eye protection"
+    },
+    {
+      "name": "Dust mask or respirator when cutting/sanding creates fines"
+    },
+    {
+      "name": "Vacuum-sanded or shrouded tools where Table 1 applies"
+    },
+    {
+      "name": "Hearing protection when grinding"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Three points of contact on ladders. Face the ladder. Do not carry a full sheet up a step ladder — stage material first or use the right equipment.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Scaffold matches the Job Start note. Missing planks, missing rails, or \"we'll just use it for a minute\" = stop and call the lead.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Lifts only with a ticket / authorization the GC and GVC accept. No borrowed keys, no \"I watched someone.\"",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Refuse unsafe access. You will not get in trouble for refusing a bad ladder. You will for falling off one.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Hard stops — put the tools down",
+      "body": "Pre-1981 material without a survey (presume PACM). Pre-1978 housing / child-occupied lead rules. Anything structural you were not told to cut. Untraceable conduit or live unknowns. Stop → call the lead → do not resume until someone with authority says so. Recognizing that a decision is required is the skill — not deciding asbestos yourself."
+    },
+    {
+      "severity": "warn",
+      "title": "PPE by task (minimums)",
+      "body": "Hang/cut board: eye protection; gloves when carrying; dust mask or respirator when cutting creates fines. Pole/power sand: eye protection; vacuum collection preferred; respirator when Table 1 controls are not met. Grind bead/cut steel: eye/face, hearing, gloves; silica controls on concrete/masonry. ACT/overhead: eye protection; hard hat where required; secure footing before looking up. Demo: full site PPE plus Demolition hard stops — read that page before starting."
+    }
+  ],
+  "experts": [
+    {
+      "id": "safety-silica",
+      "tag": "Full detail · dust & silica on our work",
+      "summary": "OSHA's silica rule is not only for knocking out concrete. Cutting board, grinding compound, and power sanding generate respirable dust. Table 1 gives task-based controls (continuous water or vacuum collection for many grinding tasks) — implementing the listed control for that tool is compliance without inventing your own plan. Prefer vacuum sanding and shrouded tools over open dry sanding in occupied or multi-trade spaces. Do not dust out a room with a leaf blower. Respirator fit testing and a written program belong to the office — field improvisation is not a substitute when the task requires a respirator. Deeper demo / ACM / lead stops live on Demolition."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "so-ppe",
+      "prompt": "PPE matches the task (eyes, dust, hearing as required)",
+      "severity": "required"
+    },
+    {
+      "id": "so-access",
+      "prompt": "Ladder/scaffold/lift access refused or corrected when unsafe",
+      "severity": "required"
+    },
+    {
+      "id": "so-stop",
+      "prompt": "Hard-stop conditions escalated to lead before work resumes",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Carrying board up a step ladder",
+      "wrong": "One person, full sheet, three-point contact broken",
+      "right": "Stage material or use lift/scaffold built for the load",
+      "why": "Falls are the predictable outcome"
+    },
+    {
+      "title": "Open dry sanding in occupied space",
+      "wrong": "No vacuum or shroud when Table 1 requires it",
+      "right": "Vacuum sanding or listed silica control for the tool",
+      "why": "Silica exposure to crew and other trades"
+    },
+    {
+      "title": "Guessing on PACM or lead",
+      "wrong": "Cut or sand pre-1981 / pre-1978 material without a stop",
+      "right": "Stop, call the lead, wait for authority",
+      "why": "Regulatory and health exposure — not a field call"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "demo",
+    "changeorder",
+    "scaffold-lifts"
+  ],
+  "next_steps": [
+    {
+      "id": "scaffold-lifts",
+      "label": "Scaffold & lifts",
+      "why": "Job Start scaffolding notes and lift discipline"
+    },
+    {
+      "id": "job-conditions",
+      "label": "Cold & wet conditions",
+      "why": "Heat, ventilate, and refuse bad coat conditions"
+    },
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Quality pass includes safe access and finish readiness"
+    },
+    {
+      "id": "hang",
+      "label": "Hanging",
+      "why": "First major trade pass after orientation"
+    }
+  ],
+  "search_tags": [
+    "safety",
+    "orientation",
+    "PPE",
+    "silica",
+    "ladder",
+    "scaffold",
+    "lift",
+    "OSHA",
+    "hard stop",
+    "refuse unsafe"
+  ],
+  "synonyms": [
+    "safety",
+    "orientation",
+    "safety orientation",
+    "PPE",
+    "silica",
+    "refuse unsafe",
+    "ladder safety",
+    "jobsite safety"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Orientation only — not compliance advice and not a substitute for GVC's written safety programs. OSHA 1926.1101 (asbestos), EPA lead RRP concepts, and OSHA 1926.1153 Table 1 (silica) are cited so you know the names; the office owns the programs behind them. See also Demolition for deeper regulatory stops.",
+    "sources": [
+      "GVC Field Manual",
+      "OSHA 1926.1101",
+      "OSHA 1926.1153 Table 1",
+      "EPA lead RRP concepts"
+    ]
+  }
+}

@@ -1,0 +1,240 @@
+{
+  "id": "firestop",
+  "slug": "firestop",
+  "title": "Firestopping",
+  "short_answer": "A rated wall is only rated if every hole through it and every joint around it is sealed with a tested system — not caulk, a listed system with a number.",
+  "summary": "A rated wall is only rated if every hole through it and every joint around it is sealed with a tested system. Not caulk — a system, with a number.",
+  "plain_words": "When you put a hole in a fire wall, or when there's a gap at the top of one, you can't just fill it with whatever's on the truck. There's a tested assembly with a number — it specifies the exact material, how deep, how big the gap is allowed to be, and what backing goes behind it. Build the number that's on the drawings. And photograph it before it gets covered, because afterward there's no way to prove it was right.",
+  "when_to_use": [
+    "Head-of-wall joints on rated partitions you framed",
+    "Through-penetrations when scope assigns firestopping to GVC",
+    "Before covering any listed firestop — photo record required"
+  ],
+  "prerequisites": [
+    "Listed system number from drawings matches the condition in the field",
+    "Scope answered at job start: who firestops penetrations",
+    "Substrate clean and dry at the joint or penetration"
+  ],
+  "trade_id": "firestop",
+  "category_id": "rated-assemblies",
+  "template": "task_guide",
+  "stage_line": "Rated assemblies · firestopping",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Tape measure for annular space and joint width"
+    },
+    {
+      "name": "Camera for photo record before cover"
+    },
+    {
+      "name": "Listed packing, sealant, and labels per the system"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Mineral wool packing at specified depth"
+    },
+    {
+      "name": "Intumescent or elastomeric sealant per listing (not interchangeable)"
+    },
+    {
+      "name": "Permanent labels if the spec requires them"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "The system number on the drawings matches the condition actually in front of you — joint type, movement class, and width band.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Annular space measured and within the listed range.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Packing at the specified depth, sealant at the specified depth, correct class.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Both sides done where required.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Labels installed if the spec asks for them.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Photograph every firestop, with the location identified and the system number noted, before anything covers it.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Head-of-wall photographed along its length, not just one spot.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Anything you found that isn't ours — an unsealed penetration by another trade — reported in writing, not quietly fixed.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "note",
+      "title": "Why this one is different",
+      "body": "Most of our work is judged on how it looks. This is judged on whether a listed system was reproduced exactly, by an inspector, against a document. Close enough is a failure. It's also the item most likely to hold up a certificate of occupancy."
+    },
+    {
+      "severity": "stop",
+      "title": "Who firestops the penetrations",
+      "body": "\"Who firestops the penetrations\" is one of the most common scope gaps in commercial interiors — when nobody claims it, it lands on the drywall contractor by default. Get it answered in writing at the job start. If it's ours, it's scope and it gets priced. If it shows up later and it isn't in our contract, see Spotting a Change Order."
+    },
+    {
+      "severity": "warn",
+      "title": "Two families — know which is yours",
+      "body": "Joint systems (head of wall, wall-to-wall) are ours when we built the partition. Through-penetration firestops are usually the trade that made the hole — confirm on every job."
+    }
+  ],
+  "experts": [
+    {
+      "id": "fs-numbers",
+      "tag": "Full detail · reading the number",
+      "summary": "UL system numbers decode the condition. Joint systems use format XX-Y-NNNN (e.g. HW-D-1000): first pair = joint type (HW head-of-wall, WW wall-to-wall, FW floor-to-wall, FF floor-to-floor); middle letter = movement (D dynamic — joint moves; S static — no movement); number = nominal joint width (0000–0999 up to 2\", 1000–1999 over 2\" up to 6\", 2000–2999 over 6\" up to 12\"). HW-D-1000 = head-of-wall, dynamic, width over 2\" up to 6\". Our head-of-wall almost always moves (deflection track) — use a dynamic system; static fill tears on first load. Through-penetrations (e.g. W-L-1087) are specific to the penetrant — a metallic-pipe system is not a cable-bundle system. F rating = hours flame stopped; T rating = unexposed side stays under 325°F above ambient. Many specs require T equal to F on dwelling-unit and patient-room separations — wrong T rating means wrong system even when F matches."
+    },
+    {
+      "id": "fs-install",
+      "tag": "Full detail · installing to the listing",
+      "summary": "Annular space = gap between penetrant and hole edge; listing gives min and max — inspectors measure it. Packing/backing (usually mineral wool) at specified depth is a tested component, not filler. Fill depth is specified — skinning the surface with a void behind fails when probed. Sealant: intumescent (expands with heat — plastic pipe, cable) vs elastomeric (flexible — metal, moving joints) — not interchangeable. Substrate clean and dry; both sides where the listing says both. Don't overcut the hole — sloppy cutouts are why hole accuracy is on the Hanging checklist. Label each firestop with system number, installer, and date when the spec requires it."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "fs-system-match",
+      "prompt": "Drawing system number matches joint type, movement class, and width band in the field",
+      "severity": "required"
+    },
+    {
+      "id": "fs-annular",
+      "prompt": "Annular space within listed min/max",
+      "severity": "required"
+    },
+    {
+      "id": "fs-photo",
+      "prompt": "Photo record with location and system number before cover",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Static system in a dynamic joint",
+      "wrong": "Use static firestop at a moving head-of-wall",
+      "right": "Dynamic (D) system sized to the actual joint width band",
+      "why": "Passes inspection day, tears on first structural load"
+    },
+    {
+      "title": "Annular space out of range",
+      "wrong": "Oversized hole from sloppy layout",
+      "right": "Measure and cut to keep annular space in the listing",
+      "why": "Most common field failure after wrong movement class"
+    },
+    {
+      "title": "Underfilled depth",
+      "wrong": "Skin sealant, void behind",
+      "right": "Packing and fill at listed depths",
+      "why": "Visible when probed at inspection"
+    },
+    {
+      "title": "Wrong sealant class",
+      "wrong": "Swap intumescent and elastomeric",
+      "right": "Match sealant class to penetrant and listing",
+      "why": "Voids the tested system"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "ratedwalls",
+    "hang",
+    "framing",
+    "changeorder"
+  ],
+  "next_steps": [
+    {
+      "id": "framing",
+      "label": "Framing",
+      "why": "Head-of-wall detail starts in metal stud framing"
+    },
+    {
+      "id": "hang",
+      "label": "Hanging",
+      "why": "Hole accuracy drives annular space"
+    },
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Verify before cover and stage advance"
+    },
+    {
+      "id": "act",
+      "label": "Acoustical ceilings",
+      "why": "Rated ceilings and penetrations often close out together"
+    }
+  ],
+  "search_tags": [
+    "firestop",
+    "fire stopping",
+    "head of wall",
+    "HW-D",
+    "through penetration",
+    "annular space",
+    "UL",
+    "rated assembly",
+    "intumescent",
+    "elastomeric"
+  ],
+  "synonyms": [
+    "firestop",
+    "fire stop",
+    "firestopping",
+    "head of wall",
+    "head-of-wall",
+    "HW-D",
+    "through-penetration",
+    "annular space",
+    "penetration firestop",
+    "joint system"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "UL numbering (joint type, D/S movement, width bands), F/T rating definitions, and install concepts from UL guide information and International Firestop Council material on ASTM/UL standards; through-penetration systems tested to UL 1479 / ASTM E814, joint systems to UL 2079 / ASTM E1966. The specific listed system on the project drawings governs annular spaces, depths, materials, and cycle counts. Scope ownership of penetration firestopping is contractual — get it in writing at job start.",
+    "sources": [
+      "GVC Field Manual",
+      "UL guide information",
+      "International Firestop Council",
+      "Project listed firestop systems"
+    ]
+  }
+}
