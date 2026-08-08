@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Takeoff bridge redesigned on gvc-ui.css (r100) — BUILT 2026-08-08
+`/ui/takeoff` converted to redesign SoT: `.app`/`.rail`/`.topbar`, handoff
+cards (primary = Open Takeoff app), honest empty "Waiting to come back"
+(no fake jobs), `.path` money track via `GvcFlow.mount`. Page-local CSS
+removed; links `/ui/gvc-ui.css` only. Hub **r100**.
+
 ## ✨ Field Guide role tracks catalogued (r99) — BUILT 2026-08-08
 Migrated **track-laborer**, **track-hanger**, **track-finisher**, **track-act**,
 **track-lead** into the catalog with offline `.nextpath` (60 procedures).

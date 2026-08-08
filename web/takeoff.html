@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Portal — Takeoff</title>
 <script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
   try {
     var k = "gvc-theme", v = localStorage.getItem(k);
@@ -18,83 +19,192 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
-<style>
-  .tk-actions { display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:var(--gvc-space-4); }
-  .tk-map { margin:0; padding-left:1.15rem; color:var(--gvc-ink-soft); line-height:1.55; }
-  .tk-map li { margin:0.35rem 0; }
-  .tk-map a { color:var(--gvc-green-dark); font-weight:600; }
-</style>
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 </head>
 <body>
 
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/" title="Back to the GVC Portal home">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Takeoff</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user">{{EMAIL}}</span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
+<div class="app">
+  <aside class="rail" id="rail">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <a class="kicker" href="/" style="text-decoration:none;color:inherit">GVC Portal</a>
+        <button type="button" class="btn btn-icon btn-ghost phone-only" id="rail-close" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="rail__job">Estimating &amp; bids</div>
     </div>
-  </div>
-</header>
-
-<main class="gvc-shell">
-  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
-
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Estimating &amp; bids</p>
-    <h1 class="gvc-h1">Takeoff</h1>
-    <p class="gvc-sub">Measure the job in the Takeoff app, then bring numbers back here for the estimate. This page stays in the portal so you can always return to the hub.</p>
-  </div>
-
-  <div class="gvc-card">
-    <div class="gvc-card-hd">
-      <span class="gvc-card-title">Open the Takeoff app</span>
+    <nav class="rail__nav" aria-label="Tools">
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Today</span>
+        <a class="nav-item" href="/"><span class="nav-item__name">Your hub</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Estimating &amp; bids</span>
+        <a class="nav-item is-active" href="/ui/takeoff" aria-current="page"><span class="nav-item__name">Takeoff</span></a>
+        <a class="nav-item" href="/ui/estimate?takeoff=1"><span class="nav-item__name">Estimate Generator</span></a>
+        <a class="nav-item" href="/ui/change-order"><span class="nav-item__name">Change Order</span></a>
+        <a class="nav-item" href="/ui/jobstart"><span class="nav-item__name">Job Start</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Money</span>
+        <a class="nav-item" href="/ui/billing"><span class="nav-item__name">Billing Hub</span></a>
+        <a class="nav-item" href="/ui/invoice"><span class="nav-item__name">Invoice Generator</span></a>
+        <a class="nav-item" href="/ui/check"><span class="nav-item__name">Paid by Check</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Field</span>
+        <a class="nav-item" href="/ui/jobcheck"><span class="nav-item__name">Job Check</span></a>
+        <a class="nav-item" href="/ui/fieldguide"><span class="nav-item__name">Field Manual</span></a>
+      </div>
+    </nav>
+    <div class="rail__foot">
+      <span class="avatar" aria-hidden="true">G</span>
+      <span class="row__main">
+        <b class="row__title">Signed in</b>
+        <span class="row__sub" id="rail-email" title="{{EMAIL}}">{{EMAIL}}</span>
+      </span>
+      <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
     </div>
-    <p class="gvc-help" style="margin:0 0 var(--gvc-space-3);">
-      Takeoff runs on its own site (new tab). Keep this portal tab — or use the brand mark / Path strip anytime to get back to the hub.
-    </p>
-    <div class="tk-actions">
-      <a class="gvc-btn gvc-btn--gold" id="open-takeoff" href="https://gvctakeoff.netlify.app/v2.html"
-         target="_blank" rel="noopener noreferrer">Open Takeoff app</a>
-      <a class="gvc-btn gvc-btn--ghost" href="/ui/estimate?takeoff=1">Import into Estimate</a>
-      <a class="gvc-btn gvc-btn--ghost" href="/">Back to hub</a>
-    </div>
-  </div>
+  </aside>
 
-  <div class="gvc-card" style="margin-top:var(--gvc-space-4);">
-    <div class="gvc-card-hd">
-      <span class="gvc-card-title">How the money path clicks through</span>
+  <main>
+    <header class="topbar">
+      <button type="button" class="btn btn-icon btn-ghost phone-only" id="rail-open" aria-label="All tools">&#8801;</button>
+      <div class="topbar__title">
+        <span class="kicker">Estimating &amp; bids</span>
+        <h1>Takeoff</h1>
+      </div>
+      <div class="topbar__actions">
+        <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+        <a class="btn btn-sm btn-ghost" href="/">Hub</a>
+      </div>
+    </header>
+
+    <div class="page">
+
+      <section class="stack" style="gap:var(--space-2)">
+        <span class="kicker">The money path</span>
+        <nav class="path" id="gvc-flow" aria-label="Money path"></nav>
+        <span class="row__sub">Jump anywhere from here — you don’t have to walk the rail.</span>
+      </section>
+
+      <!-- This page exists to send you somewhere. One green choice. -->
+      <section class="handoff">
+        <a class="handoff__card is-primary" id="open-takeoff"
+           href="https://gvctakeoff.netlify.app/v2.html"
+           target="_blank" rel="noopener noreferrer">
+          <span class="handoff__kicker">Measure</span>
+          <b class="handoff__title">Open the Takeoff app →</b>
+          <span class="handoff__body">Boards, bead and scope. Opens in a new tab — this portal tab stays put so you can come straight back.</span>
+        </a>
+        <a class="handoff__card" href="/ui/estimate?takeoff=1">
+          <span class="handoff__kicker">Come back with numbers</span>
+          <b class="handoff__title">Import into Estimate</b>
+          <span class="handoff__body">Pull in a JSON export, or pick up a draft that was sent to the portal queue.</span>
+        </a>
+      </section>
+
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>Waiting to come back</h2>
+            <span class="row__sub">Measured takeoffs staged for Estimate — when the queue is wired, they land here</span>
+          </div>
+        </div>
+        <div class="empty empty-inline">
+          <div class="empty__title">Nothing staged yet</div>
+          <p class="empty__body">
+            Measure in the Takeoff app, then export for the portal or send to the queue.
+            Import lands in Estimate — nothing auto-sends to a customer.
+          </p>
+          <div class="empty__actions">
+            <a class="btn btn-primary" href="/ui/estimate?takeoff=1">Open Estimate import</a>
+            <a class="btn" id="open-takeoff-secondary" href="https://gvctakeoff.netlify.app/v2.html"
+               target="_blank" rel="noopener noreferrer">Open Takeoff app</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="card card-flush">
+        <div class="card-head">
+          <div class="row__main">
+            <h2>What happens after this</h2>
+            <span class="row__sub">Each step hands the job to the next one. Nothing sends itself.</span>
+          </div>
+        </div>
+
+        <div class="row">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">01</span>
+          <span class="row__main">
+            <b class="row__title">Takeoff</b>
+            <span class="row__sub">Measure boards and scope, then export or send to the portal queue.</span>
+          </span>
+          <span class="tag tag-green row__end">You are here</span>
+        </div>
+
+        <a class="row" href="/ui/estimate?takeoff=1">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">02</span>
+          <span class="row__main">
+            <b class="row__title">Estimate Generator</b>
+            <span class="row__sub">Import the JSON or resume the staged draft, preview, then approve to send.</span>
+          </span>
+        </a>
+
+        <a class="row" href="/ui/jobstart">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">03</span>
+          <span class="row__main">
+            <b class="row__title">Job Start</b>
+            <span class="row__sub">Bid won — hand the packet to Ops, and Ops accepts it.</span>
+          </span>
+        </a>
+
+        <a class="row" href="/ui/jobcheck">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">04</span>
+          <span class="row__main">
+            <b class="row__title">Job Check</b>
+            <span class="row__sub">Field stages on the live job. Mark Ready to Invoice when billing can start.</span>
+          </span>
+        </a>
+
+        <a class="row" href="/ui/billing">
+          <span class="mono faint row__end" style="font-size:var(--text-xs);min-width:22px">05</span>
+          <span class="row__main">
+            <b class="row__title">Billing Hub</b>
+            <span class="row__sub">The ready queue feeds Invoice Generator and Paid by Check.</span>
+          </span>
+        </a>
+      </section>
+
     </div>
-    <ol class="tk-map">
-      <li><strong>Takeoff</strong> — measure boards / scope; Export or Send to Portal Queue.</li>
-      <li><a href="/ui/estimate?takeoff=1">Estimate Generator</a> — import JSON or resume the staged draft; preview; Accept → hello@ draft.</li>
-      <li><a href="/ui/jobstart">Job Start</a> — when the bid is won, hand the packet to Ops (Ops accepts).</li>
-      <li><a href="/ui/jobcheck">Job Check</a> — field stages on the live job; Mark Ready to Invoice when billing can start.</li>
-      <li><a href="/ui/billing">Billing Hub</a> — ready queue → Invoice Generator / Paid by Check.</li>
-    </ol>
-    <p class="gvc-help" style="margin:var(--gvc-space-3) 0 0;">
-      Use the <strong>Path</strong> strip at the top of each of these pages to jump without hunting the hub rail.
-    </p>
-  </div>
-</main>
+
+    <nav class="tabbar" aria-label="Phone navigation">
+      <a href="/">Home</a>
+      <a class="is-active" href="/ui/takeoff" aria-current="page">Takeoff</a>
+      <a href="/ui/estimate?takeoff=1">Estimate</a>
+      <a href="/ui/billing">Billing</a>
+    </nav>
+  </main>
+</div>
 
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>
-<script src="/ui/gvc-command.js"></script>
 <script>
 (function () {
-  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+  var rail = document.getElementById("rail");
+  var openBtn = document.getElementById("rail-open");
+  var closeBtn = document.getElementById("rail-close");
+  if (openBtn) openBtn.addEventListener("click", function () { rail.classList.add("is-open"); });
+  if (closeBtn) closeBtn.addEventListener("click", function () { rail.classList.remove("is-open"); });
+
+  if (window.GvcTheme) {
+    window.GvcTheme.mount(document.getElementById("theme-toggle"));
+  }
   if (window.GvcFlow) {
     window.GvcFlow.mount(document.getElementById("gvc-flow"), "takeoff");
+    var url = window.GvcFlow.takeoffAppUrl();
     var a = document.getElementById("open-takeoff");
-    if (a) a.href = window.GvcFlow.takeoffAppUrl();
+    var b = document.getElementById("open-takeoff-secondary");
+    if (a) a.href = url;
+    if (b) b.href = url;
   }
 })();
 </script>

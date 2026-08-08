@@ -2,6 +2,10 @@
  * GvcFlow — money-spine Path strip across portal tools.
  * Mount: GvcFlow.mount(el, "estimate")  // current step id
  * Open Takeoff app: GvcFlow.takeoffAppUrl()
+ *
+ * Host classes:
+ *   .path      → redesign track (gvc-ui.css)
+ *   .gvc-flow  → legacy strip (gvc.css) — still used on unconverted pages
  */
 (function (global) {
   "use strict";
@@ -39,9 +43,7 @@
     }
   }
 
-  function mount(el, currentId) {
-    if (!el) return;
-    var cur = String(currentId || "");
+  function mountLegacy(el, cur) {
     if (!/\bgvc-flow\b/.test(el.className || "")) {
       el.className = (el.className ? el.className + " " : "") + "gvc-flow";
     }
@@ -73,6 +75,51 @@
       '<div class="gvc-flow__track">' +
       parts.join("") +
       "</div>";
+  }
+
+  function mountPath(el, cur) {
+    if (!/\bpath\b/.test(el.className || "")) {
+      el.className = (el.className ? el.className + " " : "") + "path";
+    }
+    el.setAttribute("aria-label", "Money path — jump between tools");
+    var curIdx = -1;
+    for (var j = 0; j < STEPS.length; j++) {
+      if (STEPS[j].id === cur) {
+        curIdx = j;
+        break;
+      }
+    }
+    var parts = [];
+    for (var i = 0; i < STEPS.length; i++) {
+      var s = STEPS[i];
+      var cls = "path__step";
+      if (s.id === cur) cls += " is-here";
+      else if (curIdx >= 0 && i < curIdx) cls += " is-done";
+      if (s.id === cur) {
+        parts.push(
+          '<span class="' +
+            cls +
+            '" aria-current="page">' +
+            esc(s.label) +
+            "</span>"
+        );
+      } else {
+        parts.push(
+          '<a class="' + cls + '" href="' + esc(s.href) + '">' + esc(s.label) + "</a>"
+        );
+      }
+    }
+    el.innerHTML = parts.join("");
+  }
+
+  function mount(el, currentId) {
+    if (!el) return;
+    var cur = String(currentId || "");
+    if (/\bpath\b/.test(el.className || "")) {
+      mountPath(el, cur);
+      return;
+    }
+    mountLegacy(el, cur);
   }
 
   global.GvcFlow = {
