@@ -1189,6 +1189,26 @@ def portal_redesign_patch_stylesheet() -> Response:
                     headers={"Cache-Control": "public, max-age=3600"})
 
 
+@app.get("/ui/gvc-forms.css")
+def portal_forms_stylesheet() -> Response:
+    """Form grammar stylesheet from docs/redesign handoff (web/gvc-forms.css).
+
+    Link after /ui/gvc-ui.css on Estimate / Change Order / Invoice during
+    conversion. Do not stack with /ui/gvc.css moneyform rules on the same page.
+    """
+    path = WEB_DIR / "gvc-forms.css"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    return Response(content=path.read_text(encoding="utf-8"),
+                    media_type="text/css",
+                    headers={"Cache-Control": "public, max-age=3600"})
+
+
 _UI_FONT_ALLOWLIST = frozenset({
     "montserrat-600.woff2",
     "montserrat-700.woff2",

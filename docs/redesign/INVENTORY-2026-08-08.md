@@ -110,13 +110,20 @@ Green primary + gold hairline (redesign rule) is **not** consistently applied; m
 - **`takeoff.html`**, **`hub.html`**: `/ui/gvc-ui.css` only
 - Remaining portal HTML: `/ui/gvc.css` only (none load `gvc-v2-patch.css` yet)
 
+## Forms pack (2026-08-08, second drop)
+
+New: `Cursor Prompt - Forms.md`, `START HERE.md`, `gvc-forms-reference.html`,
+`gvc-forms.css` (served at `/ui/gvc-forms.css`, not linked on pages yet).
+**Audit:** `FORMS-AUDIT-2026-08-08.md` — conversion blocked until Jordan signs off.
+
 ## Proposed conversion order (portal only)
 
 1. ~~**`takeoff.html` bridge**~~ **Done** — redesign shell + handoff + honest empty queue; `GvcFlow` mounts `.path`
 2. ~~**Shell on hub**~~ **Done (r101)** — `.app/.rail/.topbar/.tabbar`; single rail drawer; needs/metrics/queue on redesign cards
-3. **Estimate** — drop `<select>`s, delete leftover page CSS, checklist
-4. **Job Check** status picker — `Status Picker Handoff.md`
-5. Remaining money spine → morning → fieldguide last (private palette)
+3. **Shared forms chrome** — one `.gvc-topbar` + nested `.gvc-path` (56px / 32px) for every generator
+4. **Invoice → Estimate → Change Order** — copy `gvc-forms-reference.html` stages; kill selects + helpers + `gvc.css` moneyform
+5. **Job Check** status picker — `Status Picker Handoff.md`
+6. Remaining money spine → morning → fieldguide last (private palette)
 
 ## Blocked / not in this repo
 

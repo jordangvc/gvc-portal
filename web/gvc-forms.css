@@ -1,0 +1,584 @@
+/* ==========================================================================
+   gvc-forms.css — Green Valley Contractors FORM GRAMMAR
+   Companion to gvc-ui.css. Link BOTH, gvc-ui.css first.
+
+     <link rel="stylesheet" href="/styles/gvc-ui.css">
+     <link rel="stylesheet" href="/styles/gvc-forms.css">
+
+   This file is the SOURCE OF TRUTH for the Estimate Generator, Change Order,
+   and Invoice Generator screens. Every class here already exists in
+   gvc-forms-reference.html. Copy the markup, do not re-derive it.
+
+   RULE: if a form screen needs a style that is not in this file, the style is
+   wrong — not the file. Add it here once, and every form gets it.
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   0. FONTS
+   -------------------------------------------------------------------------- */
+@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@400,500,700,900&display=swap');
+
+/* --------------------------------------------------------------------------
+   1. PAGE SHELL
+   -------------------------------------------------------------------------- */
+
+.gvc-page {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* two-column: form on the left, live document on the right.
+   The document column DISAPPEARS below 1080px. Do not try to keep it. */
+.gvc-shell {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
+  align-items: start;
+  max-width: 1560px;
+  margin: 0 auto;
+}
+.gvc-form-col {
+  min-width: 0;
+  padding: clamp(16px, 2.4vw, 32px) clamp(14px, 3vw, 26px) 132px; /* bottom clears the action bar */
+}
+.gvc-doc-col {
+  background: var(--color-surface-offset);
+  border-left: 1px solid var(--color-divider);
+  min-height: calc(100vh - 88px);
+}
+.gvc-doc-col > .gvc-doc-sticky { position: sticky; top: 104px; padding: clamp(16px,2vw,26px) clamp(14px,1.6vw,22px) 40px; }
+
+@media (max-width: 1079px) {
+  .gvc-shell { grid-template-columns: minmax(0, 1fr); }
+  .gvc-doc-col { display: none; }
+}
+
+/* --------------------------------------------------------------------------
+   2. TOP CHROME  ← the bars that keep going wrong. This is the only version.
+   -------------------------------------------------------------------------- */
+
+.gvc-topbar {
+  position: sticky; top: 0; z-index: 40;
+  background: var(--color-primary-hover);   /* #0d2e21 */
+  color: var(--color-text-inverse);
+}
+.gvc-topbar-row {
+  display: flex; align-items: center; gap: 14px;
+  height: 56px;
+  padding: 0 clamp(14px, 3vw, 26px);
+}
+.gvc-brand { display: flex; align-items: center; gap: 9px; flex-shrink: 0; }
+.gvc-brand-mark {
+  width: 26px; height: 26px; border-radius: var(--radius-full);
+  background: var(--color-accent); color: var(--color-primary-hover);
+  display: grid; place-items: center;
+  font-family: var(--font-display); font-weight: 800; font-size: 12px;
+}
+.gvc-brand-name { font-family: var(--font-display); font-weight: 700; font-size: 14.5px; letter-spacing: -.01em; }
+
+/* app switcher — pills, never a dropdown */
+.gvc-appnav { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; }
+.gvc-appnav::-webkit-scrollbar { display: none; }
+.gvc-app {
+  height: 32px; padding: 0 15px; border: 0; border-radius: var(--radius-full);
+  background: transparent; color: #9db3a6;
+  font-size: 12.5px; font-weight: 700; white-space: nowrap; cursor: pointer;
+  transition: all var(--transition-interactive);
+}
+.gvc-app:hover { filter: brightness(1.3); }
+.gvc-app[aria-current='page'],
+.gvc-app.is-on { background: var(--color-accent); color: var(--color-primary-hover); }
+
+.gvc-topbar-spacer { flex: 1; }
+.gvc-saved {
+  display: flex; align-items: center; gap: 7px;
+  font-size: 11.5px; color: #9db3a6; white-space: nowrap;
+}
+.gvc-saved-dot {
+  width: 6px; height: 6px; border-radius: var(--radius-full);
+  background: var(--color-accent); animation: gvcPulse 2.4s ease-in-out infinite;
+}
+.gvc-avatar {
+  width: 29px; height: 29px; border-radius: var(--radius-full);
+  background: var(--color-primary); border: 1px solid #2c5a45;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 700; color: #cbd8d0; flex-shrink: 0;
+}
+
+/* the PATH spine — one row, one height, one divider treatment, always */
+.gvc-path {
+  background: var(--color-primary);
+  padding: 0 clamp(14px, 3vw, 26px);
+  overflow-x: auto; scrollbar-width: none;
+}
+.gvc-path::-webkit-scrollbar { display: none; }
+.gvc-path-row { display: flex; align-items: center; height: 32px; min-width: max-content; }
+.gvc-path-step {
+  display: flex; align-items: center;
+  font-size: 11px; font-weight: 500; color: #7f9a8b;
+  padding: 0 11px;
+}
+.gvc-path-step + .gvc-path-step { border-left: 1px solid #2c5a45; }
+.gvc-path-step.is-here { color: var(--color-accent); font-weight: 700; }
+
+/* --------------------------------------------------------------------------
+   3. PAGE HEAD + STAGE RAIL
+   -------------------------------------------------------------------------- */
+
+.gvc-head { max-width: 760px; margin-bottom: 20px; }
+.gvc-kicker-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+.gvc-kicker {
+  font-size: 10.5px; font-weight: 700; letter-spacing: .16em;
+  text-transform: uppercase; color: var(--color-accent-ink);
+}
+.gvc-rule { height: 1px; flex: 1; background: var(--color-divider); }
+.gvc-h1 {
+  font-family: var(--font-display); font-weight: 800;
+  font-size: clamp(28px, 4.2vw, 40px); line-height: 1.03; letter-spacing: -.03em;
+  margin: 0 0 7px;
+}
+.gvc-blurb { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--color-text-muted); max-width: 54ch; }
+
+.gvc-stages { display: flex; gap: 7px; margin-bottom: 24px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.gvc-stages::-webkit-scrollbar { display: none; }
+.gvc-stage {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 16px; border-radius: var(--radius-full);
+  background: var(--color-surface); border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  font-size: 13px; font-weight: 700; letter-spacing: -.01em;
+  cursor: pointer; flex-shrink: 0;
+  transition: all var(--transition-interactive);
+}
+.gvc-stage:hover { border-color: var(--color-accent); }
+.gvc-stage.is-on { background: var(--color-accent-soft); border-color: var(--color-accent); color: var(--color-accent-ink); }
+.gvc-stage.is-done { border-color: var(--color-primary); color: var(--color-primary); }
+.gvc-stage-num {
+  width: 20px; height: 20px; border-radius: var(--radius-full);
+  display: grid; place-items: center;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 800;
+  background: var(--color-surface-offset); color: var(--color-text-faint);
+}
+.gvc-stage.is-on .gvc-stage-num { background: var(--color-accent); color: var(--color-primary-hover); }
+.gvc-stage.is-done .gvc-stage-num { background: var(--color-primary); color: var(--color-text-inverse); }
+
+/* --------------------------------------------------------------------------
+   4. PANELS + FIELDS
+   -------------------------------------------------------------------------- */
+
+.gvc-stack { max-width: 760px; display: flex; flex-direction: column; gap: 16px; }
+.gvc-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-divider);
+  border-radius: 22px;
+  padding: clamp(16px, 2.5vw, 24px);
+}
+.gvc-panel-head { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; }
+.gvc-h2 { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: -.02em; margin: 0; }
+.gvc-panel-note { margin: 0 0 14px; font-size: 12.5px; color: var(--color-text-faint); }
+
+/* the dark hero panel used for search and for the total */
+.gvc-panel-dark {
+  background: var(--color-primary);
+  border-radius: 22px;
+  padding: clamp(18px, 2.8vw, 26px);
+  color: var(--color-text-inverse);
+}
+.gvc-panel-dark .gvc-h2 { color: var(--color-text-inverse); }
+
+.gvc-field { display: block; }
+.gvc-field + .gvc-field { margin-top: 12px; }
+/* LABELS ARE SMALL CAPS AND THAT IS ALL. No paragraph of helper text under a
+   field — the hint goes in the placeholder. This is the single biggest
+   difference from the old forms. */
+.gvc-label {
+  display: block;
+  font-size: 10.5px; font-weight: 700; letter-spacing: .11em;
+  text-transform: uppercase; color: var(--color-text-faint);
+  margin-bottom: 6px;
+}
+.gvc-input {
+  width: 100%; height: 48px;
+  border-radius: 13px; border: 1px solid var(--color-border);
+  background: var(--color-surface-2);
+  padding: 0 15px;
+  font-size: 15px; font-weight: 500; color: var(--color-text);
+  outline: none;
+  transition: border-color var(--transition-interactive), box-shadow var(--transition-interactive);
+}
+.gvc-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-ring); }
+.gvc-textarea {
+  width: 100%; border-radius: 14px; border: 1px solid var(--color-border);
+  background: var(--color-surface-2); padding: 12px 14px;
+  font-size: 14px; line-height: 1.5; color: var(--color-text);
+  outline: none; resize: vertical;
+  transition: border-color var(--transition-interactive);
+}
+.gvc-textarea:focus { border-color: var(--color-primary); }
+.gvc-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 619px) { .gvc-grid-2 { grid-template-columns: 1fr; } }
+
+/* search field on the dark panel */
+.gvc-search {
+  flex: 1; min-width: 210px; height: 52px;
+  border-radius: var(--radius-full); border: 1px solid #2c5a45;
+  background: var(--color-primary-hover); color: var(--color-text-inverse);
+  padding: 0 22px; font-size: 15px; outline: none;
+  transition: border-color var(--transition-interactive);
+}
+.gvc-search:focus { border-color: var(--color-accent); }
+.gvc-search-row { display: flex; gap: 9px; flex-wrap: wrap; }
+
+/* --------------------------------------------------------------------------
+   5. CHOICE CONTROLS — visible options, never a <select>
+   -------------------------------------------------------------------------- */
+
+.gvc-chips { display: flex; gap: 7px; flex-wrap: wrap; }
+.gvc-chip {
+  display: inline-flex; align-items: center; gap: 8px;
+  height: 38px; padding: 0 16px; border-radius: var(--radius-full);
+  background: var(--color-surface); border: 1px solid var(--color-divider);
+  color: var(--color-text-muted);
+  font-size: 13px; font-weight: 700; letter-spacing: -.01em;
+  cursor: pointer; flex-shrink: 0;
+  transition: all var(--transition-interactive);
+}
+.gvc-chip:hover { border-color: var(--color-accent); }
+.gvc-chip.is-on { background: var(--color-accent-soft); border-color: var(--color-accent); color: var(--color-accent-ink); }
+
+/* chip on a dark ground */
+.gvc-chip-dark {
+  height: 32px; padding: 0 14px; border-radius: var(--radius-full);
+  border: 1px solid #2c5a45; background: transparent; color: #9db3a6;
+  font-size: 12.5px; font-weight: 500; cursor: pointer;
+  transition: all var(--transition-interactive);
+}
+.gvc-chip-dark:hover { border-color: var(--color-accent); color: var(--color-accent-soft); }
+
+/* scope tiles — tap targets with a price on them */
+.gvc-tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(206px, 1fr)); gap: 9px; }
+@media (max-width: 619px) { .gvc-tiles { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); } }
+.gvc-tile {
+  display: flex; flex-direction: column;
+  padding: 13px; border-radius: 18px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  cursor: pointer; text-align: left;
+  transition: all 180ms cubic-bezier(.16, 1, .3, 1);
+}
+.gvc-tile:hover { border-color: var(--color-accent); transform: translateY(-2px); }
+.gvc-tile.is-on { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.gvc-tile-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; }
+.gvc-tile-group { font-size: 9.5px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: #8b9089; }
+.gvc-tile.is-on .gvc-tile-group { color: var(--color-accent-ink); }
+.gvc-tile-check {
+  width: 19px; height: 19px; border-radius: var(--radius-full);
+  display: grid; place-items: center;
+  font-size: 10px; font-weight: 900; flex-shrink: 0;
+  background: transparent; border: 1px solid #c9c3b6; color: transparent;
+  transition: all var(--transition-interactive);
+}
+.gvc-tile.is-on .gvc-tile-check { background: var(--color-accent); border-color: var(--color-accent); color: var(--color-primary-hover); }
+.gvc-tile-label { display: block; font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; line-height: 1.25; margin-top: 9px; }
+.gvc-tile-price {
+  display: block; margin-top: 7px;
+  font-family: var(--font-mono); font-size: 13px; font-weight: 700;
+  font-variant-numeric: tabular-nums; color: var(--color-text-faint);
+}
+.gvc-tile.is-on .gvc-tile-price { color: var(--color-accent-ink); }
+
+/* person cards — replaces the salesperson dropdown */
+.gvc-people { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 9px; }
+@media (max-width: 619px) { .gvc-people { grid-template-columns: 1fr; } }
+.gvc-person {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 13px; border-radius: 16px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  cursor: pointer; text-align: left;
+  transition: all var(--transition-interactive);
+}
+.gvc-person:hover { border-color: var(--color-accent); }
+.gvc-person.is-on { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.gvc-person-av {
+  width: 34px; height: 34px; flex-shrink: 0; border-radius: var(--radius-full);
+  display: grid; place-items: center; font-size: 11px; font-weight: 800;
+  background: var(--color-primary-soft); color: var(--color-primary);
+}
+.gvc-person.is-on .gvc-person-av { background: var(--color-accent); color: var(--color-primary-hover); }
+.gvc-person-name { display: block; font-size: 13.5px; font-weight: 700; letter-spacing: -.01em; }
+.gvc-person-meta { display: block; font-size: 11px; color: var(--color-text-faint); }
+.gvc-person-check {
+  width: 20px; height: 20px; border-radius: var(--radius-full); flex-shrink: 0;
+  background: var(--color-accent); color: var(--color-primary-hover);
+  font-size: 11px; font-weight: 900; display: grid; place-items: center;
+}
+
+/* email chips */
+.gvc-chipfield {
+  display: flex; flex-wrap: wrap; gap: 7px; align-items: center;
+  padding: 9px; border-radius: 15px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+}
+.gvc-chipfield:focus-within { border-color: var(--color-primary); }
+.gvc-email {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 34px; padding: 0 5px 0 13px; border-radius: var(--radius-full);
+  background: var(--color-primary-soft); color: var(--color-primary);
+  font-size: 12.5px; font-weight: 600;
+  animation: gvcPop .22s cubic-bezier(.16, 1, .3, 1) both;
+}
+.gvc-email-x {
+  width: 22px; height: 22px; border-radius: var(--radius-full); border: 0;
+  background: var(--color-primary); color: var(--color-text-inverse);
+  font-size: 13px; line-height: 1; cursor: pointer;
+  display: grid; place-items: center;
+  transition: background var(--transition-interactive);
+}
+.gvc-email-x:hover { background: var(--color-danger); }
+.gvc-chipfield-input {
+  flex: 1; min-width: 170px; height: 34px;
+  border: 0; background: transparent; font-size: 13px; outline: none; padding: 0 8px;
+}
+
+/* toggle row — replaces a lone checkbox with a paragraph under it */
+.gvc-toggle {
+  display: flex; align-items: center; gap: 13px; width: 100%;
+  margin-top: 14px; padding: 13px 15px; border-radius: 16px;
+  background: var(--color-surface-2); border: 1px solid var(--color-border);
+  cursor: pointer; text-align: left;
+  transition: all var(--transition-interactive);
+}
+.gvc-toggle:hover { border-color: var(--color-accent); }
+.gvc-toggle.is-on { background: var(--color-accent-soft); border-color: var(--color-accent); }
+.gvc-toggle-track {
+  width: 46px; height: 27px; flex-shrink: 0; border-radius: var(--radius-full);
+  padding: 3px; display: flex; justify-content: flex-start;
+  background: #c9c3b6;
+  transition: background var(--transition-interactive);
+}
+.gvc-toggle.is-on .gvc-toggle-track { background: var(--color-primary); justify-content: flex-end; }
+.gvc-toggle-knob {
+  width: 21px; height: 21px; border-radius: var(--radius-full);
+  background: var(--color-surface-2); box-shadow: 0 1px 3px rgba(0,0,0,.25);
+}
+.gvc-toggle-title { display: block; font-size: 13.5px; font-weight: 700; }
+.gvc-toggle-sub { display: block; font-size: 11.5px; color: var(--color-text-faint); margin-top: 2px; }
+
+/* --------------------------------------------------------------------------
+   6. LIST ROWS (drafts, review checks)
+   -------------------------------------------------------------------------- */
+
+.gvc-rows { display: flex; flex-direction: column; gap: 8px; }
+.gvc-row {
+  display: flex; align-items: center; gap: 13px;
+  background: var(--color-surface); border: 1px solid var(--color-divider);
+  border-radius: 16px; padding: 13px 15px;
+  transition: border-color var(--transition-interactive), transform var(--transition-interactive);
+}
+.gvc-row:hover { border-color: var(--color-accent); transform: translateX(2px); }
+.gvc-row-body { min-width: 0; flex: 1; }
+.gvc-row-title {
+  font-weight: 700; font-size: 13.5px; letter-spacing: -.01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gvc-row-meta {
+  font-size: 11.5px; color: var(--color-text-faint); margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.gvc-badge {
+  flex-shrink: 0; height: 21px; padding: 0 9px; border-radius: var(--radius-full);
+  background: var(--color-primary-soft); color: var(--color-primary);
+  font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase;
+  display: grid; place-items: center;
+}
+.gvc-row.is-bad { background: var(--color-danger-soft); border-color: var(--color-danger); }
+.gvc-row-dot {
+  width: 24px; height: 24px; flex-shrink: 0; border-radius: var(--radius-full);
+  display: grid; place-items: center; font-size: 12px; font-weight: 900;
+  background: var(--color-primary-soft); color: var(--color-primary);
+}
+.gvc-row.is-bad .gvc-row-dot { background: var(--color-danger); color: var(--color-text-inverse); }
+
+/* --------------------------------------------------------------------------
+   7. LINE ITEMS
+   -------------------------------------------------------------------------- */
+
+.gvc-line {
+  background: var(--color-surface); border: 1px solid var(--color-divider);
+  border-radius: 20px; padding: 15px 16px;
+  transition: border-color var(--transition-interactive);
+}
+.gvc-line.is-optional { border-color: var(--color-accent); }
+.gvc-line-top { display: flex; align-items: flex-start; gap: 12px; }
+.gvc-line-desc {
+  width: 100%; border: 0; background: transparent;
+  font-family: var(--font-display); font-size: 15.5px; font-weight: 700;
+  letter-spacing: -.015em; outline: none; padding: 0 0 3px; color: var(--color-text);
+}
+.gvc-line-desc:focus { box-shadow: 0 1px 0 var(--color-accent); }
+.gvc-line-detail {
+  width: 100%; border: 0; background: transparent;
+  font-size: 12.5px; color: var(--color-text-muted); outline: none; padding: 2px 0;
+}
+.gvc-line-detail:focus { box-shadow: 0 1px 0 var(--color-border); }
+.gvc-line-controls { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-top: 12px; }
+.gvc-money {
+  display: inline-flex; align-items: center; height: 44px;
+  border-radius: var(--radius-full); border: 1px solid var(--color-border);
+  background: var(--color-surface-2); padding: 0 6px 0 14px; gap: 2px;
+}
+.gvc-money:focus-within { border-color: var(--color-primary); }
+.gvc-money-sign { font-size: 14px; font-weight: 700; color: var(--color-text-faint); }
+.gvc-money-input {
+  width: 96px; border: 0; background: transparent;
+  font-family: var(--font-mono); font-size: 15px; font-weight: 700;
+  font-variant-numeric: tabular-nums; outline: none; padding: 0 8px 0 2px;
+  color: var(--color-text);
+}
+.gvc-stepper {
+  display: inline-flex; align-items: center; height: 44px;
+  border-radius: var(--radius-full); border: 1px solid var(--color-border);
+  background: var(--color-surface-2); overflow: hidden;
+}
+.gvc-stepper button {
+  width: 38px; height: 100%; border: 0; background: transparent;
+  font-size: 17px; color: var(--color-primary); cursor: pointer;
+}
+.gvc-stepper button:hover { background: var(--color-primary-soft); }
+.gvc-stepper-val {
+  min-width: 34px; text-align: center;
+  font-family: var(--font-mono); font-size: 14px; font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.gvc-line-total {
+  font-family: var(--font-mono); font-size: 16px; font-weight: 700;
+  font-variant-numeric: tabular-nums; letter-spacing: -.02em;
+  margin-left: auto;
+}
+.gvc-x {
+  width: 30px; height: 30px; flex-shrink: 0; border-radius: var(--radius-full);
+  border: 1px solid var(--color-divider); background: transparent;
+  color: var(--color-danger); font-size: 15px; line-height: 1;
+  cursor: pointer; display: grid; place-items: center;
+  transition: all var(--transition-interactive);
+}
+.gvc-x:hover { background: var(--color-danger-soft); border-color: var(--color-danger); }
+.gvc-add {
+  height: 50px; border-radius: var(--radius-full);
+  border: 1px dashed var(--color-border); background: transparent;
+  color: var(--color-primary); font-weight: 700; font-size: 14px;
+  cursor: pointer; transition: all var(--transition-interactive);
+}
+.gvc-add:hover { border-color: var(--color-primary); background: var(--color-surface); }
+
+.gvc-empty {
+  border: 1px dashed var(--color-border); border-radius: 22px;
+  padding: 34px 20px; text-align: center; background: var(--color-surface);
+}
+.gvc-empty-title { font-family: var(--font-display); font-weight: 700; font-size: 16px; letter-spacing: -.02em; margin-bottom: 5px; }
+.gvc-empty-sub { font-size: 13px; color: var(--color-text-faint); margin-bottom: 16px; }
+
+/* --------------------------------------------------------------------------
+   8. STICKY ACTION BAR — one primary action, total always visible
+   -------------------------------------------------------------------------- */
+
+.gvc-actionbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 50;
+  background: var(--color-primary-hover);
+  border-top: 1px solid #2c5a45;
+  padding: 10px clamp(12px, 3vw, 26px);
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+}
+.gvc-actionbar-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.gvc-actionbar-label {
+  font-size: 9.5px; font-weight: 700; letter-spacing: .15em;
+  text-transform: uppercase; color: var(--color-accent);
+}
+.gvc-actionbar-total {
+  font-family: var(--font-mono); font-size: clamp(20px, 3.4vw, 27px); font-weight: 700;
+  color: var(--color-text-inverse); letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.gvc-actionbar-sub { font-size: 11.5px; color: #9db3a6; }
+
+.gvc-btn {
+  height: 48px; padding: 0 26px; border-radius: var(--radius-full);
+  border: 0; font-weight: 700; font-size: 14.5px; white-space: nowrap; cursor: pointer;
+  transition: transform var(--transition-interactive), filter var(--transition-interactive), background 200ms;
+}
+.gvc-btn-primary { background: var(--color-accent); color: var(--color-primary-hover); }
+.gvc-btn-primary:hover { filter: brightness(1.08); transform: translateY(-1px); }
+.gvc-btn-primary:active { transform: translateY(0); }
+/* incomplete: outlined, still clickable, and it ROUTES to the missing field */
+.gvc-btn-blocked { background: transparent; border: 1px solid var(--color-accent); color: var(--color-accent); }
+.gvc-btn-busy { background: #2c5a45; color: #9db3a6; cursor: wait; }
+.gvc-btn-done { background: var(--color-primary-soft); color: var(--color-primary); cursor: default; }
+.gvc-btn-ghost-dark { background: transparent; border: 1px solid #2c5a45; color: #cbd8d0; }
+.gvc-btn-ghost-dark:hover { border-color: var(--color-accent); color: var(--color-accent-soft); }
+.gvc-btn-outline { background: transparent; border: 1px solid var(--color-primary); color: var(--color-primary); }
+.gvc-btn-outline:hover { background: var(--color-primary); color: var(--color-text-inverse); }
+.gvc-btn-sm { height: 36px; padding: 0 17px; font-size: 12.5px; }
+
+/* --------------------------------------------------------------------------
+   9. LIVE DOCUMENT PREVIEW — square corners, it is paper
+   -------------------------------------------------------------------------- */
+
+.gvc-doc {
+  background: var(--color-surface-2);
+  border: 1px solid var(--color-divider);
+  border-radius: var(--radius-sm);
+  box-shadow: 0 18px 42px -22px rgba(16, 17, 17, .4);
+  padding: clamp(18px, 2vw, 26px);
+  font-size: 12px;
+}
+.gvc-doc-head {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 14px;
+  padding-bottom: 13px; border-bottom: 2px solid var(--color-primary);
+}
+.gvc-doc-brand { font-family: var(--font-display); font-weight: 800; font-size: 14px; letter-spacing: -.02em; color: var(--color-primary); }
+.gvc-doc-sub { font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--color-text-faint); margin-top: 1px; }
+.gvc-doc-type { font-size: 9px; letter-spacing: .13em; text-transform: uppercase; color: var(--color-accent-ink); font-weight: 700; }
+.gvc-doc-num { font-family: var(--font-mono); font-size: 10.5px; margin-top: 2px; color: var(--color-text-muted); }
+.gvc-doc-parties {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  padding: 13px 0; border-bottom: 1px solid var(--color-divider);
+}
+.gvc-doc-cap { font-size: 8.5px; letter-spacing: .13em; text-transform: uppercase; color: #8b9089; margin-bottom: 3px; }
+.gvc-doc-strong { font-weight: 700; font-size: 11.5px; line-height: 1.35; }
+.gvc-doc-soft { color: var(--color-text-faint); font-size: 10.5px; line-height: 1.4; margin-top: 2px; }
+.gvc-doc-line {
+  display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+  padding: 8px 0; border-bottom: 1px solid var(--color-bg);
+}
+.gvc-doc-amt { font-family: var(--font-mono); font-size: 11.5px; font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.gvc-doc-total {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding-top: 12px; margin-top: 4px; border-top: 2px solid var(--color-primary);
+}
+.gvc-doc-total-cap { font-size: 9.5px; letter-spacing: .13em; text-transform: uppercase; font-weight: 700; color: var(--color-primary); }
+.gvc-doc-total-amt { font-family: var(--font-mono); font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.gvc-doc-notes { margin-top: 15px; padding-top: 11px; border-top: 1px solid var(--color-divider); font-size: 10px; color: var(--color-text-faint); line-height: 1.5; }
+.gvc-doc-placeholder { padding: 22px 0; text-align: center; color: #8b9089; font-size: 11px; font-style: italic; }
+
+/* --------------------------------------------------------------------------
+   10. MOTION
+   -------------------------------------------------------------------------- */
+
+@keyframes gvcPulse { 0%, 100% { opacity: 1 } 50% { opacity: .3 } }
+@keyframes gvcRise { from { opacity: 0; transform: translateY(12px) } to { opacity: 1; transform: none } }
+@keyframes gvcPop { from { opacity: 0; transform: scale(.96) } to { opacity: 1; transform: none } }
+
+.gvc-enter { animation: gvcRise .3s cubic-bezier(.16, 1, .3, 1) both; }
+.gvc-pop { animation: gvcPop .26s cubic-bezier(.16, 1, .3, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  .gvc-enter, .gvc-pop, .gvc-saved-dot { animation: none; }
+  * { transition-duration: 1ms !important; }
+}
+
+/* --------------------------------------------------------------------------
+   11. FOCUS — themed, never the browser default
+   -------------------------------------------------------------------------- */
+
+.gvc-page :focus-visible { outline: 2px solid var(--color-accent); outline-offset: 2px; }
+.gvc-page ::selection { background: var(--color-accent-soft); color: var(--color-text); }
