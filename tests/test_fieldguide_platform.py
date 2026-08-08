@@ -102,9 +102,12 @@ def test_repo_catalog_hang_scrape() -> None:
     spine = {"framing", "preboard-walk", "hang", "scrape", "finish",
              "level5-skim", "cleanout"}
     check("job-check spine migrated", spine <= set(cat["by_id"]))
-    ops = {"jobstart-firstday", "job-conditions", "window-returns", "scaffold-lifts"}
+    ops = {"jobstart-firstday", "job-conditions", "window-returns", "scaffold-lifts",
+           "safety-orient"}
     check("ops logistics migrated", ops <= set(cat["by_id"]))
-    check("approved cards", len(cat["cards"]) >= 12)
+    check("firestop migrated", "firestop" in cat["by_id"])
+    check("safety-orient migrated", "safety-orient" in cat["by_id"])
+    check("approved cards", len(cat["cards"]) >= 14)
     check("act migrated", "act" in cat["by_id"])
     check("act approved card", any(c["id"] == "act" for c in cat["cards"]))
     check("jobcheck hang", cat["jobcheck_anchors"].get("Hanging Status") == "hang")
@@ -127,7 +130,13 @@ def test_repo_catalog_hang_scrape() -> None:
     check("resolve frame", resolve_procedure_id("frame") == "framing")
     check("resolve drop-ceiling", resolve_procedure_id("drop-ceiling") == "act")
     check("resolve act", resolve_procedure_id("act") == "act")
+    check("resolve fire-stop", resolve_procedure_id("fire-stop") == "firestop")
+    check("resolve head-of-wall", resolve_procedure_id("head-of-wall") == "firestop")
+    check("resolve annular", resolve_procedure_id("annular") == "firestop")
+    check("resolve safety", resolve_procedure_id("safety") == "safety-orient")
+    check("resolve ppe", resolve_procedure_id("ppe") == "safety-orient")
     check("get_procedure taped", get_procedure("taped")["id"] == "finish")
+    check("get_procedure firestopping", get_procedure("firestopping")["id"] == "firestop")
 
     rel = related_suggestions("hang")
     check("hang has next scrape", any(r["id"] == "scrape" for r in rel))
@@ -143,7 +152,7 @@ def test_repo_catalog_hang_scrape() -> None:
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
-    check("audit counts spine + ops + act", audit["procedure_count"] >= 12)
+    check("audit counts spine + ops + act + firestop", audit["procedure_count"] >= 14)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)

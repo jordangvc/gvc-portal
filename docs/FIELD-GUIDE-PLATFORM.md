@@ -25,7 +25,9 @@ looks like, what changes on site, and what to open next.
 `qc-walk`, `closeout-rhythm` (Notes + Completion Date anchors); Ops logistics —
 `jobstart-firstday`, `job-conditions`, `window-returns`, `scaffold-lifts`
 (Lock Box, Heater/Cans, Window type, Scaffolding, Open questions anchors);
-**ACT ceilings** — `act` (first non-spine trade stub; grid layout, hanger wire, tile).
+**ACT ceilings** — `act` (grid layout, hanger wire, tile);
+**Firestopping** — `firestop` (UL HW-D decode, annular space, dynamic joints);
+**Safety orientation** — `safety-orient` (ops safety-basics).
 
 ## 2. Assumptions
 
@@ -132,13 +134,13 @@ Shallow: home → procedure → next procedure. No orphan pages: `next_steps` + 
 
 ## 11. Next highest-leverage steps
 
-1. Migrate high-traffic repair pages (rated walls, firestop, touch-up)
+1. Migrate high-traffic repair pages (rated walls, touch-up, insulation)
 2. Diagram assets under `content/fieldguide/diagrams/` with caption contract
 3. Stale-content job: flag `last_reviewed` older than `review_cycle_days`
 
-**Done (r71–r81):** Job Check spine + gates + Ops logistics + ACT in catalog;
-offline-baked `.nextpath`; shell sync inject from catalog cards; alias map;
-next_steps link audit.
+**Done (r71–r82):** Job Check spine + gates + Ops logistics + ACT + firestop +
+safety-orient in catalog; offline-baked `.nextpath`; shell sync inject from
+catalog cards; bake script; alias map; next_steps link audit.
 
 ---
 
