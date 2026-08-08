@@ -1220,6 +1220,13 @@ a.gvc-flow__step:hover{ background:var(--gvc-surface); text-decoration:underline
   background: transparent; border-color: transparent;
   color: var(--color-text-faint, var(--gvc-muted));
 }
+.hub-rail__badge.is-setup {
+  background: var(--gvc-tint-sand, #F3EBDD);
+  border-color: var(--gvc-gold-dark, #96763B);
+  color: var(--gvc-gold-dark, #96763B);
+  font-family: var(--font-body, var(--gvc-sans));
+  font-weight: 700;
+}
 .hub-rail__user {
   display: flex; align-items: center; gap: 10px;
   padding: 12px 16px;

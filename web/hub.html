@@ -126,7 +126,7 @@
 
         <div class="hub-ft-note">
           <span>Signed in as <span id="emailnote">{{EMAIL}}</span>. Need a tool? Ask an admin.</span>
-          <span class="hub-ft-ver">Portal <b>r73</b> · Aug 8, 2026</span>
+          <span class="hub-ft-ver">Portal <b>r74</b> · Aug 8, 2026</span>
         </div>
       </div>
     </div>
@@ -237,6 +237,29 @@
     return typeof n === "number" && n > 0 ? n : 0;
   }
 
+  const SETUP_TITLES = {
+    timeoff: "Time Off form URL not set — ask an admin",
+    coi: "COI blank not uploaded — open Admin to add it",
+    admin: "Grant editing needs the GCS backend — env mode is read-only",
+  };
+
+  function setupNeeds(feature) {
+    const s = (payload && payload.setup) || {};
+    return !!s[feature];
+  }
+
+  function railBadge(feature, granted) {
+    if (!granted) {
+      return `<span class="hub-rail__badge is-dash">—</span>`;
+    }
+    if (setupNeeds(feature)) {
+      const tip = SETUP_TITLES[feature] || "Needs setup before this tool works";
+      return `<span class="hub-rail__badge is-setup" title="${esc(tip)}">Setup</span>`;
+    }
+    const n = badgeFor(feature);
+    return n ? `<span class="hub-rail__badge">${n}</span>` : "";
+  }
+
   function renderNav(into, filter) {
     const groups = (payload && payload.nav && payload.nav.groups) || [];
     const q = (filter || "").trim().toLowerCase();
@@ -254,10 +277,7 @@
       html.push(`<div class="hub-rail__group"><span class="hub-rail__ghead">${esc(g.name)}</span>`);
       tools.forEach((t) => {
         const granted = !!t.granted;
-        const n = badgeFor(t.feature);
-        const badge = granted
-          ? (n ? `<span class="hub-rail__badge">${n}</span>` : "")
-          : `<span class="hub-rail__badge is-dash">—</span>`;
+        const badge = railBadge(t.feature, granted);
         const cls = "hub-rail__item" + (granted ? "" : " is-dim");
         if (granted) {
           const ext = t.external ? ` target="_blank" rel="noopener noreferrer"` : "";
@@ -779,6 +799,7 @@
   function applyRefreshSlice(next) {
     if (!payload) payload = {};
     payload.badges = next.badges || {};
+    payload.setup = next.setup || {};
     payload.needs = next.needs || payload.needs || [];
     payload.needs_clear = next.needs_clear;
     payload.summary = next.summary != null ? next.summary : (payload.summary || "");
