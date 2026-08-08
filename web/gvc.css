@@ -1226,6 +1226,7 @@ a.gvc-flow__step:hover{ background:var(--gvc-surface); text-decoration:underline
   color: var(--gvc-gold-dark, #96763B);
   font-family: var(--font-body, var(--gvc-sans));
   font-weight: 700;
+  letter-spacing: .02em;
 }
 .hub-rail__user {
   display: flex; align-items: center; gap: 10px;

@@ -19,6 +19,10 @@ from shared import access, hub_nav
 _ET = ZoneInfo("America/New_York")
 
 
+# ---------------------------------------------------------------------------
+# Config cliffs — hub "Setup" badges (never secrets; bool flags only)
+# ---------------------------------------------------------------------------
+
 def _timeoff_ready() -> bool:
     """Mirror app.service.ui_timeoff — must be an https Form URL."""
     return (os.environ.get("GVC_TIMEOFF_FORM_URL") or "").strip().startswith("https://")
