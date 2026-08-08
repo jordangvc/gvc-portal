@@ -33,6 +33,9 @@ def test_invoice_href_carries_all_known_keys():
     assert mb.invoice_href(project_number="C-005", q="noise") == (
         "/ui/invoice?project_number=C-005"
     )
+    assert mb.invoice_href(project_number="C-005", ops_item_id=10) == (
+        "/ui/invoice?project_number=C-005&ops_ready=10"
+    )
     assert mb.invoice_href() == "/ui/invoice"
 
 
@@ -62,17 +65,23 @@ def test_shape_ready_to_invoice_with_project_number():
         "billable": "Yes",
         "stage": "Complete",
         "project_status": "In Progress",
+        "proposed_total": 15442.83,
+        "model": "by_sheet",
+        "price_label": "Labor @ 1.17 · builder-supplied",
     })
     assert item["kind"] == "ready_to_invoice"
     assert item["project_number"] == "C-100"
     assert item["invoice_href"] == (
-        "/ui/invoice?project_number=C-100&monday_item_id=20"
+        "/ui/invoice?project_number=C-100&monday_item_id=20&ops_ready=10"
     )
     assert item["primary_href"] == item["invoice_href"]
     assert item["primary_label"] == "Open invoice"
     assert item["builder"] == "Zicka"
+    assert item["proposed_total"] == 15442.83
+    assert item["model"] == "by_sheet"
     assert any("Billable" in s for s in item["status_labels"])
     assert "Project # known" in item["note"]
+    assert "Proposed $15,442.83" in item["note"]
 
 
 def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
@@ -84,7 +93,7 @@ def test_shape_ready_to_invoice_falls_back_to_monday_item_id():
         "project_number": None,
     })
     assert item["invoice_href"] == (
-        "/ui/invoice?monday_item_id=20"
+        "/ui/invoice?monday_item_id=20&ops_ready=10"
     )
     assert "linked Projects item" in item["note"]
 
@@ -98,7 +107,9 @@ def test_shape_ready_to_invoice_ops_only_uses_search_q():
         "project_item_id": None,
         "project_number": None,
     })
-    assert item["invoice_href"] == "/ui/invoice?q=Ops%20only%20job"
+    assert item["invoice_href"] == (
+        "/ui/invoice?q=Ops%20only%20job&ops_ready=10"
+    )
     assert "monday_item_id" not in item["invoice_href"]
     assert "No Projects link" in item["note"]
 
@@ -565,6 +576,14 @@ def test_invoice_page_boots_monday_item_id_deep_link():
     snippet = html[boot_idx: end if end != -1 else boot_idx + 4000]
     assert 'params.get("monday_item_id")' in snippet
     assert "lookupProjectByItemId(mondayItemId)" in snippet
+    assert 'params.get("ops_ready")' in snippet
+    assert "applyReadyWorksheet" in snippet
+
+
+def test_billing_page_shows_proposed_total():
+    html = (Path(__file__).resolve().parents[1] / "web" / "billing.html").read_text()
+    assert "proposed_total" in html
+    assert "Proposed" in html
 
 
 def test_jobstart_page_boots_bid_deep_link():

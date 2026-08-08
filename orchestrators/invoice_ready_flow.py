@@ -148,10 +148,15 @@ def check_ready_to_invoice(
                 },
             }
             if not dry_run:
-                entry["staged"] = False
+                # Portal GCS staging only — never Stripe, never auto-send.
+                from subsystems.invoice import ready_stage
+                stored = ready_stage.save_worksheet(item_id, sheet)
+                entry["status"] = "staged"
+                entry["staged"] = True
+                entry["staged_at"] = stored.get("staged_at")
                 entry["note"] = (
-                    "Live staging not yet enabled — worksheet computed only. "
-                    "Never auto-sent."
+                    "Worksheet staged in the portal for Billing Hub / Invoice "
+                    "prefill. Human reviews and sends — never auto-sent."
                 )
             items.append(entry)
         except Exception as exc:  # noqa: BLE001

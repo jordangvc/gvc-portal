@@ -84,6 +84,9 @@ support the field. Admin / Activity are company tools.
 12. ~~COI finalize success had no Next links~~ (r77) — hub / Admin template.
 13. ~~Estimate / CO draft resume dropped revise checkbox~~ (r83) — `_ui.revise`
     persists in autosave; resume restores Update-this-document mode.
+14. ~~P5 Ready worksheet → Billing proposed $ → Invoice line prefill~~ (r84) —
+    portal GCS staging only; Stripe draft create still post-gauntlet. Finalize
+    with `ops_ready` stamps Ops Scheduled Day = Invoiced + leaves Ready queue.
 
 ---
 
