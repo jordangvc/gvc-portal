@@ -8,6 +8,11 @@ from __future__ import annotations
 
 from typing import Any, Optional
 
+from subsystems.fieldguide.catalog import (
+    get_procedure,
+    resolve_procedure_id as catalog_resolve,
+)
+
 COACH_BANS: tuple[str, ...] = (
     "Does not write Job Check",
     "Does not authorize CO/extra work",
@@ -536,11 +541,6 @@ def coach_payload(procedure_id: Optional[str]) -> dict[str, Any]:
     ``related`` into the related list so coach navigation matches the
     catalog spine (no dual next-path drift).
     """
-    from subsystems.fieldguide.catalog import (
-        get_procedure,
-        resolve_procedure_id as catalog_resolve,
-    )
-
     pid = procedure_id
     if pid:
         pid = catalog_resolve(pid) or pid

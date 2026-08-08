@@ -24,7 +24,7 @@ support the field. Admin / Activity are company tools.
 | Hub | Pass | N/A | Pass* | *dimmed tools now toast |
 | Morning | Pass* | Hub brand | Pass* | *Maps after Optimize fixed |
 | Morning GM | Pass | Link to brief | Pass | Thin but OK |
-| Owner Pulse | Soft-fail | Hub | Load only | Decisions still raw-ish |
+| Owner Pulse | Pass | Hub brand | Pass* | *error state offers retry + Morning/hub; decisions are cards |
 | Job Check | Pass | Hub / Change job | Strong | Dirty confirm exists |
 | Job Start | Pass* | Hub / Change bid* | Strong | *autosave flush on leave |
 | Billing | Pass | Hub | Pass* | *activity copy fixed |
@@ -80,6 +80,7 @@ support the field. Admin / Activity are company tools.
 10. ~~Multi-check photo soft-stop on Paid by Check~~ (r75) — Confirm locked
     when extract reports `multi_check > 1`; re-upload one check to continue.
 11. Money-form shared CSS extraction / Field Manual token convergence.
+12. ~~COI finalize success had no Next links~~ (r77) — hub / Admin template.
 
 ---
 

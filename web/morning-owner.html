@@ -49,8 +49,19 @@
     background: var(--gvc-tint-sand); color: var(--gvc-gold-dark); margin-right: 6px;
   }
   .chip.warn { background: var(--gvc-danger-tint); color: var(--gvc-danger-dark); }
-  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); }
+  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); color: var(--gvc-danger-dark); }
   #err.show { display:block; }
+  #err .err-title { font-weight: 700; margin: 0 0 6px; }
+  #err .err-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+  #err .err-actions a, #err .err-actions button {
+    display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px;
+    border-radius: var(--gvc-r-pill); border: 1px solid var(--gvc-line-strong);
+    background: var(--gvc-surface); color: var(--gvc-green-dark); font-weight: 600;
+    font-size: var(--gvc-fs-small); text-decoration: none; cursor: pointer;
+  }
+  #err .err-actions button.primary {
+    background: var(--gvc-green); border-color: var(--gvc-green); color: #fff;
+  }
 </style>
 </head>
 <body>
@@ -72,6 +83,7 @@
   <div class="card"><h2>Huddle outcome</h2><div id="huddle" class="muted">—</div></div>
   <div class="card"><h2>Planning signals</h2><div id="plan" class="muted">None</div></div>
   <div class="card"><h2>Owner decisions</h2><div id="dec" class="muted">None waiting</div></div>
+  <p class="muted" id="nextstrip">Next: <a href="/ui/morning">Morning Brief</a> · <a href="/ui/billing">Billing Hub</a> · <a href="/">hub</a>.</p>
 </main>
 <script src="/ui/gvc-command.js"></script>
 <script>
@@ -143,8 +155,18 @@ async function load(){
       ? d.owner_decisions.map(decisionCard).join("")
       : "None waiting";
   } catch (e) {
-    document.getElementById("err").className = "show";
-    document.getElementById("err").textContent = e.message;
+    const box = document.getElementById("err");
+    box.className = "show";
+    box.innerHTML =
+      `<div class="err-title">Couldn't load Owner Pulse</div>` +
+      `<div>${esc(e.message || "Monday or network error.")}</div>` +
+      `<div class="err-actions">` +
+      `<button type="button" class="primary" id="err-retry">Try again</button>` +
+      `<a href="/ui/morning">Open Morning Brief</a>` +
+      `<a href="/">Hub</a>` +
+      `</div>`;
+    const btn = document.getElementById("err-retry");
+    if (btn) btn.addEventListener("click", function () { load(); });
   }
 }
 load();
