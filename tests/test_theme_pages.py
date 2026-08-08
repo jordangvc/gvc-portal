@@ -37,3 +37,10 @@ def test_hub_and_fieldguide_still_themed():
     for name in ("hub.html", "fieldguide.html"):
         html = (WEB / name).read_text(encoding="utf-8")
         assert "/ui/gvc-theme.js" in html or "gvc-theme" in html, name
+
+def test_no_portal_html_links_legacy_gvc_css():
+    """After r104 every portal page is on gvc-ui (forms also load gvc-forms)."""
+    for path in sorted((WEB).glob("*.html")):
+        html = path.read_text(encoding="utf-8")
+        assert 'href="/ui/gvc.css"' not in html, path.name
+        assert 'href="/ui/gvc-ui.css"' in html, path.name

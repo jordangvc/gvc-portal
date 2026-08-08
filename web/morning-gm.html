@@ -19,89 +19,140 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-  body { background: var(--gvc-bg); }
-  main { max-width: 720px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 12px; }
-  .card { background: var(--gvc-surface); border: 1px solid var(--gvc-line); border-top: 2.5px solid var(--gvc-gold-matte);
-    border-radius: var(--gvc-r-lg); padding: 12px 14px; display: grid; gap: 8px; }
-  .card h2 { margin: 0; font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .06em; color: var(--gvc-green-dark); }
-  .chip { display: inline-block; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--gvc-line); font-size: 13px; font-weight: 600; }
-  .chip.ok { background: var(--gvc-ok-tint); }
-  .chip.warn { background: var(--gvc-warn-tint); }
-  .row { border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); padding: 10px; background: var(--gvc-bg); }
-  .btn { min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r); border: 1px solid var(--gvc-line-strong);
-    background: var(--gvc-surface); font: inherit; font-weight: 700; color: var(--gvc-green-dark); cursor: pointer; }
-  input, textarea { width: 100%; min-height: 44px; border: 1px solid var(--gvc-line-strong); border-radius: var(--gvc-r); padding: 8px; font: inherit; box-sizing: border-box; }
-  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); }
-  #err.show { display:block; }
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page {
+    max-width: 720px; margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+    display: grid; gap: var(--space-4);
+  }
+  .page > .card { padding: var(--space-5); }
+  .page-hd h1 {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-2xl); font-weight: 700;
+    font-family: var(--font-display);
+  }
+  .page > .card > h2 {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted);
+  }
+  .stat-chip {
+    display: inline-block; padding: 6px 12px; border-radius: var(--radius-full);
+    border: 1px solid var(--color-border); font-size: var(--text-sm); font-weight: 600;
+    background: var(--color-surface);
+  }
+  .stat-chip.ok { background: var(--color-primary-soft); border-color: var(--color-primary); color: var(--color-primary); }
+  .stat-chip.warn { background: var(--color-warn-soft); border-color: var(--color-warn); color: var(--color-accent-ink); }
+  .row {
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    padding: 10px 12px; background: var(--color-bg);
+  }
+  .row-meta { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 4px; }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .field-stack { display: grid; gap: var(--space-2); margin-top: var(--space-2); }
+  #err {
+    display: none; padding: 12px 14px; border-radius: var(--radius-md);
+    background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger);
+    font-size: var(--text-sm);
+  }
+  #err.show { display: block; }
+  @media (max-width: 640px) {
+    .page { padding: var(--space-4) var(--space-3) var(--space-12); }
+  }
 </style>
 </head>
 <body>
-<header class="gvc-topbar"><div class="gvc-topbar-in">
-  <a class="gvc-brand" href="/"><span class="gvc-mono">G</span><span class="gvc-wordmark">Green Valley Contractors</span></a>
-  <span class="gvc-topbar-sep"></span><span class="gvc-topbar-title">GM Huddle</span>
-  <div class="gvc-topbar-right"><span class="gvc-topbar-user">{{EMAIL}}</span>
-    <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
-</div></header>
-<main>
-  <div><p class="gvc-eyebrow">6:45 operations huddle</p><h1 class="gvc-h1">Run sheet</h1>
-    <div id="chips" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px"></div></div>
-  <div id="err"></div>
-  <div class="card"><h2>Meeting</h2>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn" id="start">Start huddle</button>
-      <button class="btn" id="end">End + scorecard</button>
-      <a class="btn" href="/ui/morning" style="display:inline-flex;align-items:center;text-decoration:none">My brief</a>
-    </div>
-    <div id="meetmeta" class="gvc-sub"></div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>GM Huddle</h1>
   </div>
-  <div class="card"><h2>Sequence (routed first)</h2><div id="seq"></div></div>
-  <div class="card"><h2>Unscheduled / needs planning (last)</h2><div id="unsch"></div></div>
-  <div class="card"><h2>Action Requests</h2>
-    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+  <div class="topbar__actions">
+    <span class="muted" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
+  </div>
+</header>
+
+<div class="page">
+  <div class="page-hd">
+    <p class="kicker">6:45 operations huddle</p>
+    <h1>Run sheet</h1>
+    <div id="chips" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px"></div>
+  </div>
+  <div id="err"></div>
+
+  <section class="card">
+    <h2>Meeting</h2>
+    <div class="btn-row">
+      <button class="btn" id="start" type="button">Start huddle</button>
+      <button class="btn" id="end" type="button">End + scorecard</button>
+      <a class="btn" href="/ui/morning">My brief</a>
+    </div>
+    <div id="meetmeta" class="muted" style="margin-top:8px;font-size:var(--text-sm)"></div>
+  </section>
+
+  <section class="card"><h2>Sequence (routed first)</h2><div id="seq"></div></section>
+  <section class="card"><h2>Unscheduled / needs planning (last)</h2><div id="unsch"></div></section>
+
+  <section class="card">
+    <h2>Action Requests</h2>
+    <div class="btn-row">
       <button class="btn" id="migrateNfj" type="button">Import Needs from Jordan → Action Requests</button>
     </div>
-    <div id="migrateMsg" class="gvc-sub" style="margin-top:6px"></div>
-    <div id="ars"></div>
-  </div>
-  <div class="card"><h2>Park a topic</h2>
-    <input id="pTopic" placeholder="Topic" /><input id="pOwner" placeholder="Owner" style="margin-top:8px" />
-    <button class="btn" id="pAdd" style="margin-top:8px">Park</button>
-    <div id="parking"></div>
-  </div>
-  <div class="card"><h2>Assign action</h2>
-    <textarea id="aText" placeholder="Action"></textarea>
-    <input id="aOwner" placeholder="Owner" style="margin-top:8px" />
-    <button class="btn" id="aAdd" style="margin-top:8px">Add action</button>
-    <div id="actions"></div>
-  </div>
-  <div class="card"><h2>Fireflies proposals</h2><div id="ff"></div></div>
-</main>
+    <div id="migrateMsg" class="muted" style="margin-top:6px;font-size:var(--text-sm)"></div>
+    <div id="ars" style="margin-top:var(--space-3)"></div>
+  </section>
+
+  <section class="card">
+    <h2>Park a topic</h2>
+    <div class="field-stack">
+      <input class="input" id="pTopic" placeholder="Topic" />
+      <input class="input" id="pOwner" placeholder="Owner" />
+      <button class="btn" id="pAdd" type="button">Park</button>
+    </div>
+    <div id="parking" style="margin-top:var(--space-3)"></div>
+  </section>
+
+  <section class="card">
+    <h2>Assign action</h2>
+    <div class="field-stack">
+      <textarea class="input" id="aText" placeholder="Action" rows="3"></textarea>
+      <input class="input" id="aOwner" placeholder="Owner" />
+      <button class="btn" id="aAdd" type="button">Add action</button>
+    </div>
+    <div id="actions" style="margin-top:var(--space-3)"></div>
+  </section>
+
+  <section class="card"><h2>Fireflies proposals</h2><div id="ff"></div></section>
+</div>
+
 <script src="/ui/gvc-command.js"></script>
 <script>
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 async function api(u, o){ const r=await fetch(u,o); const b=await r.json(); if(!r.ok) throw new Error((b.detail&&b.detail.detail)||b.detail||r.status); return b; }
-function rows(list){ return (list||[]).map(p => `<div class="row"><b>${esc(p.name)}</b><div class="gvc-sub">${esc(p.stage||"")} ${esc(p.blocked||"")} ${esc(p.location||"")}</div>
-  <a href="${esc(p.url)}" target="_blank" rel="noopener">Monday</a></div>`).join("") || "<div class='gvc-sub'>None</div>"; }
+function rows(list){ return (list||[]).map(p => `<div class="row"><b>${esc(p.name)}</b><div class="row-meta">${esc(p.stage||"")} ${esc(p.blocked||"")} ${esc(p.location||"")}</div>
+  <a href="${esc(p.url)}" target="_blank" rel="noopener">Monday</a></div>`).join("") || "<div class='muted' style='font-size:var(--text-sm)'>None</div>"; }
 function render(d){
   const tp=d.team_prep||{};
   document.getElementById("chips").innerHTML =
-    `<span class="chip ${tp.pct>=80?"ok":"warn"}">${tp.pct??"—"}% team prep (${tp.prepared||0}/${tp.team_size||0})</span>` +
-    `<span class="chip">${(d.sequence||[]).length} in sequence</span>` +
-    `<span class="chip">${(d.action_requests||[]).length} open ARs</span>`;
+    `<span class="stat-chip ${tp.pct>=80?"ok":"warn"}">${tp.pct??"—"}% team prep (${tp.prepared||0}/${tp.team_size||0})</span>` +
+    `<span class="stat-chip">${(d.sequence||[]).length} in sequence</span>` +
+    `<span class="stat-chip">${(d.action_requests||[]).length} open ARs</span>`;
   document.getElementById("seq").innerHTML = rows(d.sequence);
   document.getElementById("unsch").innerHTML = rows(d.unscheduled);
   document.getElementById("ars").innerHTML = (d.action_requests||[]).map(r =>
-    `<div class="row"><b>${esc(r.need)}</b><div class="gvc-sub">${esc(r.needed_from_email)} · ${esc(r.escalation||r.status)}</div></div>`).join("") || "<div class='gvc-sub'>Clear</div>";
+    `<div class="row"><b>${esc(r.need)}</b><div class="row-meta">${esc(r.needed_from_email)} · ${esc(r.escalation||r.status)}</div></div>`).join("") || "<div class='muted' style='font-size:var(--text-sm)'>Clear</div>";
   const m=d.meeting||{};
   document.getElementById("meetmeta").textContent = m.started_at ? `Started ${m.started_at}${m.ended_at?" · ended "+m.ended_at:""}` : "Not started";
   document.getElementById("parking").innerHTML = (m.parking||[]).map(p=>`<div class="row">${esc(p.topic)} — ${esc(p.owner)}</div>`).join("");
   document.getElementById("actions").innerHTML = (m.actions||[]).map(p=>`<div class="row">${esc(p.text)} — ${esc(p.owner)}</div>`).join("");
   document.getElementById("ff").innerHTML = (d.fireflies_proposals||[]).length
     ? d.fireflies_proposals.map(p=>`<div class="row">${esc(p.summary||p.title||p.id)}</div>`).join("")
-    : "<div class='gvc-sub'>No pending proposals (Fireflies key optional).</div>";
+    : "<div class='muted' style='font-size:var(--text-sm)'>No pending proposals (Fireflies key optional).</div>";
 }
 async function load(){ try{ render(await api("/ui/api/morning/gm")); document.getElementById("err").className=""; }
   catch(e){ document.getElementById("err").className="show"; document.getElementById("err").textContent=e.message; } }

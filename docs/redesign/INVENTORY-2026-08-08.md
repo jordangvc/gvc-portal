@@ -1,13 +1,14 @@
 # Portal redesign inventory — 2026-08-08
 
-Step 1 of `Cursor Prompt.md`. **No page conversion started** — waiting for review.
+Step 1 of `Cursor Prompt.md`. **Portal conversion complete through r104** — every
+`web/*.html` page loads `/ui/gvc-ui.css` (money generators also load
+`/ui/gvc-forms.css`). Legacy `/ui/gvc.css` is no longer linked by portal HTML.
 
 Handoff pack lives in `docs/redesign/`. Stylesheets also copied to `web/` and served at:
 
 - `/ui/gvc-ui.css`
-- `/ui/gvc-v2-patch.css`
-
-Existing live system remains `/ui/gvc.css` (every page still links only this).
+- `/ui/gvc-forms.css`
+- `/ui/gvc-v2-patch.css` (external takeoff v2 only)
 
 ## Critical scope note
 
@@ -123,7 +124,7 @@ New: `Cursor Prompt - Forms.md`, `START HERE.md`, `gvc-forms-reference.html`,
 3. ~~**Shared forms chrome**~~ **Done (r103)** — `GvcFormChrome` / `.gvc-topbar` + nested `.gvc-path`
 4. ~~**Invoice → Estimate → Change Order**~~ **Done (r103)** — stages + actionbar; zero selects; no `gvc.css`
 5. ~~**Job Check** status picker~~ **Done (r102)** — handoff markup in `gvc-status-picker.js`; `/ui/jobcheck` on `gvc-ui.css` only
-6. Remaining money spine → morning → fieldguide last (private palette)
+6. ~~Remaining money spine → morning → fieldguide~~ **Done (r104)** — Job Start / Billing / Check / Morning / Field Manual / COI / Activity / Admin / Lien / Training / Time Off on `gvc-ui.css`; Field Manual private palette retained; **zero** portal HTML still links `gvc.css`
 
 ## Blocked / not in this repo
 

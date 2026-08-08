@@ -19,285 +19,292 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-  body {
-    background:
-      radial-gradient(1000px 420px at 8% -8%, rgba(35,83,57,.08), transparent 55%),
-      radial-gradient(800px 380px at 100% 0%, rgba(201,162,75,.09), transparent 48%),
-      var(--gvc-bg);
-    background-attachment: fixed;
-  }
-  main.mb-shell {
+  /* Morning Brief — layout only; tokens from gvc-ui.css */
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page {
     max-width: 640px; margin: 0 auto;
-    padding: var(--gvc-space-4) var(--gvc-space-4)
-      calc(var(--gvc-space-7) + env(safe-area-inset-bottom, 0px));
-    display: grid; gap: var(--gvc-space-3);
+    padding: var(--space-5) var(--space-4)
+      calc(var(--space-12) + env(safe-area-inset-bottom, 0px));
+    display: grid; gap: var(--space-4);
+  }
+  .page > .card { padding: var(--space-5); }
+  .page-hd h1 {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    font-family: var(--font-display);
+    color: var(--color-text);
+  }
+  .card-head {
+    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
+    margin-bottom: var(--space-3);
+  }
+  .card-head h2, .page > .card > h2 {
+    margin: 0; font-size: var(--text-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted);
+  }
+  .card-head .count, .count-pill {
+    font-size: var(--text-xs); color: var(--color-text-muted); font-weight: 600;
+  }
+  .card-bd { display: grid; gap: var(--space-2); }
+  .card-sub {
+    font-size: var(--text-xs); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: var(--color-text-muted); margin: 0 0 6px;
+  }
+  .field-label {
+    display: block; font-size: var(--text-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
   }
   .mb-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
   .mb-chip {
-    font-size: var(--gvc-fs-caption); font-weight: 600; color: var(--gvc-ink-soft);
-    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
-    border-radius: var(--gvc-r-pill); padding: 6px 12px;
+    font-size: var(--text-xs); font-weight: 600; color: var(--color-text-muted);
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-full); padding: 6px 12px;
   }
-  .mb-chip--ok { background: var(--gvc-ok-tint); border-color: var(--color-ok-border, #bcd6c8); color: var(--color-ok-ink, var(--gvc-green-dark)); }
-  .mb-chip--warn { background: var(--gvc-warn-tint); border-color: var(--color-warn-border, #E3CFA0); color: var(--color-warn-ink, var(--gvc-gold-dark)); }
-  .mb-card {
-    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
-    border-top: 2.5px solid var(--gvc-gold-matte); border-radius: var(--gvc-r-lg);
-    box-shadow: var(--gvc-shadow-1); overflow: hidden;
-  }
-  .mb-card-hd {
-    display: flex; align-items: baseline; justify-content: space-between; gap: 10px;
-    padding: 12px 14px 10px; border-bottom: 1px solid var(--gvc-line-soft);
-  }
-  .mb-card-hd h2 {
-    margin: 0; font-size: var(--gvc-fs-small); font-weight: 700;
-    text-transform: uppercase; letter-spacing: var(--gvc-track-caps); color: var(--gvc-green-dark);
-  }
-  .mb-card-hd .count { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); font-weight: 600; }
-  .mb-card-bd { padding: 8px 10px 12px; display: grid; gap: 8px; }
-  .mb-empty { padding: 14px; color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
-  .prep-list { list-style: none; margin: 0; padding: 4px 14px 14px; display: grid; gap: 6px; }
+  .mb-chip--ok { background: var(--color-primary-soft); border-color: var(--color-primary); color: var(--color-primary); }
+  .mb-chip--warn { background: var(--color-warn-soft); border-color: var(--color-warn); color: var(--color-accent-ink); }
+  .mb-empty { padding: 14px 4px; color: var(--color-text-muted); font-size: var(--text-sm); }
+  .prep-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .prep-list button {
-    display: flex; align-items: center; gap: 10px; width: 100%; min-height: 44px;
+    display: flex; align-items: center; gap: 10px; width: 100%; min-height: var(--tap);
     border: 0; background: transparent; font: inherit; text-align: left; cursor: pointer;
-    color: var(--gvc-ink-soft); border-radius: var(--gvc-r); padding: 6px 4px;
+    color: var(--color-text-muted); border-radius: var(--radius-md); padding: 6px 4px;
   }
-  .prep-list button.done { color: var(--gvc-green-dark); font-weight: 600; }
+  .prep-list button.done { color: var(--color-primary); font-weight: 600; }
   .prep-dot {
     width: 18px; height: 18px; border-radius: 50%; flex: 0 0 18px;
-    border: 2px solid var(--gvc-line-strong); background: var(--gvc-surface);
+    border: 2px solid var(--color-border); background: var(--color-surface);
   }
   .prep-list button.done .prep-dot {
-    background: var(--gvc-green); border-color: var(--gvc-green);
-    box-shadow: inset 0 0 0 3px var(--gvc-surface);
+    background: var(--color-primary); border-color: var(--color-primary);
+    box-shadow: inset 0 0 0 3px var(--color-surface);
   }
-  .seg { display: flex; flex-wrap: wrap; gap: 8px; padding: 4px 10px 12px; }
-  .seg button, .row-btn {
-    min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r);
-    border: 1px solid var(--gvc-line-strong); background: var(--gvc-surface);
-    color: var(--gvc-green-dark); font: inherit; font-weight: 700; font-size: var(--gvc-fs-small);
-    cursor: pointer;
-  }
-  .seg button.on { background: var(--gvc-tint-green); border-color: var(--gvc-green); }
+  .btn-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .stop {
     display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: center;
-    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg); padding: 10px 12px;
-    background: var(--gvc-bg);
+    border: 1px solid var(--color-border); border-radius: var(--radius-lg); padding: 10px 12px;
+    background: var(--color-bg);
   }
   .stop.done { opacity: .55; }
-  .stop-name { font-weight: 700; font-size: var(--gvc-fs-body); }
-  .stop-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); }
+  .stop-name { font-weight: 700; font-size: var(--text-base); }
+  .stop-meta { font-size: var(--text-xs); color: var(--color-text-muted); }
   .proj {
-    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg);
-    background: var(--gvc-bg); overflow: hidden;
+    border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+    background: var(--color-bg); overflow: hidden;
   }
   .proj-sum {
     width: 100%; text-align: left; border: 0; background: transparent;
     padding: 12px; font: inherit; cursor: pointer; display: grid; gap: 4px; min-height: 56px;
   }
-  .proj.is-blocked .proj-sum { box-shadow: inset 3px 0 0 var(--gvc-danger); }
-  .proj.is-overdue .proj-sum { box-shadow: inset 3px 0 0 var(--gvc-gold-dark); }
+  .proj.is-blocked .proj-sum { box-shadow: inset 3px 0 0 var(--color-danger); }
+  .proj.is-overdue .proj-sum { box-shadow: inset 3px 0 0 var(--color-warn); }
   .proj-name { font-weight: 700; }
-  .proj-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); display: flex; flex-wrap: wrap; gap: 6px 10px; }
-  .proj-meta b { color: var(--gvc-ink-soft); }
-  .proj-why { font-size: var(--gvc-fs-micro); font-weight: 700; text-transform: uppercase; color: var(--gvc-gold-dark); }
+  .proj-meta { font-size: var(--text-xs); color: var(--color-text-muted); display: flex; flex-wrap: wrap; gap: 6px 10px; }
+  .proj-meta b { color: var(--color-text); }
+  .proj-why { font-size: 10px; font-weight: 700; text-transform: uppercase; color: var(--color-accent-ink); }
   .proj-actions { display: none; gap: 8px; padding: 0 12px 12px; flex-wrap: wrap; }
   .proj.open .proj-actions { display: flex; }
-  .proj-btn {
-    flex: 1 1 auto; min-height: 44px; padding: 0 14px; border-radius: var(--gvc-r);
-    border: 1px solid var(--gvc-line-strong); background: var(--gvc-surface);
-    color: var(--gvc-green-dark); font: inherit; font-weight: 700; font-size: var(--gvc-fs-small);
-    text-decoration: none; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;
-  }
-  .proj-btn.is-disabled { opacity: .45; pointer-events: none; cursor: default; }
-  .ar { border: 1px solid var(--gvc-line); border-radius: var(--gvc-r); padding: 10px 12px; background: var(--gvc-bg); display: grid; gap: 6px; }
+  .proj-actions .btn { flex: 1 1 auto; text-decoration: none; justify-content: center; }
+  .btn.is-disabled { opacity: .45; pointer-events: none; cursor: default; }
+  .ar { border: 1px solid var(--color-border); border-radius: var(--radius-md); padding: 10px 12px; background: var(--color-bg); display: grid; gap: 6px; }
   .ar-need { font-weight: 600; }
-  .field { display: grid; gap: 4px; padding: 0 10px 10px; }
-  .field label { font-size: var(--gvc-fs-caption); font-weight: 600; color: var(--gvc-muted); }
-  .field input, .field select, .field textarea {
-    min-height: 44px; border: 1px solid var(--gvc-line-strong); border-radius: var(--gvc-r);
-    padding: 8px 10px; font: inherit; background: var(--color-input-bg, var(--gvc-surface));
-    color: var(--gvc-ink);
-  }
-  .field textarea { min-height: 88px; resize: vertical; }
+  .field { display: grid; gap: var(--space-2); margin-top: var(--space-3); }
+  .field textarea.input { min-height: 88px; resize: vertical; }
   #status, #offline {
-    display: none; padding: 12px 14px; border-radius: var(--gvc-r); font-size: var(--gvc-fs-small);
+    display: none; padding: 12px 14px; border-radius: var(--radius-md); font-size: var(--text-sm);
   }
-  #status.show { display: block; background: var(--gvc-danger-tint); border: 1px solid var(--color-danger-border, #E2C3BA); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
-  #offline.show { display: block; background: var(--gvc-warn-tint); border: 1px solid var(--color-warn-border, #E3CFA0); color: var(--color-warn-ink, var(--gvc-gold-dark)); }
+  #status.show { display: block; background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger); }
+  #offline.show { display: block; background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink); }
   .role-links { display: flex; flex-wrap: wrap; gap: 8px; }
-  .role-links a { min-height: 40px; }
+  .role-links a { min-height: var(--tap); text-decoration: none; }
+  .page-foot { font-size: var(--text-xs); color: var(--color-text-muted); margin: var(--space-2) 0 0; }
   .upd-overlay {
     position: fixed; inset: 0; z-index: 80; display: none;
     align-items: center; justify-content: center;
     padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
-    background: rgba(26, 62, 43, .48);
+    background: color-mix(in srgb, var(--color-text) 48%, transparent);
   }
   .upd-overlay.show { display: flex; }
   .upd-modal {
-    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
-    border-radius: var(--gvc-r-lg); box-shadow: 0 16px 40px rgba(0,0,0,.18);
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); box-shadow: var(--shadow-lg);
     width: 100%; max-width: 440px; max-height: min(90vh, 640px);
     overflow: auto; display: grid;
   }
   .upd-hd {
-    padding: 14px 16px; border-bottom: 1px solid var(--gvc-line-soft);
+    padding: 14px 16px; border-bottom: 1px solid var(--color-divider);
     display: flex; align-items: center; justify-content: space-between; gap: 12px;
   }
-  .upd-hd h2 {
-    margin: 0; font-size: var(--gvc-fs-h3, 18px); color: var(--gvc-green-dark);
-    font-weight: 700;
-  }
+  .upd-hd h2 { margin: 0; font-size: var(--text-lg); color: var(--color-text); font-weight: 700; }
   .upd-bd { padding: 16px; display: grid; gap: 12px; }
   .upd-ft {
-    padding: 12px 16px; border-top: 1px solid var(--gvc-line-soft);
+    padding: 12px 16px; border-top: 1px solid var(--color-divider);
     display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end;
   }
-  .upd-ft .row-btn.gold {
-    background: var(--gvc-gold); border-color: var(--gvc-gold-dark);
-    color: var(--gvc-green-dark);
-  }
-  .upd-ft .row-btn:disabled { opacity: .55; cursor: wait; }
-  .upd-hint { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin: 0; }
-  .upd-msg {
-    display: none; padding: 10px 12px; border-radius: var(--gvc-r);
-    font-size: var(--gvc-fs-small);
-  }
+  .upd-ft .btn:disabled { opacity: .55; cursor: wait; }
+  .upd-hint { font-size: var(--text-xs); color: var(--color-text-muted); margin: 0; }
+  .upd-msg { display: none; padding: 10px 12px; border-radius: var(--radius-md); font-size: var(--text-sm); }
   .upd-msg.show { display: block; }
-  .upd-msg.ok { background: var(--gvc-ok-tint); border: 1px solid var(--color-ok-border, #bcd6c8); color: var(--color-ok-ink, var(--gvc-green-dark)); }
-  .upd-msg.warn { background: var(--gvc-warn-tint); border: 1px solid var(--color-warn-border, #E3CFA0); color: var(--color-warn-ink, var(--gvc-gold-dark)); }
-  .upd-msg.err { background: var(--gvc-danger-tint); border: 1px solid var(--color-danger-border, #E2C3BA); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
-  .upd-files-meta { font-size: var(--gvc-fs-caption); color: var(--gvc-ink-soft); }
-  .mb-chip--dry {
-    font-weight: 500; color: var(--gvc-ink-soft);
-    background: var(--gvc-bg); border-style: dashed;
-  }
+  .upd-msg.ok { background: var(--color-primary-soft); border: 1px solid var(--color-primary); color: var(--color-primary); }
+  .upd-msg.warn { background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink); }
+  .upd-msg.err { background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger); }
+  .upd-files-meta { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .mb-chip--dry { font-weight: 500; color: var(--color-text-muted); background: var(--color-bg); border-style: dashed; }
   .route-sheet { display: none; }
   .route-sheet ol { margin: 0; padding-left: 1.25rem; display: grid; gap: 6px; }
-  .route-sheet li { font-size: var(--gvc-fs-small); }
-  .route-sheet .addr { color: var(--gvc-muted); font-weight: 500; }
+  .route-sheet li { font-size: var(--text-sm); }
+  .route-sheet .addr { color: var(--color-text-muted); font-weight: 500; }
+  .divider { border: 0; border-top: 1px solid var(--color-divider); margin: var(--space-3) 0; }
+  @media (max-width: 640px) {
+    .page { padding: var(--space-4) var(--space-3) calc(var(--space-12) + env(safe-area-inset-bottom, 0px)); }
+  }
   @media print {
-    body { background: #fff !important; }
-    .gvc-topbar, .role-links, #offline, #status,
-    .mb-card:not(.route-print), .upd-overlay, .seg button,
+    body { background: var(--color-surface) !important; }
+    .topbar, .role-links, #offline, #status,
+    .card:not(.route-print), .upd-overlay, .seg,
     #btnOptimize, #btnMaps, #btnRouteSheet { display: none !important; }
-    .mb-card.route-print, .route-sheet { display: block !important; }
+    .card.route-print, .route-sheet { display: block !important; }
     .route-sheet { display: grid !important; gap: 8px; }
-    main.mb-shell { max-width: none; padding: 0; }
-    .mb-hd { margin-bottom: 12px; }
+    .page { max-width: none; padding: 0; }
+    .page-hd { margin-bottom: 12px; }
     a[href]::after { content: " (" attr(href) ")"; font-size: 11px; word-break: break-all; }
   }
 </style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/" title="Back to the GVC Portal home">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Morning Brief</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user" id="who">{{EMAIL}}</span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Morning Brief</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" id="who" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="mb-shell">
-  <div class="mb-hd">
-    <p class="gvc-eyebrow" id="eyebrow">Your Morning Brief</p>
-    <h1 class="gvc-h1" id="title">Loading…</h1>
+<div class="page">
+  <div class="page-hd">
+    <p class="kicker" id="eyebrow">Your Morning Brief</p>
+    <h1 id="title">Loading…</h1>
     <div class="mb-chips" id="chips"></div>
     <div class="role-links" id="rolelinks" style="margin-top:10px"></div>
   </div>
   <div id="offline"></div>
   <div id="status"></div>
 
-  <section class="mb-card"><div class="mb-card-hd"><h2>Preparation</h2><span class="count" id="prepcount"></span></div>
-    <ul class="prep-list" id="preplist"></ul></section>
+  <section class="card">
+    <div class="card-head"><h2>Preparation</h2><span class="count" id="prepcount"></span></div>
+    <ul class="prep-list" id="preplist"></ul>
+  </section>
 
-  <section class="mb-card"><div class="mb-card-hd"><h2>Starting location</h2></div>
+  <section class="card">
+    <h2>Starting location</h2>
     <div class="seg" id="origseg"></div>
     <div class="field" id="origcustom" style="display:none">
-      <label for="origaddr">Custom address</label>
-      <input id="origaddr" placeholder="Street, city" />
-      <button type="button" class="row-btn" id="origsave">Save custom</button>
+      <label class="field-label" for="origaddr">Custom address</label>
+      <input class="input" id="origaddr" placeholder="Street, city" />
+      <button type="button" class="btn" id="origsave">Save custom</button>
     </div>
   </section>
 
-  <section class="mb-card route-print"><div class="mb-card-hd"><h2>Today's stops</h2><span class="count" id="stopcount"></span></div>
-    <div class="seg">
-      <button type="button" class="row-btn" id="btnOptimize">Optimize</button>
-      <a class="proj-btn" id="btnMaps" href="#" target="_blank" rel="noopener">Google Maps</a>
-      <button type="button" class="row-btn" id="btnRouteSheet" title="Print-friendly stop list">Route sheet</button>
+  <section class="card route-print">
+    <div class="card-head"><h2>Today's stops</h2><span class="count" id="stopcount"></span></div>
+    <div class="btn-row">
+      <button type="button" class="btn" id="btnOptimize">Optimize</button>
+      <a class="btn" id="btnMaps" href="#" target="_blank" rel="noopener">Google Maps</a>
+      <button type="button" class="btn" id="btnRouteSheet" title="Print-friendly stop list">Route sheet</button>
     </div>
-    <div class="mb-card-bd" id="stoplist"></div>
-    <div class="route-sheet mb-card-bd" id="routesheet" aria-label="Printable route sheet"></div>
+    <div class="card-bd" id="stoplist"></div>
+    <div class="route-sheet card-bd" id="routesheet" aria-label="Printable route sheet"></div>
   </section>
 
-  <section class="mb-card"><div class="mb-card-hd"><h2>Action Requests</h2><span class="count" id="arcount"></span></div>
-    <div class="mb-card-bd">
-      <h3 class="gvc-h3" style="font-size:var(--gvc-fs-small);margin:0 0 6px;">Incoming</h3>
+  <section class="card">
+    <div class="card-head"><h2>Action Requests</h2><span class="count" id="arcount"></span></div>
+    <div class="card-bd">
+      <h3 class="card-sub">Incoming</h3>
       <div id="arin"></div>
-      <hr class="gvc-divider" />
-      <h3 class="gvc-h3" style="font-size:var(--gvc-fs-small);margin:0 0 6px;">Outgoing</h3>
+      <hr class="divider" />
+      <h3 class="card-sub">Outgoing</h3>
       <div id="arout"></div>
     </div>
-    <div class="field"><label>Need from (email)</label><input id="arTo" type="email" /></div>
-    <div class="field"><label>Category</label><div id="arCatWrap"><select id="arCat" name="category"></select></div></div>
-    <div class="field"><label>Need</label><textarea id="arNeed" placeholder="Plain-language ask"></textarea></div>
-    <div class="seg"><button type="button" class="row-btn" id="arSend">Send request</button></div>
+    <div class="field">
+      <label class="field-label" for="arTo">Need from (email)</label>
+      <input class="input" id="arTo" type="email" />
+    </div>
+    <div class="field">
+      <label class="field-label">Category</label>
+      <div id="arCatWrap"></div>
+    </div>
+    <div class="field">
+      <label class="field-label" for="arNeed">Need</label>
+      <textarea class="input" id="arNeed" placeholder="Plain-language ask"></textarea>
+    </div>
+    <div class="btn-row"><button type="button" class="btn btn-primary" id="arSend">Send request</button></div>
   </section>
 
-  <section class="mb-card"><div class="mb-card-hd"><h2>My projects</h2><span class="count" id="minecount"></span></div>
-    <div class="mb-card-bd" id="minelist"></div></section>
-  <section class="mb-card"><div class="mb-card-hd"><h2>Needs attention today</h2><span class="count" id="attncount"></span></div>
-    <div class="mb-card-bd" id="attnlist"></div></section>
-  <section class="mb-card"><div class="mb-card-hd"><h2>Long-term holds</h2><span class="count" id="holdcount"></span></div>
-    <div class="mb-card-bd" id="holdlist"></div></section>
-  <section class="mb-card"><div class="mb-card-hd"><h2>Unscheduled / needs planning</h2><span class="count" id="unschcount"></span></div>
-    <div class="mb-card-bd" id="unschlist"></div></section>
+  <section class="card">
+    <div class="card-head"><h2>My projects</h2><span class="count" id="minecount"></span></div>
+    <div class="card-bd" id="minelist"></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Needs attention today</h2><span class="count" id="attncount"></span></div>
+    <div class="card-bd" id="attnlist"></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Long-term holds</h2><span class="count" id="holdcount"></span></div>
+    <div class="card-bd" id="holdlist"></div>
+  </section>
+  <section class="card">
+    <div class="card-head"><h2>Unscheduled / needs planning</h2><span class="count" id="unschcount"></span></div>
+    <div class="card-bd" id="unschlist"></div>
+  </section>
 
-  <section class="mb-card"><div class="mb-card-hd"><h2>Private notes</h2></div>
-    <div class="field"><textarea id="notes" placeholder="Only you see these"></textarea></div></section>
+  <section class="card">
+    <h2>Private notes</h2>
+    <div class="field" style="margin-top:0">
+      <textarea class="input" id="notes" placeholder="Only you see these"></textarea>
+    </div>
+  </section>
 
-  <section class="mb-card" id="ffcard" style="display:none"><div class="mb-card-hd"><h2>From the huddle (Fireflies)</h2></div>
-    <div class="mb-card-bd" id="fflist"></div></section>
+  <section class="card" id="ffcard" style="display:none">
+    <h2>From the huddle (Fireflies)</h2>
+    <div class="card-bd" id="fflist"></div>
+  </section>
 
-  <p class="gvc-sub" style="font-size:var(--gvc-fs-caption);margin:8px 0 0;">
+  <p class="page-foot">
     Full brief — your private daily control center. Cached offline for field use.
   </p>
-</main>
+</div>
 
 <div class="upd-overlay" id="updDlg" role="dialog" aria-modal="true" aria-labelledby="updTitle" hidden>
   <div class="upd-modal">
     <div class="upd-hd">
       <h2 id="updTitle">Add update</h2>
-      <button type="button" class="row-btn" id="updCancel" aria-label="Close">Close</button>
+      <button type="button" class="btn" id="updCancel" aria-label="Close">Close</button>
     </div>
     <form id="updForm">
       <div class="upd-bd">
         <input type="hidden" id="updItem" />
         <p class="upd-hint">Posts a Monday update. Photos go to the job’s Pictures folder in Drive, with links on the update.</p>
         <div class="field" style="padding:0">
-          <label for="updNote">Note</label>
-          <textarea id="updNote" placeholder="What changed on site?" rows="4"></textarea>
+          <label class="field-label" for="updNote">Note</label>
+          <textarea class="input" id="updNote" placeholder="What changed on site?" rows="4"></textarea>
         </div>
         <div class="field" style="padding:0">
-          <label for="updFiles">Photos</label>
+          <label class="field-label" for="updFiles">Photos</label>
           <input type="file" id="updFiles" accept="image/*" multiple capture="environment" />
           <div class="upd-files-meta" id="updFilesMeta"></div>
         </div>
         <div class="upd-msg" id="updMsg" role="status"></div>
       </div>
       <div class="upd-ft">
-        <button type="button" class="row-btn" id="updCancel2">Cancel</button>
-        <button type="submit" class="row-btn gold" id="updGo">Post update</button>
+        <button type="button" class="btn" id="updCancel2">Cancel</button>
+        <button type="submit" class="btn btn-primary" id="updGo">Post update</button>
       </div>
     </form>
   </div>
@@ -371,12 +378,12 @@ function projectCard(p) {
       ${p.relevance_reason ? `<div class="proj-why">${esc(p.relevance_reason)}</div>` : ""}
     </button>
     <div class="proj-actions">
-      <a class="proj-btn" href="/ui/jobcheck?item=${encodeURIComponent(p.item_id)}">Job Check</a>
-      <a class="proj-btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open Monday</a>
+      <a class="btn" href="/ui/jobcheck?item=${encodeURIComponent(p.item_id)}">Job Check</a>
+      <a class="btn" href="${esc(p.url)}" target="_blank" rel="noopener">Open Monday</a>
       ${(p.gfolder_url || p.drive_url)
-        ? `<a class="proj-btn" href="${esc(p.gfolder_url || p.drive_url)}" target="_blank" rel="noopener">Open Drive</a>`
-        : `<span class="proj-btn is-disabled" title="No GFolder linked">Open Drive</span>`}
-      <button type="button" class="proj-btn js-upd" data-id="${p.item_id}">Add Update</button>
+        ? `<a class="btn" href="${esc(p.gfolder_url || p.drive_url)}" target="_blank" rel="noopener">Open Drive</a>`
+        : `<span class="btn is-disabled" title="No GFolder linked">Open Drive</span>`}
+      <button type="button" class="btn js-upd" data-id="${p.item_id}">Add Update</button>
     </div>
   </article>`;
 }
@@ -481,8 +488,8 @@ function renderStops(stops) {
         <div class="stop-meta">${esc(s.location || "No fixed time")}${s.hard_time ? " · " + esc(s.hard_time) : ""}
           · <a href="/ui/jobcheck?item=${encodeURIComponent(s.item_id)}">Job Check</a></div></div>
       <div style="display:flex;flex-direction:column;gap:4px">
-        <button type="button" class="row-btn" data-act="up" ${i===0?"disabled":""}>↑</button>
-        <button type="button" class="row-btn" data-act="down" ${i===stops.length-1?"disabled":""}>↓</button>
+        <button type="button" class="btn" data-act="up" ${i===0?"disabled":""}>↑</button>
+        <button type="button" class="btn" data-act="down" ${i===stops.length-1?"disabled":""}>↓</button>
       </div>
     </div>`).join("");
   el.querySelectorAll("[data-act]").forEach((btn) => {
@@ -585,8 +592,8 @@ function render(brief, { offline } = {}) {
   $("#chips").innerHTML = chips.join("");
 
   const links = [];
-  if (brief.links && brief.links.gm) links.push(`<a class="proj-btn" href="${brief.links.gm}">GM huddle</a>`);
-  if (brief.links && brief.links.owner) links.push(`<a class="proj-btn" href="${brief.links.owner}">Owner Pulse</a>`);
+  if (brief.links && brief.links.gm) links.push(`<a class="btn" href="${brief.links.gm}">GM huddle</a>`);
+  if (brief.links && brief.links.owner) links.push(`<a class="btn" href="${brief.links.owner}">Owner Pulse</a>`);
   $("#rolelinks").innerHTML = links.join("");
 
   $("#prepcount").textContent = prep.label || "";
@@ -611,7 +618,7 @@ function render(brief, { offline } = {}) {
   const origin = brief.origin || { kind: "office" };
   const originLabels = { home: "Home", office: "Office", current: "Current location", custom: "Custom" };
   const origseg = $("#origseg");
-  origseg.className = "segmented";
+  origseg.className = "seg";
   origseg.innerHTML = ["home","office","current","custom"].map((k) =>
     `<button type="button" data-kind="${k}" class="${origin.kind===k?"is-active":""}">${originLabels[k]}</button>`).join("");
   $("#origcustom").style.display = origin.kind === "custom" ? "grid" : "none";
@@ -659,8 +666,8 @@ function render(brief, { offline } = {}) {
       <div class="stop-meta">${dir==="in"?"From":"To"} ${esc(dir==="in"?r.requester_email:r.needed_from_email)}
         · ${esc(r.category)}${r.project_name ? " · " + esc(r.project_name) : ""}${r.escalation && r.escalation!=="none" ? " · " + esc(r.escalation) : ""}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
-        ${dir==="in" && r.status==="open" ? `<button type="button" class="row-btn js-ack" data-id="${esc(r.id)}">Acknowledge</button>` : ""}
-        ${r.status!=="completed" ? `<button type="button" class="row-btn js-done" data-id="${esc(r.id)}">Complete</button>` : ""}
+        ${dir==="in" && r.status==="open" ? `<button type="button" class="btn js-ack" data-id="${esc(r.id)}">Acknowledge</button>` : ""}
+        ${r.status!=="completed" ? `<button type="button" class="btn js-done" data-id="${esc(r.id)}">Complete</button>` : ""}
       </div>
     </div>`;
   $("#arin").innerHTML = incoming.length ? incoming.map((r) => arRow(r, "in")).join("") : `<div class="mb-empty">Nothing waiting on you.</div>`;
@@ -671,11 +678,15 @@ function render(brief, { offline } = {}) {
     const prevEl = document.getElementById("arCat");
     const prev = prevEl ? prevEl.value : "";
     const host = $("#arCatWrap");
-    host.innerHTML = `<select id="arCat" name="category">${cats.map((c) =>
-      `<option value="${esc(c)}">${esc(c)}</option>`).join("")}</select>`;
-    const sel = document.getElementById("arCat");
-    if (prev && cats.includes(prev)) sel.value = prev;
-    GvcChips.replaceSelect(sel, { segmented: false });
+    host.innerHTML = "";
+    const chipRoot = GvcChips.mount({
+      name: "category",
+      id: "arCat",
+      options: cats.map((c) => ({ value: c, label: c })),
+      value: prev && cats.includes(prev) ? prev : (cats[0] || "other"),
+      segmented: false,
+    });
+    host.appendChild(chipRoot);
   }
   document.querySelectorAll(".js-ack").forEach((b) => b.addEventListener("click", async () => {
     await api(`/ui/api/morning/action-requests/${b.dataset.id}/ack`, { method: "POST" });
@@ -747,10 +758,10 @@ async function enrichGfolders(brief) {
       if (!u) return;
       const actions = art.querySelector(".proj-actions");
       if (!actions) return;
-      const dead = actions.querySelector(".proj-btn.is-disabled");
+      const dead = actions.querySelector(".btn.is-disabled");
       if (dead) {
         const a = document.createElement("a");
-        a.className = "proj-btn";
+        a.className = "btn";
         a.href = u;
         a.target = "_blank";
         a.rel = "noopener";

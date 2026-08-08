@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Remaining portal pages on gvc-ui.css (r104) — BUILT 2026-08-08
+Converted Job Start / Billing / Check / Morning (+ GM + Owner) / Field Manual
+/ COI / Activity / Admin / Lien / Training / Time Off to redesign chrome:
+`/ui/gvc-ui.css` only, `.topbar` + `.page`, zero `<select>`. Field Manual keeps
+its private content palette (page-local `--green` / `--expert` hex). No portal
+HTML still links `/ui/gvc.css`. Hub **r104**.
+
 ## ✨ Money forms on gvc-forms.css (r103) — BUILT 2026-08-08
 Invoice / Estimate / Change Order converted to forms pack SoT:
 `gvc-ui.css` + `gvc-forms.css`, shared `GvcFormChrome` (56px topbar + nested

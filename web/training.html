@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald" data-theme="light">
+<html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Portal — Training</title>
 <script>
 /* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
@@ -19,97 +19,93 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page {
+    max-width: 760px; margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+    display: grid; gap: var(--space-4);
+  }
+  .page > .card { padding: var(--space-5); }
+  .intro { margin: 0; color: var(--color-text-muted); font-size: var(--text-sm); line-height: 1.45; }
   .tr-path {
     display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-    margin: var(--gvc-space-4) 0 var(--gvc-space-6);
-    font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+    margin: var(--space-3) 0 var(--space-4);
+    font-size: var(--text-sm); color: var(--color-text-muted);
   }
-  .tr-path b,
-  .tr-path a {
-    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
-    border-radius: 999px; padding: 4px 10px; color: var(--gvc-ink);
+  .tr-path b, .tr-path a {
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-full); padding: 4px 10px; color: var(--color-text);
     font-weight: 600; text-decoration: none;
   }
-  .tr-path a:hover { border-color: var(--gvc-green); color: var(--gvc-green-dark); }
+  .tr-path a:hover { border-color: var(--color-primary); color: var(--color-primary); }
   .tr-path span { opacity: .55; }
   .tr-role {
     display: inline-flex; align-items: center; gap: 8px;
-    background: var(--gvc-green-tint, #E8F0EA);
-    border: 1px solid var(--gvc-line); border-radius: var(--gvc-r);
-    padding: 8px 12px; margin-bottom: var(--gvc-space-5);
-    font-size: var(--gvc-fs-body);
+    background: var(--color-primary-soft); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); padding: 8px 12px;
+    font-size: var(--text-sm);
   }
-  .tr-role strong { color: var(--gvc-green-dark, #1F4D32); }
+  .tr-role strong { color: var(--color-primary); }
   .tr-mod {
-    background: var(--gvc-surface); border: 1px solid var(--gvc-line);
-    border-radius: var(--gvc-r-lg); padding: var(--gvc-space-5);
-    margin-bottom: var(--gvc-space-4);
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); padding: var(--space-5);
+    margin-bottom: var(--space-4);
   }
   .tr-mod.is-locked { opacity: .55; }
   .tr-mod-hd {
     display: flex; gap: 12px; align-items: flex-start;
     justify-content: space-between; flex-wrap: wrap;
   }
-  .tr-mod h2 { margin: 0 0 4px; font-size: var(--gvc-fs-lead); }
-  .tr-mod .why { margin: 0 0 var(--gvc-space-3); color: var(--gvc-muted);
-    font-size: var(--gvc-fs-body); }
+  .tr-mod h2 { margin: 0 0 4px; font-size: var(--text-base); font-weight: 700; }
+  .tr-mod .why { margin: 0 0 var(--space-3); color: var(--color-text-muted); font-size: var(--text-sm); }
   .tr-badge {
     font-size: 11px; font-weight: 700; letter-spacing: .04em;
-    text-transform: uppercase; border-radius: 999px; padding: 3px 8px;
-    border: 1px solid var(--gvc-line); white-space: nowrap;
+    text-transform: uppercase; border-radius: var(--radius-full); padding: 3px 8px;
+    border: 1px solid var(--color-border); white-space: nowrap;
   }
-  .tr-badge.open { background: var(--color-primary-soft, #E8F0EA); color: var(--color-ok-ink, #1F4D32); }
-  .tr-badge.lock { background: var(--color-neutral-soft, #F3F1EC); color: var(--color-text-muted, #6B6560); }
-  .tr-badge.done { background: var(--color-info-soft, #E7F0FF); color: var(--color-info-ink, #1A3A6B); }
+  .tr-badge.open { background: var(--color-primary-soft); color: var(--color-primary); }
+  .tr-badge.lock { background: var(--color-surface-2); color: var(--color-text-muted); }
+  .tr-badge.done { background: var(--color-info-soft); color: var(--color-info); }
   .tr-steps { margin: 0; padding-left: 1.2rem; }
   .tr-steps li { margin: 0 0 8px; }
   .tr-steps label { display: flex; gap: 8px; align-items: flex-start; cursor: pointer; }
   .tr-steps input { margin-top: 4px; }
-  .tr-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--gvc-space-4); }
+  .tr-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: var(--space-4); }
   .tr-note {
-    background: var(--gvc-warn-tint); border: 1px solid var(--color-warn-border, #E0CDA9);
-    border-left: 4px solid var(--gvc-gold-dark); border-radius: var(--gvc-r);
-    padding: var(--gvc-space-4); margin: var(--gvc-space-5) 0;
-    font-size: var(--gvc-fs-body);
+    background: var(--color-warn-soft); border: 1px solid var(--color-warn);
+    border-left: 4px solid var(--color-accent); border-radius: var(--radius-md);
+    padding: var(--space-4); font-size: var(--text-sm);
   }
   .tr-note strong { display: block; margin-bottom: 4px; }
   .tr-toc a {
-    display: block; padding: 8px 0; border-bottom: 1px solid var(--gvc-line);
+    display: block; padding: 8px 0; border-bottom: 1px solid var(--color-divider);
     color: inherit; text-decoration: none;
   }
-  .tr-toc a:hover { color: var(--gvc-green-dark, #1F4D32); }
-  .tr-toc .dim { color: var(--gvc-muted); }
-  .tr-progress {
-    font-size: var(--gvc-fs-small); color: var(--gvc-muted);
-    margin-bottom: var(--gvc-space-4);
-  }
+  .tr-toc a:hover { color: var(--color-primary); }
+  .tr-toc .dim { color: var(--color-text-muted); }
+  .tr-progress { font-size: var(--text-sm); color: var(--color-text-muted); margin-bottom: var(--space-3); }
 </style>
 </head>
 <body>
 
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Training</span>
-    <div class="gvc-topbar-right">
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <span class="gvc-topbar-user">{{EMAIL}}</span>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Training</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="gvc-shell">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Company</p>
-    <h1 class="gvc-h1">Portal &amp; systems training</h1>
-    <p class="gvc-sub">
+<div class="page">
+  <div class="card">
+    <h2 style="font-size:var(--text-xs);text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted);margin:0 0 var(--space-3);font-weight:700;">Portal &amp; systems training</h2>
+    <p class="intro">
       Walk through what each hub tool does — based on <b>your</b> access.
       Check off steps as you go. Progress stays on this phone/browser.
     </p>
@@ -137,7 +133,7 @@
 
   <div id="modules"></div>
 
-  <div class="tr-note" style="margin-top:32px;">
+  <div class="tr-note" style="margin-top:var(--space-4);">
     <strong>Hard rules (every role)</strong>
     <ul style="margin:8px 0 0; padding-left:1.2rem;">
       <li>We never auto-send customer email from the portal — office clicks <b>Send</b> in Gmail.</li>
@@ -146,8 +142,9 @@
       <li>Need a tool that's dimmed on the hub? Ask an admin — don't work around it in Monday alone.</li>
     </ul>
   </div>
-</main>
+</div>
 
+<script src="/ui/gvc-theme.js"></script>
 <script>
 const EMAIL = {{EMAIL_JSON}};
 const STORE_KEY = "gvc-training-v1:" + (EMAIL || "anon");
@@ -441,7 +438,7 @@ async function boot() {
       .filter((l) => !l.feature || feats.has(l.feature))
       .map((l) => {
         const ext = l.external ? ` target="_blank" rel="noopener"` : "";
-        return `<a class="btn btn--ghost" href="${esc(l.href)}"${ext}>${esc(l.label)}</a>`;
+        return `<a class="btn btn-ghost" href="${esc(l.href)}"${ext}>${esc(l.label)}</a>`;
       })
       .join("");
 
@@ -488,14 +485,12 @@ async function boot() {
     st2.checks = st2.checks || {};
     st2.checks[t.getAttribute("data-key")] = !!t.checked;
     saveState(st2);
-    // Refresh counts without full reload
     boot();
   });
 }
 
 boot();
+if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
-<script src="/ui/gvc-theme.js"></script>
-<script src="/ui/gvc-command.js"></script>
 </body>
 </html>

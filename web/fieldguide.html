@@ -19,23 +19,23 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
   /* Field Manual — page behavior + content palette.
-     Brand topbar/tokens from gvc.css. Theme: html[data-theme] via gvc-theme.js
+     Chrome/topbar from gvc-ui.css. Theme: html[data-theme] via gvc-theme.js
      (OS default + remembered override). Local content tokens follow data-theme. */
   :root {
-    /* Shared with gvc.css */
-    --ink: var(--gvc-ink);
-    --muted: var(--gvc-muted);
-    --line: var(--gvc-line);
-    --bg: var(--gvc-bg);
-    --gold: var(--gvc-gold);
-    --gold-dark: var(--gvc-gold-dark);
-    --surface: var(--gvc-surface);
-    --sans: var(--gvc-face-body, var(--gvc-sans));
-    --display: var(--gvc-face-display, var(--gvc-display));
-    --mono: var(--gvc-mono);
+    /* Chrome aliases → gvc-ui tokens (content palette below is private). */
+    --ink: var(--color-text);
+    --muted: var(--color-text-muted);
+    --line: var(--color-border);
+    --bg: var(--color-bg);
+    --gold: var(--color-accent);
+    --gold-dark: var(--color-accent-ink);
+    --surface: var(--color-surface);
+    --sans: var(--font-body);
+    --display: var(--font-display);
+    --mono: var(--font-mono);
 
     /* Field Manual content palette (docs use brand-mid green, not chrome). */
     --green: #548427;
@@ -537,27 +537,18 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
     h3 { break-after:avoid; } .note, table, .expert { break-inside:avoid; }
   }
 
-  @media (max-width: 640px) {
-    .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
-    .gvc-wordmark { font-size: 15px; }
-  }
-
 </style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/" title="Back to the GVC Portal home">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Field Manual</span>
-    <div class="gvc-topbar-right">
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <span class="gvc-topbar-user" id="email">{{EMAIL}}</span>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Field Manual</h1>
+  </div>
+  <div class="topbar__actions">
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <span class="muted" id="email" style="font-size:var(--text-xs)">{{EMAIL}}</span>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 

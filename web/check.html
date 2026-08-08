@@ -2,9 +2,8 @@
 <html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Portal — Paid by Check</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
 /* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
@@ -20,119 +19,180 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
+  /* Paid by Check — layout only; tokens from gvc-ui.css */
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page { max-width: 760px; margin: 0 auto; padding: var(--space-5) var(--space-4) 7.5rem; display: grid; gap: var(--space-4); }
+  .page > .card { padding: var(--space-5); }
+  .page > .card > h2 {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); margin: 0 0 var(--space-3); font-weight: 700;
+  }
+  .hint { font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.45; }
+  .filepick { font-size: var(--text-sm); margin: var(--space-3) 0; }
 
-/* Paid-by-Check widgets */
-  main.gvc-shell { max-width: 760px; }
-  .muted { color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
-  .pill { display:inline-block; font-size:11px; padding:2px 8px; border-radius:var(--gvc-r-pill);
-    background:var(--gvc-warn-tint); color:var(--gvc-green-dark); border:1px solid var(--color-warn-border, #E3CFA0); font-weight:600; }
-  .check-img { max-width:100%; border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); margin-top:10px; }
-  .inv-row { display:flex; gap:12px; align-items:flex-start; padding:12px; border:1px solid var(--gvc-line);
-    border-radius:var(--gvc-r-md); margin-bottom:8px; background:var(--gvc-bg); cursor:pointer; }
-  .inv-row:hover { border-color:var(--gvc-green); }
-  .inv-row.selected { border-color:var(--gvc-green); background:var(--gvc-tint-green); }
-  .inv-row input { width:auto; min-height:auto; margin-top:4px; }
-  .inv-empty { color:var(--gvc-muted); font-size:var(--gvc-fs-small); padding:8px 0; }
-  .match { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px; }
-  .overlay { position:fixed; inset:0; background:rgba(28,25,23,.45); display:none; align-items:flex-start;
-    justify-content:center; padding:32px 16px; overflow:auto; z-index:80; }
-  .overlay.show { display:flex; }
-  .modal { background:var(--gvc-surface); border-radius:var(--gvc-r-lg); border:1px solid var(--gvc-line);
-    max-width:640px; width:100%; padding:20px; box-shadow:0 16px 40px rgba(0,0,0,.18); }
-  .modal h3 { margin:0 0 12px; font-size:var(--gvc-fs-h3, 18px); }
+  #status { padding: 12px 14px; border-radius: var(--radius-md); font-size: var(--text-sm); display: none; }
+  #status.show { display: block; }
+  #status.info { background: var(--color-primary-soft); border: 1px solid var(--color-primary); }
+  #status.warn { background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink); }
+  #status.ok  { background: var(--color-primary-soft); border: 1px solid var(--color-primary); color: var(--color-primary); }
+  #status.err { background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger); }
+  #status ul { margin: 6px 0 0; padding-left: 20px; }
+  .result-line { padding: 4px 0; }
+  .result-line a { color: var(--color-primary); font-weight: 600; }
 
+  .pill {
+    display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full);
+    background: var(--color-warn-soft); color: var(--color-accent-ink);
+    border: 1px solid var(--color-warn); font-weight: 600;
+  }
+  .check-img {
+    max-width: 100%; border: 1px solid var(--color-divider); border-radius: var(--radius-md); margin-top: 10px;
+  }
+
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .grid .full { grid-column: 1 / -1; }
+  @media (max-width: 619px) { .grid { grid-template-columns: 1fr; } }
+  label {
+    display: block; font-size: var(--text-xs); font-weight: 700; margin-bottom: 6px;
+    color: var(--color-text-muted); text-transform: uppercase; letter-spacing: .06em;
+  }
+
+  .inv-scroll {
+    margin-top: 8px; max-height: min(40vh, 320px); overflow-y: auto;
+    border: 1px solid var(--color-divider); border-radius: var(--radius-md);
+    background: var(--color-bg);
+  }
+  .inv-row {
+    display: flex; gap: 12px; align-items: flex-start; padding: 12px;
+    border-bottom: 1px solid var(--color-divider); background: var(--color-surface);
+    cursor: pointer;
+  }
+  .inv-row:last-child { border-bottom: 0; }
+  .inv-row:hover { background: var(--color-surface-2); }
+  .inv-row.sel { border-left: 3px solid var(--color-primary); background: var(--color-primary-soft); }
+  .inv-empty { color: var(--color-text-muted); font-size: var(--text-sm); padding: 12px; }
+  .match { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 12px; }
+  .match.hi {
+    padding: 10px 12px; border-radius: var(--radius-md);
+    background: var(--color-primary-soft); border: 1px solid var(--color-primary);
+  }
+
+  .callout {
+    border-radius: var(--radius-md); padding: 10px 12px; margin-bottom: 12px;
+    font-size: var(--text-sm); line-height: 1.45;
+  }
+  .callout--warn {
+    background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink);
+  }
+
+  .overlay {
+    position: fixed; inset: 0; background: rgba(26, 62, 43, .48); display: none;
+    align-items: flex-start; justify-content: center; padding: 32px 16px;
+    overflow: auto; z-index: 80;
+  }
+  .overlay.show { display: flex; }
+  .modal {
+    background: var(--color-surface); border-radius: var(--radius-lg);
+    border: 1px solid var(--color-divider); max-width: 640px; width: 100%;
+    padding: var(--space-5); box-shadow: var(--shadow-lg, 0 16px 40px rgba(0,0,0,.18));
+  }
+  .modal h3 {
+    margin: 0 0 12px; font-size: var(--text-lg); font-family: var(--font-display);
+    color: var(--color-text);
+  }
+  .actions {
+    display: flex; gap: var(--space-3); align-items: center; flex-wrap: wrap;
+    margin-top: var(--space-4); padding-top: var(--space-3);
+    border-top: 1px solid var(--color-divider);
+  }
+  .actions .btn-primary { margin-left: auto; }
+
+  @media (max-width: 640px) {
+    .page { padding: var(--space-4) var(--space-3) calc(7.5rem + env(safe-area-inset-bottom, 0px)); }
+    .actions .btn-primary { margin-left: 0; width: 100%; }
+    .actions { flex-direction: column-reverse; align-items: stretch; }
+  }
 </style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Paid by Check</span>
-    <div class="gvc-topbar-right">
-      <span class="gvc-topbar-user">{{EMAIL}}</span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Paid by Check</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" style="font-size:var(--text-xs)">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
-<nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
 
-<main class="gvc-shell gvc-moneyform">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Billing</p>
-    <h1 class="gvc-h1">Paid by Check</h1>
-    <p class="gvc-sub">Upload a check photo, match it to open invoices, and record the payment on Monday and Stripe.</p>
-  </div>
+<div class="page">
+  <nav id="gvc-flow" class="path" aria-label="Money path"></nav>
+  <div id="status"></div>
 
-  <div class="gvc-stack">
-
-  <div class="gvc-banner" id="status"></div>
   <div class="card">
     <h2>Upload a check</h2>
-    <p class="muted">Snap or upload a photo of the check. We'll read it, match it to an open invoice, and show you everything to confirm before anything is recorded.</p>
-    <div style="margin:14px 0;"><input type="file" id="file" accept="image/*" /></div>
-    <button class="btn" id="extract">Read check</button>
+    <p class="hint">Snap or upload a photo of the check. We'll read it, match it to an open invoice, and show you everything to confirm before anything is recorded.</p>
+    <input class="filepick" type="file" id="file" accept="image/*" />
+    <button class="btn btn-primary" type="button" id="extract">Read check</button>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+</div>
 
 <div class="overlay" id="overlay">
-  <div class="modal">
-    <h3>Confirm check details</h3>
-    <p class="muted">Edit anything OCR got wrong. Use the image below for reference. Nothing is recorded until you confirm.</p>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <h3 id="modal-title">Confirm check details</h3>
+    <p class="hint">Edit anything OCR got wrong. Use the image below for reference. Nothing is recorded until you confirm.</p>
     <img id="m-image" class="check-img" alt="Uploaded check" />
-    <div id="multi-warn" class="gvc-callout gvc-callout--warn" style="display:none; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px;"></div>
+    <div id="multi-warn" class="callout callout--warn" style="display:none;"></div>
     <div class="grid" style="margin-top:12px;">
-      <div><label>Payer</label><input id="m-payer" /></div>
-      <div><label>Amount</label><input id="m-amount" /></div>
-      <div><label>Check #</label><input id="m-check_no" /></div>
-      <div><label>Date</label><input id="m-date" /></div>
-      <div class="full"><label>Reference / memo</label><input id="m-reference" /></div>
+      <div><label for="m-payer">Payer</label><input class="input" id="m-payer" /></div>
+      <div><label for="m-amount">Amount</label><input class="input" id="m-amount" /></div>
+      <div><label for="m-check_no">Check #</label><input class="input" id="m-check_no" /></div>
+      <div><label for="m-date">Date</label><input class="input" id="m-date" /></div>
+      <div class="full"><label for="m-reference">Reference / memo</label><input class="input" id="m-reference" /></div>
     </div>
 
     <div class="match" id="match-box">
       <label style="margin-bottom:6px;">Matched invoice(s)</label>
       <div id="match-detail" class="muted">—</div>
       <div class="full" style="margin-top:10px;">
-        <label>Search &amp; pick the open invoice(s) this check pays</label>
-        <p class="muted" style="margin:2px 0 6px;">One check can pay several invoices — click to select each one. Each invoice is prefilled with its remaining balance; lower an amount to record a <strong>partial payment</strong> (the invoice stays open with the new balance).</p>
-        <input id="m-search" placeholder="Filter by invoice #, customer, or amount…" autocomplete="off" />
-        <div id="m-list" class="gvc-results"></div>
+        <label for="m-search">Search &amp; pick the open invoice(s) this check pays</label>
+        <p class="hint" style="margin:2px 0 6px;">One check can pay several invoices — click to select each one. Each invoice is prefilled with its remaining balance; lower an amount to record a <strong>partial payment</strong> (the invoice stays open with the new balance).</p>
+        <input class="input" id="m-search" placeholder="Filter by invoice #, customer, or amount…" autocomplete="off" />
+        <div id="m-list" class="inv-scroll"></div>
         <div id="m-picked" class="muted" style="margin-top:6px;">No invoice selected.</div>
         <div id="m-total" class="muted" style="margin-top:4px;"></div>
-        <div id="m-mismatch" class="gvc-callout gvc-callout--warn" style="display:none; border-radius:8px; padding:8px 12px; margin-top:8px; font-size:13px;">
+        <div id="m-mismatch" class="callout callout--warn" style="display:none;">
           <div id="m-mismatch-text"></div>
-          <button type="button" class="btn secondary" id="m-autosplit" style="margin-top:6px; font-size:13px; padding:4px 10px;">Auto-split the check (oldest first)</button>
-          <label id="m-override-row" style="display:flex; align-items:center; gap:8px; margin-top:6px; font-weight:600; cursor:pointer;">
-            <input type="checkbox" id="m-override" style="width:auto;" /> Record anyway — the difference is intentional
+          <button type="button" class="btn" id="m-autosplit" style="margin-top:6px;">Auto-split the check (oldest first)</button>
+          <label id="m-override-row" style="display:flex; align-items:center; gap:8px; margin-top:6px; font-weight:600; cursor:pointer; text-transform:none; letter-spacing:0;">
+            <input type="checkbox" id="m-override" style="width:auto; min-height:0;" /> Record anyway — the difference is intentional
           </label>
         </div>
       </div>
     </div>
 
     <div class="actions">
-      <button class="btn secondary" id="cancel">Cancel</button>
-      <button class="btn gold" id="confirm">Confirm &amp; record</button>
+      <button class="btn" type="button" id="cancel">Cancel</button>
+      <button class="btn btn-primary" type="button" id="confirm">Confirm &amp; record</button>
     </div>
   </div>
 </div>
 
-<script src="/ui/gvc-command.js"></script>
+<script src="/ui/gvc-flow.js"></script>
+<script src="/ui/gvc-theme.js"></script>
 <script>
   const $ = s => document.querySelector(s);
   function setStatus(kind, msg) {
     const e = $("#status");
-    const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
-    e.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+    e.className = "show " + (kind || "info");
     e.innerHTML = "<div>" + msg + "</div>";
+    e.scrollIntoView({ block: "nearest" });
   }
-  function clearStatus() { $("#status").className = "gvc-banner"; }
+  function clearStatus() { $("#status").className = ""; }
 
   let OPEN_ROWS = [];
   let SELECTED = [];   // monday_item_ids as strings, in pick order — one check can pay several invoices
@@ -238,7 +298,6 @@
         list.appendChild(div);
       });
     }
-    list.classList.add("show");
   }
   function toggleInvoice(id) {
     setSelection(SELECTED.includes(id) ? SELECTED.filter(x => x !== id) : SELECTED.concat([id]));
@@ -284,11 +343,11 @@
       const bal = effectiveCents(r) || 0;
       const val = ((ALLOC[id] != null ? ALLOC[id] : bal) / 100).toFixed(2);
       const partial = ALLOC[id] != null && ALLOC[id] > 0 && ALLOC[id] < bal;
-      return `<div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+      return `<div style="display:flex; align-items:center; gap:8px; margin-top:4px; flex-wrap:wrap;">
         <strong>${r.identifier}</strong>
         <span class="muted">balance ${fmt(bal)}</span>
         <span style="margin-left:auto;">apply $</span>
-        <input class="alloc" data-id="${id}" value="${val}" style="width:110px; text-align:right;" />
+        <input class="input alloc" data-id="${id}" value="${val}" style="width:110px; text-align:right;" />
         ${partial ? `<span class="pill">partial — ${fmt(bal - ALLOC[id])} will remain</span>` : ""}
       </div>`;
     }).join("");
@@ -457,10 +516,7 @@
     $("#overlay").classList.remove("show");
   });
   $("#confirm").addEventListener("click", confirm);
-</script>
-<script src="/ui/gvc-flow.js"></script>
-<script src="/ui/gvc-theme.js"></script>
-<script>
+
   if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "check"); }
   if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>

@@ -2,9 +2,8 @@
 <html lang="en" data-palette="emerald">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>GVC Job Start</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
 /* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
@@ -20,76 +19,137 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-/* Job Start widgets (shared money-form dialect lives in gvc.css) */
-.listhead { display:flex; gap:12px; align-items:end; flex-wrap:wrap; margin-bottom:12px; }
-.listhead input#search { flex:1; min-width:200px; }
-.bidbtn { display:block; width:100%; text-align:left; padding:12px 14px; margin-bottom:8px;
-  border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md); background:var(--gvc-bg);
-  cursor:pointer; font:inherit; color:var(--gvc-ink); }
-.bidbtn:hover { border-color:var(--gvc-green); background:var(--gvc-tint-green); }
-.bidbtn .meta { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:2px; }
-.pill { display:inline-block; font-size:11px; padding:1px 7px; border-radius:var(--gvc-r-pill);
-  margin-left:6px; font-weight:600; border:1px solid var(--gvc-line); background:var(--gvc-surface); }
-.pill.open { background:var(--color-info-soft); color:var(--color-info-ink); border-color:var(--color-info-border); }
-.pill.accepted { background:var(--gvc-ok-tint); color:var(--color-ok-ink, var(--gvc-green-dark)); border-color:var(--color-ok-border, #BCD6C8); }
-.ctx { font-size:var(--gvc-fs-small); color:var(--gvc-muted); margin-bottom:12px; }
-.ctx-meta { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-.field { margin-bottom:12px; }
-.field label { display:block; font-size:var(--gvc-fs-small); font-weight:600; margin-bottom:4px; color:var(--gvc-ink-soft); }
-.srcnote { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
-.srcnote.none { color:var(--gvc-danger); }
-.srctag { display:inline-block; font-size:11px; padding:1px 6px; border-radius:var(--gvc-r-pill);
-  background:var(--gvc-line-soft); color:var(--gvc-muted); margin-left:6px; }
-.state { font-size:var(--gvc-fs-small); margin:8px 0; }
-.state.blocked, .fbad { color:var(--gvc-danger); font-weight:600; }
-.readonly-note { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); padding:8px 10px;
-  background:var(--gvc-bg); border-radius:var(--gvc-r-md); border:1px dashed var(--gvc-line); }
-.status-chips { width:100%; }
-.status-chips .chipset { display:block; width:100%; }
-.status-chips .chipset__opts { display:flex; flex-wrap:wrap; gap:6px; }
-.linkish { color:var(--gvc-green-dark); font-weight:600; cursor:pointer; text-decoration:underline;
-  background:none; border:0; font:inherit; padding:0; }
-#gatecount { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
-#savestate { font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-left:auto; }
+  /* Job Start layout only — tokens from gvc-ui.css */
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page { max-width: 760px; margin: 0 auto; padding: var(--space-5) var(--space-4) 7.5rem; display: grid; gap: var(--space-4); }
+  .page > .card { padding: var(--space-5); }
+  .page > .card > h2 {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); margin: 0 0 var(--space-3); font-weight: 700;
+  }
+  .page-intro { margin: 0; font-size: var(--text-sm); color: var(--color-text-muted); line-height: 1.45; }
+  .hint { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 6px; line-height: 1.45; }
+  .hint a { color: var(--color-primary); font-weight: 600; }
+  code { background: var(--color-surface-offset); padding: 1px 5px; border-radius: var(--radius-sm); font-size: var(--text-xs); }
+
+  #status { padding: 12px 14px; border-radius: var(--radius-md); font-size: var(--text-sm); display: none; }
+  #status.show { display: block; }
+  #status.info { background: var(--color-primary-soft); border: 1px solid var(--color-primary); }
+  #status.ok  { background: var(--color-primary-soft); border: 1px solid var(--color-primary); color: var(--color-primary); }
+  #status.warn { background: var(--color-warn-soft); border: 1px solid var(--color-warn); color: var(--color-accent-ink); }
+  #status.err { background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger); }
+  #status ul { margin: 6px 0 0; padding-left: 20px; }
+  .result-line a { color: var(--color-primary); font-weight: 600; }
+
+  #bidlist { margin-top: 10px; max-height: 46vh; overflow-y: auto; display: grid; gap: 6px; }
+  .listhead {
+    font-size: var(--text-xs); font-weight: 700; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--color-text-muted); margin: 10px 0 4px; padding-top: 4px;
+  }
+  .listhead:first-child { margin-top: 0; }
+  .bidbtn { display: block; width: 100%; text-align: left; min-height: var(--tap);
+    padding: 10px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-full);
+    background: var(--color-surface); font: inherit; cursor: pointer; color: inherit; }
+  .bidbtn:hover { border-color: var(--color-primary); }
+  .bidbtn.done { opacity: .72; }
+  .bidbtn .jname { font-weight: 600; }
+  .bidbtn .jmeta { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 2px; }
+  .pill { display: inline-block; font-size: 10px; padding: 1px 8px; border-radius: var(--radius-full);
+    margin-left: 6px; font-weight: 700; border: 1px solid var(--color-border); background: var(--color-surface-2);
+    vertical-align: middle; }
+  .pill.open { background: var(--color-primary-soft); color: var(--color-primary); border-color: var(--color-primary); }
+  .pill.done, .pill.accepted { background: var(--color-primary-soft); color: var(--color-primary); border-color: var(--color-primary); }
+  .pill.stage { background: var(--color-warn-soft); color: var(--color-accent-ink); border-color: var(--color-warn); }
+  .pill.drift { background: var(--color-danger-soft); color: var(--color-danger); border-color: var(--color-danger); }
+  .pill.draft { background: var(--color-surface-offset); color: var(--color-text-muted); }
+
+  .linkish { background: none; border: 0; padding: 8px 0; color: var(--color-primary);
+    text-decoration: underline; font: inherit; font-size: var(--text-sm); cursor: pointer; min-height: 44px; }
+
+  .ctx { display: grid; gap: 6px; margin-bottom: 4px; }
+  .ctx .jobname { font-size: var(--text-lg); font-weight: 700; font-family: var(--font-display); }
+  .ctx .jobname a { color: var(--color-text); text-decoration: none; }
+  .ctx .jobname a:hover { color: var(--color-primary); text-decoration: underline; }
+  .ctx-meta { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: var(--text-sm); color: var(--color-text-muted); }
+  .ctx-meta b { color: var(--color-text); font-weight: 600; }
+
+  .state { font-size: var(--text-sm); margin: 8px 0; line-height: 1.45; }
+  .state .lead { font-weight: 700; color: var(--color-text); }
+  .state.with_ops .lead { color: var(--color-accent-ink); }
+  .state.sent_back .lead { color: var(--color-danger); }
+  .state.accepted .lead { color: var(--color-primary); }
+  .readonly-note { font-size: var(--text-xs); color: var(--color-text-muted); padding: 8px 10px;
+    background: var(--color-bg); border-radius: var(--radius-md); border: 1px dashed var(--color-border); margin-top: 6px; }
+  .readonly-note a { color: var(--color-primary); font-weight: 600; }
+
+  .field { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--color-divider); }
+  .field:last-child { border-bottom: 0; }
+  .field label { font-size: var(--text-xs); font-weight: 700; text-transform: uppercase;
+    letter-spacing: .08em; color: var(--color-text-muted); }
+  .field.missing label { color: var(--color-danger); }
+  .field.bad { background: var(--color-danger-soft); margin: 0 calc(-1 * var(--space-2)); padding: 12px var(--space-2);
+    border-radius: var(--radius-md); border-bottom: 0; }
+  .field textarea { min-height: 88px; resize: vertical; }
+  .fhelp { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .srcnote { font-size: var(--text-xs); color: var(--color-text-muted); margin-bottom: 10px; line-height: 1.45; }
+  .srcnote.none { color: var(--color-danger); }
+  .srcnote a { color: var(--color-primary); font-weight: 600; }
+  .srctag { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: var(--radius-full);
+    background: var(--color-surface-offset); color: var(--color-text-muted); margin-left: 6px; font-weight: 600; }
+  .fbad { color: var(--color-danger); font-weight: 600; font-size: var(--text-xs); }
+  .msg-err { color: var(--color-danger); font-weight: 600; }
+  .status-chips { width: 100%; }
+  .status-chips .chipset { display: block; width: 100%; }
+
+  .savebar {
+    position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+    background: var(--color-surface); border-top: 1px solid var(--color-divider);
+    padding: var(--space-3) var(--space-4) calc(var(--space-3) + env(safe-area-inset-bottom, 0px));
+  }
+  .savebar:not(.show) { display: none; }
+  .savebar.show { display: block; }
+  .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }
+  .savebar .inner .btn-primary { flex: 1; min-height: var(--tap-lg); }
+  #gatecount { font-size: var(--text-sm); color: var(--color-text-muted); white-space: nowrap; }
+  #gatecount.blocked { color: var(--color-danger); font-weight: 600; }
+  #savestate { max-width: 760px; margin: var(--space-2) auto 0; font-size: var(--text-xs); color: var(--color-text-muted); }
+
+  .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px;
+    background: var(--color-text-faint); vertical-align: middle; }
+  .dot.ok { background: var(--color-primary); }
+  .dot.bad { background: var(--color-danger); }
+
+  @media (max-width: 640px) {
+    .page { padding: var(--space-4) var(--space-3) calc(7.5rem + env(safe-area-inset-bottom, 0px)); }
+  }
 </style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Job Start</span>
-    <div class="gvc-topbar-right">
-      <div id="health">Checking service…</div>
-      <span class="gvc-topbar-sep"></span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Job Start</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" id="health" style="font-size:var(--text-xs)">Checking…</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="gvc-shell gvc-moneyform">
-  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Projects</p>
-    <h1 class="gvc-h1">Job Start</h1>
-    <p class="gvc-sub">Turn an accepted bid into a job packet — Drive folder, Operations task, and the handoff PDF.</p>
-  </div>
+<div class="page">
+  <nav id="gvc-flow" class="path" aria-label="Money path"></nav>
+  <div id="status"></div>
 
-  <div class="gvc-stack">
-
-  <div class="gvc-banner" id="status"></div>
+  <p class="page-intro">Turn an accepted bid into a job packet — Drive folder, Operations task, and the handoff PDF.</p>
 
   <div class="card" id="pickcard">
     <h2>Pick a bid</h2>
-    <input id="search" type="search" placeholder="Search bids — name, address, estimate #, stage…"
+    <input id="search" class="input" type="search" placeholder="Search bids — name, address, estimate #, stage…"
            autocomplete="off" />
-    <div id="bidlist" class="gvc-results gvc-results--panel"><div class="hint">Loading open and accepted bids from Monday…</div></div>
+    <div id="bidlist"><div class="hint">Loading open and accepted bids from Monday…</div></div>
     <div class="hint">Open bids and Accepted bids from the Bid Board. Sending a packet from an
       open bid marks it <b>Accepted</b> and moves it to Won Deals. Jobs already handed off
       sink to the bottom — opening one lets you correct the packet and re-send it.</div>
@@ -103,7 +163,7 @@
 
   <div class="card" id="namecard" style="display:none;">
     <h2>Job name</h2>
-    <input id="jobname" type="text" placeholder="Street, City, ST ZIP | Builder | Job Title" />
+    <input id="jobname" class="input" type="text" placeholder="Street, City, ST ZIP | Builder | Job Title" />
     <div id="namenote" class="hint"></div>
     <div class="hint"><b>GVC standard:</b>
       <code>Street Number Name, City, ST ZIP | Builder | Job Title</code>
@@ -132,29 +192,28 @@
   <div class="card" id="gccard" style="display:none;">
     <h2>Confirm the scope with the GC
       <span style="text-transform:none;font-weight:400;">— optional</span></h2>
-    <p style="margin:0 0 12px;font-size:14px;">
+    <p class="hint" style="margin:0 0 12px;font-size:var(--text-sm);">
       Optional. Skip anytime — it does <b>not</b> block Send to Operations.
       When you use it, drafts an email to the GC's PM (and super) with our scope
       <b>and our exclusions</b>, with a 3-business-day reply window. Every correction
       they send back is a change order we don't eat.
     </p>
-    <button class="btn ghost" id="gcemail" type="button" style="width:100%;">
+    <button class="btn btn-ghost btn-block" id="gcemail" type="button">
       Draft the scope confirmation
     </button>
     <div id="gcresult" class="hint"></div>
     <div class="hint">Creates a draft in hello@ — nothing sends until a person reviews it
       and clicks send. You can hand off without drafting this.</div>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+</div><!-- page -->
 
 <div class="savebar" id="savebar">
   <div class="inner">
     <span id="gatecount">Loading…</span>
-    <button class="btn gold" id="send" type="button" disabled>Send to Operations</button>
-    <button class="btn gold" id="accept" type="button" style="display:none;">Accept this job</button>
-    <button class="btn ghost" id="sendback" type="button" style="display:none;">Send back</button>
-    <button class="btn ghost" id="nudge" type="button" style="display:none;">Nudge Ops</button>
+    <button class="btn btn-primary" id="send" type="button" disabled>Send to Operations</button>
+    <button class="btn btn-primary" id="accept" type="button" style="display:none;">Accept this job</button>
+    <button class="btn btn-ghost" id="sendback" type="button" style="display:none;">Send back</button>
+    <button class="btn btn-ghost" id="nudge" type="button" style="display:none;">Nudge Ops</button>
   </div>
   <div id="savestate"></div>
 </div>
@@ -175,12 +234,11 @@ let savingNow = false;
 
 function showStatus(kind, html) {
   const el = $("#status");
-  const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
-  el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
-  el.innerHTML = "<div>" + html + "</div>";
+  el.className = "show " + (kind || "info");
+  el.innerHTML = html;
   el.scrollIntoView({ block: "nearest" });
 }
-function hideStatus() { $("#status").className = "gvc-banner"; }
+function hideStatus() { $("#status").className = ""; }
 
 /* ---------- bid list ---------- */
 
@@ -323,15 +381,15 @@ function fieldHtml(f) {
   if (f.type === "status") {
     control = statusSelectHtml(f);
   } else if (f.type === "date") {
-    control = `<input type="date" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+    control = `<input class="input" type="date" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
   } else if (f.type === "number") {
-    control = `<input type="number" inputmode="decimal" step="any" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+    control = `<input class="input" type="number" inputmode="decimal" step="any" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
   } else if (f.type === "link") {
-    control = `<input type="url" inputmode="url" placeholder="https://…" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+    control = `<input class="input" type="url" inputmode="url" placeholder="https://…" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
   } else if (f.type === "long_text") {
-    control = `<textarea data-key="${esc(f.key)}">${esc(v || "")}</textarea>`;
+    control = `<textarea class="input" data-key="${esc(f.key)}">${esc(v || "")}</textarea>`;
   } else {
-    control = `<input type="text" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
+    control = `<input class="input" type="text" data-key="${esc(f.key)}" value="${esc(v || "")}" />`;
   }
   const empty = !String(v ?? "").trim();
   const cls = ["field", f.required ? "req" : "", f.required && empty ? "missing" : ""]
@@ -397,7 +455,7 @@ function renderNameNote() {
   if (!el) return;
   // Jake's rule: a missing piece gets ASKED for, never guessed.
   if (nm.note) {
-    el.innerHTML = `<span class="gvc-msg--danger" style="font-weight:600;">${esc(nm.note)}</span>`;
+    el.innerHTML = `<span class="msg-err">${esc(nm.note)}</span>`;
   } else if (nm.original && nm.suggestion && nm.original !== nm.suggestion) {
     el.innerHTML = `Renamed to the GVC standard. Bid was
       <span style="opacity:.75;">${esc(nm.original)}</span>`;
@@ -887,7 +945,7 @@ async function draftGcEmail() {
     const body = await r.json();
     if (!r.ok) {
       const d = body.detail || body;
-      out.innerHTML = `<span class="gvc-msg--danger"><b>${esc(d.detail || "Couldn't draft it.")}</b><br>${esc(d.advice || "")}</span>`;
+      out.innerHTML = `<span class="msg-err"><b>${esc(d.detail || "Couldn't draft it.")}</b><br>${esc(d.advice || "")}</span>`;
       return;
     }
     const link = body.gmail_url
@@ -901,7 +959,7 @@ async function draftGcEmail() {
       `<div class="result-line" style="margin-top:8px">Next: finish the packet fields · ` +
       `<a href="/ui/jobstart">other bids</a> · <a href="/">hub</a>.</div>`;
   } catch (e) {
-    out.innerHTML = `<span class="gvc-msg--danger">Network error — ${esc(e.message)}</span>`;
+    out.innerHTML = `<span class="msg-err">Network error — ${esc(e.message)}</span>`;
   } finally {
     btn.disabled = false;
     btn.textContent = "Draft the scope confirmation";
