@@ -1,0 +1,177 @@
+{
+  "id": "residential-field",
+  "slug": "residential-field",
+  "title": "Residential Field Habits",
+  "short_answer": "Less paper, more verbal — which is exactly why change-order discipline matters more on builder jobs, not less.",
+  "summary": "Less paper, more verbal — which is exactly why change-order discipline matters more on builder jobs, not less.",
+  "plain_words": "Residential sets are thinner. Questions often start as a phone call. Changes often sound casual. Our standard does not get casual: stop, photo, write, call. Lock box and window/garage notes on Job Start still govern day one.",
+  "when_to_use": [
+    "Builder / residential jobs in OH, IN, or KY",
+    "When verbal adds or \"normal for this builder\" pressure shows up",
+    "First week on site before habits from the last subdivision take over"
+  ],
+  "prerequisites": [
+    "Job Start packet accepted and Handoff PDF read",
+    "Lead knows office contact for same-day escalation"
+  ],
+  "trade_id": "ops",
+  "category_id": "money-scope",
+  "template": "task_guide",
+  "stage_line": "How we run jobs · builder work",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Job Start packet / Handoff PDF"
+    },
+    {
+      "name": "Phone camera"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Job Start first",
+      "body": "Lock box, exclusions, window type/returns, garage finish, open questions — before layout or hang.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Do not assume builder habit",
+      "body": "Do not assume \"normal for this builder\" when the packet or drawings say otherwise.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Verbal adds",
+      "body": "Run the Change Order ten-minute drill the same day — stop, photo, write, call.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Dimension convention",
+      "body": "Residential often faces framing — still read the note on each drawing; do not guess centerline vs face.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Get answers in writing",
+      "body": "Even if the first contact was a call — texts that scroll away are not a record.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Punch with the superintendent",
+      "body": "Use Punch List Cadence — drywall before paint.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Casual does not mean free",
+      "body": "Residential jobs lose more margin to verbal adds performed and never billed than to bad hang quality. Documentation matters more when the process is informal."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "res-jobstart",
+      "prompt": "Job Start fields read (lock box, exclusions, windows, garage, open questions) before production",
+      "severity": "required"
+    },
+    {
+      "id": "res-verbal-co",
+      "prompt": "Verbal adds get same-day stop-photo-write-call discipline",
+      "severity": "required"
+    },
+    {
+      "id": "res-written",
+      "prompt": "Answers captured in writing even when the first ask was a phone call",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Subdivision habit",
+      "wrong": "Build this job like the last builder's default",
+      "right": "Match this job's packet and drawings",
+      "why": "Repeat road names across three states — packet is the stand-behind source"
+    },
+    {
+      "title": "Casual verbal add",
+      "wrong": "\"While you're here\" work done as a favor",
+      "right": "Change Order path same day",
+      "why": "Informal process needs stricter documentation, not looser"
+    },
+    {
+      "title": "Scrolling text as record",
+      "wrong": "Rely on a group text thread for scope answers",
+      "right": "Written answer in email, RFI, or office log",
+      "why": "Texts scroll away; notice windows do not"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "exclusions-walk",
+    "jobstart-firstday",
+    "punch-cadence",
+    "garage-finish",
+    "window-returns"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Verbal adds on builder jobs use the same ten-minute drill"
+    },
+    {
+      "procedure_id": "exclusions-walk",
+      "label": "Exclusions walk",
+      "why": "Same-morning ritual before the crew treats excluded work as free"
+    },
+    {
+      "procedure_id": "punch-cadence",
+      "label": "Punch List Cadence",
+      "why": "Drywall before paint on superintendent walks"
+    }
+  ],
+  "search_tags": [
+    "residential",
+    "builder",
+    "verbal add",
+    "builder job",
+    "habits",
+    "oh",
+    "in",
+    "ky"
+  ],
+  "synonyms": [
+    "residential",
+    "residential-field",
+    "residential field",
+    "builder job",
+    "builder work",
+    "builder habits",
+    "verbal changes"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Reading Drawings #dwg-res-comm table + Spotting a Change Order + Job Start required fields. GVC practice for OH/IN/KY builder work — not a claim that every builder process is identical.",
+    "sources": [
+      "GVC Field Manual",
+      "Reading Drawings residential vs commercial",
+      "Job Start required fields"
+    ]
+  }
+}

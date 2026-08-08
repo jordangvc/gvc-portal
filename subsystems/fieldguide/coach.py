@@ -79,6 +79,21 @@ STAGE_ALIASES: dict[str, str] = {
     "insulate": "insulation",
     "painting": "painting",
     "paint": "painting",
+    "escalate": "escalate",
+    "escalation": "escalate",
+    "inspection-hold": "inspection-hold",
+    "hold-point": "inspection-hold",
+    "punch": "punch-cadence",
+    "punch-cadence": "punch-cadence",
+    "rfi": "rfi-field",
+    "rfi-field": "rfi-field",
+    "exclusions": "exclusions-walk",
+    "exclusions-walk": "exclusions-walk",
+    "residential": "residential-field",
+    "residential-field": "residential-field",
+    "garage": "garage-finish",
+    "garage-finish": "garage-finish",
+    "tectum": "tectum",
 }
 
 PROCEDURE_COACH: dict[str, dict[str, Any]] = {

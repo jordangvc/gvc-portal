@@ -1,0 +1,281 @@
+{
+  "id": "tectum",
+  "slug": "tectum",
+  "title": "Tectum Panels",
+  "short_answer": "Cementitious wood-fiber acoustic panel. Genuinely easy to install and genuinely easy to wreck — almost every defect is a crushed edge or an over-driven screw.",
+  "summary": "Cementitious wood-fiber acoustic panel. Genuinely easy to install and genuinely easy to wreck — almost every defect is a crushed edge or an over-driven screw.",
+  "plain_words": "Tectum is a stiff panel made of wood shreds held together with cement. It absorbs sound and takes a beating, so it goes in gyms, corridors, pools and mechanical rooms. It screws straight to framing or furring. Two rules do most of the work: screw heads flush with the face — never countersunk, and do not bang the corners, because a crushed corner cannot be repaired.",
+  "when_to_use": [
+    "Direct-attach Tectum ceiling or wall panels per the submittal",
+    "Gyms, corridors, pools, and mechanical rooms where lay-in ACT is wrong",
+    "After substrate / furring is flat and the layout is planned"
+  ],
+  "prerequisites": [
+    "Approved submittal for the specified Tectum product line",
+    "Flat furring or structure — string and shim before panels go up",
+    "Dust control plan for abrasive cutting"
+  ],
+  "trade_id": "act",
+  "category_id": "act-ceilings",
+  "template": "task_guide",
+  "stage_line": "Acoustic panels · Tectum",
+  "role_tags": [
+    "act",
+    "crew",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Carbide blade (cutting)"
+    },
+    {
+      "name": "Screw gun with clutch set from scrap test"
+    },
+    {
+      "name": "Eye protection and dust control"
+    },
+    {
+      "name": "Laser or string line for layout"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Tectum direct-attach panel (per submittal thickness and size)"
+    },
+    {
+      "name": "Screws or nails per substrate and submittal"
+    },
+    {
+      "name": "Furring / structure as specified"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Confirm product and substrate",
+      "body": "Aspen fiber with cementitious binder — abrasive to cut, holds screws well. Direct-attach goes to structure or furring, not lay-in grid. Standard direct-attach is often 1\" thick in 2×4', 2×8', and 4×8' — check the submittal for other lines.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Flat substrate",
+      "body": "String furring and shim before start — Tectum will not bridge a wavy wall or out-of-plane furring run.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Layout",
+      "body": "Plan joints like a ceiling: border pieces large and even, no sliver borders. Same principle as Acoustical Ceilings layout.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Fasteners and spacing",
+      "body": "Screws, nails, or adhesive per submittal. Screw-head pull-through is adequate — no washers or adhesive required alongside screws. Minimum 24\" o.c. from panel edge; 12\" o.c. on furring. Fastener must account for total system weight.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Never countersink",
+      "body": "Screw heads flush with the face — never countersunk, never proud. Set clutch on scrap first; crushed fiber around the head cannot be filled away.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Cutting and handling",
+      "body": "Carbide blade; dusty and abrasive — cut outside finished space when possible. Carry on edge; corners crush easily — replace, do not patch.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Joints and finish",
+      "body": "Keep joints tight and aligned. If field painted, follow manufacturer method — heavy rolled paint fills texture and kills acoustic performance.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Every screw head flush",
+      "body": "None countersunk, none proud.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Fastener spacing verified",
+      "body": "Per submittal, starting at panel edges.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Layout and edges",
+      "body": "Joints tight and aligned; layout even, no sliver borders. No crushed corners — replace damaged panels.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "Cut edges and faces",
+      "body": "Cut edges treated per submittal. Panel faces clean — texture not clogged with paint or dust.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Countersinking",
+      "body": "Driving screw heads in crushes fiber, leaves a dark dimple, and there is no filler that makes it disappear — the texture is the finish."
+    },
+    {
+      "severity": "warn",
+      "title": "Field paint",
+      "body": "Heavy rolled paint fills the texture and kills the acoustic performance — the entire reason the panel is there."
+    },
+    {
+      "severity": "note",
+      "title": "Scope question for GVC",
+      "body": "Tectum is a title-only stub in the portal estimate scope catalog. Before pricing, confirm: furnish or install-only; who owns furring and substrate prep; whether field painting is ours."
+    }
+  ],
+  "experts": [
+    {
+      "id": "tectum-attach",
+      "tag": "Full detail · attachment",
+      "summary": "Fasteners: screws, nails, or adhesive per substrate and submittal. Pull-through of screw heads is adequate alone — no washers or adhesive alongside screws. Minimum 24\" o.c. from panel edge; 12\" o.c. on furring. Fastener selection must account for total system weight. Do not countersink — heads flush with face. Do not let substrate telegraph — string and shim furring like Z-furring work. Cutting: carbide blade; dusty/abrasive — eye protection and dust control. Cut edges are visible — plan layout so cuts land where least seen. Corners crush — carry on edge, stack flat. Layout like ACT: even borders, no slivers. Field paint per manufacturer — heavy paint kills acoustics."
+    }
+  ],
+  "variations": [
+    {
+      "id": "tectum-wall",
+      "title": "Wall direct-attach",
+      "when": "Vertical Tectum on furring",
+      "changes": [
+        "12\" o.c. on furring is typical",
+        "Gravity and handling make corner crush more likely — carry on edge"
+      ]
+    },
+    {
+      "id": "tectum-ceiling",
+      "title": "Ceiling direct-attach",
+      "when": "Overhead panels",
+      "changes": [
+        "Fastener must account for total system weight including overhead load",
+        "Layout borders matter from every sight line in the room"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "tec-flush",
+      "prompt": "Every screw head flush — none countersunk, none proud",
+      "severity": "required"
+    },
+    {
+      "id": "tec-spacing",
+      "prompt": "Fastener spacing per submittal from panel edges",
+      "severity": "required"
+    },
+    {
+      "id": "tec-corners",
+      "prompt": "No crushed corners or edges — damaged panels replaced",
+      "severity": "required"
+    },
+    {
+      "id": "tec-layout",
+      "prompt": "Layout even with no sliver borders",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Countersunk screws",
+      "wrong": "Drive heads below the face to \"hide\" fasteners",
+      "right": "Flush heads only — set clutch on scrap",
+      "why": "Crushed fiber and dark dimples are permanent on a texture finish"
+    },
+    {
+      "title": "Wavy substrate",
+      "wrong": "Hang panels over out-of-plane furring",
+      "right": "String and shim furring before the first panel",
+      "why": "Stiff panel telegraphs every bump"
+    },
+    {
+      "title": "Crushed corners",
+      "wrong": "Lean panels against walls or drag corners",
+      "right": "Carry on edge; replace crushed panels",
+      "why": "Crushed corners cannot be repaired"
+    },
+    {
+      "title": "Heavy field paint",
+      "wrong": "Roll paint like standard gypsum board",
+      "right": "Follow manufacturer method; light application only if specified",
+      "why": "Clogged texture kills acoustic absorption"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-tec-dimple",
+      "symptom": "Dark dimples around screw heads",
+      "likely_cause": "Countersunk or over-driven screws",
+      "fix": "Replace affected panels; reset clutch on scrap before continuing"
+    },
+    {
+      "id": "ts-tec-wave",
+      "symptom": "Panel face ripples between fasteners",
+      "likely_cause": "Substrate not flat or furring out of plane",
+      "fix": "Stop; shim furring and re-string before more panels go up"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "act",
+    "framing",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "act",
+      "label": "Acoustical Ceilings",
+      "why": "Lay-in ACT is a different system — layout discipline is shared"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC walk",
+      "why": "Verify flush fasteners and layout before handoff"
+    },
+    {
+      "procedure_id": "framing",
+      "label": "Framing",
+      "why": "Furring and structure must be flat before direct-attach"
+    }
+  ],
+  "search_tags": [
+    "tectum",
+    "acoustic panel",
+    "direct attach",
+    "wood fiber",
+    "cementitious",
+    "gym ceiling",
+    "mechanical room",
+    "armstrong tectum"
+  ],
+  "synonyms": [
+    "tectum",
+    "tectum panels",
+    "tectum-panels",
+    "direct attach panel",
+    "wood fiber panel",
+    "cementitious panel",
+    "acoustic panel"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Panel composition, screw-head pull-through without washers or adhesive, 24\" o.c. minimum from panel edges, 12\" o.c. on furring, do not countersink, fasteners accounting for total system weight, and 1\"-thick 2×4 / 2×8 / 4×8 standard direct-attach sizes come from Armstrong Tectum direct-attach installation guides. Product lines vary — the submittal for the specified product governs. Scope question for GVC: Tectum is a title-only stub in the estimate scope catalog. Confirm before pricing: furnish or install-only; furring and substrate prep ownership; field painting.",
+    "sources": [
+      "Armstrong Tectum direct-attach installation guides",
+      "GVC Field Manual",
+      "Portal estimate scope catalog (stub)"
+    ]
+  }
+}

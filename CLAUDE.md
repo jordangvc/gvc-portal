@@ -14,7 +14,10 @@ See also: `AGENTS.md` (agent quickstart + how to add a module) and
 ## ✨ FIELD GUIDE COACH↔CATALOG + STOCK/INS/PAINT/DEMO (r88) — BUILT 2026-08-08
 Coach no longer dead-ends catalog-only ids (`touchup-*`, `safety-orient`, …) on
 home-tile FALLBACK — synthesizes checklist from catalog `steps`. Catalog gains
-**stock-drywall**, **insulation**, **painting**, **demo**; nextpath baked.
+**stock-drywall**, **insulation**, **painting**, **demo**; ops gates
+**escalate**, **inspection-hold**, **punch-cadence**; scope/field
+**rfi-field**, **exclusions-walk**, **residential-field**, **garage-finish**;
+**tectum** under ACT. `audit_link_targets` next_steps + related clean (32 procs).
 Hub **r88**.
 
 ## ✨ FIELD GUIDE RATED WALLS CATALOG (r86) — BUILT 2026-08-08

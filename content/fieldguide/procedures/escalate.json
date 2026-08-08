@@ -1,0 +1,247 @@
+{
+  "id": "escalate",
+  "slug": "escalate",
+  "title": "Escalation Ladder",
+  "short_answer": "Who owns production, who owns scope and money, and when to stop climbing because the next person cannot actually authorize it.",
+  "summary": "Who owns production, who owns scope and money, and when to stop climbing because the next person cannot actually authorize it.",
+  "plain_words": "Call the person who can say yes. Calling the wrong person gets you a friendly answer that does not pay. When in doubt: lead first, then ops, then office for scope/money.",
+  "when_to_use": [
+    "Any time you need authority today — stops, extras, conflicts, or access",
+    "Before calling the office for scope/money after the lead cannot decide",
+    "When you are unsure who can actually authorize the next move"
+  ],
+  "prerequisites": [
+    "Know who the lead and ops superintendent are on this job",
+    "Office contact for change orders and contractual notice"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-leadership",
+  "template": "task_guide",
+  "stage_line": "Leadership · who to call",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Phone"
+    },
+    {
+      "name": "Portal (Job Check, Field Manual)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Phone call",
+      "body": "Use for stops, change orders, and anything that needs authority today.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Portal",
+      "body": "Use for Job Check truth and Field Manual procedures.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Slack DM / side chat",
+      "body": "Use for Morning Brief and prep — never #operations for those.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Written record",
+      "body": "Group chats that scroll away are not a record. Write CO facts down.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "Friendly answers do not pay",
+      "body": "Calling the wrong person gets sympathy, not authorization. Climb the ladder until someone with actual authority says yes — or stop until they do."
+    },
+    {
+      "severity": "stop",
+      "title": "Unsafe access / stop conditions",
+      "body": "Lead stops work first. Escalate to ops lead; office if ACM, lead, or structural issues are involved. Do not resume until someone with authority clears it."
+    }
+  ],
+  "experts": [],
+  "variations": [
+    {
+      "id": "esc-build-detail",
+      "title": "How do we build this detail?",
+      "when": "Technical / means-and-methods question",
+      "changes": [
+        "First call: Lead (Full detail in Field Manual)",
+        "Escalate to: Ops lead / superintendent"
+      ]
+    },
+    {
+      "id": "esc-unsafe",
+      "title": "Unsafe access / stop condition",
+      "when": "Stop-work condition",
+      "changes": [
+        "First call: Lead — stop work",
+        "Escalate to: Ops lead; office if ACM/lead/structure"
+      ]
+    },
+    {
+      "id": "esc-extra-work",
+      "title": "Extra work / verbal add",
+      "when": "Scope or money question",
+      "changes": [
+        "First call: Lead — stop, photo, write",
+        "Escalate to: Office (Change Order path)"
+      ]
+    },
+    {
+      "id": "esc-drawings",
+      "title": "Drawings conflict",
+      "when": "Documents disagree — do not guess",
+      "changes": [
+        "First call: Lead — RFI, do not guess",
+        "Escalate to: Office / estimator as directed"
+      ]
+    },
+    {
+      "id": "esc-locked-out",
+      "title": "Locked out / no heat / no release",
+      "when": "Crew cannot work — standing-by may apply",
+      "changes": [
+        "First call: Lead",
+        "Escalate to: Ops lead; document standing-by"
+      ]
+    },
+    {
+      "id": "esc-jobcheck",
+      "title": "Job Check / Monday wrong",
+      "when": "Board data does not match field truth",
+      "changes": [
+        "First call: Lead",
+        "Escalate to: Office admin"
+      ]
+    },
+    {
+      "id": "esc-political",
+      "title": "Owner / GC political pressure",
+      "when": "Pressure to proceed without authority",
+      "changes": [
+        "First call: Ops lead",
+        "Escalate to: Office; Jordan only for owner exceptions"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "esc-right-person",
+      "prompt": "Called the first person who can actually authorize the issue type",
+      "severity": "required"
+    },
+    {
+      "id": "esc-phone-stops",
+      "prompt": "Stops, COs, and authority issues used a phone call — not only a scrolling chat",
+      "severity": "required"
+    },
+    {
+      "id": "esc-written-co",
+      "prompt": "Scope/money facts written down when the path is a change order",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Calling the office for a build detail",
+      "wrong": "Skip the lead and call estimating for a hanger question",
+      "right": "Lead first, then ops lead for production authority",
+      "why": "The office cannot answer means-and-methods from the truck"
+    },
+    {
+      "title": "Texting a group chat for a stop",
+      "wrong": "Post \"we stopped\" in a channel and keep working",
+      "right": "Phone call to lead; stop until cleared",
+      "why": "Scrolling chats are not authority and not a record"
+    },
+    {
+      "title": "Morning Brief in #operations",
+      "wrong": "Post field brief or prep status to the operations channel",
+      "right": "Slack DM or side chat only",
+      "why": "Locked policy — never broadcast Morning Brief to #operations"
+    },
+    {
+      "title": "Climbing past the authorizer",
+      "wrong": "Keep calling up the ladder after someone with authority said no",
+      "right": "Stop at the person who can say yes; document and wait",
+      "why": "Jordan-only exceptions exist for a reason — do not shop for a yes"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "safety-orient",
+    "qc-walk",
+    "jobstart-firstday"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Extra work path after lead stops and documents"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Safety Orientation",
+      "why": "Hard stops escalate through this ladder"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC walk",
+      "why": "Ship / fix / call discipline on quality passes"
+    },
+    {
+      "procedure_id": "jobstart-firstday",
+      "label": "Job Start first day",
+      "why": "Know who owns the packet before problems arise"
+    }
+  ],
+  "search_tags": [
+    "escalation",
+    "who to call",
+    "leadership",
+    "ops lead",
+    "office",
+    "phone",
+    "authority",
+    "morning brief",
+    "slack"
+  ],
+  "synonyms": [
+    "escalate",
+    "escalation",
+    "escalation ladder",
+    "who to call",
+    "call ladder",
+    "first call",
+    "ops lead",
+    "superintendent",
+    "authority"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice. Names and titles shift; the ladder is by role. Office owns contractual notice windows on COs — field owns same-day notice.",
+    "sources": [
+      "GVC Field Manual",
+      "Morning Brief Slack policy",
+      "Job Start two-party handoff"
+    ]
+  }
+}
