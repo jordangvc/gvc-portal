@@ -88,6 +88,27 @@ def _is_retryable_monday(exc: BaseException, *, status: Optional[int] = None) ->
     return False
 
 
+def is_auth_failure(exc: BaseException) -> bool:
+    """True when Monday rejected the token (401 / unauthorized) — not retryable.
+
+    Callers that soft-fail to ``[]`` must RE-RAISE these: an empty queue is a
+    lie when auth is dead, and the hub otherwise paints \"You're clear\".
+    """
+    if isinstance(exc, MondayNotConfigured):
+        return True
+    if isinstance(exc, requests.HTTPError) and exc.response is not None:
+        if exc.response.status_code == 401:
+            return True
+    msg = str(exc).lower()
+    if "401" in msg:
+        return True
+    if "unauthorized" in msg or "invalid_token" in msg or "authentication" in msg:
+        return True
+    if "not authenticated" in msg or "invalid api token" in msg:
+        return True
+    return False
+
+
 # Process-local Monday timing (enable with GVC_MONDAY_TRACE=1). Not a correctness
 # layer — used to measure request count + wall time on hub/billing/jobcheck paths.
 _TRACE_LOCK = threading.Lock()

@@ -235,7 +235,12 @@ def _try_morning_brief(email: str) -> Optional[dict]:
 def _try_billing() -> Optional[dict]:
     try:
         from orchestrators import billing_flow
-        return billing_flow.billing_hub_payload()
+        out = billing_flow.billing_hub_payload()
+        # Auth-dead Monday returns ok/monday_ok False — treat as unreachable
+        # so hub never paints a gold "You're clear" over empty queues.
+        if out.get("monday_ok") is False or out.get("ok") is False:
+            return None
+        return out
     except Exception as exc:  # noqa: BLE001
         print(f"[hub] billing skipped: {type(exc).__name__}: {exc}",
               file=sys.stderr)

@@ -25,6 +25,12 @@ has no staged sheet; Job Check hides Mark Ready when already in RTI and offers
 Open Invoice / Billing; Billing Hub unlinked Ready primary = Link Projects;
 RTI Monday fallback is `groups(ids:)` only (never full Ops board walk). Hub **r90**.
 
+## ✨ Hub/Billing honest on Monday auth failure (r92) — BUILT 2026-08-08
+Dead Monday token no longer paints Billing as an empty Ready queue or Hub
+"You're clear". Auth failures re-raise from billing fetches; payload sets
+`ok`/`monday_ok` false + MONDAY_AUTH; hub `_try_billing` returns None.
+Hub **r92**.
+
 ## ✨ FIELD GUIDE CATALOG DEAD-ENDS CLEARED (r89) — BUILT 2026-08-08
 Follow-on to r88 coach fix: migrate ops gates (**escalate**, **inspection-hold**,
 **punch-cadence**), dangling related (**rfi-field**, **exclusions-walk**,

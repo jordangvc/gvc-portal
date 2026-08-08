@@ -541,12 +541,81 @@ def test_billing_hub_payload_survives_partial_failures():
     try:
         out = bf.billing_hub_payload(mc=_FakeMC())
         assert out["ok"] is True
+        assert out["monday_ok"] is True
         assert out["queues"]["ready_to_invoice"] == []
         assert any("Ready to Invoice" in n for n in out["notes"])
+        assert "No Operations tasks" not in " ".join(out["notes"])
     finally:
         bf.monday_billing.fetch_ready_to_invoice = orig_ready
         bf.monday_billing.fetch_accepted_bids = orig_bids
         bf.monday_billing.fetch_projects_billing = orig_proj
+
+
+def test_billing_hub_payload_auth_failure_is_not_empty_queue():
+    """401 must not paint ok+empty Ready (hub would say You're clear)."""
+    import requests
+
+    class AuthBoom(requests.HTTPError):
+        def __init__(self):
+            resp = type("R", (), {"status_code": 401})()
+            super().__init__("401 Client Error: Unauthorized")
+            self.response = resp
+
+    def boom(mc):
+        raise AuthBoom()
+
+    orig_ready = bf.monday_billing.fetch_ready_to_invoice
+    orig_bids = bf.monday_billing.fetch_accepted_bids
+    orig_proj = bf.monday_billing.fetch_projects_billing
+    bf.monday_billing.fetch_ready_to_invoice = boom
+    bf.monday_billing.fetch_accepted_bids = boom
+    bf.monday_billing.fetch_projects_billing = boom
+    try:
+        out = bf.billing_hub_payload(mc=_FakeMC())
+        assert out["ok"] is False
+        assert out["monday_ok"] is False
+        assert out.get("code") == "MONDAY_AUTH"
+        assert out["counts"]["ready_to_invoice"] == 0
+        joined = " ".join(out["notes"])
+        assert "authentication failed" in joined.lower()
+        assert "No Operations tasks" not in joined
+    finally:
+        bf.monday_billing.fetch_ready_to_invoice = orig_ready
+        bf.monday_billing.fetch_accepted_bids = orig_bids
+        bf.monday_billing.fetch_projects_billing = orig_proj
+
+
+def test_is_auth_failure_helper():
+    import requests
+    from adapters.monday.client import MondayNotConfigured, is_auth_failure
+
+    assert is_auth_failure(MondayNotConfigured("no token")) is True
+    err = requests.HTTPError("401 Client Error")
+    err.response = type("R", (), {"status_code": 401})()
+    assert is_auth_failure(err) is True
+    assert is_auth_failure(RuntimeError("ops board unavailable")) is False
+    assert is_auth_failure(RuntimeError("ComplexityException budget")) is False
+
+
+def test_ready_fetch_reraises_auth_instead_of_empty():
+    """Adapter must not soft-fail 401 into []."""
+    import requests
+    from adapters.monday import billing as billing_mod
+
+    class AuthBoom(requests.HTTPError):
+        def __init__(self):
+            super().__init__("401 Unauthorized")
+            self.response = type("R", (), {"status_code": 401})()
+
+    class FakeMC:
+        def _query(self, *a, **k):
+            raise AuthBoom()
+
+    try:
+        billing_mod._fetch_ready_to_invoice_uncached(FakeMC())
+        assert False, "expected auth raise"
+    except requests.HTTPError as exc:
+        assert billing_mod.monday_client.is_auth_failure(exc)
 
 
 def test_invoice_page_boots_monday_item_id_deep_link():

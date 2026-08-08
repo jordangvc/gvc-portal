@@ -27,7 +27,7 @@ from typing import Any, Optional
 
 from adapters.monday import billing as monday_billing
 from adapters.monday import payroll as monday_payroll
-from adapters.monday.client import MondayClient
+from adapters.monday.client import MondayClient, is_auth_failure
 from adapters.monday import co as monday_co
 from adapters.monday import estimate as monday_estimate
 from orchestrators.invoice_ready_flow import build_item_worksheet
@@ -73,6 +73,8 @@ def billing_hub_payload(mc=None) -> dict:
         "projects_billing": [],
     }
     ready_err = False
+    auth_failed = False
+    queue_errors: dict[str, str] = {}
 
     # Injected clients (tests) stay serial so fakes need not be thread-safe.
     # Live path fans the three Monday walks out — Hub + Billing Hub first paint.
@@ -155,11 +157,20 @@ def billing_hub_payload(mc=None) -> dict:
         if exc is None:
             continue
         err = f"{type(exc).__name__}"
+        queue_errors[key] = err
         notes.append(note_by_key[key].format(err=err))
         if key == "ready_to_invoice":
             ready_err = True
+        if is_auth_failure(exc):
+            auth_failed = True
 
-    if not queues["ready_to_invoice"] and not ready_err:
+    if auth_failed:
+        notes.insert(
+            0,
+            "Monday authentication failed — queues are unavailable, not empty. "
+            "Check /health monday_token_ok and rotate MONDAY_API_TOKEN if needed.",
+        )
+    elif not queues["ready_to_invoice"] and not ready_err:
         notes.append(
             "No Operations tasks in Ready to Invoice right now. When crew "
             "moves a job into that group, it shows up here."
@@ -173,11 +184,13 @@ def billing_hub_payload(mc=None) -> dict:
             "before they have a Projects item to invoice."
         )
 
-    return {
-        "ok": True,
+    out: dict[str, Any] = {
+        "ok": not auth_failed,
+        "monday_ok": not auth_failed,
         "queues": queues,
         "generated_at": _now_iso(),
         "notes": notes,
+        "queue_errors": queue_errors,
         "search_backend": (
             "rich" if _rich_search_available() else "fallback"
         ),
@@ -188,6 +201,16 @@ def billing_hub_payload(mc=None) -> dict:
             "needs_handoff": needs_handoff,
         },
     }
+    if auth_failed:
+        out["code"] = "MONDAY_AUTH"
+        out["detail"] = (
+            "Monday rejected the API token — billing queues unavailable."
+        )
+        out["advice"] = (
+            "Open /health and confirm monday_token_ok. Rotate "
+            "MONDAY_API_TOKEN (see MONDAY-TOKEN-ROTATION runbook), then reload."
+        )
+    return out
 
 
 def compute_ready_worksheets(
