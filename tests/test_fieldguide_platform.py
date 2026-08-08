@@ -197,6 +197,41 @@ def test_jobcheck_anchors_match_catalog_spine() -> None:
     check("no unknown Job Check→Field Manual anchors", missing == [])
 
 
+def test_shell_catalog_nav_wiring() -> None:
+    """Job Check → Field Guide must not dead-end: shell injects catalog nextpath."""
+    shell = (ROOT / "web" / "fieldguide.html").read_text(encoding="utf-8")
+    service = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
+    check("shell enhanceCatalogDoc", "function enhanceCatalogDoc" in shell)
+    check("shell fetches procedure API",
+          '/ui/api/fieldguide/procedure/"' in shell
+          or "/ui/api/fieldguide/procedure/" in shell)
+    check("shell builds nextpath", "buildCatalogNextpathEl" in shell
+          and "data-catalog-nav" in shell)
+    check("shell hydrates synonyms", "hydrateCatalogSearch" in shell
+          and "catalogSynonyms" in shell)
+    check("procedure API returns render html",
+          "fieldguide_render.render_procedure_article" in service)
+    check("html key not hard-None",
+          '"html": None,  # shell still owns' not in service)
+
+    from subsystems.fieldguide.catalog import clear_cache, get_procedure
+    from subsystems.fieldguide.coach import coach_payload
+    from subsystems.fieldguide.render import render_procedure_article
+
+    clear_cache()
+    hang = get_procedure("hang")
+    check("hang has next scrape",
+          any(l.get("procedure_id") == "scrape" for l in (hang.get("next_steps") or [])))
+    html = render_procedure_article(hang)
+    check("rendered html has nextpath", 'class="nextpath"' in html)
+    check("rendered scrape button", 'data-go="scrape"' in html)
+
+    coach = coach_payload("hang")
+    check("coach catalog_backed", coach.get("catalog_backed") is True)
+    related_ids = {r.get("id") for r in coach.get("related") or []}
+    check("coach related includes scrape", "scrape" in related_ids)
+
+
 def main() -> None:
     print("test_fieldguide_platform")
     test_normalize_authoring_aliases()
@@ -205,6 +240,7 @@ def main() -> None:
     test_manifest_categories_alias()
     test_stale_draft_excluded_from_default_search()
     test_jobcheck_anchors_match_catalog_spine()
+    test_shell_catalog_nav_wiring()
     print("ALL OK")
 
 
