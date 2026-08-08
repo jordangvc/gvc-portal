@@ -1489,6 +1489,10 @@ if (new URLSearchParams(window.location.search).get("takeoff") === "1") {
     $("#takeoff-json").focus({ preventScroll: true });
   });
 }
+/* Warm Monday snapshot for Find-the-Bid (Hub also warms; Path can skip Hub). */
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(() => {});
 </script>
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>

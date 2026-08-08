@@ -982,20 +982,30 @@ $("#jobname").addEventListener("input", () => {
   onEdit();
 });
 function bootJobStartFromUrl() {
-  // Billing Hub → Job Start: /ui/jobstart?bid=<monday item id>
+  // Billing Hub / Estimate Next → Job Start: /ui/jobstart?bid=<monday item id>
   const params = new URLSearchParams(location.search);
   const bid = (params.get("bid") || params.get("item_id") || "").trim();
-  if (bid) {
-    loadBid(bid);
-    return true;
+  if (!bid) return false;
+  if ($("#bidlist")) {
+    $("#bidlist").innerHTML = `<div class="hint">Opening handoff packet…</div>`;
   }
-  return false;
+  loadBid(bid, { keepStatus: true });
+  return true;
 }
 
+/* Warm Monday snapshot for accepted-bids list (Hub also warms; belt+suspenders). */
+fetch("/ui/api/monday/warm", {
+  method: "POST", credentials: "same-origin", keepalive: true,
+}).catch(() => {});
 checkHealth();
-if (!bootJobStartFromUrl()) {
-  loadBids();
-}
+/* Deep-link opens the packet NOW; bids list loads in parallel for Change bid. */
+(async () => {
+  const deep = bootJobStartFromUrl();
+  if (!deep && $("#bidlist")) {
+    $("#bidlist").innerHTML = `<div class="hint">Loading accepted bids…</div>`;
+  }
+  loadBids(); /* fire-and-forget when deep-linked */
+})();
 </script>
 <script src="/ui/gvc-theme.js"></script>
 <script src="/ui/gvc-flow.js"></script>

@@ -79,8 +79,20 @@ def test_takeoff_route_registers() -> None:
     check("/ui/gvc-flow.js route", "/ui/gvc-flow.js" in paths)
 
 
+def test_jobstart_boot_warms_and_parallels_list() -> None:
+    """Deep-link ?bid= must not block Change-bid list warm (Job Check parity)."""
+    body = (ROOT / "web" / "jobstart.html").read_text(encoding="utf-8")
+    check("jobstart warms monday", '/ui/api/monday/warm' in body)
+    check("jobstart boot loads bids always", "loadBids()" in body)
+    check("deep bid keepStatus", "keepStatus" in body and "bootJobStartFromUrl" in body)
+    for page in ("billing.html", "estimate.html"):
+        html = (ROOT / "web" / page).read_text(encoding="utf-8")
+        check(f"{page} warms monday", '/ui/api/monday/warm' in html)
+
+
 if __name__ == "__main__":
     test_flow_nav_spine()
     test_takeoff_page_and_flow_js_on_disk()
     test_takeoff_route_registers()
+    test_jobstart_boot_warms_and_parallels_list()
     print("all ok")
