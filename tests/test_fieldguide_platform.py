@@ -345,8 +345,12 @@ def test_shell_catalog_nav_wiring() -> None:
     from subsystems.fieldguide.catalog import audit_link_targets
     audit = audit_link_targets()
     check("no dangling next_steps", audit.get("ok") is True)
+    check("no dangling related", audit.get("dangling_related") == [])
     check("catalog ungrouped empty",
           load_catalog()["manifest"].get("ungrouped") == [])
+    for pid in ("escalate", "inspection-hold", "punch-cadence",
+                "rfi-field", "exclusions-walk", "tectum"):
+        check(f"{pid} catalog", get_procedure(pid) is not None)
 
 def main() -> None:
     print("test_fieldguide_platform")

@@ -1,0 +1,175 @@
+{
+  "id": "garage-finish",
+  "slug": "garage-finish",
+  "title": "Garage Finish",
+  "short_answer": "Job Start calls garage finish a classic rework cause. How far the garage goes is sold in the packet — not decided by whoever hangs first.",
+  "summary": "Job Start calls garage finish a classic rework cause. How far the garage goes is sold in the packet — not decided by whoever hangs first.",
+  "plain_words": "Before you hang or finish a garage, read Garage finish on Job Start and any ceiling/wall notes. Fire-rated garage ceilings, unfinished storage, and \"taped only\" vs paint-ready are different jobs. Guessing the subdivision default is how we donate a remobilization.",
+  "when_to_use": [
+    "Before the first board or coat in a garage",
+    "When the builder points at a neighbor's garage as the standard",
+    "Upgrade requests (\"go ahead and finish it out\") on a garage"
+  ],
+  "prerequisites": [
+    "Job Start packet — Garage finish status and related ceiling notes",
+    "Finish schedule or rated assembly callouts when the garage is rated"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-logistics",
+  "template": "task_guide",
+  "stage_line": "Job Start · classic rework",
+  "role_tags": [
+    "crew",
+    "lead",
+    "hanger",
+    "finisher"
+  ],
+  "tools": [
+    {
+      "name": "Job Start packet / Handoff PDF"
+    },
+    {
+      "name": "Finish schedule / drawings"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Read Job Start Garage finish",
+      "body": "Read the status and related ceiling notes. Match the packet.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Check drawings / finish schedule",
+      "body": "Rated ceiling or wall assemblies in the garage follow Fire Walls / Firestop — not habit.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Confirm height and how far",
+      "body": "Walls only, ceiling, both, fire tape only. If the builder points at the neighbor's garage, that is not authorization.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Upgrade requests",
+      "body": "\"Go ahead and finish it out\" → Change Order path.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Cold / damp garages",
+      "body": "Job Conditions before mud or paint.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Classic rework cause",
+      "body": "Garage finish and window returns are why they live on the Job Start form. The packet is the stand-behind source; habit is not."
+    },
+    {
+      "severity": "stop",
+      "title": "Rated garage assemblies",
+      "body": "Fire-rated garage ceilings and walls are listed assemblies — not \"tape it like the last job.\" See Fire Walls and Firestopping when the set calls for rating."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "gf-packet",
+      "prompt": "Garage finish status read from Job Start before first touch",
+      "severity": "required"
+    },
+    {
+      "id": "gf-scope",
+      "prompt": "Height and extent (walls/ceiling/both/tape-only) confirmed against packet and drawings",
+      "severity": "required"
+    },
+    {
+      "id": "gf-upgrade",
+      "prompt": "Upgrade beyond packet routed through Change Order — not done as a favor",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Neighbor's garage",
+      "wrong": "Match the house next door because the superintendent pointed at it",
+      "right": "Match Job Start and the finish schedule for this address",
+      "why": "Authorization is in the packet, not the subdivision habit"
+    },
+    {
+      "title": "Paint-ready when we sold tape-only",
+      "wrong": "Finish and paint because \"garages always get painted here\"",
+      "right": "Stop at what the packet sold; upgrade is a CO",
+      "why": "Remobilization cost when the builder only wanted fire tape"
+    },
+    {
+      "title": "Ignoring rated callouts",
+      "wrong": "Treat a rated garage ceiling like standard residential rock",
+      "right": "Follow listed assembly and firestop hold points",
+      "why": "Rating failures are rework plus inspection delay"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "jobstart-firstday",
+    "changeorder",
+    "job-conditions",
+    "ratedwalls",
+    "firestop",
+    "window-returns"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "job-conditions",
+      "label": "Job Conditions",
+      "why": "Cold or damp garages need heat before mud or paint"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Finish-it-out upgrades are extras, not favors"
+    },
+    {
+      "procedure_id": "ratedwalls",
+      "label": "Fire Walls",
+      "why": "Rated garage assemblies follow listed construction"
+    }
+  ],
+  "search_tags": [
+    "garage",
+    "garage finish",
+    "ceiling finish",
+    "fire tape",
+    "paint ready",
+    "residential",
+    "rework"
+  ],
+  "synonyms": [
+    "garage finish",
+    "garage-finish",
+    "garage ceiling",
+    "garage tape",
+    "unfinished garage",
+    "paint ready garage"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Job Start field garage_finish — help text in portal config flags it as a classic rework cause. Ceiling finish gate is sibling reading. Assembly details still come from the set and listed assemblies when rated.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start garage_finish field",
+      "Job Check / Projects ceiling notes"
+    ]
+  }
+}

@@ -1,0 +1,205 @@
+{
+  "id": "dont",
+  "slug": "dont",
+  "title": "Don't Do This",
+  "short_answer": "GVC's short list of moves that burn money, fail inspections, or hurt people — each links to the procedure that explains the right way.",
+  "summary": "You will hear \"we always did it like this\" on every site. This page is GVC's answer. If a habit below is still happening, it is not toughness — it is unpaid rework or risk.",
+  "plain_words": "These are the failure modes that cost us real money or real injuries. When you see one happening, stop the habit and open the linked procedure — do not invent a new rule on the truck.",
+  "when_to_use": [
+    "First week on a GVC crew — read once, reference forever",
+    "When a veteran habit conflicts with portal / Job Check discipline",
+    "Lead teaching a helper what \"not GVC\" looks like"
+  ],
+  "prerequisites": [
+    "Know where to find the linked procedures in the Field Guide"
+  ],
+  "trade_id": "ops",
+  "category_id": "quality-culture",
+  "template": "task_guide",
+  "stage_line": "Onboarding · failure pack",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman",
+    "laborer"
+  ],
+  "tools": [],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Money — verbal adds",
+      "body": "Verbal adds without a stop, photo, and call — see Spotting a Change Order.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Money — standing-by",
+      "body": "Standing-by with no written record — same page; it is a documentation event.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Money — other-trade damage",
+      "body": "Repairing another trade's damage before photographing it — becomes ours the moment we touch it.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Money — T&M tickets",
+      "body": "Unsigned T&M tickets — a negotiation, not a bill.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Safety — dust control",
+      "body": "Sanding or cutting without dust control — Safety Orientation / silica.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Safety — bad scaffold",
+      "body": "Climbing unsafe scaffold \"for a minute\" — refuse; call the lead.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Safety — unknown material",
+      "body": "Disturbing unknown pre-1981 material — Demolition hard stops.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Quality — skip scrape",
+      "body": "Skipping scrape to sand later — Scraping exists to delete expensive sanding.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Quality — paint over dust",
+      "body": "Paint over dust or bare compound — prime patches; see Paint Touch-Up.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Quality — ACT hangers",
+      "body": "ACT hanger wires on duct — structure only; see Acoustical Ceilings.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "Quality — Job Check on hope",
+      "body": "Advancing Job Check on hope — QC Walk first.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Rated — fire-wall guess",
+      "body": "Guessing fire-wall height or type — Fire Walls & Shaftwall.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Rated — static firestop",
+      "body": "Static firestop in a dynamic head-of-wall — Firestopping.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "Rated — labeled doors",
+      "body": "Field-modifying a labeled door or frame — stop; supplier or office path.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "Toughness is not unpaid rework",
+      "body": "\"We always did it like this\" does not override a failed inspection, a voided firestop, or a CO you never wrote. Link to the right procedure and fix the habit."
+    }
+  ],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "dont-linked",
+      "prompt": "Each failure mode on this list has a known fix procedure in the catalog",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Treating this page as new trade rules",
+      "wrong": "Invent additional \"don'ts\" here on the fly",
+      "right": "Link out to the authoritative procedure for the trade technique",
+      "why": "This page curates failures; procedures own the right way"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "safety-orient",
+    "scrape",
+    "qc-walk",
+    "firestop",
+    "ratedwalls",
+    "touchup-paint",
+    "act",
+    "protection"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "drawings",
+      "label": "Reading Drawings",
+      "why": "Start-here skill that prevents many layout and rating mistakes"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Money column failures route here"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Safety Orientation",
+      "why": "Safety column failures route here"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Quality column — advance Job Check only after pass/fix"
+    }
+  ],
+  "search_tags": [
+    "don't",
+    "dont",
+    "failure modes",
+    "onboarding",
+    "bad habits",
+    "rework",
+    "inspection fail",
+    "culture"
+  ],
+  "synonyms": [
+    "dont",
+    "don't do this",
+    "dont do this",
+    "failure pack",
+    "bad habits",
+    "what not to do",
+    "anti-patterns"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Curated from existing Field Manual failure lists and GVC ops pain. Prefer linking out over inventing new trade rules here.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check gate discipline",
+      "Change order field playbook"
+    ]
+  }
+}

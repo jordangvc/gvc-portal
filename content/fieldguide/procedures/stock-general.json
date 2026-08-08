@@ -1,0 +1,250 @@
+{
+  "id": "stock-general",
+  "slug": "stock-general",
+  "title": "Stocking Any Material",
+  "short_answer": "Put material in the room where it gets used — not by the door, not in one big pile. Every extra carry is time nobody paid for.",
+  "summary": "Stocking looks like the cheapest task on the job, so it gets the least planning. That is exactly why it quietly sets the labor cost of every stage after it.",
+  "plain_words": "Put the material in the room where it gets used. Not by the door, not in one big pile. Every time somebody has to pick a thing up and move it again, that is time nobody paid for.",
+  "when_to_use": [
+    "Before any delivery is scheduled — all trades",
+    "Receiving truck loads on site",
+    "Closing out a job with returnable overage"
+  ],
+  "prerequisites": [
+    "Room-by-room or zone staging plan — not \"the third floor\"",
+    "GC coordination on access, floor loading, and weather-tight storage"
+  ],
+  "trade_id": "drywall",
+  "category_id": "materials",
+  "template": "task_guide",
+  "stage_line": "Pre-production · all trades",
+  "role_tags": [
+    "laborer",
+    "lead",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Camera / phone for delivery photos"
+    },
+    {
+      "name": "Dunnage / pallets / sleepers"
+    },
+    {
+      "name": "Tarps or covers for weather-sensitive material"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Landing location",
+      "body": "Confirm where it lands, by floor and by room — not \"the third floor.\"",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Access",
+      "body": "Confirm gate hours, delivery window, dock, hoist or elevator reservation, and who has the key.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Route",
+      "body": "Confirm the route is still open — a corridor framed since you last walked it kills a delivery.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Floor loading",
+      "body": "Confirm floor loading with the GC before staging heavy material on a suspended slab. Structural question, not a convenience question.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Weather-tight",
+      "body": "Confirm the area is weather-tight if the material cannot get wet.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Receiver",
+      "body": "Confirm who receives, counts, and signs.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Placement",
+      "body": "In the room it gets used in, or the closest space that is not a work surface.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Do not block",
+      "body": "Never block egress, exit doors, electrical panels, extinguishers, sprinkler risers, or another trade's active work.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Spread weight",
+      "body": "Spread the weight. Get it off a slab that could be wet — sleepers, dunnage, pallets. Cover what needs covering.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Count at truck",
+      "body": "Count it against the order before the driver leaves. A shortage found tomorrow is our shortage.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "Reject damage",
+      "body": "Inspect and reject damaged material at the truck. Note shortages and damage on the ticket before signing.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Photo and ticket",
+      "body": "Photograph the load in place. Send the ticket to the office same day.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Track overage",
+      "body": "Returnable material is real money — count it and call it in before the return window closes.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "Consolidate scrap",
+      "body": "Consolidate scrap early. Scrap collected as you go costs a fraction of scrap collected at the end.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "Feedback to estimating",
+      "body": "Report actual vs ordered back to the estimator in plain numbers.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "Timing",
+      "body": "Too early is the more expensive mistake — material gets damaged, stolen, blocks trades, and gets handled extra times. Too late stops a crew cold. Target: just far enough ahead that the crew never waits, and no further. Stage in waves on long jobs."
+    },
+    {
+      "severity": "money",
+      "title": "Why the photo matters",
+      "body": "A dated photo of material staged and undamaged settles whether the supplier shorted us and whether another trade damaged our material after we set it. Neither is winnable from memory."
+    }
+  ],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "sg-room",
+      "prompt": "Material staged in the room or zone where it will be installed",
+      "severity": "required"
+    },
+    {
+      "id": "sg-count",
+      "prompt": "Count and damage notes completed before the driver leaves",
+      "severity": "required"
+    },
+    {
+      "id": "sg-photo",
+      "prompt": "Dated photo and ticket to office same day",
+      "severity": "required"
+    },
+    {
+      "id": "sg-egress",
+      "prompt": "Nothing blocks egress, panels, or another trade's active work",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "One pile per floor",
+      "wrong": "Drop everything at the elevator landing",
+      "right": "Split by room or zone from the plan",
+      "why": "Every extra carry is unpaid labor"
+    },
+    {
+      "title": "Too early delivery",
+      "wrong": "Stock weeks ahead \"to be safe\"",
+      "right": "Wave deliveries days ahead of the crew",
+      "why": "Damage, theft, and triple-handling"
+    },
+    {
+      "title": "Unsigned shortage",
+      "wrong": "Sign the ticket with a shortage and hope the office fixes it",
+      "right": "Note shortages on the ticket before signing",
+      "why": "Tomorrow it is our shortage"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "stock-drywall",
+    "preboard-walk",
+    "hang",
+    "scaffold-lifts",
+    "safety-orient"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "stock-drywall",
+      "label": "Stocking Drywall",
+      "why": "Board-specific stacking, boom delivery, and specialty separation"
+    },
+    {
+      "procedure_id": "preboard-walk",
+      "label": "Pre-Board Walk",
+      "why": "Last gate before hang after material is in the rooms"
+    },
+    {
+      "procedure_id": "hang",
+      "label": "Hanging Drywall",
+      "why": "Good stocking means the hanger picks up a sheet, not a hunt"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Safety Orientation",
+      "why": "Floor loading and two-person lift discipline"
+    }
+  ],
+  "search_tags": [
+    "stock",
+    "stocking",
+    "material",
+    "delivery",
+    "receiving",
+    "staging",
+    "dunnage",
+    "floor loading",
+    "pre-production",
+    "overage"
+  ],
+  "synonyms": [
+    "stock general",
+    "stocking any material",
+    "stock any material",
+    "material stocking",
+    "material staging",
+    "delivery receiving",
+    "stage material"
+  ],
+  "owner": "field-manual",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "General construction material-handling practice plus GVC field experience. Receiving and documentation steps protect against supplier shortages and cross-trade damage claims. Floor-loading coordination is a life-safety item — always the GC's and structural engineer's call.",
+    "sources": [
+      "GVC Field Manual",
+      "Standard subcontractor receiving practice"
+    ]
+  }
+}

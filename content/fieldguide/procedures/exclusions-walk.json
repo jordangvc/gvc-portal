@@ -1,0 +1,169 @@
+{
+  "id": "exclusions-walk",
+  "slug": "exclusions-walk",
+  "title": "Exclusions & Open Questions Walk",
+  "short_answer": "Job Start requires What we did NOT sell and surfaces Jake's open questions for a reason. Walk them before the crew treats the whole floor as ours.",
+  "summary": "Job Start requires What we did NOT sell and surfaces Jake's open questions for a reason. Walk them before the crew treats the whole floor as ours.",
+  "plain_words": "The packet is not wallpaper. Read the exclusions out loud with the lead. Read every open question. If a GC asks for something on the exclusions list, that is Spotting a Change Order — not \"we must have missed it.\" If an open question still blocks framing or hang, that is send-back / office work, not field invention.",
+  "when_to_use": [
+    "Same morning as first mobilization, before the crew touches scope",
+    "After Ops accepts the Job Start packet",
+    "When a GC points at work that might be NIC / by others / excluded"
+  ],
+  "prerequisites": [
+    "Handoff PDF in the job's Drive Handoff folder",
+    "Lead and crew briefed on the same morning"
+  ],
+  "trade_id": "ops",
+  "category_id": "ops-logistics",
+  "template": "task_guide",
+  "stage_line": "Job Start · before first screw",
+  "role_tags": [
+    "lead",
+    "foreman",
+    "ops"
+  ],
+  "tools": [
+    {
+      "name": "Handoff PDF (Drive Handoff folder)"
+    },
+    {
+      "name": "Phone camera"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Open the Handoff PDF",
+      "body": "Read exclusions and open questions sections. Do not rely on memory of the bid meeting.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Walk the areas named",
+      "body": "Walk exclusions (NIC / by others / no FRP scope / etc.). Photo the boundary if it will be argued later.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Open questions",
+      "body": "Answered in writing, or still blocking? Blocking ⇒ call ops/office before mobilizing that scope.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Brief the crew",
+      "body": "Name the three things we are not doing today — so helpful hands do not \"just finish it.\"",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "GC asks for excluded work",
+      "body": "Stop → photo → write → call. Same path as any verbal add.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Why GVC will stand behind this",
+      "body": "Exclusions and open questions are required / first-class Job Start fields — the handoff contract, not optional notes. Scope-review clarifications become change orders when unread. This page only teaches the field ritual that makes those fields real."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "ex-handoff-open",
+      "prompt": "Handoff PDF exclusions and open questions read aloud with the lead",
+      "severity": "required"
+    },
+    {
+      "id": "ex-boundary-photo",
+      "prompt": "Excluded boundaries photographed when scope lines may be argued",
+      "severity": "required"
+    },
+    {
+      "id": "ex-crew-brief",
+      "prompt": "Crew briefed on what we are not doing today",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Memory of the bid meeting",
+      "wrong": "Skip the PDF because \"we were at the precon\"",
+      "right": "Read exclusions and open questions from the Handoff PDF same morning",
+      "why": "Verbal memory does not stand up in a scope fight"
+    },
+    {
+      "title": "Helpful finish on excluded work",
+      "wrong": "Crew \"just finishes\" NIC or by-others scope",
+      "right": "Stop → photo → write → call on the Change Order path",
+      "why": "Excluded work performed and never billed is free labor"
+    },
+    {
+      "title": "Field invention on blocking questions",
+      "wrong": "Mobilize hang while an open question still blocks layout",
+      "right": "Send back / office until the question is answered in writing",
+      "why": "Unread clarifications become change orders nobody wanted"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "jobstart-firstday",
+    "changeorder",
+    "residential-field"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "GC asks for excluded work — same stop-photo-write-call path"
+    },
+    {
+      "procedure_id": "jobstart-firstday",
+      "label": "Job Start first day",
+      "why": "Packet acceptance and handoff PDF are prerequisites"
+    },
+    {
+      "procedure_id": "framing",
+      "label": "Framing",
+      "why": "Do not mobilize framing until blocking open questions are cleared"
+    }
+  ],
+  "search_tags": [
+    "exclusions",
+    "open questions",
+    "job start",
+    "handoff",
+    "nic",
+    "by others",
+    "scope",
+    "mobilize"
+  ],
+  "synonyms": [
+    "exclusions",
+    "exclusions-walk",
+    "exclusions walk",
+    "open questions",
+    "open-questions",
+    "what we did not sell",
+    "nic",
+    "by others"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Job Start fields exclusions (required) and open_questions; Jake scope-review ingest (clarifications → open questions). GVC practice. Does not redefine contractual scope — the signed set and the packet do.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Start exclusions / open_questions fields",
+      "Scope-review ingest"
+    ]
+  }
+}

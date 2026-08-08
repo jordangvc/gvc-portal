@@ -1,0 +1,162 @@
+{
+  "id": "rfi-field",
+  "slug": "rfi-field",
+  "title": "RFI Field Playbook",
+  "short_answer": "A conflict between contract documents is an RFI, not a field decision. Write it so it gets answered in a day — then work somewhere else while you wait.",
+  "summary": "A conflict between contract documents is an RFI, not a field decision. Write it so it gets answered in a day — then work somewhere else while you wait.",
+  "plain_words": "If two sheets disagree, or the partition schedule and the detail disagree, do not pick one and build. That guess becomes our rework. Name both documents, say what each seems to require, propose an answer, and say what it holds up.",
+  "when_to_use": [
+    "Drawings, specs, or schedules conflict and you cannot tell which governs",
+    "Before building a guess on a head-of-wall detail, partition type, or finish callout",
+    "When the lead or office needs a logged question on commercial jobs"
+  ],
+  "prerequisites": [
+    "Sheet numbers and detail references for both sides of the conflict",
+    "Lead or office path for submitting RFIs on this job"
+  ],
+  "trade_id": "ops",
+  "category_id": "money-scope",
+  "template": "task_guide",
+  "stage_line": "Every job · questions in writing",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Phone camera"
+    },
+    {
+      "name": "Current drawing set with revision"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Stop the affected work",
+      "body": "Keep the crew productive on unaffected areas — do not build the guess.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Photo",
+      "body": "Photograph the condition and note sheet and detail numbers.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Write the RFI",
+      "body": "Conflict → what each document appears to require → proposed answer → what is held up.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Send through the lead / office path",
+      "body": "Commercial = logged RFI; residential may start as a call — still get the answer in writing.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Do not build while waiting",
+      "body": "If directed to proceed at risk, that direction comes from the office — document it.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Not a field decision",
+      "body": "Precedence between specs and drawings is decided by each project's own precedence clause — read that clause; do not guess which document wins."
+    }
+  ],
+  "experts": [
+    {
+      "id": "rfi-example",
+      "tag": "Full detail · example that gets answered",
+      "summary": "\"Detail 5/A8.02 shows a slotted deflection track at the corridor head of wall; the partition schedule for type A3 calls for a double slip track. Please confirm which governs. We propose the slotted track per the detail. This holds top track on level 2.\" \"Which head of wall do you want?\" sits for a week. The first version answers itself enough that someone can say yes or no in a day."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "rfi-both-docs",
+      "prompt": "Both conflicting documents named with sheet/detail references",
+      "severity": "required"
+    },
+    {
+      "id": "rfi-proposed",
+      "prompt": "Proposed answer and what work is held up are stated",
+      "severity": "required"
+    },
+    {
+      "id": "rfi-no-guess",
+      "prompt": "Affected scope stopped — crew not building the guess",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Vague one-liner",
+      "wrong": "Ask \"which head of wall do you want?\" with no context",
+      "right": "Name both sources, state the conflict, propose an answer, name what is blocked",
+      "why": "Vague RFIs sit unanswered; specific ones get a yes or no in a day"
+    },
+    {
+      "title": "Building the guess",
+      "wrong": "Pick the detail that looks right and keep framing",
+      "right": "Stop affected work; mobilize elsewhere until written answer",
+      "why": "Wrong guess becomes our rework at our cost"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "escalate",
+    "ratedwalls"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "If the answer changes scope or price, the CO path still applies"
+    },
+    {
+      "procedure_id": "escalate",
+      "label": "Escalation Ladder",
+      "why": "Drawings conflict escalates through lead then office"
+    }
+  ],
+  "search_tags": [
+    "rfi",
+    "request for information",
+    "drawing conflict",
+    "precedence",
+    "documents",
+    "partition schedule",
+    "detail"
+  ],
+  "synonyms": [
+    "rfi",
+    "rfi-field",
+    "request for information",
+    "drawing conflict",
+    "document conflict",
+    "precedence",
+    "rfi playbook"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Promoted from Reading Drawings expert #dwg-precedence into a standalone field procedure. Precedence between specs and drawings remains project-specific — read the project's own clause.",
+    "sources": [
+      "GVC Field Manual",
+      "Reading Drawings #dwg-precedence"
+    ]
+  }
+}

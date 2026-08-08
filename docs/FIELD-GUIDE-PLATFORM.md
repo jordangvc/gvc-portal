@@ -22,20 +22,17 @@ looks like, what changes on site, and what to open next.
 **Pilot migrated:** Job Check drywall spine —
 `framing`, `preboard-walk`, `hang`, `scrape`, `finish`, `level5-skim`, `cleanout`
 (coat-stage chips share `finish`); Job Check gates —
-`qc-walk`, `closeout-rhythm` (Notes + Completion Date anchors); Ops logistics —
-`jobstart-firstday`, `job-conditions`, `window-returns`, `scaffold-lifts`
-(Lock Box, Heater/Cans, Window type, Scaffolding, Open questions anchors);
-**ACT ceilings** — `act` (grid layout, hanger wire, tile);
-**Firestopping** — `firestop` (UL HW-D decode, annular space, dynamic joints);
-**Rated walls** — `ratedwalls` (shaftwall / fire walls);
-**Safety orientation** — `safety-orient` (ops safety-basics);
-**Change orders** — `changeorder` (ops money-scope);
-**Touch-up** — `touchup-drywall` + `touchup-paint` (repair-punch);
-**Stocking** — `stock-drywall` (pre-hang board staging);
-**Insulation / Painting / Demo** — `insulation`, `painting`, `demo`.
+`qc-walk`, `closeout-rhythm`; Ops logistics —
+`jobstart-firstday`, `job-conditions`, `window-returns`, `scaffold-lifts`;
+ACT / firestop / rated / safety / CO / touch-up as before;
+**stock-drywall**, **insulation**, **painting**, **demo**, **tectum**;
+**escalate**, **inspection-hold**, **punch-cadence**;
+**rfi-field**, **exclusions-walk**, **residential-field**, **garage-finish**;
+**drawings**, **dont**, **stock-general**, **portal-field-tools**,
+**ai-field-rules**, **protection** (38 approved procedures; link audit clean).
 
 Coach: catalog-only procedure ids synthesize checklist steps from catalog
-`steps` (no home-tile FALLBACK) so Job Check / deep-link coach never dead-ends.
+`steps` (no home-tile FALLBACK).
 
 ## 2. Assumptions
 

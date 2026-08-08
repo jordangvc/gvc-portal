@@ -88,7 +88,8 @@ def test_orchestrator_get_coach_hang():
 def test_catalog_only_procedure_uses_steps_not_home_fallback():
     """Migrated catalog ids without PROCEDURE_COACH must still coach from steps."""
     for pid in ("touchup-drywall", "touchup-paint", "safety-orient", "demo",
-                "insulation", "painting"):
+                "insulation", "painting", "escalate", "inspection-hold",
+                "punch-cadence"):
         out = fg_coach.build_coach_response(procedure=pid)
         assert out["ok"] is True, pid
         assert out["known"] is True, pid
