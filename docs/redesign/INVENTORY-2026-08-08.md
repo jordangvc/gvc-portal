@@ -120,8 +120,8 @@ New: `Cursor Prompt - Forms.md`, `START HERE.md`, `gvc-forms-reference.html`,
 
 1. ~~**`takeoff.html` bridge**~~ **Done** — redesign shell + handoff + honest empty queue; `GvcFlow` mounts `.path`
 2. ~~**Shell on hub**~~ **Done (r101)** — `.app/.rail/.topbar/.tabbar`; single rail drawer; needs/metrics/queue on redesign cards
-3. **Shared forms chrome** — one `.gvc-topbar` + nested `.gvc-path` (56px / 32px) for every generator
-4. **Invoice → Estimate → Change Order** — copy `gvc-forms-reference.html` stages; kill selects + helpers + `gvc.css` moneyform
+3. ~~**Shared forms chrome**~~ **Done (r103)** — `GvcFormChrome` / `.gvc-topbar` + nested `.gvc-path`
+4. ~~**Invoice → Estimate → Change Order**~~ **Done (r103)** — stages + actionbar; zero selects; no `gvc.css`
 5. ~~**Job Check** status picker~~ **Done (r102)** — handoff markup in `gvc-status-picker.js`; `/ui/jobcheck` on `gvc-ui.css` only
 6. Remaining money spine → morning → fieldguide last (private palette)
 

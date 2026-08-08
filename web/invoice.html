@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald">
+<html lang="en" data-palette="emerald" data-forms="1">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Invoice Generator</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
 /* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
@@ -20,55 +19,50 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
+<link rel="stylesheet" href="/ui/gvc-forms.css" />
 <style>
-
-#billable-cos .co-pick, #estimate-import .co-pick { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--gvc-line-soft); }
-    #billable-cos .co-pick:last-child, #estimate-import .co-pick:last-child { border-bottom:0; }
-    #billable-cos .co-pick-meta, #estimate-import .co-pick-meta { font-size:13px; color:var(--color-text-muted, var(--gvc-muted)); }
-    #billable-cos .co-pick-meta strong, #estimate-import .co-pick-meta strong { color:var(--color-text, var(--gvc-ink)); }
-
+/* Invoice correction modal — temporary until a shared modal lands in gvc-forms.css */
+.modal-overlay { position:fixed; inset:0; z-index:70; display:none; align-items:center; justify-content:center;
+  padding:24px; background:rgb(13 46 33 / 0.55); }
+.modal-overlay.is-open, .modal-overlay[data-open="1"] { display:flex; }
+.modal { width:min(560px,100%); max-height:min(80vh,720px); overflow:auto; background:var(--color-surface);
+  border:1px solid var(--color-divider); border-radius:22px; padding:20px; }
+.modal-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:12px; }
+.modal-x { border:0; background:transparent; font-size:22px; cursor:pointer; color:var(--color-text-muted); }
+.gvc-results a, .gvc-results button { border-radius:9999px; }
+#billable-cos .co-pick, #estimate-import .co-pick { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:8px 0; border-bottom:1px solid var(--color-divider); }
+#billable-cos .co-pick:last-child, #estimate-import .co-pick:last-child { border-bottom:0; }
+/* Legacy status banner uses #status textContent — show when non-empty via JS */
+#status:not(:empty) { display:block; }
+.spinner.show { display:inline; }
+.spinner { display:none; color:#9db3a6; font-size:12.5px; }
 </style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Invoice Generator</span>
-    <div class="gvc-topbar-right">
-      <div id="health">Checking service…</div>
-      <span class="gvc-topbar-sep"></span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
-  </div>
-</header>
-<nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
-
-<main class="gvc-shell gvc-moneyform">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Billing</p>
-    <h1 class="gvc-h1">Invoice Generator</h1>
-    <p class="gvc-sub">Create a customer invoice — preview the PDF, then Accept to open it in Stripe and draft the email in hello@.</p>
-  </div>
-
-  <div class="gvc-stack gvc-stack--tight">
-
-  <div class="gvc-banner" id="status"></div>
-
-  <form id="invoice-form" autocomplete="off">
-    <div class="card" id="prefill-card">
-      <h2>Find the Project</h2>
-      <p class="sec-help">Search by client, builder, address, city, or project # — or paste a Monday Project link.</p>
-      <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+<div class="gvc-page">
+  <div id="gvc-form-chrome"></div>
+  <div class="gvc-shell">
+    <main class="gvc-form-col">
+      <div class="gvc-head">
+        <div class="gvc-kicker-row">
+          <span class="gvc-kicker">Billing</span>
+          <span class="gvc-rule"></span>
+        </div>
+        <h1 class="gvc-h1">Invoice Generator</h1>
+        <p class="gvc-blurb">Bill a project. Preview the PDF, then Accept to open it in Stripe and draft the email in billing@.</p>
+      </div>
+      <div class="gvc-stages" id="stages"></div>
+      <div id="status" class="gvc-pop" style="display:none;margin-bottom:16px;padding:12px 14px;border-radius:14px;background:var(--color-accent-soft);border:1px solid var(--color-accent);color:var(--color-accent-ink);font-size:13.5px"></div>
+      <form id="invoice-form" autocomplete="off">
+<section class="gvc-stack gvc-enter" data-stage="find" id="stage-find">
+<div class="gvc-panel" id="prefill-card">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Find the Project</h2><span class="gvc-rule"></span></div>
+<div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
         <div><label>Search — or Monday Project URL</label>
-          <input id="project-search" name="project_search" autocomplete="off"
+          <input class="gvc-input" id="project-search" name="project_search" autocomplete="off"
             placeholder="Maxwell, Greg Gavin, Cincinnati, 300 Tiger Blvd, PRO-2026-…" /></div>
-        <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
+        <div><button type="button" class="gvc-btn gvc-btn-outline" id="btn-prefill">Look up &amp; fill</button></div>
       </div>
       <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
       <div id="prefill-note" class="hint"></div>
@@ -76,131 +70,120 @@
         <summary style="cursor:pointer;font-size:var(--gvc-fs-caption);color:var(--gvc-muted);font-weight:600;">Advanced: Project # only</summary>
         <div class="grid" style="grid-template-columns: 1fr auto; align-items: end; margin-top:8px;">
           <div><label>Project # <span class="opt">(Projects board)</span></label>
-            <input name="project_number_lookup" placeholder="PRO-2026-0807-001 or 2026-0807-001" /></div>
-          <div><button type="button" class="btn secondary small" id="btn-prefill-pn">Look up Project #</button></div>
+            <input class="gvc-input" name="project_number_lookup" placeholder="PRO-2026-0807-001 or 2026-0807-001" /></div>
+          <div><button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="btn-prefill-pn">Look up Project #</button></div>
         </div>
       </details>
       <!-- carry-through from the matched project (Projects board = source of truth) -->
-      <input type="hidden" name="job_monday_item_id" />
-      <input type="hidden" name="job_ops_item_id" />
-      <input type="hidden" name="job_monday_job_type" />
-      <input type="hidden" name="job_project_type" />
-      <input type="hidden" name="job_project_number" />
+      <input class="gvc-input" type="hidden" name="job_monday_item_id" />
+      <input class="gvc-input" type="hidden" name="job_ops_item_id" />
+      <input class="gvc-input" type="hidden" name="job_monday_job_type" />
+      <input class="gvc-input" type="hidden" name="job_project_type" />
+      <input class="gvc-input" type="hidden" name="job_project_number" />
     </div>
 
-    <div class="card" id="drafts-card" style="display:none;">
-      <h2>Resume a draft</h2>
-      <p class="sec-help">Autosaved in-progress invoices — yours and your teammates'.</p>
-      <div id="drafts-list" class="gvc-results"></div>
+    <div class="gvc-panel" id="drafts-card" style="display:none;">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Resume a draft</h2><span class="gvc-rule"></span></div>
+<div id="drafts-list" class="gvc-results"></div>
     </div>
 
-    <div class="card">
-      <h2>Client</h2>
+    
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="who" id="stage-who" hidden>
+<div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Client</h2><span class="gvc-rule"></span></div>
       <div class="grid">
         <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports billing identity)</span></label>
-          <input name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
+          <input class="gvc-input" name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
           <div id="customer-results" class="gvc-results" style="display:none;"></div></div>
-        <div><label>Client / company name</label><input name="client_name" required placeholder="Henderson Residence" /></div>
-        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Mark Henderson" /></div>
+        <div><label>Client / company name</label><input class="gvc-input" name="client_name" required placeholder="Henderson Residence" /></div>
+        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input class="gvc-input" name="contact_name" placeholder="Mark Henderson" /></div>
         <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
-          <textarea name="client_emails" id="client_emails" rows="2" placeholder="mark@example.com&#10;ap@builder.com"></textarea>
-          <div class="hint">Everyone who should get the invoice draft. Stripe still keys off the first address.</div></div>
+          <textarea class="gvc-textarea" name="client_emails" id="client_emails" rows="2" placeholder="mark@example.com&#10;ap@builder.com"></textarea>
+</div>
         <div class="full"><label>CC <span class="opt">(optional)</span></label>
-          <input name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
+          <input class="gvc-input" name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
         <div class="full">
           <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
-            <input type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
+            <input class="gvc-input" type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
             Customer has no email
           </label>
-          <div class="hint">For customers without an inbox — the billing@ draft stays with the office for print / mail / hand-delivery. Stripe uses an internal placeholder (never emailed).</div>
-          <div id="no-email-opts" style="display:none;margin-top:8px;">
-            <label>How will we deliver it?</label>
-            <select name="delivery_method" id="delivery_method">
-              <option value="print">Print / hand-deliver PDF</option>
-              <option value="mail">Mail a printed copy</option>
-              <option value="hand_deliver">Hand-deliver on site</option>
-            </select>
+<div id="no-email-opts" style="display:none;margin-top:8px;">
+            <span class="gvc-label">How will we deliver it?</span>
+            <input type="hidden" name="delivery_method" id="delivery_method" value="print" />
+            <div class="gvc-chips" data-chipset="delivery_method" data-radio>
+              <button type="button" class="gvc-chip is-on" data-value="print">Print / hand-deliver PDF</button>
+              <button type="button" class="gvc-chip" data-value="mail">Mail a printed copy</button>
+              <button type="button" class="gvc-chip" data-value="hand_deliver">Hand-deliver on site</button>
+            </div>
           </div>
         </div>
-        <div class="full"><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
+        <div class="full"><label>Billing address <span class="opt">(printed on the invoice “Bill To”)</span></label><textarea class="gvc-textarea" name="billing_address" required placeholder="4821 Walnut Hills Drive&#10;Cincinnati, OH 45208"></textarea></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Job</h2>
+    
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="terms" id="stage-terms" hidden>
+<div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Job</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Job name</label><input name="job_name" required placeholder="Henderson Kitchen Remodel" /></div>
-        <div><label>Site address <span class="opt">(optional)</span></label><textarea name="site_address" placeholder="Same as billing, or job site address"></textarea></div>
+        <div><label>Job name</label><input class="gvc-input" name="job_name" required placeholder="Henderson Kitchen Remodel" /></div>
+        <div><label>Site address <span class="opt">(optional)</span></label><textarea class="gvc-textarea" name="site_address" placeholder="Same as billing, or job site address"></textarea></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Invoice details</h2>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Invoice details</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Invoice number <span class="opt">(auto from project)</span></label><input name="identifier" placeholder="auto: INV-YYYY-MMDD-NNN" />
-          <div class="hint">Same core number as the estimate (<code>EST-…</code>) and project (<code>PRO-…</code>) — only the letters change. Filled by “Look up &amp; fill” or on Preview as <code>INV-…</code>.</div></div>
-        <div><label>Issue date</label><input name="issue_date" type="date" required /></div>
-        <div><label>Payment terms</label><input name="payment_terms" value="Net 30" /></div>
-        <div><label>Due date <span class="opt">(blank = Net 30 auto)</span></label><input name="due_date" type="date" /></div>
-        <div class="full"><label>Email context <span class="opt">(optional — one line atop the Gmail draft)</span></label><input name="email_context" placeholder="Final draw minus touch-up; pad install Tuesday" /></div>
-        <div class="full"><label>Notes <span class="opt">(optional — printed on the invoice)</span></label><textarea name="notes" placeholder="Thank you for your business. ACH preferred — no processing fee."></textarea></div>
+        <div><label>Invoice number <span class="opt">(auto from project)</span></label><input class="gvc-input" name="identifier" placeholder="auto: INV-YYYY-MMDD-NNN" />
+</div>
+        <div><label>Issue date</label><input class="gvc-input" name="issue_date" type="date" required /></div>
+        <div><label>Payment terms</label><input class="gvc-input" name="payment_terms" value="Net 30" /></div>
+        <div><label>Due date <span class="opt">(blank = Net 30 auto)</span></label><input class="gvc-input" name="due_date" type="date" /></div>
+        <div class="full"><label>Email context <span class="opt">(optional — one line atop the Gmail draft)</span></label><input class="gvc-input" name="email_context" placeholder="Final draw minus touch-up; pad install Tuesday" /></div>
+        <div class="full"><label>Notes <span class="opt">(optional — printed on the invoice)</span></label><textarea class="gvc-textarea" name="notes" placeholder="Thank you for your business. ACH preferred — no processing fee."></textarea></div>
       </div>
     </div>
-
-    <div class="card">
-      <h2>Line items</h2>
-      <div id="line-items"></div>
-      <button type="button" class="btn secondary small" id="add-line">+ Add line item</button>
-
-      <div class="sub" style="margin-top:16px;">
-        <h3>Estimate import <span class="opt">(optional — from the estimate sent for this project)</span></h3>
-        <div class="hint">Pull dollars from the estimate already quoted for this project (Bid Board total, or the full as-sent line items when Drive has them). Auto-added on lookup when the form has no lines yet — still editable; add a change order separately if needed.</div>
-        <div id="estimate-import-note" class="hint" style="margin-top:8px;">Look up a Project # to check for an estimate to import.</div>
-        <div id="estimate-import" style="margin-top:8px;"></div>
-      </div>
-    </div>
-
-    <details class="soft-fold" id="discount-fold">
-      <summary>Discount <span class="opt">(optional)</span></summary>
-      <div class="fold-body">
-        <p class="sec-help" style="margin:0 0 10px;">Optional transparent line — amount is rendered as −$.</p>
-        <div class="grid">
-          <div><label>Description</label><input name="discount_desc" placeholder="Repeat client courtesy" /></div>
-          <div><label>Amount ($) <span class="opt">(positive; rendered as −$)</span></label><input name="discount_amount" type="number" step="0.01" min="0" placeholder="185.00" /></div>
-        </div>
-      </div>
-    </details>
 
     <!-- ---- Commercial / progress billing ---- -->
-    <div class="card">
-      <label class="toggle-row"><input type="checkbox" id="commercial-toggle" /> This is a commercial / progress-billing invoice (AIA)</label>
+    <div class="gvc-panel">
+      <label class="toggle-row"><input class="gvc-input" type="checkbox" id="commercial-toggle" /> This is a commercial / progress-billing invoice (AIA)</label>
       <div id="commercial-body">
 
         <div class="sub">
           <h3>Progress billing</h3>
           <div class="grid three">
-            <div><label>Invoice type</label>
-              <select name="invoice_type">
-                <option value="standard">Standard</option>
-                <option value="progress">Progress (pay application)</option>
-                <option value="final">Final</option>
-              </select></div>
-            <div><label>Pay app # <span class="opt">(progress)</span></label><input name="pay_app_number" type="number" min="1" placeholder="1" /></div>
-            <div><label>Period end date <span class="opt">(progress)</span></label><input name="period_end_date" type="date" /></div>
+            <div>
+              <span class="gvc-label">Invoice type</span>
+              <input type="hidden" name="invoice_type" value="standard" />
+              <div class="gvc-chips" data-chipset="invoice_type" data-radio>
+                <button type="button" class="gvc-chip is-on" data-value="standard">Standard</button>
+                <button type="button" class="gvc-chip" data-value="progress">Progress (pay app)</button>
+                <button type="button" class="gvc-chip" data-value="final">Final</button>
+              </div>
+            </div>
+            <div><label>Pay app # <span class="opt">(progress)</span></label><input class="gvc-input" name="pay_app_number" type="number" min="1" placeholder="1" /></div>
+            <div><label>Period end date <span class="opt">(progress)</span></label><input class="gvc-input" name="period_end_date" type="date" /></div>
           </div>
         </div>
 
         <div class="sub">
-          <h3><label class="toggle-row" style="text-transform:none;letter-spacing:0;"><input type="checkbox" id="retainage-toggle" /> Retainage held this application</label></h3>
+          <h3><label class="toggle-row" style="text-transform:none;letter-spacing:0;"><input class="gvc-input" type="checkbox" id="retainage-toggle" /> Retainage held this application</label></h3>
           <div class="grid" id="retainage-body" style="display:none;">
-            <div><label>Percentage <span class="opt">(display only)</span></label><input name="retainage_pct" type="number" step="0.01" min="0" placeholder="10" /></div>
-            <div><label>Amount held ($)</label><input name="retainage_amount" type="number" step="0.01" min="0" placeholder="2342.69" /></div>
-            <div><label>Scope</label>
-              <select name="retainage_scope">
-                <option value="base">base — first non-CO line absorbs it</option>
-                <option value="all">all — proportional across every line</option>
-              </select></div>
-            <div><label>Description <span class="opt">(optional)</span></label><input name="retainage_desc" placeholder="10% retainage held — billed at completion" /></div>
+            <div><label>Percentage <span class="opt">(display only)</span></label><input class="gvc-input" name="retainage_pct" type="number" step="0.01" min="0" placeholder="10" /></div>
+            <div><label>Amount held ($)</label><input class="gvc-input" name="retainage_amount" type="number" step="0.01" min="0" placeholder="2342.69" /></div>
+            <div>
+              <span class="gvc-label">Scope</span>
+              <input type="hidden" name="retainage_scope" value="base" />
+              <div class="gvc-chips" data-chipset="retainage_scope" data-radio>
+                <button type="button" class="gvc-chip is-on" data-value="base">Base line</button>
+                <button type="button" class="gvc-chip" data-value="all">All lines</button>
+              </div>
+            </div>
+            <div><label>Description <span class="opt">(optional)</span></label><input class="gvc-input" name="retainage_desc" placeholder="10% retainage held — billed at completion" /></div>
           </div>
         </div>
 
@@ -208,56 +191,97 @@
           <h3>AIA G702/G703</h3>
           <div class="grid">
             <div class="full"><label>AIA workbook (Google Drive link) <span class="opt">(the .xlsx in the job’s Drive folder)</span></label>
-              <input name="aia_excel_link" placeholder="https://drive.google.com/file/d/…/view  (or a drive:FILE_ID)" />
-              <div class="hint">The workbook stays in Drive — we read it server-side. Paste the share link or the file ID.</div></div>
-            <div><label>G702 sheet name</label><input name="g702_sheet_name" placeholder="G702 - Pay Application" /></div>
-            <div><label>G703 sheet name <span class="opt">(blank = auto from pay app #)</span></label><input name="g703_sheet_name" placeholder="1 - G703 - Schedule of Values" /></div>
+              <input class="gvc-input" name="aia_excel_link" placeholder="https://drive.google.com/file/d/…/view  (or a drive:FILE_ID)" />
+</div>
+            <div><label>G702 sheet name</label><input class="gvc-input" name="g702_sheet_name" placeholder="G702 - Pay Application" /></div>
+            <div><label>G703 sheet name <span class="opt">(blank = auto from pay app #)</span></label><input class="gvc-input" name="g703_sheet_name" placeholder="1 - G703 - Schedule of Values" /></div>
           </div>
-          <div class="hint" style="margin-top:10px;">Already have G702/G703 as PDFs instead? Paste their Drive links below (skips the Excel export):</div>
-          <div id="extra-pdfs"></div>
-          <button type="button" class="btn secondary small" id="add-extra-pdf">+ Add pre-made PDF link</button>
+<div id="extra-pdfs"></div>
+          <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="add-extra-pdf">+ Add pre-made PDF link</button>
         </div>
 
         <div class="sub">
           <h3>Drive writeback</h3>
           <label>Job “Invoice/” folder (Google Drive link) <span class="opt">(optional — where completed PDFs are archived)</span></label>
-          <input name="drive_invoice_folder_link" placeholder="https://drive.google.com/drive/folders/…  (or a folder ID)" />
-          <div class="hint">On a live run we create a dated “Completed Invoices” subfolder here and upload the PDFs + sentinel. Requires the bot to have access to this Shared Drive.</div>
-        </div>
+          <input class="gvc-input" name="drive_invoice_folder_link" placeholder="https://drive.google.com/drive/folders/…  (or a folder ID)" />
+</div>
 
         <div class="sub">
           <h3>Change orders</h3>
-          <div class="hint">Change Orders are created in the <a href="/ui/change-order" target="_blank" rel="noopener">Change Order app</a> — this invoice does not create them. Look up a project above to list unbilled top-level COs, then add them as invoice lines (or manually check “Change order line” and enter a CO number).</div>
-          <div id="billable-cos-note" class="hint" style="margin-top:8px;">Look up a Project # to load unbilled change orders.</div>
+<div id="billable-cos-note" class="hint" style="margin-top:8px;">Look up a Project # to load unbilled change orders.</div>
           <div id="billable-cos" style="margin-top:8px;"></div>
         </div>
 
       </div>
     </div>
 
-    <div class="gvc-savebar" id="actions-bar">
-      <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-      <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Invoice</button>
-      <button type="button" class="btn secondary small" id="btn-new-invoice">Start new</button>
-      <button type="button" class="btn secondary small" id="btn-correct">Correct / reissue…</button>
-      <span class="spinner" id="spinner">⏳ Working…</span>
-      <span id="save-state" class="save-state"></span>
-      <div class="totals">
-        Line items <span id="t-subtotal">$0.00</span> &nbsp;·&nbsp; Discount <span id="t-discount">$0.00</span><br />
-        <strong>Before retainage <span id="t-total">$0.00</span></strong>
+    
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="lines" id="stage-lines" hidden>
+<div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Line items</h2><span class="gvc-rule"></span></div>
+      <div id="line-items"></div>
+      <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="add-line">+ Add line item</button>
+
+      <div class="sub" style="margin-top:16px;">
+        <h3>Estimate import <span class="opt">(optional — from the estimate sent for this project)</span></h3>
+<div id="estimate-import-note" class="hint" style="margin-top:8px;">Look up a Project # to check for an estimate to import.</div>
+        <div id="estimate-import" style="margin-top:8px;"></div>
       </div>
     </div>
-    <p class="hint">Preview = PDF only. Accept = Stripe invoice + billing@ draft.</p>
-  </form>
 
-  <div class="card" id="preview-card">
-    <h2>Preview</h2>
-    <iframe id="preview-frame" title="Invoice PDF preview"></iframe>
-    <div id="co-previews" style="margin-top:10px;"></div>
+    <details class="soft-fold" id="discount-fold">
+      <summary>Discount <span class="opt">(optional)</span></summary>
+      <div class="fold-body">
+<div class="grid">
+          <div><label>Description</label><input class="gvc-input" name="discount_desc" placeholder="Repeat client courtesy" /></div>
+          <div><label>Amount ($) <span class="opt">(positive; rendered as −$)</span></label><input class="gvc-input" name="discount_amount" type="number" step="0.01" min="0" placeholder="185.00" /></div>
+        </div>
+      </div>
+    </details>
+
+    
+</section>
+
+
+<section class="gvc-stack gvc-enter" data-stage="send" id="stage-send" hidden>
+  <div class="gvc-panel-dark">
+    <div class="gvc-actionbar-label" style="margin-bottom:9px">Ready to send</div>
+    <div id="review-total" style="font-family:var(--font-mono);font-size:clamp(34px,6vw,52px);font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1">$0.00</div>
+    <div id="review-sub" style="font-size:13px;color:#9db3a6;margin-top:7px"></div>
   </div>
+  <div class="gvc-rows" id="review-checks"></div>
+  <div class="gvc-panel">
+    <div class="gvc-label">What happens on Accept</div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:11px">
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">1</span><span style="font-size:13.5px">Stripe invoice created (open, not emailed)</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">2</span><span style="font-size:13.5px">Draft created in billing@ — not sent</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">3</span><span style="font-size:13.5px">Filed to the job Drive folder when linked</span></div>
+    </div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--color-divider);font-size:12.5px;color:var(--color-text-faint)">Nothing emails until someone clicks Send in the draft.</div>
+  </div>
+</section>
 
-  <!-- Corrections flow (lives inside the generator; not a separate tool) -->
-  <div id="correct-overlay" class="modal-overlay">
+
+<section class="gvc-stack gvc-enter" data-stage="accepted" id="stage-accepted" hidden>
+  <div class="gvc-panel-dark" id="accepted-panel">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px">
+      <span style="width:38px;height:38px;border-radius:9999px;background:var(--color-accent);color:#0d2e21;font-size:19px;font-weight:900;display:grid;place-items:center">✓</span>
+      <span>
+        <span style="display:block;font-family:var(--font-display);font-weight:800;font-size:clamp(20px,3vw,26px)">Invoice accepted</span>
+        <span id="accepted-meta" style="display:block;font-family:var(--font-mono);font-size:12.5px;color:var(--color-accent);margin-top:3px"></span>
+      </span>
+    </div>
+    <div id="accepted-links" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</section>
+
+<span id="t-subtotal" hidden>$0.00</span>
+<span id="t-discount" hidden>$0.00</span>
+<span id="t-total" hidden>$0.00</span>
+      </form>
+<div id="correct-overlay" class="modal-overlay">
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="correct-title">
       <div class="modal-head">
         <h2 id="correct-title">Correct / reissue invoice</h2>
@@ -266,10 +290,57 @@
       <div class="modal-body" id="correct-body"></div>
     </div>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+    </main>
+    <aside class="gvc-doc-col">
+      <div class="gvc-doc-sticky">
+        <div class="gvc-doc-cap">Live document</div>
+        <div id="preview-card" class="gvc-doc">
+    <iframe id="preview-frame" title="Invoice PDF preview"></iframe>
+    <div id="co-previews" style="margin-top:10px;"></div>
+  </div>
 
+  <!-- Corrections flow (lives inside the generator; not a separate tool) -->
+  
+      </div>
+    </aside>
+  </div>
+
+  <div class="gvc-actionbar" id="actions-bar">
+    <div class="gvc-actionbar-row">
+      <div style="min-width:0;flex:1">
+        <div class="gvc-actionbar-label" id="barLabel">Invoice total</div>
+        <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+          <span class="gvc-actionbar-total" id="barTotal">$0.00</span>
+          <span class="gvc-actionbar-sub" id="barSub" hidden></span>
+        </div>
+        <span id="save-state" class="gvc-actionbar-sub" style="display:block;margin-top:4px"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark" id="btn-back" hidden>Back</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate" hidden>Preview</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-new-invoice">Start new</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-correct">Correct / reissue</button>
+        <button type="button" class="gvc-btn gvc-btn-primary" id="btn-next">Continue</button>
+        <button type="button" class="gvc-btn gvc-btn-primary" id="btn-accept" hidden>Accept</button>
+        <span class="spinner" id="spinner">Working…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
+<script src="/ui/gvc-form-chrome.js"></script>
+<script src="/ui/gvc-form-stages.js"></script>
 <script src="/ui/gvc-command.js"></script>
+<script>
+(function () {
+  if (window.GvcFormChrome) {
+    window.GvcFormChrome.mount({ app: "invoice", email: "dev-bypass@localhost" });
+  }
+})();
+</script>
+
 <script>
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
@@ -719,13 +790,14 @@ function setStatus(kind, html) {
   const el = $("#status");
   const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
   el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+  el.style.display = "block";
   el.innerHTML = "<div>" + html + "</div>";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function clearStatus() { $("#status").className = "gvc-banner"; }
+function clearStatus() { const el = $("#status"); el.className = "gvc-banner"; el.style.display = "none"; el.innerHTML = ""; }
 
 let lastPreviewOk = false;
-function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = on || !lastPreviewOk; }
+function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = false; void (on || !lastPreviewOk); }
 
 async function run(mode) {
   const data = collectData();
@@ -767,7 +839,7 @@ async function run(mode) {
         coWrap.innerHTML += `<div class="result-line">📎 <a href="${u}" target="_blank" rel="noopener">Change Order Template ${i + 1} (preview)</a></div>`;
       });
       $("#preview-card").classList.add("show");
-      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      lastPreviewOk = true; $("#btn-accept").disabled = false; document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-total")||{}).textContent || document.getElementById("barTotal").textContent);
       const idBit = ident
         ? ` (invoice <strong>${ident}</strong>)`
         : "";
@@ -794,6 +866,25 @@ async function run(mode) {
       html += `<div class="result-line">Next: <a href="/ui/billing">Billing Hub</a> · <a href="/ui/check">Paid by Check</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
       deleteCurrentDraftAfterFinalize();  // invoice is now real (Stripe + ledger) — drop the draft
+      try {
+        var meta = document.getElementById("accepted-meta");
+        if (meta) {
+          meta.textContent = (wb.identifier || (data.invoice && data.invoice.identifier) || wb.stripe_invoice_id || "Invoice") +
+            (wb.hosted_invoice_url ? " · open in Stripe" : "");
+        }
+        var links = document.getElementById("accepted-links");
+        if (links) {
+          links.innerHTML = "";
+          if (wb.hosted_invoice_url) {
+            links.innerHTML += '<a class="gvc-btn gvc-btn-outline" style="color:var(--color-text-inverse);border-color:#2c5a45" href="' + wb.hosted_invoice_url + '" target="_blank" rel="noopener">Open Stripe invoice</a>';
+          }
+          if (wb.gmail_draft_url) {
+            links.innerHTML += '<a class="gvc-btn gvc-btn-outline" style="color:var(--color-text-inverse);border-color:#2c5a45" href="' + wb.gmail_draft_url + '" target="_blank" rel="noopener">Open billing@ draft</a>';
+          }
+          links.innerHTML += '<a class="gvc-btn gvc-btn-outline" style="color:var(--color-text-inverse);border-color:#2c5a45" href="/ui/billing">Billing Hub</a>';
+        }
+        document.dispatchEvent(new CustomEvent("gvc:invoice-accepted", { detail: body }));
+      } catch (_) {}
     }
   } catch (e) {
     setStatus("err", "Network/error: " + e.message);
@@ -1592,9 +1683,7 @@ $("[name=project_number_lookup]").addEventListener("keydown", (e) => {
 $("[name=customer_search]").addEventListener("input", customerSearch);
 $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
 if (window.GvcChips) {
-  GvcChips.replaceSelect($("#delivery_method") || $('select[name="delivery_method"]'));
-  GvcChips.replaceSelect($('select[name="invoice_type"]'), { label: "Invoice type" });
-  GvcChips.replaceSelect($('select[name="retainage_scope"]'), { segmented: true, label: "Scope" });
+  if (GvcChips.hydrateAll) GvcChips.hydrateAll();
 }
 if ($("#client_no_email")) {
   $("#client_no_email").addEventListener("change", syncNoEmailUi);
@@ -1608,11 +1697,119 @@ fetch("/ui/api/monday/warm", {
   method: "POST", credentials: "same-origin", keepalive: true,
 }).catch(() => {});
 </script>
-<script src="/ui/gvc-theme.js"></script>
-<script src="/ui/gvc-flow.js"></script>
 <script>
-  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-  if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "invoice"); }
+    </script>
+</body>
+</html>
+
+<script>
+(function () {
+  function val(name) {
+    var el = document.querySelector('[name="' + name + '"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+  function paintReview() {
+    var t = document.getElementById("t-total");
+    var total = t ? t.textContent : "$0.00";
+    var rt = document.getElementById("review-total");
+    if (rt) rt.textContent = total;
+    var box = document.getElementById("review-checks");
+    if (!box) return;
+    function row(ok, title, meta) {
+      return '<div class="gvc-row' + (ok ? "" : " is-bad") + '"><span class="gvc-row-dot">' + (ok ? "✓" : "!") +
+        '</span><span class="gvc-row-body"><span class="gvc-row-title">' + title + '</span><span class="gvc-row-meta">' +
+        meta + '</span></span>' + (ok ? "" : '<button type="button" class="gvc-btn gvc-btn-sm" data-fix-step style="background:transparent;border:1px solid var(--color-danger);color:var(--color-danger)">Fix</button>') + '</div>';
+    }
+    var client = val("client_name");
+    var noEmail = document.getElementById("client_no_email");
+    var emails = val("client_emails") || (noEmail && noEmail.checked ? "No email — office delivery" : "");
+    var job = val("job_name");
+    var hasLines = !!(document.getElementById("line-items") && document.getElementById("line-items").children.length);
+    box.innerHTML =
+      row(!!client, "Client", client || "Not set") +
+      row(!!emails, "Recipients", emails || "Not set") +
+      row(!!job, "Project", job || "Not set") +
+      row(hasLines, "Lines", hasLines ? "Ready" : "None yet");
+    box.querySelectorAll("[data-fix-step]").forEach(function (btn, idx) {
+      btn.addEventListener("click", function () {
+        var map = ["Client", "Recipients", "Project", "Lines"];
+        // jump via stages API
+      });
+    });
+  }
+  function validateStep(i) {
+    if (i === 1) {
+      if (!val("client_name")) return { step: 1, message: "Finish a client" };
+      var noEmail = document.getElementById("client_no_email");
+      if (!(noEmail && noEmail.checked) && !val("client_emails"))
+        return { step: 1, message: "Add a recipient" };
+    }
+    if (i === 2) {
+      if (!val("job_name")) return { step: 2, message: "Finish the job name" };
+    }
+    if (i === 3) {
+      var box = document.getElementById("line-items");
+      if (!box || !box.children.length) return { step: 3, message: "Add a line item" };
+    }
+    return null;
+  }
+  var api = window.GvcFormStages && window.GvcFormStages.mount({
+    stages: ["Find", "Who", "Job & terms", "Lines", "Review"],
+    panels: ["stage-find", "stage-who", "stage-terms", "stage-lines", "stage-send"],
+    acceptedEl: "stage-accepted",
+    barLabel: "Invoice total",
+    acceptLabel: "Accept & create invoice",
+    acceptingLabel: "Accepting…",
+    getTotals: function () {
+      var t = document.getElementById("t-total");
+      var d = document.getElementById("t-discount");
+      var sub = "";
+      if (d && d.textContent && d.textContent !== "$0.00") sub = "discount " + d.textContent;
+      return { total: t ? t.textContent : "$0.00", sub: sub };
+    },
+    validateStep: validateStep,
+    onEnterReview: function () {
+      paintReview();
+      var gen = document.getElementById("btn-generate");
+      if (gen) gen.click();
+    },
+    onAccept: function () {
+      return new Promise(function (resolve, reject) {
+        var btn = document.getElementById("btn-accept");
+        if (!btn) return reject(new Error("Accept control missing"));
+        var done = false;
+        function finish(ok, err) {
+          if (done) return;
+          done = true;
+          document.removeEventListener("gvc:invoice-accepted", onOk);
+          ok ? resolve() : reject(err || new Error("Accept cancelled or failed"));
+        }
+        function onOk() { finish(true); }
+        document.addEventListener("gvc:invoice-accepted", onOk);
+        btn.disabled = false;
+        btn.click();
+        setTimeout(function () { finish(false, new Error("Accept timed out — check the status banner")); }, 180000);
+      });
+    },
+    onStartAnother: function () {
+      var n = document.getElementById("btn-new-invoice");
+      if (n) n.click();
+    },
+  });
+  var obs = new MutationObserver(function () { if (api) api.refresh(); paintReview(); });
+  ["t-total", "t-subtotal", "t-discount"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) obs.observe(el, { childList: true, characterData: true, subtree: true });
+  });
+  // Sync autosave label into chrome
+  var save = document.getElementById("save-state");
+  if (save && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (window.GvcFormChrome) window.GvcFormChrome.setSaved(save.textContent || "");
+    }).observe(save, { childList: true, characterData: true, subtree: true });
+  }
+})();
 </script>
+
 </body>
 </html>

@@ -24,11 +24,21 @@
     return String(s).replace(/[^a-zA-Z0-9_-]/g, "\\$&");
   }
 
+  function formsMode() {
+    try {
+      if (document.documentElement.getAttribute("data-forms") === "1") return true;
+      return !!document.querySelector('link[href*="gvc-forms.css"]');
+    } catch (_) {
+      return false;
+    }
+  }
+
   function paint(root, value) {
     const v = String(value == null ? "" : value);
     root.querySelectorAll("[data-value]").forEach((btn) => {
       const on = String(btn.getAttribute("data-value")) === v;
       btn.classList.toggle("is-active", on);
+      btn.classList.toggle("is-on", on);
       btn.setAttribute("aria-pressed", on ? "true" : "false");
     });
   }
@@ -72,10 +82,20 @@
     const options = cfg.options || [];
     const value = cfg.value != null ? cfg.value : (options[0] && options[0].value) || "";
     const segmented = !!cfg.segmented;
+    const forms = formsMode() || !!cfg.forms;
     const wrap = document.createElement("div");
-    wrap.className = segmented ? "segmented" : "chipset";
+    wrap.className = forms
+      ? "gvc-chips"
+      : segmented
+        ? "segmented"
+        : "chipset";
     wrap.setAttribute("data-chipset", name);
-    if (!segmented && cfg.label) {
+    if (forms) {
+      const lab = cfg.label
+        ? `<span class="gvc-label" style="margin:0 8px 0 0">${esc(cfg.label)}</span>`
+        : "";
+      wrap.innerHTML = lab + optionsHtml(options, value, "gvc-chip");
+    } else if (!segmented && cfg.label) {
       wrap.innerHTML =
         `<span class="chipset__label">${esc(cfg.label)}</span>` +
         `<div class="chipset__opts"></div>`;
@@ -226,11 +246,49 @@
     return wrap;
   }
 
+  /** Bind pre-rendered .gvc-chips / .chipset roots that already have [data-value] buttons. */
+  function hydrateAll(root) {
+    const scope = root || document;
+    scope.querySelectorAll("[data-chipset]").forEach((wrap) => {
+      if (wrap.getAttribute("data-chips-bound") === "1") return;
+      const name = wrap.getAttribute("data-chipset");
+      let input =
+        (name && document.querySelector(`[name="${cssEscape(name)}"]`)) ||
+        wrap.querySelector('input[type="hidden"]');
+      if (!input && name) {
+        input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        wrap.appendChild(input);
+      }
+      if (!input) return;
+      // Prefer an already-on chip as the value.
+      const onBtn =
+        wrap.querySelector(".gvc-chip.is-on, .chip.is-active, [data-value][aria-pressed='true']") ||
+        wrap.querySelector("[data-value]");
+      if (onBtn && !input.value) {
+        input.value = onBtn.getAttribute("data-value") || "";
+      }
+      paint(wrap, input.value);
+      bind(wrap, input, null);
+      wrap.setAttribute("data-chips-bound", "1");
+    });
+  }
+
   global.GvcChips = {
     mount: mount,
     replaceSelect: replaceSelect,
     sync: sync,
     paint: paint,
     statusChipset: statusChipset,
+    hydrateAll: hydrateAll,
   };
+
+  if (typeof document !== "undefined") {
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => hydrateAll());
+    } else {
+      hydrateAll();
+    }
+  }
 })(typeof window !== "undefined" ? window : globalThis);

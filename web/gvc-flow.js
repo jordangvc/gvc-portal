@@ -4,7 +4,8 @@
  * Open Takeoff app: GvcFlow.takeoffAppUrl()
  *
  * Host classes:
- *   .path      → redesign track (gvc-ui.css)
+ *   .gvc-path  → forms pack strip (gvc-forms.css) — nested under .gvc-topbar
+ *   .path      → redesign track (gvc-ui.css) — hub/takeoff shell
  *   .gvc-flow  → legacy strip (gvc.css) — still used on unconverted pages
  */
 (function (global) {
@@ -112,9 +113,36 @@
     el.innerHTML = parts.join("");
   }
 
+  function mountFormsPath(el, cur) {
+    if (!/\bgvc-path\b/.test(el.className || "")) {
+      el.className = (el.className ? el.className + " " : "") + "gvc-path";
+    }
+    el.setAttribute("aria-label", "Money path — jump between tools");
+    var parts = [];
+    for (var i = 0; i < STEPS.length; i++) {
+      var s = STEPS[i];
+      var here = s.id === cur;
+      var cls = "gvc-path-step" + (here ? " is-here" : "");
+      if (here) {
+        parts.push(
+          '<span class="' + cls + '" aria-current="page">' + esc(s.label) + "</span>"
+        );
+      } else {
+        parts.push(
+          '<a class="' + cls + '" href="' + esc(s.href) + '">' + esc(s.label) + "</a>"
+        );
+      }
+    }
+    el.innerHTML = '<div class="gvc-path-row">' + parts.join("") + "</div>";
+  }
+
   function mount(el, currentId) {
     if (!el) return;
     var cur = String(currentId || "");
+    if (/\bgvc-path\b/.test(el.className || "")) {
+      mountFormsPath(el, cur);
+      return;
+    }
     if (/\bpath\b/.test(el.className || "")) {
       mountPath(el, cur);
       return;

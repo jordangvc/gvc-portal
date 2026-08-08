@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald">
+<html lang="en" data-palette="emerald" data-forms="1">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Estimate Generator</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
 /* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
@@ -20,167 +19,191 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
-
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
+<link rel="stylesheet" href="/ui/gvc-forms.css" />
+<style>
+#status:not(:empty) { display:block; }
+.spinner.show { display:inline; }
+.spinner { display:none; color:var(--color-text-faint); font-size:12.5px; }
+.gvc-results a, .gvc-results button { border-radius:9999px; }
+/* Transitional layout helpers (moneyform grid / line rows) */
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid.three { grid-template-columns:1fr 1fr 1fr; }
+.grid .full { grid-column:1 / -1; }
+.grid-pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:619px) {
+  .grid, .grid.three, .grid-pair { grid-template-columns:1fr; }
+}
+label { display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--color-text-muted); }
+.opt { font-weight:500; color:var(--color-text-faint); }
+.line-item { padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.line-item .row1 { display:grid; grid-template-columns:2fr 1fr 0.6fr auto; gap:10px; align-items:end; }
+@media (max-width:719px) { .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
+.line-item .detail { margin-top:8px; }
+.line-item .opt-row { display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:600; }
+.line-item .opt-row input { width:auto; min-height:0; }
+details.soft-fold { margin-top:12px; border:1px solid var(--color-divider); border-radius:16px; background:var(--color-surface); }
+details.soft-fold > summary { cursor:pointer; padding:12px 14px; font-weight:700; list-style:none; }
+details.soft-fold > summary::-webkit-details-marker { display:none; }
+details.soft-fold > .fold-body { padding:0 14px 14px; }
+.gvc-results { margin-top:8px; }
+.opt-row { display:flex; align-items:center; gap:8px; }
+.opt-row input { width:auto; min-height:0; }
+</style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Estimate Generator</span>
-    <div class="gvc-topbar-right">
-      <div id="health">Checking service…</div>
-      <span class="gvc-topbar-sep"></span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
-  </div>
-</header>
-
-<main class="gvc-shell gvc-moneyform">
-  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Estimating</p>
-    <h1 class="gvc-h1">Estimate Generator</h1>
-    <p class="gvc-sub">Build a bid from a Monday Bid Board link or from scratch — preview the PDF, then Accept to draft it in hello@.</p>
-  </div>
-
-  <div class="gvc-stack gvc-stack--tight">
-
-  <div class="gvc-banner" id="status"></div>
-
-  <div class="card" id="monday-prefill-card">
-    <h2>Find the Bid</h2>
-    <p class="sec-help">Paste a Monday Bid Board link, or search by client, builder, address, city, or estimate #.</p>
-    <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
-      <div><label>Monday Bid URL — or search</label>
-        <input id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “Greg Gavin”, “Cincinnati”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
-      <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
-    </div>
-    <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
-    <div id="dup-guard" class="gvc-msg--warn" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid var(--color-warn-border, #d9a300);background:var(--color-warn-soft, #fff8e1);border-radius:8px;">
-      <div style="font-weight:600;margin-bottom:6px;">⚠ This bid already has an estimate</div>
-      <div id="dup-guard-msg" style="font-size:14px;line-height:1.45;"></div>
-      <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
-        <button type="button" class="btn secondary small" id="dup-guard-revise">Update this existing estimate</button>
-        <button type="button" class="btn secondary small" id="dup-guard-new">New estimate for a different customer</button>
-      </div>
-    </div>
-    <div id="prefill-note" class="hint" style="margin-top:8px;"></div>
-  </div>
-
-  <details class="soft-fold" id="takeoff-import-card">
-    <summary>Import from Takeoff</summary>
-    <div class="fold-body">
-      <p class="hint" style="margin:0 0 10px;">
-        Prefer <a href="/ui/takeoff">Takeoff in the portal</a> (opens the app, keeps a path back),
-        then Export / Send to Portal Queue and import here.
-        <a id="open-takeoff-from-estimate" href="https://gvctakeoff.netlify.app/v2.html"
-           target="_blank" rel="noopener noreferrer">Open Takeoff app</a>
-        · <a href="/ui/jobstart">Job Start</a> after the bid is won.
-      </p>
-      <div class="grid">
-        <div>
-          <label for="takeoff-file">Takeoff JSON file <span class="opt">(optional)</span></label>
-          <input id="takeoff-file" type="file" accept=".json,application/json" />
+<div class="gvc-page">
+  <div id="gvc-form-chrome"></div>
+  <div class="gvc-shell">
+    <main class="gvc-form-col">
+      <div class="gvc-head">
+        <div class="gvc-kicker-row">
+          <span class="gvc-kicker">Estimating</span>
+          <span class="gvc-rule"></span>
         </div>
-        <div class="full">
-          <label for="takeoff-json">Or paste Takeoff JSON</label>
-          <textarea id="takeoff-json" rows="5" placeholder='{"prepared_by":{…},"client":{…},"job":{…},"estimate":{…}}'></textarea>
+        <h1 class="gvc-h1">Estimate Generator</h1>
+        <p class="gvc-blurb">Build a bid from a Monday Bid Board link or from scratch. The document on the right is what the customer sees.</p>
+      </div>
+      <div class="gvc-stages" id="stages"></div>
+      <div id="status" class="gvc-pop" style="display:none;margin-bottom:16px;padding:12px 14px;border-radius:14px;background:var(--color-accent-soft);border:1px solid var(--color-accent);color:var(--color-accent-ink);font-size:13.5px"></div>
+
+      <form id="estimate-form" autocomplete="off">
+<section class="gvc-stack gvc-enter" data-stage="find" id="stage-find">
+<div class="gvc-panel" id="monday-prefill-card">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Find the Bid</h2><span class="gvc-rule"></span></div>
+      <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div><label>Monday Bid URL — or search</label>
+          <input class="gvc-input" id="monday-url" placeholder="https://…/pulses/… — or “Maxwell”, “Greg Gavin”, “Cincinnati”, “300 Tiger Blvd”, “2026-0615-002”" /></div>
+        <div><button type="button" class="gvc-btn gvc-btn-outline" id="btn-prefill">Look up &amp; fill</button></div>
+      </div>
+      <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
+      <div id="dup-guard" class="gvc-msg--warn" style="display:none;margin-top:10px;padding:12px 14px;border:1px solid var(--color-warn-border, #d9a300);background:var(--color-warn-soft, #fff8e1);border-radius:8px;">
+        <div style="font-weight:600;margin-bottom:6px;">⚠ This bid already has an estimate</div>
+        <div id="dup-guard-msg" style="font-size:14px;line-height:1.45;"></div>
+        <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap;">
+          <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="dup-guard-revise">Update this existing estimate</button>
+          <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="dup-guard-new">New estimate for a different customer</button>
         </div>
       </div>
-      <div class="actions">
-        <button type="button" class="btn secondary" id="btn-takeoff-import">Import &amp; save draft</button>
-        <span class="spinner" id="takeoff-spinner">⏳ Importing…</span>
-      </div>
-      <div id="takeoff-import-result" class="hint" role="status" aria-live="polite"></div>
-    </div>
-  </details>
-
-  <div class="card" id="drafts-card" style="display:none;">
-    <h2>Resume a draft</h2>
-    <p class="sec-help">Autosaved in-progress estimates — yours and your teammates'.</p>
-    <div id="drafts-list" class="gvc-results"></div>
-  </div>
-
-  <form id="estimate-form" autocomplete="off">
-    <input type="hidden" name="job_monday_item_id" />
-    <div class="card">
-      <h2>Your Bid Contact</h2>
-      <p class="sec-help">Shown on the estimate as “Your Bid Contact”.</p>
-      <div style="margin-bottom:12px;"><label>Choose salesperson <span class="opt">(autofills the fields below — or type manually)</span></label>
-        <select id="salesperson-select"><option value="">— select a salesperson —</option></select></div>
-      <div class="grid">
-        <div><label>Name</label><input name="pb_name" placeholder="John Smith" /></div>
-        <div><label>Email <span class="opt">(optional)</span></label><input name="pb_email" type="email" placeholder="john@greenvalleycontractors.com" /></div>
-        <div><label>Phone <span class="opt">(optional)</span></label><input name="pb_phone" placeholder="(812) 290-1093" /></div>
-      </div>
+      <div id="prefill-note" style="margin-top:8px;"></div>
+      <input class="gvc-input" type="hidden" name="job_monday_item_id" />
     </div>
 
-    <div class="card">
-      <h2>Prepared For (Client)</h2>
-      <div class="grid">
-        <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports name, contact, email, phone)</span></label>
-          <input name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
-          <div id="customer-results" class="gvc-results" style="display:none;"></div></div>
-        <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
-        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
-        <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
-          <textarea name="client_emails" id="client_emails" rows="2" placeholder="dave@example.com&#10;ap@builder.com"></textarea>
-          <div class="hint">Add every person who should receive the estimate. Optional CC below.</div></div>
-        <div class="full"><label>CC <span class="opt">(optional)</span></label>
-          <input name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
-        <div class="full">
-          <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
-            <input type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
-            Customer has no email
-          </label>
-          <div class="hint">For homeowners who don’t use email (print, mail, or hand-deliver the PDF). The hello@ draft goes to the office with a clear banner — nothing is sent to the customer.</div>
-          <div id="no-email-opts" style="display:none;margin-top:8px;">
-            <label>How will we deliver it?</label>
-            <select name="delivery_method" id="delivery_method">
-              <option value="print">Print / hand-deliver PDF</option>
-              <option value="mail">Mail a printed copy</option>
-              <option value="hand_deliver">Hand-deliver on site</option>
-            </select>
+    <details class="soft-fold" id="takeoff-import-card">
+      <summary>Import from Takeoff</summary>
+      <div class="fold-body">
+        <div class="grid">
+          <div>
+            <label for="takeoff-file">Takeoff JSON file <span class="opt">(optional)</span></label>
+            <input class="gvc-input" id="takeoff-file" type="file" accept=".json,application/json" />
+          </div>
+          <div class="full">
+            <label for="takeoff-json">Or paste Takeoff JSON</label>
+            <textarea class="gvc-textarea" id="takeoff-json" rows="5" placeholder='{"prepared_by":{…},"client":{…},"job":{…},"estimate":{…}}'></textarea>
           </div>
         </div>
-        <div><label>Phone <span class="opt">(optional)</span></label><input name="client_phone" placeholder="(812) 537-2200" /></div>
+        <div style="margin-top:10px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <button type="button" class="gvc-btn gvc-btn-outline" id="btn-takeoff-import">Import &amp; save draft</button>
+          <a id="open-takeoff-from-estimate" href="https://gvctakeoff.netlify.app/v2.html"
+             target="_blank" rel="noopener noreferrer" class="gvc-btn gvc-btn-outline gvc-btn-sm">Open Takeoff app</a>
+          <span class="spinner" id="takeoff-spinner">Importing…</span>
+        </div>
+        <div id="takeoff-import-result" role="status" aria-live="polite" style="margin-top:8px;"></div>
+      </div>
+    </details>
+
+    <div class="gvc-panel" id="drafts-card" style="display:none;">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Resume a draft</h2><span class="gvc-rule"></span></div>
+      <div id="drafts-list" class="gvc-results"></div>
+    </div>
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="who" id="stage-who" hidden>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Your Bid Contact</h2><span class="gvc-rule"></span></div>
+      <div style="margin-bottom:12px;"><label>Choose salesperson <span class="opt">(autofills the fields below — or type manually)</span></label>
+        <div class="gvc-people" id="salesperson-people" data-radio></div>
+        <input type="hidden" id="salesperson-select" value="" /></div>
+      <div class="grid">
+        <div><label>Name</label><input class="gvc-input" name="pb_name" placeholder="John Smith" /></div>
+        <div><label>Email <span class="opt">(optional)</span></label><input class="gvc-input" name="pb_email" type="email" placeholder="john@greenvalleycontractors.com" /></div>
+        <div><label>Phone <span class="opt">(optional)</span></label><input class="gvc-input" name="pb_phone" placeholder="(812) 290-1093" /></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Project</h2>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Prepared For (Client)</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Project name</label><input name="job_name" required placeholder="Lawrenceburg Admin Bldg Reno & Addition" /></div>
-        <div><label>Job location <span class="opt">(optional)</span></label><input name="job_location" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
-        <div><label>Project type</label>
-          <select name="project_type">
-            <option value="residential" selected>Residential</option>
-            <option value="commercial">Commercial</option>
-          </select>
-          <div class="hint">Sets the Drive folder branch and the Monday Project Type.</div></div>
+        <div class="full"><label>Find existing customer <span class="opt">(Customer Directory — imports name, contact, email, phone)</span></label>
+          <input class="gvc-input" name="customer_search" placeholder="Start typing a customer name…" autocomplete="off" />
+          <div id="customer-results" class="gvc-results" style="display:none;"></div></div>
+        <div><label>Client / company name</label><input class="gvc-input" name="client_name" required placeholder="Maxwell Construction" /></div>
+        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input class="gvc-input" name="contact_name" placeholder="Dave Sehlhorst" /></div>
+        <div class="full"><label>Customer email(s) <span class="opt">(comma or one per line — draft goes to all)</span></label>
+          <textarea class="gvc-textarea" name="client_emails" id="client_emails" rows="2" placeholder="dave@example.com&#10;ap@builder.com"></textarea>
+        </div>
+        <div class="full"><label>CC <span class="opt">(optional)</span></label>
+          <input class="gvc-input" name="client_cc_emails" id="client_cc_emails" placeholder="pm@builder.com, office@builder.com" /></div>
+        <div class="full">
+          <label style="display:flex;align-items:center;gap:8px;font-weight:600;">
+            <input class="gvc-input" type="checkbox" name="client_no_email" id="client_no_email" style="width:auto;min-height:0;" />
+            Customer has no email
+          </label>
+          <div id="no-email-opts" style="display:none;margin-top:8px;">
+            <span class="gvc-label">How will we deliver it?</span>
+            <input type="hidden" name="delivery_method" id="delivery_method" value="print" />
+            <div class="gvc-chips" data-chipset="delivery_method" data-radio>
+              <button type="button" class="gvc-chip is-on" data-value="print">Print / hand-deliver PDF</button>
+              <button type="button" class="gvc-chip" data-value="mail">Mail a printed copy</button>
+              <button type="button" class="gvc-chip" data-value="hand_deliver">Hand-deliver on site</button>
+            </div>
+          </div>
+        </div>
+        <div><label>Phone <span class="opt">(optional)</span></label><input class="gvc-input" name="client_phone" placeholder="(812) 537-2200" /></div>
+      </div>
+    </div>
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="scope" id="stage-scope" hidden>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Project</h2><span class="gvc-rule"></span></div>
+      <div class="grid">
+        <div><label>Project name</label><input class="gvc-input" name="job_name" required placeholder="Lawrenceburg Admin Bldg Reno & Addition" /></div>
+        <div><label>Job location <span class="opt">(optional)</span></label><input class="gvc-input" name="job_location" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
+        <div>
+          <span class="gvc-label">Type</span>
+          <input type="hidden" name="project_type" value="residential" />
+          <div class="gvc-chips" data-chipset="project_type" data-radio>
+            <button type="button" class="gvc-chip is-on" data-value="residential">Residential</button>
+            <button type="button" class="gvc-chip" data-value="commercial">Commercial</button>
+          </div>
+        </div>
         <div class="full"><label>Scope of Work Summary <span class="opt">(optional — a short narrative)</span></label>
-          <textarea name="scope_summary" placeholder="Drywall and ACT ceilings for the renovation and addition per plans and schedule."></textarea></div>
+          <textarea class="gvc-textarea" name="scope_summary" placeholder="Drywall and ACT ceilings for the renovation and addition per plans and schedule."></textarea></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Estimate details</h2>
+    <div class="gvc-panel" id="scope-card">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Scope Selection</h2><span class="gvc-rule"></span></div>
+      <div id="scope-groups">Loading standard scopes…</div>
+      <div id="scope-admin-wrap" style="display:none;margin-top:14px;border-top:1px dashed var(--color-divider);padding-top:12px;">
+        <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="scope-admin-toggle">Manage standard scopes (admin)</button>
+        <div id="scope-admin" style="display:none;"></div>
+      </div>
+    </div>
+
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Estimate details</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned on Preview)</span></label><input name="identifier" placeholder="auto: EST-YYYY-MMDD-NNN" />
-          <div class="hint">Assigned on Preview as <code>EST-YYYY-MMDD-NNN</code> (e.g. <code>EST-2026-0611-001</code>). Leave blank for a new estimate; only fill to revise an existing number.</div></div>
+        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned on Preview)</span></label><input class="gvc-input" name="identifier" placeholder="auto: EST-YYYY-MMDD-NNN" />
+        </div>
         <div><label>Plan Folder # <span class="opt">(optional — Jake's numbered Drive folder)</span></label>
-          <input name="plan_folder_number" inputmode="numeric" placeholder="341" />
-          <div class="hint">Leading number of Jake's plan folder (e.g. <code>341</code>). Prefills from the Bid Board; saved back on Accept, and the PDF is also filed there.</div></div>
+          <input class="gvc-input" name="plan_folder_number" inputmode="numeric" placeholder="341" />
+        </div>
         <div class="full">
           <div class="grid grid-pair">
-            <div><label>Date</label><input name="date" type="date" required /></div>
-            <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input name="expiry_date" type="date" /></div>
+            <div><label>Date</label><input class="gvc-input" name="date" type="date" required /></div>
+            <div><label>Valid through <span class="opt">(blank = 30 days after date)</span></label><input class="gvc-input" name="expiry_date" type="date" /></div>
           </div>
         </div>
         <div class="full" id="revise-row" style="display:none;">
@@ -188,70 +211,116 @@
             <input type="checkbox" id="revise-flag" />
             Update this Estimate — revise under the same number
           </label>
-          <div class="hint">The client sees the <strong>same estimate number</strong>. The prior PDF is archived
-            in Drive with an <code>e1-</code>/<code>e2-</code>… prefix (original preserved for bid tracking),
-            Monday's scope, dates &amp; total are <strong>updated</strong>, and a fresh hello@ draft + #bids
-            notice go out with revision wording.</div>
         </div>
       </div>
     </div>
+</section>
 
-    <div class="card" id="scope-card">
-      <h2>Scope Selection</h2>
-      <p class="sec-help">Check a scope, edit text &amp; price, Save — adds a line item + Scope Details.</p>
-      <div id="scope-groups" class="hint">Loading standard scopes…</div>
-      <div id="scope-admin-wrap" style="display:none;margin-top:14px;border-top:1px dashed var(--gvc-line);padding-top:12px;">
-        <button type="button" class="btn secondary small" id="scope-admin-toggle">⚙︎ Manage standard scopes (admin)</button>
-        <div id="scope-admin" style="display:none;"></div>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Line items</h2>
-      <p class="sec-help">Saved scopes appear here; add extras manually. Optional add-on moves a line to options.</p>
+<section class="gvc-stack gvc-enter" data-stage="lines" id="stage-lines" hidden>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Line items</h2><span class="gvc-rule"></span></div>
       <div id="line-items"></div>
-      <button type="button" class="btn secondary small" id="add-line">+ Add line item</button>
+      <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="add-line">+ Add line item</button>
     </div>
 
     <details class="soft-fold">
       <summary>Special notes</summary>
       <div class="fold-body">
-        <textarea name="special_notes" placeholder="Use 5/8&quot; drywall throughout (supersedes our standard 1/2&quot;).&#10;All fire-rated assemblies per the life safety plan."></textarea>
+        <textarea class="gvc-textarea" name="special_notes" placeholder="Use 5/8&quot; drywall throughout (supersedes our standard 1/2&quot;).&#10;All fire-rated assemblies per the life safety plan."></textarea>
       </div>
     </details>
 
     <details class="soft-fold">
       <summary>Notes</summary>
       <div class="fold-body">
-        <textarea name="notes" placeholder="Lead time on ACT grid is approximately 3 weeks from approved submittals."></textarea>
+        <textarea class="gvc-textarea" name="notes" placeholder="Lead time on ACT grid is approximately 3 weeks from approved submittals."></textarea>
       </div>
     </details>
+</section>
 
-    <div class="gvc-savebar" id="actions-bar">
-      <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-      <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
-      <button type="button" class="btn secondary small" id="btn-new-estimate">Start new</button>
-      <span class="spinner" id="spinner">⏳ Working…</span>
-      <span id="save-state" class="save-state"></span>
-      <div class="totals">
-        Main scope <span id="t-main">$0.00</span> &nbsp;·&nbsp; Options <span id="t-options">$0.00</span><br />
-        <strong>With options <span id="t-withopt">$0.00</span></strong>
+<section class="gvc-stack gvc-enter" data-stage="send" id="stage-send" hidden>
+  <div class="gvc-panel-dark">
+    <div class="gvc-actionbar-label" style="margin-bottom:9px">Ready to send</div>
+    <div id="review-total" style="font-family:var(--font-mono);font-size:clamp(34px,6vw,52px);font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1">$0.00</div>
+    <div id="review-sub" style="font-size:13px;color:var(--color-text-faint);margin-top:7px"></div>
+  </div>
+  <div class="gvc-rows" id="review-checks"></div>
+  <div class="gvc-panel">
+    <div class="gvc-label">What happens on Accept</div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:11px">
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">1</span><span style="font-size:13.5px">PDF filed to Drive when linked</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">2</span><span style="font-size:13.5px">Draft created in hello@ — not sent</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">3</span><span style="font-size:13.5px">Monday Bid Board updated + #bids notice</span></div>
+    </div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--color-divider);font-size:12.5px;color:var(--color-text-faint)">Nothing emails until someone clicks Send in the draft.</div>
+  </div>
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="accepted" id="stage-accepted" hidden>
+  <div class="gvc-panel-dark" id="accepted-panel">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px">
+      <span style="width:38px;height:38px;border-radius:9999px;background:var(--color-accent);color:var(--color-primary-hover);font-size:19px;font-weight:900;display:grid;place-items:center">✓</span>
+      <span>
+        <span style="display:block;font-family:var(--font-display);font-weight:800;font-size:clamp(20px,3vw,26px)">Estimate accepted</span>
+        <span id="accepted-meta" style="display:block;font-family:var(--font-mono);font-size:12.5px;color:var(--color-accent);margin-top:3px"></span>
+      </span>
+    </div>
+    <div id="accepted-links" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</section>
+
+<span id="t-main" hidden>$0.00</span>
+<span id="t-options" hidden>$0.00</span>
+<span id="t-withopt" hidden>$0.00</span>
+      </form>
+    </main>
+    <aside class="gvc-doc-col">
+      <div class="gvc-doc-sticky">
+        <div class="gvc-doc-cap">Live document</div>
+        <div id="preview-card" class="gvc-doc">
+          <iframe id="preview-frame" title="Estimate PDF preview"></iframe>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="gvc-actionbar" id="actions-bar">
+    <div class="gvc-actionbar-row">
+      <div style="min-width:0;flex:1">
+        <div class="gvc-actionbar-label" id="barLabel">Estimate total</div>
+        <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+          <span class="gvc-actionbar-total" id="barTotal">$0.00</span>
+          <span class="gvc-actionbar-sub" id="barSub" hidden></span>
+        </div>
+        <span id="save-state" class="gvc-actionbar-sub" style="display:block;margin-top:4px"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark" id="btn-back" hidden>Back</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate" hidden>Preview</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-new-estimate">Start new</button>
+        <button type="button" class="gvc-btn gvc-btn-primary" id="btn-next">Continue</button>
+        <button type="button" class="gvc-btn gvc-btn-primary" id="btn-accept" hidden>Accept</button>
+        <span class="spinner" id="spinner">Working…</span>
       </div>
     </div>
-    <p class="hint" style="margin-top:8px;">
-      <strong>Generate Preview</strong> renders the PDF only.
-      <strong>Accept</strong> drafts in <code>hello@</code> (posts to #bids). Nothing emails until someone clicks Send.
-    </p>
-  </form>
-
-  <div class="card" id="preview-card">
-    <h2>Preview</h2>
-    <iframe id="preview-frame" title="Estimate PDF preview"></iframe>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+</div>
 
+<script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
+<script src="/ui/gvc-form-chrome.js"></script>
+<script src="/ui/gvc-form-stages.js"></script>
 <script src="/ui/gvc-command.js"></script>
+<script>
+(function () {
+  if (window.GvcFormChrome) {
+    window.GvcFormChrome.mount({ app: "estimate", email: "dev-bypass@localhost" });
+  }
+  var a = document.getElementById("open-takeoff-from-estimate");
+  if (a && window.GvcFlow && window.GvcFlow.takeoffAppUrl) a.href = window.GvcFlow.takeoffAppUrl();
+})();
+</script>
+
 <script>
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
@@ -271,7 +340,7 @@ function lineItemRow(v = {}) {
       <div><label>Description ${badge}</label><input class="li-desc" placeholder="Drywall Hang and Finish" value="${escapeHtml(v.description || "")}" /></div>
       <div><label>Unit price ($)</label><input class="li-price" type="number" step="0.01" min="0" placeholder="18300.00" value="${v.unit_price ?? ""}" /></div>
       <div><label>Qty</label><input class="li-qty" type="number" step="1" min="1" value="${v.quantity ?? 1}" /></div>
-      <div><button type="button" class="btn danger li-remove">Remove</button></div>
+      <div><button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm li-remove">Remove</button></div>
     </div>
     <div class="detail"><label>Detail / scope <span class="opt">(optional short line under the title)</span></label>
       <input class="li-detail" placeholder="5/8&quot; gypsum board at all new partitions; Level 5 finish." value="${escapeHtml(v.detail || "")}" /></div>
@@ -317,6 +386,12 @@ function recalc() {
   $("#t-main").textContent = money(main);
   $("#t-options").textContent = money(opt);
   $("#t-withopt").textContent = money(main + opt);
+  const bt = document.getElementById("barTotal"); if (bt) bt.textContent = money(main + opt);
+  const bs = document.getElementById("barSub");
+  if (bs) {
+    if (opt) { bs.hidden = false; bs.textContent = "main " + money(main) + " · options " + money(opt); }
+    else { bs.hidden = true; bs.textContent = ""; }
+  }
 }
 
 function collectData() {
@@ -404,18 +479,15 @@ function validateData(d) {
 function setStatus(kind, html) {
   const el = $("#status");
   const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
-  el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+  el.style.display = "block";
+  el.className = "gvc-pop show " + (map[kind] || "gvc-banner--info");
   el.innerHTML = "<div>" + html + "</div>";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function clearStatus() { $("#status").className = "gvc-banner"; }
+function clearStatus() { const el = $("#status"); if (el) { el.className = "gvc-pop"; el.style.display = "none"; el.innerHTML = ""; } }
 
 let lastPreviewOk = false;
-function showSpinner(on) {
-  $("#spinner").classList.toggle("show", on);
-  $("#btn-generate").disabled = on;
-  $("#btn-accept").disabled = on || !lastPreviewOk;
-}
+function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = false; void (on || !lastPreviewOk); }
 
 function isReviseMode() {
   const box = $("#revise-flag");
@@ -455,7 +527,7 @@ async function run(mode) {
       const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}`;
       $("#preview-frame").src = url;
       $("#preview-card").classList.add("show");
-      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      lastPreviewOk = true; $("#btn-accept").disabled = false; document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-withopt")||{}).textContent || document.getElementById("barTotal").textContent);
       // Surface the service-assigned EST-… in the field (it was blank on purpose
       // until Preview). Accept keeps this number; leave blank on a fresh form
       // for the next new estimate.
@@ -486,6 +558,7 @@ async function run(mode) {
         : "/ui/jobstart";
       html += `<div class="result-line">Next: when the bid is won, <a href="${jobStartHref}">open Job Start</a> to hand it to Ops · <a href="/ui/takeoff">Takeoff</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
+      try { document.dispatchEvent(new CustomEvent("gvc:estimate-accepted", { detail: wb })); } catch (e) {}
       deleteCurrentDraftAfterFinalize();  // estimate is now real (in Monday) — drop the draft
     }
   } catch (e) {
@@ -525,7 +598,7 @@ function renderScopes() {
   const trades = (SCOPE_CATALOG && SCOPE_CATALOG.trades) || [];
   wrap.classList.remove("hint");
   wrap.innerHTML = "";
-  if (!trades.length) { wrap.innerHTML = '<div class="hint">No standard scopes defined yet.</div>'; return; }
+  if (!trades.length) { wrap.textContent = "No standard scopes defined yet."; return; }
   trades.forEach((trade) => {
     const g = document.createElement("div");
     g.className = "scope-trade";
@@ -552,7 +625,7 @@ function scopeItem(trade, scope) {
        <textarea class="sc-text"></textarea>
        <div class="scope-editor-row">
          <div class="price-wrap"><label>Price ($)</label><input type="number" step="0.01" min="0" class="sc-price" placeholder="0.00" /></div>
-         <button type="button" class="btn small sc-save">Save to line items</button>
+         <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm sc-save">Save to line items</button>
          <span class="sc-state"></span>
        </div>
        <div class="scope-hint">Adds line item “<strong>${escapeHtml(trade.name || "")} - ${escapeHtml(scope.title || "")}</strong>”; the full text prints on the Scope Details page.</div>
@@ -674,7 +747,7 @@ function renderScopeAdmin() {
   panel.appendChild(list);
   const bar = document.createElement("div"); bar.style.marginTop = "10px";
   const addTrade = document.createElement("button");
-  addTrade.type = "button"; addTrade.className = "btn secondary small"; addTrade.textContent = "+ Add trade";
+  addTrade.type = "button"; addTrade.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; addTrade.textContent = "+ Add trade";
   addTrade.addEventListener("click", () =>
     list.appendChild(catTradeEl({ name: "", scopes: [{ title: "", default_scope: "", default_price: null }] })));
   const save = document.createElement("button");
@@ -690,14 +763,14 @@ function catTradeEl(t) {
   const head = document.createElement("div"); head.className = "cat-trade-head";
   head.innerHTML = `<div class="grow"><label>Trade name</label><input class="ct-name" value="${escapeHtml(t.name || "")}" /></div>`;
   const rm = document.createElement("button");
-  rm.type = "button"; rm.className = "btn danger small"; rm.textContent = "Remove trade";
+  rm.type = "button"; rm.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; rm.textContent = "Remove trade";
   rm.addEventListener("click", () => el.remove());
   head.appendChild(rm); el.appendChild(head);
   const scopes = document.createElement("div"); scopes.className = "ct-scopes";
   (t.scopes || []).forEach((s) => scopes.appendChild(catScopeEl(s)));
   el.appendChild(scopes);
   const addScope = document.createElement("button");
-  addScope.type = "button"; addScope.className = "btn secondary small"; addScope.textContent = "+ Add scope";
+  addScope.type = "button"; addScope.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; addScope.textContent = "+ Add scope";
   addScope.addEventListener("click", () => scopes.appendChild(catScopeEl({ title: "", default_scope: "", default_price: null })));
   el.appendChild(addScope);
   return el;
@@ -713,7 +786,7 @@ function catScopeEl(s) {
      <label>Default scope text</label>
      <textarea class="cs-text">${escapeHtml(s.default_scope || "")}</textarea>`;
   const rm = document.createElement("button");
-  rm.type = "button"; rm.className = "btn danger small"; rm.textContent = "Remove scope";
+  rm.type = "button"; rm.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; rm.textContent = "Remove scope";
   rm.addEventListener("click", () => el.remove());
   el.appendChild(rm);
   return el;
@@ -1033,11 +1106,11 @@ function renderDrafts(map) {
          <div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div>
        </div>`;
     const resume = document.createElement("button");
-    resume.type = "button"; resume.className = "btn secondary small"; resume.textContent = isActive ? "Editing" : "Resume";
+    resume.type = "button"; resume.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; resume.textContent = isActive ? "Editing" : "Resume";
     resume.disabled = isActive;
     resume.addEventListener("click", () => resumeDraft(r.id));
     const del = document.createElement("button");
-    del.type = "button"; del.className = "btn danger small"; del.textContent = "Delete";
+    del.type = "button"; del.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; del.textContent = "Delete";
     del.addEventListener("click", () => deleteDraft(r.id));
     div.appendChild(resume); div.appendChild(del);
     list.appendChild(div);
@@ -1116,7 +1189,7 @@ async function searchBids(q) {
     const stage = row.stage ? `<span class="badge active">${escapeHtml(row.stage)}</span>` : "";
     div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(row.name)}${est}${stage}</div></div>`;
     const btn = document.createElement("button");
-    btn.type = "button"; btn.className = "btn secondary small";
+    btn.type = "button"; btn.className = "gvc-btn gvc-btn-outline gvc-btn-sm";
     btn.textContent = row.estimate_number ? "Load for revision" : "Load";
     btn.addEventListener("click", () => { $("#search-results").innerHTML = ""; loadBid(String(row.item_id)); });
     div.appendChild(btn);
@@ -1223,12 +1296,13 @@ function deleteCurrentDraftAfterFinalize() {
 
 async function checkHealth() {
   try {
+    const healthEl = $("#health"); if (!healthEl) return;
     const r = await fetch("/health"); const h = await r.json();
     const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
-    $("#health").innerHTML =
+    healthEl.innerHTML =
       `<span>${dot(h.gmail_ready)} Gmail (billing@)</span>` +
       `<span>${dot(h.preview_bucket_configured)} Preview</span>`;
-  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+  } catch (e) { const healthEl = $("#health"); if (healthEl) healthEl.textContent = "Service status unavailable"; }
 }
 
 addLineItem();
@@ -1300,30 +1374,54 @@ function fillSalespersonContactFromRoster() {
   if (needEmail && match.email) setField("pb_email", match.email);
   if (needPhone && match.phone) setField("pb_phone", match.phone);
 }
+function pickSalesperson(idx) {
+  const p = SALESPEOPLE[Number(idx)];
+  if (!p) return;
+  const box = $("#salesperson-people");
+  if (box) {
+    box.querySelectorAll(".gvc-person").forEach((btn, i) => {
+      btn.classList.toggle("is-on", i === Number(idx));
+    });
+  }
+  const hid = $("#salesperson-select");
+  if (hid) hid.value = String(idx);
+  setField("pb_name", p.name); setField("pb_email", p.email); setField("pb_phone", p.phone);
+  lastPreviewOk = false; $("#btn-accept").disabled = false;
+  scheduleAutosave();
+}
 async function loadSalespeople() {
-  const sel = $("#salesperson-select");
+  const box = $("#salesperson-people");
   let r;
   try { r = await fetch("/ui/api/estimate/salespeople"); } catch (e) { return; }
   if (!r.ok) return;
   const data = await r.json().catch(() => ({}));
   SALESPEOPLE = data.salespeople || [];
-  sel.innerHTML = '<option value="">— select a salesperson —</option>';
-  SALESPEOPLE.forEach((p, i) => {
-    const o = document.createElement("option");
-    o.value = String(i);
-    o.textContent = p.name ? `${p.name}${p.email ? " (" + p.email + ")" : ""}` : p.email;
-    sel.appendChild(o);
-  });
+  if (!box) return;
+  box.innerHTML = SALESPEOPLE.map((p, i) => {
+    const name = p.name || p.email || "Sales";
+    const parts = String(name).trim().split(/\s+/);
+    const av = ((parts[0] && parts[0][0]) || "?") + ((parts[1] && parts[1][0]) || "");
+    const meta = p.phone || p.email || "";
+    return (
+      `<button type="button" class="gvc-person" data-idx="${i}">` +
+      `<span class="gvc-person-av">${av.toUpperCase()}</span>` +
+      `<span style="flex:1;min-width:0">` +
+      `<span class="gvc-person-name">${name.replace(/</g, "&lt;")}</span>` +
+      `<span class="gvc-person-meta">${String(meta).replace(/</g, "&lt;")}</span>` +
+      `</span><span class="gvc-person-check">✓</span></button>`
+    );
+  }).join("");
   // Cover the race where a bid deep-link filled pb_name before the roster arrived.
   fillSalespersonContactFromRoster();
 }
-$("#salesperson-select").addEventListener("change", (e) => {
-  const p = SALESPEOPLE[Number(e.target.value)];
-  if (!p) return;
-  setField("pb_name", p.name); setField("pb_email", p.email); setField("pb_phone", p.phone);
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
-  scheduleAutosave();
-});
+const _salesPeople = $("#salesperson-people");
+if (_salesPeople) {
+  _salesPeople.addEventListener("click", (e) => {
+    const btn = e.target.closest(".gvc-person[data-idx]");
+    if (!btn) return;
+    pickSalesperson(btn.getAttribute("data-idx"));
+  });
+}
 
 /* ---- Customer search (Customer & Vendor Directory) ---- */
 let custTimer = null;
@@ -1373,8 +1471,7 @@ $("#scope-admin-toggle").addEventListener("click", openScopeAdmin);
 $("[name=date]").value = new Date().toISOString().slice(0, 10);
 updateReviseUI();
 if (window.GvcChips) {
-  GvcChips.replaceSelect($('select[name="project_type"]'), { label: "Project type" });
-  GvcChips.replaceSelect($("#delivery_method") || $('select[name="delivery_method"]'));
+  if (GvcChips.hydrateAll) GvcChips.hydrateAll();
 }
 if ($("#client_no_email")) {
   $("#client_no_email").addEventListener("change", syncNoEmailUi);
@@ -1404,15 +1501,121 @@ fetch("/ui/api/monday/warm", {
   method: "POST", credentials: "same-origin", keepalive: true,
 }).catch(() => {});
 </script>
-<script src="/ui/gvc-theme.js"></script>
-<script src="/ui/gvc-flow.js"></script>
-<script>
-  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
-  if (window.GvcFlow) {
-    window.GvcFlow.mount(document.getElementById("gvc-flow"), "estimate");
-    const a = document.getElementById("open-takeoff-from-estimate");
-    if (a) a.href = window.GvcFlow.takeoffAppUrl();
-  }
+
 </script>
+
+<script>
+(function () {
+  function val(name) {
+    var el = document.querySelector('[name="' + name + '"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+  function paintReview() {
+    var t = document.getElementById("t-withopt");
+    var total = t ? t.textContent : "$0.00";
+    var rt = document.getElementById("review-total");
+    if (rt) rt.textContent = total;
+    var main = document.getElementById("t-main");
+    var opt = document.getElementById("t-options");
+    var rs = document.getElementById("review-sub");
+    if (rs) {
+      var bits = [];
+      if (main) bits.push("Main " + main.textContent);
+      if (opt && opt.textContent !== "$0.00") bits.push("Options " + opt.textContent);
+      rs.textContent = bits.join(" · ");
+    }
+    var box = document.getElementById("review-checks");
+    if (!box) return;
+    function row(ok, title, meta) {
+      return '<div class="gvc-row' + (ok ? "" : " is-bad") + '"><span class="gvc-row-dot">' + (ok ? "✓" : "!") +
+        '</span><span class="gvc-row-body"><span class="gvc-row-title">' + title + '</span><span class="gvc-row-meta">' +
+        meta + '</span></span></div>';
+    }
+    var client = val("client_name");
+    var noEmail = document.getElementById("client_no_email");
+    var emails = val("client_emails") || (noEmail && noEmail.checked ? "No email — office delivery" : "");
+    var job = val("job_name");
+    var hasLines = !!(document.getElementById("line-items") && document.getElementById("line-items").children.length);
+    box.innerHTML =
+      row(!!client, "Client", client || "Not set") +
+      row(!!emails, "Recipients", emails || "Not set") +
+      row(!!job, "Project", job || "Not set") +
+      row(hasLines, "Lines", hasLines ? "Ready" : "None yet");
+  }
+  function validateStep(i) {
+    if (i === 1) {
+      if (!val("client_name")) return { step: 1, message: "Finish a client" };
+      var noEmail = document.getElementById("client_no_email");
+      if (!(noEmail && noEmail.checked) && !val("client_emails"))
+        return { step: 1, message: "Add a recipient" };
+    }
+    if (i === 2) {
+      if (!val("job_name")) return { step: 2, message: "Finish the job name" };
+    }
+    if (i === 3) {
+      var box = document.getElementById("line-items");
+      if (!box || !box.children.length) return { step: 3, message: "Add a line item" };
+    }
+    return null;
+  }
+  var api = window.GvcFormStages && window.GvcFormStages.mount({
+    stages: ["Find", "Who", "Job & scope", "Lines", "Review"],
+    panels: ["stage-find", "stage-who", "stage-scope", "stage-lines", "stage-send"],
+    acceptedEl: "stage-accepted",
+    barLabel: "Estimate total",
+    acceptLabel: "Accept & create draft",
+    acceptingLabel: "Accepting…",
+    getTotals: function () {
+      var t = document.getElementById("t-withopt");
+      var m = document.getElementById("t-main");
+      var o = document.getElementById("t-options");
+      var sub = "";
+      if (o && o.textContent && o.textContent !== "$0.00")
+        sub = "main " + (m ? m.textContent : "") + " · options " + o.textContent;
+      return { total: t ? t.textContent : "$0.00", sub: sub };
+    },
+    validateStep: validateStep,
+    onEnterReview: function () {
+      paintReview();
+      var gen = document.getElementById("btn-generate");
+      if (gen) gen.click();
+    },
+    onAccept: function () {
+      return new Promise(function (resolve, reject) {
+        var btn = document.getElementById("btn-accept");
+        if (!btn) return reject(new Error("Accept control missing"));
+        var done = false;
+        function finish(ok, err) {
+          if (done) return;
+          done = true;
+          document.removeEventListener("gvc:estimate-accepted", onOk);
+          ok ? resolve() : reject(err || new Error("Accept cancelled or failed"));
+        }
+        function onOk() { finish(true); }
+        document.addEventListener("gvc:estimate-accepted", onOk);
+        btn.disabled = false;
+        btn.click();
+        setTimeout(function () { finish(false, new Error("Accept timed out — check the status banner")); }, 180000);
+      });
+    },
+    onStartAnother: function () {
+      var n = document.getElementById("btn-new-estimate");
+      if (n) n.click();
+    },
+  });
+  var obs = new MutationObserver(function () { if (api) api.refresh(); paintReview(); });
+  ["t-main", "t-options", "t-withopt"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) obs.observe(el, { childList: true, characterData: true, subtree: true });
+  });
+  var save = document.getElementById("save-state");
+  if (save && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (window.GvcFormChrome) window.GvcFormChrome.setSaved(save.textContent || "");
+    }).observe(save, { childList: true, characterData: true, subtree: true });
+  }
+})();
+</script>
+
 </body>
 </html>

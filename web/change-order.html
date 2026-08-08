@@ -1,10 +1,9 @@
 <!DOCTYPE html>
-<html lang="en" data-palette="emerald">
+<html lang="en" data-palette="emerald" data-forms="1">
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>GVC Change Order</title>
-<!-- Shared design system. See docs/CLAUDE-DESIGN-BRIEF.md. -->
 <script>
 /* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
 (function () {
@@ -20,145 +19,218 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
-
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
+<link rel="stylesheet" href="/ui/gvc-forms.css" />
+<style>
+#status:not(:empty) { display:block; }
+.spinner.show { display:inline; }
+.spinner { display:none; color:var(--color-text-faint); font-size:12.5px; }
+.gvc-results a, .gvc-results button { border-radius:9999px; }
+/* Transitional layout helpers (moneyform grid / line rows) */
+.grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.grid.three { grid-template-columns:1fr 1fr 1fr; }
+.grid .full { grid-column:1 / -1; }
+.grid-pair { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+@media (max-width:619px) {
+  .grid, .grid.three, .grid-pair { grid-template-columns:1fr; }
+}
+label { display:block; font-size:12.5px; font-weight:700; margin-bottom:6px; color:var(--color-text-muted); }
+.opt { font-weight:500; color:var(--color-text-faint); }
+.line-item { padding:12px 0; border-bottom:1px solid var(--color-divider); }
+.line-item .row1 { display:grid; grid-template-columns:2fr 1fr 0.6fr auto; gap:10px; align-items:end; }
+@media (max-width:719px) { .line-item .row1 { grid-template-columns:1fr 1fr; } .line-item .row1 > :last-child { grid-column:1/-1; } }
+.line-item .detail { margin-top:8px; }
+.line-item .opt-row { display:flex; align-items:center; gap:8px; margin-top:8px; font-weight:600; }
+.line-item .opt-row input { width:auto; min-height:0; }
+details.soft-fold { margin-top:12px; border:1px solid var(--color-divider); border-radius:16px; background:var(--color-surface); }
+details.soft-fold > summary { cursor:pointer; padding:12px 14px; font-weight:700; list-style:none; }
+details.soft-fold > summary::-webkit-details-marker { display:none; }
+details.soft-fold > .fold-body { padding:0 14px 14px; }
+.gvc-results { margin-top:8px; }
+.opt-row { display:flex; align-items:center; gap:8px; }
+.opt-row input { width:auto; min-height:0; }
+</style>
 </head>
 <body>
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Change Order</span>
-    <div class="gvc-topbar-right">
-      <div id="health">Checking service…</div>
-      <span class="gvc-topbar-sep"></span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
-  </div>
-</header>
-<nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
-
-<main class="gvc-shell gvc-moneyform">
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Projects</p>
-    <h1 class="gvc-h1">Change Order</h1>
-    <p class="gvc-sub">Create or revise a change order for a Monday project — preview the PDF, then Accept to file it and draft hello@.</p>
-  </div>
-
-  <div class="gvc-stack gvc-stack--tight">
-
-  <div class="gvc-banner" id="status"></div>
-
-  <div class="card" id="find-project-card">
-    <h2>Find the Project</h2>
-    <p class="sec-help">Paste a Monday Project link — or search by client, address, or project #/CO number. Existing COs can load for revision.</p>
-    <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
-      <div><label>Monday Project URL — or search</label>
-        <input id="monday-url" placeholder="https://…/pulses/… — or name, EST-/PRO-/INV-…, or CO.1-…" /></div>
-      <div><button type="button" class="btn secondary" id="btn-prefill">Look up &amp; fill</button></div>
-    </div>
-    <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
-    <details class="soft-fold" id="drive-backup-fold" style="margin-top:12px;">
-      <summary>Drive folder backup <span class="opt">(optional)</span></summary>
-      <div class="fold-body">
-        <label>Drive folder URL <span class="opt">(backup — also where the CO PDF is filed)</span></label>
-        <input name="drive_folder_url" placeholder="https://drive.google.com/drive/folders/…" />
-        <div class="hint">If the Monday lookup fills everything, you can leave this blank — we'll file the CO into the project's Drive folder automatically.</div>
+<div class="gvc-page">
+  <div id="gvc-form-chrome"></div>
+  <div class="gvc-shell">
+    <main class="gvc-form-col">
+      <div class="gvc-head">
+        <div class="gvc-kicker-row">
+          <span class="gvc-kicker">Projects</span>
+          <span class="gvc-rule"></span>
+        </div>
+        <h1 class="gvc-h1">Change Order</h1>
+        <p class="gvc-blurb">Create or revise a change order against a live project. Preview, then Accept to file it and draft the email.</p>
       </div>
-    </details>
-    <div id="link-state"></div>
-    <div id="existing-cos" style="margin-top:10px;"></div>
-  </div>
+      <div class="gvc-stages" id="stages"></div>
+      <div id="status" class="gvc-pop" style="display:none;margin-bottom:16px;padding:12px 14px;border-radius:14px;background:var(--color-accent-soft);border:1px solid var(--color-accent);color:var(--color-accent-ink);font-size:13.5px"></div>
 
-  <div class="card" id="drafts-card" style="display:none;">
-    <h2>Resume a draft</h2>
-    <p class="sec-help">Autosaved in-progress change orders — yours and your teammates'.</p>
-    <div id="drafts-list" class="gvc-results"></div>
-  </div>
+      <form id="co-form" autocomplete="off">
+<section class="gvc-stack gvc-enter" data-stage="find" id="stage-find">
+<div class="gvc-panel" id="find-project-card">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Find the Project</h2><span class="gvc-rule"></span></div>
+      <div class="grid" style="grid-template-columns: 1fr auto; align-items: end;">
+        <div><label>Monday Project URL — or search</label>
+          <input class="gvc-input" id="monday-url" placeholder="https://…/pulses/… — or name, EST-/PRO-/INV-…, or CO.1-…" /></div>
+        <div><button type="button" class="gvc-btn gvc-btn-outline" id="btn-prefill">Look up &amp; fill</button></div>
+      </div>
+      <div id="search-results" class="gvc-results" style="margin-top:10px;"></div>
+      <details class="soft-fold" id="drive-backup-fold" style="margin-top:12px;">
+        <summary>Drive folder backup <span class="opt">(optional)</span></summary>
+        <div class="fold-body">
+          <label>Drive folder URL <span class="opt">(backup — also where the CO PDF is filed)</span></label>
+          <input class="gvc-input" name="drive_folder_url" placeholder="https://drive.google.com/drive/folders/…" />
+        </div>
+      </details>
+      <div id="link-state"></div>
+      <div id="existing-cos" style="margin-top:10px;"></div>
+    </div>
 
-  <form id="co-form" autocomplete="off">
-    <div class="card">
-      <h2>Client</h2>
+    <div class="gvc-panel" id="drafts-card" style="display:none;">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Resume a draft</h2><span class="gvc-rule"></span></div>
+      <div id="drafts-list" class="gvc-results"></div>
+    </div>
+</section>
+
+<section class="gvc-stack gvc-enter" data-stage="who" id="stage-who" hidden>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Client</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Client / company name</label><input name="client_name" required placeholder="Maxwell Construction" /></div>
-        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input name="contact_name" placeholder="Dave Sehlhorst" /></div>
-        <div><label>Email <span class="opt">(CO draft is sent here)</span></label><input name="client_email" type="email" required placeholder="dave@example.com" /></div>
-        <div><label>Phone <span class="opt">(optional)</span></label><input name="client_phone" placeholder="(812) 537-2200" /></div>
-        <div class="full"><label>Billing address <span class="opt">(optional)</span></label><input name="client_billing" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
+        <div><label>Client / company name</label><input class="gvc-input" name="client_name" required placeholder="Maxwell Construction" /></div>
+        <div><label>Contact name <span class="opt">(optional — “Attn:”)</span></label><input class="gvc-input" name="contact_name" placeholder="Dave Sehlhorst" /></div>
+        <div><label>Email <span class="opt">(CO draft is sent here)</span></label><input class="gvc-input" name="client_email" type="email" required placeholder="dave@example.com" /></div>
+        <div><label>Phone <span class="opt">(optional)</span></label><input class="gvc-input" name="client_phone" placeholder="(812) 537-2200" /></div>
+        <div class="full"><label>Billing address <span class="opt">(optional)</span></label><input class="gvc-input" name="client_billing" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
       </div>
     </div>
 
-    <div class="card">
-      <h2>Project</h2>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Project</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Project name</label><input name="job_name" required placeholder="Maxwell — Lawrenceburg Admin Bldg" /></div>
-        <div><label>Site address <span class="opt">(optional)</span></label><input name="site_address" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
-        <div><label>Estimate / Project #</label><input name="base_number" required placeholder="2026-0603-004" />
-          <div class="hint">The estimate number — the spine of the CO id <code>CO.{n}-{this}</code>. Auto-filled from Monday; edit if needed.</div></div>
-        <div><label>Date</label><input name="date" type="date" required /></div>
+        <div><label>Project name</label><input class="gvc-input" name="job_name" required placeholder="Maxwell — Lawrenceburg Admin Bldg" /></div>
+        <div><label>Site address <span class="opt">(optional)</span></label><input class="gvc-input" name="site_address" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
+        <div><label>Estimate / Project #</label><input class="gvc-input" name="base_number" required placeholder="2026-0603-004" /></div>
+        <div><label>Date</label><input class="gvc-input" name="date" type="date" required /></div>
       </div>
     </div>
+</section>
 
-    <div class="card">
-      <h2>Change Order</h2>
+<section class="gvc-stack gvc-enter" data-stage="change" id="stage-change" hidden>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Change Order</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div class="full"><label>Title</label><input name="title" required placeholder="Added soffit framing & finish at lobby bulkhead" /></div>
+        <div class="full"><label>Title</label><input class="gvc-input" name="title" required placeholder="Added soffit framing & finish at lobby bulkhead" /></div>
         <div class="full"><label>Description <span class="opt">(what changed and why)</span></label>
-          <textarea name="description" placeholder="Owner-directed change: add framing, board, and Level 5 finish to the new lobby soffit not shown on the bid set. T&M per the current Standard Rate Sheet."></textarea></div>
-        <div><label>CO number <span class="opt">(leave blank — auto-assigned)</span></label><input name="co_number" placeholder="auto: CO.{n}-{project #}" />
-          <div class="hint">Only fill this to update an existing CO under its same number (or pick “Load for revision” above).</div></div>
+          <textarea class="gvc-textarea" name="description" placeholder="Owner-directed change: add framing, board, and Level 5 finish to the new lobby soffit not shown on the bid set. T&M per the current Standard Rate Sheet."></textarea></div>
+        <div><label>CO number <span class="opt">(leave blank — auto-assigned)</span></label><input class="gvc-input" name="co_number" placeholder="auto: CO.{n}-{project #}" /></div>
         <div class="full" id="revise-row" style="display:none;">
           <label class="opt-row" style="font-weight:600; display:flex; align-items:center; gap:8px;">
             <input type="checkbox" id="revise-flag" style="width:auto;" />
             Update this Change Order — revise under the same number
           </label>
-          <div class="hint">The client sees the <strong>same CO number</strong>. The prior PDF is archived
-            in Drive with an <code>e1-</code>/<code>e2-</code>… prefix, the Monday CO item &amp; Operations
-            task are <strong>updated in place</strong> (Status resets to Drafted), and a fresh hello@ draft
-            + #change-orders notice go out with revision wording. Revising a <strong>Billed</strong> CO is
-            allowed but flagged — the invoice is never touched.</div>
         </div>
       </div>
     </div>
+</section>
 
-    <div class="card">
-      <h2>Breakdown</h2>
-      <p class="sec-help">Labor / materials lines.</p>
+<section class="gvc-stack gvc-enter" data-stage="lines" id="stage-lines" hidden>
+    <div class="gvc-panel">
+      <div class="gvc-panel-head"><h2 class="gvc-h2">Breakdown</h2><span class="gvc-rule"></span></div>
       <div id="line-items"></div>
-      <button type="button" class="btn secondary small" id="add-line">+ Add line</button>
+      <button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm" id="add-line">+ Add line</button>
     </div>
 
     <details class="soft-fold" id="approval-note-fold">
       <summary>Approval note <span class="opt">(optional)</span></summary>
       <div class="fold-body">
-        <p class="sec-help" style="margin:0 0 10px;">Printed in the sign-off block.</p>
-        <textarea name="approval_note" placeholder="Rate and scope discussed on site 2026-06-12. Approval by reply authorizes GVC to proceed."></textarea>
+        <textarea class="gvc-textarea" name="approval_note" placeholder="Rate and scope discussed on site 2026-06-12. Approval by reply authorizes GVC to proceed."></textarea>
       </div>
     </details>
+</section>
 
-    <div class="gvc-savebar" id="actions-bar">
-      <button type="button" class="btn gold" id="btn-generate">Generate Preview</button>
-      <button type="button" class="btn secondary" id="btn-accept" disabled>Accept &amp; Create Draft in hello@</button>
-      <button type="button" class="btn secondary small" id="btn-new-co">Start new</button>
-      <span class="spinner" id="spinner">⏳ Working…</span>
-      <span id="save-state" class="save-state"></span>
-      <div class="totals">CO total<br /><strong id="t-total">$0.00</strong></div>
-    </div>
-    <p class="hint">Preview = PDF only. Accept = Drive file + hello@ draft + Monday CO item.</p>
-  </form>
-
-  <div class="card" id="preview-card">
-    <h2>Preview</h2>
-    <iframe id="preview-frame" title="Change Order PDF preview"></iframe>
+<section class="gvc-stack gvc-enter" data-stage="send" id="stage-send" hidden>
+  <div class="gvc-panel-dark">
+    <div class="gvc-actionbar-label" style="margin-bottom:9px">Ready to send</div>
+    <div id="review-total" style="font-family:var(--font-mono);font-size:clamp(34px,6vw,52px);font-weight:700;letter-spacing:-.035em;font-variant-numeric:tabular-nums;line-height:1">$0.00</div>
+    <div id="review-sub" style="font-size:13px;color:var(--color-text-faint);margin-top:7px"></div>
   </div>
-  </div><!-- /gvc-stack -->
-</main>
+  <div class="gvc-rows" id="review-checks"></div>
+  <div class="gvc-panel">
+    <div class="gvc-label">What happens on Accept</div>
+    <div style="display:flex;flex-direction:column;gap:9px;margin-top:11px">
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">1</span><span style="font-size:13.5px">CO PDF filed to Drive</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">2</span><span style="font-size:13.5px">Draft created in hello@ — not sent</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">3</span><span style="font-size:13.5px">Monday CO item + Operations task</span></div>
+    </div>
+    <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--color-divider);font-size:12.5px;color:var(--color-text-faint)">Nothing emails until someone clicks Send in the draft.</div>
+  </div>
+</section>
 
+<section class="gvc-stack gvc-enter" data-stage="accepted" id="stage-accepted" hidden>
+  <div class="gvc-panel-dark" id="accepted-panel">
+    <div style="display:flex;align-items:center;gap:13px;margin-bottom:16px">
+      <span style="width:38px;height:38px;border-radius:9999px;background:var(--color-accent);color:var(--color-primary-hover);font-size:19px;font-weight:900;display:grid;place-items:center">✓</span>
+      <span>
+        <span style="display:block;font-family:var(--font-display);font-weight:800;font-size:clamp(20px,3vw,26px)">Change order accepted</span>
+        <span id="accepted-meta" style="display:block;font-family:var(--font-mono);font-size:12.5px;color:var(--color-accent);margin-top:3px"></span>
+      </span>
+    </div>
+    <div id="accepted-links" style="display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+</section>
+
+<span id="t-total" hidden>$0.00</span>
+      </form>
+    </main>
+    <aside class="gvc-doc-col">
+      <div class="gvc-doc-sticky">
+        <div class="gvc-doc-cap">Live document</div>
+        <div id="preview-card" class="gvc-doc">
+          <iframe id="preview-frame" title="Change Order PDF preview"></iframe>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="gvc-actionbar" id="actions-bar">
+    <div class="gvc-actionbar-row">
+      <div style="min-width:0;flex:1">
+        <div class="gvc-actionbar-label" id="barLabel">Change order total</div>
+        <div style="display:flex;align-items:baseline;gap:9px;flex-wrap:wrap">
+          <span class="gvc-actionbar-total" id="barTotal">$0.00</span>
+          <span class="gvc-actionbar-sub" id="barSub" hidden></span>
+        </div>
+        <span id="save-state" class="gvc-actionbar-sub" style="display:block;margin-top:4px"></span>
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark" id="btn-back" hidden>Back</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate" hidden>Preview</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-new-co">Start new</button>
+        <button type="button" class="gvc-btn gvc-btn-primary" id="btn-next">Continue</button>
+        <button type="button" class="gvc-btn gvc-btn-primary" id="btn-accept" hidden>Accept</button>
+        <span class="spinner" id="spinner">Working…</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-flow.js"></script>
+<script src="/ui/gvc-form-chrome.js"></script>
+<script src="/ui/gvc-form-stages.js"></script>
 <script src="/ui/gvc-command.js"></script>
+<script>
+(function () {
+  if (window.GvcFormChrome) {
+    window.GvcFormChrome.mount({ app: "change", email: "dev-bypass@localhost" });
+  }
+  var a = document.getElementById("open-takeoff-from-estimate");
+  if (a && window.GvcFlow && window.GvcFlow.takeoffAppUrl) a.href = window.GvcFlow.takeoffAppUrl();
+})();
+</script>
+
 <script>
 const $ = (s) => document.querySelector(s);
 const lineItemsEl = $("#line-items");
@@ -174,7 +246,7 @@ function lineItemRow(v = {}) {
     <div class="row1">
       <div><label>Description</label><input class="li-label" placeholder="Labor (38.5 hrs @ $70/hr)" value="${escapeHtml(v.label || "")}" /></div>
       <div><label>Amount ($)</label><input class="li-amount" type="number" step="0.01" placeholder="2695.00" value="${v.amount ?? ""}" /></div>
-      <div><button type="button" class="btn danger li-remove">Remove</button></div>
+      <div><button type="button" class="gvc-btn gvc-btn-outline gvc-btn-sm li-remove">Remove</button></div>
     </div>`;
   div.querySelector(".li-remove").addEventListener("click", () => {
     if (lineItemsEl.children.length > 1) div.remove();
@@ -193,6 +265,7 @@ function recalc() {
     if (!isNaN(amt)) total += amt;
   });
   $("#t-total").textContent = money(total);
+  const bt = document.getElementById("barTotal"); if (bt) bt.textContent = money(total);
 }
 
 function val(n) {
@@ -271,18 +344,15 @@ function validateData(d) {
 function setStatus(kind, html) {
   const el = $("#status");
   const map = { info: "gvc-banner--info", warn: "gvc-banner--warn", err: "gvc-banner--bad", ok: "gvc-banner--ok" };
-  el.className = "gvc-banner show " + (map[kind] || "gvc-banner--info");
+  el.style.display = "block";
+  el.className = "gvc-pop show " + (map[kind] || "gvc-banner--info");
   el.innerHTML = "<div>" + html + "</div>";
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
-function clearStatus() { $("#status").className = "gvc-banner"; }
+function clearStatus() { const el = $("#status"); if (el) { el.className = "gvc-pop"; el.style.display = "none"; el.innerHTML = ""; } }
 
 let lastPreviewOk = false;
-function showSpinner(on) {
-  $("#spinner").classList.toggle("show", on);
-  $("#btn-generate").disabled = on;
-  $("#btn-accept").disabled = on || !lastPreviewOk;
-}
+function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = false; void (on || !lastPreviewOk); }
 
 function isReviseMode() {
   const box = $("#revise-flag");
@@ -348,7 +418,7 @@ async function run(mode) {
       const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}`;
       $("#preview-frame").src = url;
       $("#preview-card").classList.add("show");
-      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      lastPreviewOk = true; $("#btn-accept").disabled = false; document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-total")||{}).textContent || document.getElementById("barTotal").textContent);
       setStatus("info", `✅ Preview ready below (change order <strong>${wb.identifier}</strong>${revise ? "" : " — final number assigned at Accept"}). Review it, then click <strong>${revise ? "Update this Change Order" : "Accept & Create Draft in hello@"}</strong>.`);
       $("#preview-card").scrollIntoView({ behavior: "smooth" });
     } else {
@@ -373,11 +443,12 @@ async function run(mode) {
       if (!wb.revised && wb.identifier) {
         const billUrl = billCoInvoiceUrl(wb.identifier, (data.change_order && data.change_order.base_number) || "");
         if (billUrl) {
-          html += `<div class="result-line">💰 <a href="${escapeHtml(billUrl)}" class="btn gold small">Bill this CO</a></div>`;
+          html += `<div class="result-line">💰 <a href="${escapeHtml(billUrl)}" class="gvc-btn gvc-btn-primary gvc-btn-sm">Bill this CO</a></div>`;
         }
       }
       html += `<div class="result-line">Next: <a href="/ui/billing">Billing Hub</a> · <a href="/ui/jobcheck">Job Check</a> · <a href="/">hub</a>.</div>`;
       setStatus("warn", html);
+      try { document.dispatchEvent(new CustomEvent("gvc:co-accepted", { detail: wb })); } catch (e) {}
       deleteCurrentDraftAfterFinalize();  // CO is now real (in Monday) — drop the draft
     }
   } catch (e) {
@@ -482,7 +553,7 @@ async function searchProjects(q) {
     const grp = row.group ? `<span class="badge local">${escapeHtml(row.group)}</span>` : "";
     div.innerHTML = `<div class="d-main"><div class="d-label">${escapeHtml(row.name)}${pn}${grp}</div></div>`;
     const btn = document.createElement("button");
-    btn.type = "button"; btn.className = "btn secondary small";
+    btn.type = "button"; btn.className = "gvc-btn gvc-btn-outline gvc-btn-sm";
     btn.textContent = isCo ? "Load for revision" : "Load";
     btn.addEventListener("click", () => {
       $("#search-results").innerHTML = "";
@@ -580,7 +651,7 @@ function renderExistingCos(cos) {
       }
     }
     const btn = document.createElement("button");
-    btn.type = "button"; btn.className = "btn secondary small"; btn.textContent = "Load for revision";
+    btn.type = "button"; btn.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; btn.textContent = "Load for revision";
     btn.addEventListener("click", () => loadForRevision(co.identifier));
     div.appendChild(btn);
     wrap.appendChild(div);
@@ -776,11 +847,11 @@ function renderDrafts(map) {
          <div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div>
        </div>`;
     const resume = document.createElement("button");
-    resume.type = "button"; resume.className = "btn secondary small"; resume.textContent = isActive ? "Editing" : "Resume";
+    resume.type = "button"; resume.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; resume.textContent = isActive ? "Editing" : "Resume";
     resume.disabled = isActive;
     resume.addEventListener("click", () => resumeDraft(r.id));
     const del = document.createElement("button");
-    del.type = "button"; del.className = "btn danger small"; del.textContent = "Delete";
+    del.type = "button"; del.className = "gvc-btn gvc-btn-outline gvc-btn-sm"; del.textContent = "Delete";
     del.addEventListener("click", () => deleteDraft(r.id));
     div.appendChild(resume); div.appendChild(del);
     list.appendChild(div);
@@ -843,12 +914,13 @@ function deleteCurrentDraftAfterFinalize() {
 
 async function checkHealth() {
   try {
+    const healthEl = $("#health"); if (!healthEl) return;
     const r = await fetch("/health"); const h = await r.json();
     const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
-    $("#health").innerHTML =
+    healthEl.innerHTML =
       `<span>${dot(h.gmail_ready)} Gmail (hello@)</span>` +
       `<span>${dot(h.preview_bucket_configured)} Preview</span>`;
-  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+  } catch (e) { const healthEl = $("#health"); if (healthEl) healthEl.textContent = "Service status unavailable"; }
 }
 
 addLineItem();
@@ -885,11 +957,107 @@ refreshDrafts();
   lookupFromMonday();
 })();
 </script>
-<script src="/ui/gvc-flow.js"></script>
-<script src="/ui/gvc-theme.js"></script>
-<script>
-  if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "change_order"); }
-  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
 </script>
+
+<script>
+(function () {
+  function val(name) {
+    var el = document.querySelector('[name="' + name + '"]');
+    return el ? String(el.value || "").trim() : "";
+  }
+  function paintReview() {
+    var t = document.getElementById("t-total");
+    var total = t ? t.textContent : "$0.00";
+    var rt = document.getElementById("review-total");
+    if (rt) rt.textContent = total;
+    var box = document.getElementById("review-checks");
+    if (!box) return;
+    function row(ok, title, meta) {
+      return '<div class="gvc-row' + (ok ? "" : " is-bad") + '"><span class="gvc-row-dot">' + (ok ? "✓" : "!") +
+        '</span><span class="gvc-row-body"><span class="gvc-row-title">' + title + '</span><span class="gvc-row-meta">' +
+        meta + '</span></span></div>';
+    }
+    var client = val("client_name");
+    var email = val("client_email");
+    var job = val("job_name");
+    var title = val("title");
+    var hasLines = !!(document.getElementById("line-items") && document.getElementById("line-items").children.length);
+    box.innerHTML =
+      row(!!client, "Client", client || "Not set") +
+      row(!!email, "Email", email || "Not set") +
+      row(!!job, "Project", job || "Not set") +
+      row(!!title, "Change", title || "Not set") +
+      row(hasLines, "Breakdown", hasLines ? "Ready" : "None yet");
+  }
+  function validateStep(i) {
+    if (i === 1) {
+      if (!val("client_name")) return { step: 1, message: "Finish a client" };
+      if (!val("client_email")) return { step: 1, message: "Add a recipient" };
+      if (!val("job_name")) return { step: 1, message: "Finish the project name" };
+    }
+    if (i === 2) {
+      if (!val("title")) return { step: 2, message: "Add a change title" };
+    }
+    if (i === 3) {
+      var box = document.getElementById("line-items");
+      if (!box || !box.children.length) return { step: 3, message: "Add a line item" };
+    }
+    return null;
+  }
+  var api = window.GvcFormStages && window.GvcFormStages.mount({
+    stages: ["Find", "Who", "The change", "Breakdown", "Review"],
+    panels: ["stage-find", "stage-who", "stage-change", "stage-lines", "stage-send"],
+    acceptedEl: "stage-accepted",
+    barLabel: "Change order total",
+    acceptLabel: "Accept & create draft",
+    acceptingLabel: "Accepting…",
+    getTotals: function () {
+      var t = document.getElementById("t-total");
+      return { total: t ? t.textContent : "$0.00", sub: "" };
+    },
+    validateStep: validateStep,
+    onEnterReview: function () {
+      paintReview();
+      var gen = document.getElementById("btn-generate");
+      if (gen) gen.click();
+    },
+    onAccept: function () {
+      return new Promise(function (resolve, reject) {
+        var btn = document.getElementById("btn-accept");
+        if (!btn) return reject(new Error("Accept control missing"));
+        var done = false;
+        function finish(ok, err) {
+          if (done) return;
+          done = true;
+          document.removeEventListener("gvc:co-accepted", onOk);
+          ok ? resolve() : reject(err || new Error("Accept cancelled or failed"));
+        }
+        function onOk() { finish(true); }
+        document.addEventListener("gvc:co-accepted", onOk);
+        btn.disabled = false;
+        btn.click();
+        setTimeout(function () { finish(false, new Error("Accept timed out — check the status banner")); }, 180000);
+      });
+    },
+    onStartAnother: function () {
+      var n = document.getElementById("btn-new-co");
+      if (n) n.click();
+    },
+  });
+  var obs = new MutationObserver(function () { if (api) api.refresh(); paintReview(); });
+  ["t-total"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) obs.observe(el, { childList: true, characterData: true, subtree: true });
+  });
+  var save = document.getElementById("save-state");
+  if (save && window.MutationObserver) {
+    new MutationObserver(function () {
+      if (window.GvcFormChrome) window.GvcFormChrome.setSaved(save.textContent || "");
+    }).observe(save, { childList: true, characterData: true, subtree: true });
+  }
+})();
+</script>
+
 </body>
 </html>

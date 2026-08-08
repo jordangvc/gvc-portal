@@ -23,9 +23,14 @@ def test_priority_pages_wire_gvc_theme():
         html = (WEB / name).read_text(encoding="utf-8")
         assert 'data-theme="light"' not in html.split("<head", 1)[0], name
         assert "FOUC-safe theme boot" in html, name
-        assert 'id="theme-toggle"' in html, name
         assert "/ui/gvc-theme.js" in html, name
-        assert "GvcTheme.mount" in html, name
+        # Money forms inject #theme-toggle via GvcFormChrome; others mount inline.
+        forms = 'data-forms="1"' in html and "/ui/gvc-form-chrome.js" in html
+        if forms:
+            assert "GvcFormChrome.mount" in html, name
+        else:
+            assert 'id="theme-toggle"' in html, name
+            assert "GvcTheme.mount" in html, name
 
 
 def test_hub_and_fieldguide_still_themed():

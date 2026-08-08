@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Money forms on gvc-forms.css (r103) — BUILT 2026-08-08
+Invoice / Estimate / Change Order converted to forms pack SoT:
+`gvc-ui.css` + `gvc-forms.css`, shared `GvcFormChrome` (56px topbar + nested
+32px path), stage rail + `.gvc-actionbar` Continue/Accept, zero `<select>`,
+helpers stripped. Competing `gvc.css` moneyform not linked on these pages.
+Hub **r103**.
+
 ## ✨ Job Check status picker on gvc-ui.css (r102) — BUILT 2026-08-08
 `/ui/jobcheck` converted to Status Picker handoff: one-value-per-field
 (`.card.card-flush.sp` → Change → search / Next up `.chip-next` / phase groups).

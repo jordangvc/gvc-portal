@@ -1,6 +1,7 @@
 # Forms redesign audit — 2026-08-08
 
-**Status: audit only. No Estimate / Change Order / Invoice conversion yet.**
+**Status: conversion shipped in r103** (Invoice → Estimate → Change Order).
+This file remains the pre-conversion divergence record.
 
 Source of truth for this pass:
 
@@ -12,9 +13,9 @@ Pack installed under `docs/redesign/`. Served copies:
 
 | File | Served | Linked on Est / CO / Inv? |
 |---|---|---|
-| `web/gvc-ui.css` | `/ui/gvc-ui.css` | **No** (hub + takeoff only) |
-| `web/gvc-forms.css` | `/ui/gvc-forms.css` | **No** (ready, not wired) |
-| `web/gvc.css` | `/ui/gvc.css` | **Yes — only sheet today** |
+| `web/gvc-ui.css` | `/ui/gvc-ui.css` | **Yes** (with forms) |
+| `web/gvc-forms.css` | `/ui/gvc-forms.css` | **Yes** (Est / CO / Inv) |
+| `web/gvc.css` | `/ui/gvc.css` | **No** on Est / CO / Inv |
 
 ---
 
