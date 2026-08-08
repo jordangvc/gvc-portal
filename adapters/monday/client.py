@@ -41,6 +41,53 @@ from shared.doc_number import (
 MONDAY_API_URL = "https://api.monday.com/v2"
 MONDAY_API_VERSION = "2024-10"  # pin so query semantics don't drift on us
 
+# Bounded retry for transient Monday failures (mirrors adapters/slack_notify).
+# Parallel hub/billing walks made 429 / ComplexityException more likely —
+# fail-fast was dropping interactive paints that a short backoff would save.
+MAX_RETRIES = 2              # total attempts = MAX_RETRIES + 1
+BASE_BACKOFF_SECONDS = 0.5
+MAX_BACKOFF_SECONDS = 4.0
+
+
+def _sleep(seconds: float) -> None:
+    """Backoff sleep — isolated so tests can monkeypatch (no real waiting)."""
+    time.sleep(seconds)
+
+
+def _retry_after_seconds(resp: Optional[Any]) -> Optional[float]:
+    if resp is None:
+        return None
+    hdr = None
+    try:
+        hdr = resp.headers.get("Retry-After")
+    except Exception:  # noqa: BLE001
+        return None
+    try:
+        return float(hdr) if hdr else None
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_retryable_monday(exc: BaseException, *, status: Optional[int] = None) -> bool:
+    """True for rate limits, complexity budget, and transient transport/5xx."""
+    if status == 429 or (status is not None and status >= 500):
+        return True
+    if isinstance(exc, requests.HTTPError) and exc.response is not None:
+        code = exc.response.status_code
+        if code == 429 or code >= 500:
+            return True
+    if isinstance(exc, (requests.Timeout, requests.ConnectionError)):
+        return True
+    msg = str(exc).lower()
+    if "complexityexception" in msg:
+        return True
+    if "complexity" in msg and ("budget" in msg or "limit" in msg):
+        return True
+    if "ratelimit" in msg or "rate limit" in msg or "rate_limit" in msg:
+        return True
+    return False
+
+
 # Process-local Monday timing (enable with GVC_MONDAY_TRACE=1). Not a correctness
 # layer — used to measure request count + wall time on hub/billing/jobcheck paths.
 _TRACE_LOCK = threading.Lock()
@@ -261,10 +308,33 @@ class MondayClient:
 
     def _query(self, query: str, variables: Optional[dict] = None) -> dict:
         """
-        Single GraphQL POST. No retries, no 429/complexity backoff — a rate
-        limit or complexity error surfaces immediately as HTTPError/RuntimeError.
-        Set GVC_MONDAY_TRACE=1 to log every call's duration into get_monday_trace().
+        GraphQL POST with bounded retry on 429 / ComplexityException / 5xx /
+        transport errors (same class as Slack post_message). Non-retryable
+        GraphQL/data errors fail immediately. Set GVC_MONDAY_TRACE=1 to log
+        every attempt into get_monday_trace().
         """
+        last_exc: Optional[BaseException] = None
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                return self._query_once(query, variables)
+            except Exception as exc:  # noqa: BLE001 — classify then maybe retry
+                last_exc = exc
+                status = None
+                if isinstance(exc, requests.HTTPError) and exc.response is not None:
+                    status = exc.response.status_code
+                if attempt >= MAX_RETRIES or not _is_retryable_monday(
+                        exc, status=status):
+                    raise
+                retry_after = None
+                if isinstance(exc, requests.HTTPError):
+                    retry_after = _retry_after_seconds(exc.response)
+                backoff = BASE_BACKOFF_SECONDS * (2 ** attempt)
+                _sleep(min(max(backoff, retry_after or 0.0), MAX_BACKOFF_SECONDS))
+        assert last_exc is not None
+        raise last_exc
+
+    def _query_once(self, query: str, variables: Optional[dict] = None) -> dict:
+        """One Monday POST. Used by `_query` (retry wrapper)."""
         trace = monday_trace_enabled()
         t0 = time.perf_counter() if trace else 0.0
         status: Optional[int] = None
