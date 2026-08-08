@@ -37,7 +37,7 @@ In the browser (dev / staging with `GVC_MONDAY_TRACE=1` on Cloud Run):
 |--------|-------------------|---------------------|
 | Hub | `GET /ui/api/hub` | morning brief ∥ billing (+ owner/gm extras). Hub skips GFolder attach. |
 | Billing | `GET /ui/api/billing/hub` | 3 parallel board walks |
-| Morning | `GET /ui/api/morning/brief` | Ops walk + authors + **parallel** GFolder × unique cards |
+| Morning | `GET /ui/api/morning/brief` | Ops **active groups only** (∥) + authors; **GFolder deferred** to `/gfolders` |
 | Job Check | `GET /ui/api/jobcheck/jobs` | Reshape of Morning Ops (0 extra GraphQL when warm) |
 | Invoice search | `GET /ui/api/invoice/search` | 5–7 parallel contains_text legs |
 
@@ -52,6 +52,14 @@ In the browser (dev / staging with `GVC_MONDAY_TRACE=1` on Cloud Run):
 5. Warming `list:jobcheck:active_jobs` **and** `list:morning:ops_items` in
    parallel (same Ops board twice). Derive Job Check from Morning L1.
 6. Billing rich search running projects then bids **serially**.
+7. Morning/Job Check Ops walk paginating the **whole** Operations board
+   (Completed Tasks is ~2k items) then filtering skip-groups in Python.
+   Fetch only active groups (`MORNING_SKIP_GROUP_IDS`), in parallel.
+8. Billing Ready-to-Invoice fallback walking the **whole** Ops board when the
+   `query_params` group filter fails. Fall back to `groups(ids:)` page of
+   Ready only — never full-board walk. Empty queue beats a 30s hang.
+9. Morning brief blocking first paint on GFolder attach. Default brief is
+   lite; `/ui/api/morning/gfolders` fills Open Drive after paint.
 
 ## Duplicate / cache map
 

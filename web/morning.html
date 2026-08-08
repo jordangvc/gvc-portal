@@ -706,11 +706,70 @@ function render(brief, { offline } = {}) {
   }
 }
 
+async function enrichGfolders(brief) {
+  const lists = [
+    brief.my_projects, brief.needs_attention,
+    brief.long_term_holds, brief.unscheduled,
+  ];
+  const need = [];
+  const seen = new Set();
+  for (const rows of lists) {
+    for (const p of rows || []) {
+      if (!p || !p.item_id || p.gfolder_url || p.drive_url) continue;
+      const id = String(p.item_id);
+      if (seen.has(id)) continue;
+      seen.add(id);
+      need.push(id);
+    }
+  }
+  if (!need.length) return;
+  try {
+    const body = await api(
+      "/ui/api/morning/gfolders?item_ids=" + encodeURIComponent(need.join(","))
+    );
+    const urls = (body && body.urls) || {};
+    let changed = false;
+    for (const rows of lists) {
+      for (const p of rows || []) {
+        if (!p || !p.item_id) continue;
+        const u = urls[String(p.item_id)];
+        if (u) {
+          p.gfolder_url = u;
+          changed = true;
+        }
+      }
+    }
+    if (!changed) return;
+    // Patch Open Drive buttons in place — avoid full re-render (collapses open cards).
+    document.querySelectorAll("article.proj[data-id]").forEach((art) => {
+      const id = art.getAttribute("data-id");
+      const u = urls[String(id)];
+      if (!u) return;
+      const actions = art.querySelector(".proj-actions");
+      if (!actions) return;
+      const dead = actions.querySelector(".proj-btn.is-disabled");
+      if (dead) {
+        const a = document.createElement("a");
+        a.className = "proj-btn";
+        a.href = u;
+        a.target = "_blank";
+        a.rel = "noopener";
+        a.textContent = "Open Drive";
+        dead.replaceWith(a);
+      }
+    });
+  } catch (_) {
+    /* Drive links stay disabled — brief itself already painted. */
+  }
+}
+
 async function load(record = true) {
   try {
     const body = await api("/ui/api/morning/brief");
     $("#status").className = "";
     render(body);
+    // Progressive: Open Drive resolves after first paint (2 GraphQL × cards).
+    enrichGfolders(body);
   } catch (e) {
     let cached = null;
     try { cached = JSON.parse(localStorage.getItem(CACHE_KEY) || "null"); } catch (_) {}

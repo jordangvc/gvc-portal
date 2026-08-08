@@ -41,6 +41,9 @@ COLD_PATH_BUDGET = {
         "api_blocks_live_paint": True,
         "notes": (
             "Hub build_employee_brief(attach_gfolder=False) — Open Drive is Morning-only. "
+            "Morning Ops walk lists board groups, drops MORNING_SKIP_GROUP_IDS "
+            "(Completed Tasks / Ready to Invoice), pages remaining groups in parallel "
+            "(~53 items vs ~2.1k full-board). "
             "Morning page still attaches GFolder in PARALLEL (2 GraphQL × unique Ops cards). "
             "Job Check list reshapes Morning Ops cache (no second Ops pagination when boards match). "
             "Boot is /hub only; warm runs AFTER first paint (not concurrent)."
@@ -56,14 +59,14 @@ COLD_PATH_BUDGET = {
     },
     "jobcheck_list": {
         "min_graphql": 0,
-        "typical_graphql": "0 when Morning warm; else 1–P (fat Morning walk)",
+        "typical_graphql": "0 when Morning warm; else 1+G (active groups ∥)",
         "shape": "reshape of list:morning:ops_items (same board default)",
         "html_blocks_on_monday": False,
         "api_blocks_live_paint": True,
         "notes": (
             "Job Check no longer paginates Ops separately when "
-            "JOBCHECK_BOARD_ID == MORNING_BOARD_ID. Cold Job-Check-only still "
-            "pays one fat Morning walk."
+            "JOBCHECK_BOARD_ID == MORNING_BOARD_ID. Cold path pays Morning's "
+            "active-group walk (not full Completed Tasks board)."
         ),
     },
     "jobcheck_detail": {
