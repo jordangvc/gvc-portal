@@ -154,6 +154,40 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "tectum-panels": "tectum",
     "wood-fiber-panel": "tectum",
     "direct-attach-panel": "tectum",
+    # Reading drawings / blueprint literacy
+    "drawing": "drawings",
+    "blueprint": "drawings",
+    "blueprints": "drawings",
+    "plans": "drawings",
+    "plan-reading": "drawings",
+    "reading-drawings": "drawings",
+    "title-block": "drawings",
+    "partition-schedule": "drawings",
+    # Don't Do This failure pack
+    "dont": "dont",
+    "dont-do-this": "dont",
+    "failure-pack": "dont",
+    "bad-habits": "dont",
+    # Stocking any material (general — drywall-specific stays stock-drywall)
+    "stock-general": "stock-general",
+    "stock-any-material": "stock-general",
+    "stocking-any-material": "stock-general",
+    "material-stocking": "stock-general",
+    "material-staging": "stock-general",
+    # Portal / AI / protection
+    "portal-field-tools": "portal-field-tools",
+    "portal-tools": "portal-field-tools",
+    "field-portal": "portal-field-tools",
+    "job-check-guide": "portal-field-tools",
+    "ai-field-rules": "ai-field-rules",
+    "ai-rules": "ai-field-rules",
+    "how-we-work-with-ai": "ai-field-rules",
+    "checklist-coach": "ai-field-rules",
+    "other-trade-damage": "protection",
+    "damage-protection": "protection",
+    "corner-guards": "protection",
+    "floor-protection": "protection",
+    "photo-before-touch": "protection",
 }
 
 _CACHE: dict[str, Any] = {

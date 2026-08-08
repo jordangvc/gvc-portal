@@ -94,6 +94,30 @@ STAGE_ALIASES: dict[str, str] = {
     "garage": "garage-finish",
     "garage-finish": "garage-finish",
     "tectum": "tectum",
+    # Reading drawings / plans
+    "drawings": "drawings",
+    "drawing": "drawings",
+    "blueprint": "drawings",
+    "blueprints": "drawings",
+    "plans": "drawings",
+    "plan-reading": "drawings",
+    "reading-drawings": "drawings",
+    # Don't Do This
+    "dont": "dont",
+    "dont-do-this": "dont",
+    "failure-pack": "dont",
+    # Stocking any material
+    "stock-general": "stock-general",
+    "stock-any-material": "stock-general",
+    "material-stocking": "stock-general",
+    # Portal / AI / protection
+    "portal": "portal-field-tools",
+    "portal-field-tools": "portal-field-tools",
+    "job-check": "portal-field-tools",
+    "ai": "ai-field-rules",
+    "ai-field-rules": "ai-field-rules",
+    "protection": "protection",
+    "other-trade-damage": "protection",
 }
 
 PROCEDURE_COACH: dict[str, dict[str, Any]] = {

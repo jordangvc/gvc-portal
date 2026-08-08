@@ -1,0 +1,192 @@
+{
+  "id": "portal-field-tools",
+  "slug": "portal-field-tools",
+  "title": "Portal Tools for the Field",
+  "short_answer": "Field Manual teaches the work. Job Check writes stage status to Monday. Job Start is the Sales→Ops handoff. Morning Brief is private prep — never a channel broadcast.",
+  "summary": "What each tile is for, who uses it, and what paper or Monday form it replaced. If it is not online, we are doing it the old way on purpose — or we forgot.",
+  "plain_words": "The portal is how GVC keeps one truth across phones. Field Manual teaches the work. Job Check writes stage status to Monday. Job Start is the Sales→Ops handoff packet. Morning Brief is private prep on your phone — never a channel broadcast. Office tools need grants you may not have.",
+  "when_to_use": [
+    "First day on a GVC job — know which tile does what",
+    "Before updating Job Check trade stages",
+    "When someone asks where the Morning Brief or handoff packet lives"
+  ],
+  "prerequisites": [
+    "Portal sign-in on your GVC Google account",
+    "Job Check grant for trade column updates (admin assigns)"
+  ],
+  "trade_id": "ops",
+  "category_id": "field-portal",
+  "template": "task_guide",
+  "stage_line": "How we run jobs · portal",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Phone or tablet with portal access"
+    },
+    {
+      "name": "Job Check (trade status writes)"
+    },
+    {
+      "name": "Field Manual / Field Guide (procedures)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Open Job Check",
+      "body": "Find the active job — search by name, address, or Project #.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Tap finished stages only",
+      "body": "Framing, Hanging, Scrapping, Taped, coats, Sanded, Text/Skim, Finishing, Cleaned Out. Cycle chips include \"(not set)\" so you can clear a mistake.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Save once",
+      "body": "Only changed fields go to Monday. Read confirmed values after save — if something failed, fix that column; do not guess.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Office-owned columns",
+      "body": "Do not touch money, contract, or Project Status. Job Check will not offer them; do not ask someone to flip Project Status from the field.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Missing Projects link",
+      "body": "If the page says the Projects link is missing, save Ops fields anyway and tell the office — trade chips need the link.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Field Manual on phone",
+      "body": "Plain = enough to do the job. Full detail = assemblies and specs for leads. Start a shared checklist for the job — crew can resume each other's runs.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Stage names match procedures",
+      "body": "Job Check stage names match drywall procedure titles on purpose — move between tools without translating.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Morning Brief — never #operations",
+      "body": "Field brief, huddle summary, route sheet, and prep status are always a side chat or DM. Do not post them to Slack #operations — not for review, not temporarily, not after someone signs off. Job Check / Job Start notices are a different flow."
+    }
+  ],
+  "experts": [
+    {
+      "id": "portal-field-map",
+      "tag": "Full detail · field map",
+      "summary": "Field Manual: procedures, Plain/Full detail, per-job checklists — replaces paper SOPs. Job Check: Framing/Hang/Scrap/coats/Finish/Cleaned Out — replaces PandaDoc Job Check and verbal \"we're done.\" Job Start: handoff packet (lock box, board count, exclusions, open questions) — replaces old e-forms. Morning Brief: today's prep/route/huddle on your phone — replaces scattered texts. Change Order (office grant): documented extras. Lien Watch (office/lead): deadline awareness — counsel still reviewing math."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "pft-explicit-save",
+      "prompt": "Job Check updated only for stages actually finished — explicit Save tap",
+      "severity": "required"
+    },
+    {
+      "id": "pft-no-money",
+      "prompt": "No attempt to change contract, money, or Project Status columns from the field",
+      "severity": "required"
+    },
+    {
+      "id": "pft-brief-private",
+      "prompt": "Morning Brief / huddle content stays in side chat or DM — never #operations",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Advancing stages on hope",
+      "wrong": "Flip Job Check chips before QC pass",
+      "right": "QC Walk first; then honest stage update",
+      "why": "Monday becomes a lie the office plans against"
+    },
+    {
+      "title": "Broadcasting the brief",
+      "wrong": "Post route or prep to #operations for visibility",
+      "right": "Side chat or DM only — locked policy",
+      "why": "Morning Brief is private prep, not ops channel traffic"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "jobstart-firstday",
+    "qc-walk",
+    "escalate",
+    "ai-field-rules",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "jobstart-firstday",
+      "label": "Job Start → First Day",
+      "why": "Handoff packet before production starts"
+    },
+    {
+      "procedure_id": "qc-walk",
+      "label": "QC Walk",
+      "why": "Pass/fix before Job Check stages advance"
+    },
+    {
+      "procedure_id": "dont",
+      "label": "Don't Do This",
+      "why": "Portal habits pair with failure-mode culture"
+    },
+    {
+      "procedure_id": "ai-field-rules",
+      "label": "How We Work With AI",
+      "why": "Assistants never write Job Check for you"
+    }
+  ],
+  "search_tags": [
+    "portal",
+    "job check",
+    "field manual",
+    "job start",
+    "morning brief",
+    "monday write",
+    "tiles",
+    "hub"
+  ],
+  "synonyms": [
+    "portal field tools",
+    "portal tools",
+    "job check guide",
+    "field portal",
+    "portal for field",
+    "monday job check",
+    "how to use portal"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC portal practice (Job Check, Job Start, Morning Brief build specs). Slack rule for Morning Brief locked by Jordan 2026-08-05 — authoritative in docs/MORNING_BRIEF_BUILD_SPEC.md and AGENTS.md.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check build spec",
+      "Morning Brief build spec",
+      "AGENTS.md locked rule #0"
+    ]
+  }
+}

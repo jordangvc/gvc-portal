@@ -1,0 +1,171 @@
+{
+  "id": "protection",
+  "slug": "protection",
+  "title": "Protection & Other-Trade Damage",
+  "short_answer": "Protect what we finished. Photograph what others damage before we touch it. The moment we repair undocumented damage, it becomes ours.",
+  "summary": "Corner guards, floor protection, and covering finished walls are not courtesy — they are how we keep punch from eating the margin.",
+  "plain_words": "Corner guards, floor protection, and covering finished walls are not courtesy — they are how we keep punch from eating the margin. If another trade blows out a corner, photo first, then call. Fixing it as a favor is unpaid drywall.",
+  "when_to_use": [
+    "Before leaving an area where other trades still work",
+    "When you find damage that another trade likely caused",
+    "Before repairing anything that might become a billable CO"
+  ],
+  "prerequisites": [
+    "Phone camera",
+    "Lead or office path for authorization on other-trade damage"
+  ],
+  "trade_id": "drywall",
+  "category_id": "jobsite-care",
+  "template": "task_guide",
+  "stage_line": "Every job · finished work",
+  "role_tags": [
+    "crew",
+    "lead",
+    "finisher"
+  ],
+  "tools": [
+    {
+      "name": "Corner guards / ram board / floor protection"
+    },
+    {
+      "name": "Phone camera"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Ram board, masonite, or GC-approved floor protection",
+      "optional": true
+    },
+    {
+      "name": "Plastic or paper for finished walls",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Before we leave an area",
+      "body": "Protect outside corners and finished surfaces that other trades will still work past.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Floor / path protection",
+      "body": "Where mud, paint, or board traffic will ruin finished floors — coordinate with GC rules.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Other-trade damage",
+      "body": "Wide + close photo, location, date, who was in the area if known — then lead/office.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Do not repair yet",
+      "body": "Do not repair until authorization path is clear (T&M / CO / GC direction in writing). See Spotting a Change Order.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Our own rework",
+      "body": "Our own damage / our own rework stays ours — claiming it as a CO spends credibility.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Photo before touch",
+      "body": "The moment we repair undocumented other-trade damage, it becomes ours. Photo first, call second, repair only with authorization."
+    }
+  ],
+  "experts": [],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "prot-corners",
+      "prompt": "Outside corners and finished surfaces protected before other trades pass through",
+      "severity": "required"
+    },
+    {
+      "id": "prot-photo",
+      "prompt": "Other-trade damage photographed before any repair",
+      "severity": "required"
+    },
+    {
+      "id": "prot-auth",
+      "prompt": "Repair authorization clear before work starts on billable damage",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Friendly repair",
+      "wrong": "Fix the electrician's blowout so the room looks good",
+      "right": "Photo, call lead/office, wait for CO or T&M path",
+      "why": "Undocumented repair becomes our cost"
+    },
+    {
+      "title": "Claiming our rework",
+      "wrong": "Submit a CO for damage we caused",
+      "right": "Own our rework; save CO credibility for real extras",
+      "why": "Bad COs poison the well for legitimate ones"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "changeorder",
+    "touchup-drywall",
+    "punch-cadence",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Other-trade damage and standing-by documentation path"
+    },
+    {
+      "procedure_id": "touchup-drywall",
+      "label": "Drywall Touch-Up",
+      "why": "After authorized repair, finish and prime correctly"
+    },
+    {
+      "procedure_id": "punch-cadence",
+      "label": "Punch cadence",
+      "why": "Protection failures show up on punch walks"
+    }
+  ],
+  "search_tags": [
+    "protection",
+    "corner guard",
+    "floor protection",
+    "other trade damage",
+    "photo before repair",
+    "ram board",
+    "damage claim"
+  ],
+  "synonyms": [
+    "protection",
+    "other trade damage",
+    "damage protection",
+    "corner guards",
+    "floor protection",
+    "protect finished work",
+    "photo before touch"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice extending Spotting a Change Order (other-trade damage, photo-before-touch). Not a claim against a specific GC contract form — notice windows still live in the subcontract the office owns.",
+    "sources": [
+      "GVC Field Manual",
+      "Change order field playbook"
+    ]
+  }
+}

@@ -1,0 +1,160 @@
+{
+  "id": "ai-field-rules",
+  "slug": "ai-field-rules",
+  "title": "How We Work With AI",
+  "short_answer": "Assistants can draft, flag, and prep. They never authorize work, never silently write Monday, and never post field briefs to #operations.",
+  "summary": "AI is a sharp apprentice with no badge. Useful for checklists, photo hints, and morning prep drafts. You still decide.",
+  "plain_words": "AI is a sharp apprentice with no badge. Useful for checklists, photo hints, and morning prep drafts. You still decide. If a tool ever claims it \"already updated Job Check\" or \"already told the GC,\" treat that as a bug report, not a feature.",
+  "when_to_use": [
+    "Before trusting any assistant suggestion on site",
+    "When using the Field Guide checklist coach",
+    "When evaluating roadmap assists (photo QC, morning prep, CO spotter)"
+  ],
+  "prerequisites": [
+    "Lead on site to confirm any suggestion before the crew treats it as direction"
+  ],
+  "trade_id": "ops",
+  "category_id": "how-we-work",
+  "template": "task_guide",
+  "stage_line": "How we work · AI assists",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman"
+  ],
+  "tools": [
+    {
+      "name": "Field Guide checklist coach (LIVE)"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "No CO authority",
+      "body": "AI does not authorize extra work or replace a signed T&M / CO path.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "No Job Check writes",
+      "body": "AI does not advance Job Check or invent Monday column values.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "No #operations briefs",
+      "body": "AI does not post Morning Brief / huddle / route / prep to #operations — DM or side chat only, same as humans.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "No invented client scope",
+      "body": "AI does not invent scope, square footage, or 1-side/2-side language for client-facing text.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Lead confirms",
+      "body": "Lead confirms any AI suggestion before the crew treats it as direction.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Assist judgment, never replace authorization",
+      "body": "Tone for anything GVC builds: assist judgment, never replace authorization, never silent Monday writes, never channel-broadcast field briefs."
+    }
+  ],
+  "experts": [
+    {
+      "id": "ai-roadmap",
+      "tag": "Full detail · roadmap",
+      "summary": "Checklist coach (LIVE): suggests next Field Manual steps for a stage — never writes Job Check. Photo QC coach (roadmap): hints at unfinished work — lead decides pass/fail. Morning prep agent (roadmap): drafts private brief from Monday + weather — Slack DM only. CO spotter (roadmap): flags verbal-add language — no auto-bill. Handoff open-questions coach (roadmap): surfaces clarifications before mobilize — ops accepts packet. Punch list drafter (roadmap): turns raking-light notes into a draft list — lead owns send."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "ai-no-monday",
+      "prompt": "No assistant advanced Job Check or claimed a Monday write",
+      "severity": "required"
+    },
+    {
+      "id": "ai-lead-confirm",
+      "prompt": "Lead confirmed direction before crew acted on an AI suggestion",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Treating coach as authority",
+      "wrong": "Crew moves because the coach suggested the next step",
+      "right": "Coach suggests; lead confirms; human taps Save on Job Check",
+      "why": "Coach is curated links, not authorization"
+    },
+    {
+      "title": "Believing \"already updated\"",
+      "wrong": "Trust a bot claim that Job Check or the GC was updated",
+      "right": "Report as bug; verify in portal yourself",
+      "why": "No silent Monday writes — ever"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "portal-field-tools",
+    "escalate",
+    "changeorder",
+    "dont"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "portal-field-tools",
+      "label": "Portal Tools for the Field",
+      "why": "Where Job Check and Field Guide actually live"
+    },
+    {
+      "procedure_id": "escalate",
+      "label": "Escalation Ladder",
+      "why": "Authority questions still go to humans"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Extras stay on the CO path — AI does not authorize"
+    }
+  ],
+  "search_tags": [
+    "ai",
+    "assistant",
+    "coach",
+    "job check",
+    "morning brief",
+    "slack",
+    "authorization",
+    "monday"
+  ],
+  "synonyms": [
+    "ai field rules",
+    "how we work with ai",
+    "ai rules",
+    "assistant rules",
+    "checklist coach",
+    "ai assists"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC portal locked architecture (no auto-send Gmail; Monday as SoT; Morning Brief Slack rule) extended to AI assists. Checklist coach is curated Field Manual links only — no invented scope or Job Check writes. Other assists stay roadmap until prioritized.",
+    "sources": [
+      "GVC Field Manual",
+      "AGENTS.md",
+      "Morning Brief build spec"
+    ]
+  }
+}

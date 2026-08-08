@@ -1,0 +1,327 @@
+{
+  "id": "drawings",
+  "slug": "drawings",
+  "title": "Reading Drawings",
+  "short_answer": "Every sheet has a letter and number — find the title block, grid lines, and written dimensions. Never scale off the drawing; a conflict between documents is an RFI, not a field decision.",
+  "summary": "A drawing set is an organized system. Learn the organization once and you can find anything in any set, on any job, for the rest of your career.",
+  "plain_words": "Every sheet has a letter and a number. The letter says whose drawing it is — A is the architect's, S is structural, M P E are mechanical, plumbing, and electrical. Find the title block for the sheet name, scale, and revision. Find the grid lines — that's what everything gets measured from. Use the written dimension. Never hold a ruler up to a drawing.",
+  "when_to_use": [
+    "Day one on any job — before layout, framing, or hang",
+    "When you need a partition type, finish level, rated wall, or opening size",
+    "Before building anything where two sheets might disagree"
+  ],
+  "prerequisites": [
+    "Current drawing set with revision noted in the title block",
+    "Access to partition schedule, life safety plan, and finish schedule for the job"
+  ],
+  "trade_id": "ops",
+  "category_id": "start-here",
+  "template": "task_guide",
+  "stage_line": "Start here · day one",
+  "role_tags": [
+    "crew",
+    "lead",
+    "foreman",
+    "laborer"
+  ],
+  "tools": [
+    {
+      "name": "Current drawing set (paper or PDF)"
+    },
+    {
+      "name": "Highlighter or pencil for wall tags and clouds"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Title block",
+      "body": "Bottom right or down the right edge — sheet name, number, scale, date, revision, and seal. Read the revision first.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Scale",
+      "body": "1/4\" = 1'-0\" is the usual floor plan; 1/8\" on big buildings; 1-1/2\" or 3\" on details. A detail is drawn large because the small stuff matters there — still use written dimensions.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "North arrow",
+      "body": "Orients you so \"the east corridor\" stops being a guess.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Grid lines and bubbles",
+      "body": "Lettered one way, numbered the other, circles at the ends — the building's coordinate system. Layout comes from here.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Dimension strings",
+      "body": "Chains locating walls. Note whether they run to face of stud, face of finish, or centerline — stated on the plan; getting it wrong shifts every wall.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Section and detail callouts",
+      "body": "Circle or flag with two numbers: top = detail number, bottom = sheet it's drawn on. Chase details across the set.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Keynotes and tags",
+      "body": "Small numbers or letters on the plan, decoded in a legend on the same sheet or in the general sheets.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Clouds and delta symbols",
+      "body": "Cloud around an area with a numbered triangle means that part changed — read what changed before you build it.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "Wall tag on plan",
+      "body": "Find the tag at the wall — e.g. A3.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Partition schedule",
+      "body": "Look up the tag — stud depth, gauge, spacing, board type and layers, fire rating, wall height.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "To ceiling or to deck",
+      "body": "Note which — it changes the whole top of the wall.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Rated assembly",
+      "body": "If rated, find the listed assembly number and the head-of-wall detail that goes with it.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Finish schedule",
+      "body": "Cross-check the room for finish level and sheen you are building toward.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "Door schedule",
+      "body": "Cross-check any opening in that wall for rough opening and frame type.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Never scale off a drawing",
+      "body": "Sets get printed, reduced, emailed, and photographed. A sheet that says 1/4\" scale may not be at 1/4\" anymore. If there is no written dimension for what you need, that is a question — not a measurement."
+    },
+    {
+      "severity": "stop",
+      "title": "Check the revision before you build",
+      "body": "Building accurately off a superseded sheet is still building it wrong — the most expensive mistake on this page."
+    },
+    {
+      "severity": "warn",
+      "title": "Partition schedule is home base",
+      "body": "G (general) sheets hold the legend. A sheets are architectural — floor plans, partition types, RCP, elevations, details. S = structural deflection and bracing. M/P/E = what goes in our walls and above our ceilings. The partition schedule turns every wall tag into stud, board, rating, and height."
+    }
+  ],
+  "experts": [
+    {
+      "id": "dwg-precedence",
+      "tag": "Full detail · what beats what",
+      "summary": "Change orders and addenda beat original drawings. Later revision beats earlier. Approved submittals govern the product installed. Manufacturer instructions govern installation. Spec vs drawings is project-specific — read that project's precedence clause; do not assume. A conflict between contract documents is an RFI, not a field decision — write the question and work elsewhere while you wait. A good RFI names both sheets, states what each requires, proposes an answer, and says what is held up."
+    },
+    {
+      "id": "dwg-res-comm",
+      "tag": "Full detail · residential vs commercial",
+      "summary": "Residential: smaller sets, wall types often on the plan or assumed, dimensions commonly to face of framing, limited rated walls, questions often by phone, changes often verbal — which is why GVC change-order documentation matters more on residential, not less. Commercial: formal partition schedule on every wall, dimensions often to face of finish or grid, extensive rated walls with life safety plan, formal RFIs, priced change orders. The trap: a commercial hand assuming missing info means \"do whatever's normal,\" or a residential hand not opening a schedule that governs the wall."
+    }
+  ],
+  "variations": [
+    {
+      "id": "dwg-discipline-letters",
+      "title": "Discipline letters (NCS convention)",
+      "when": "Opening an unfamiliar set",
+      "changes": [
+        "G = general (cover, legend, abbreviations)",
+        "A = architectural — our home sheets",
+        "S = structural — deflection, bracing, attachments",
+        "M / P / E = mechanical, plumbing, electrical rough-in",
+        "FP or F = fire protection through our ceilings",
+        "I = interiors — finishes and casework",
+        "C / L = civil, landscape — rarely ours"
+      ]
+    },
+    {
+      "id": "dwg-live-sheets",
+      "title": "Sheets we live on",
+      "when": "Every commercial interior job",
+      "changes": [
+        "Partition / wall type schedule — stud, board, rating, height",
+        "Floor plans — wall locations and dimensions",
+        "Reflected ceiling plan — read like floor plan, not flipped",
+        "Life safety plan — rated walls at a glance",
+        "Finish schedule — finish level and sheen we owe",
+        "Door and frame schedule — rough openings",
+        "Details — head of wall, control joints, transitions"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "dwg-revision",
+      "prompt": "Title block revision checked before layout or build",
+      "severity": "required"
+    },
+    {
+      "id": "dwg-written-dim",
+      "prompt": "Located dimensions from written strings — never scaled with a ruler",
+      "severity": "required"
+    },
+    {
+      "id": "dwg-partition",
+      "prompt": "Partition schedule opened for every wall tag before framing or board",
+      "severity": "required"
+    },
+    {
+      "id": "dwg-rfi-not-guess",
+      "prompt": "Document conflicts written as RFI — not built as a field guess",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Building off a superseded revision",
+      "wrong": "Use the sheet that was on the table without checking revision",
+      "right": "Read revision block first; chase clouds on revised sheets",
+      "why": "Accurate work on the wrong revision still gets demolished"
+    },
+    {
+      "title": "Scaling with a ruler",
+      "wrong": "Measure off the printed sheet when no dimension is shown",
+      "right": "Ask for a dimension or write an RFI",
+      "why": "Reduced or photographed sets are not true scale"
+    },
+    {
+      "title": "Never opening the partition schedule",
+      "wrong": "Build every wall the same way",
+      "right": "Look up every wall tag before studs go up",
+      "why": "Rating, board layers, and height all live on the schedule"
+    },
+    {
+      "title": "Wrong dimensioning convention",
+      "wrong": "Assume face of stud when the plan dimensions to face of finish",
+      "right": "Read the plan note on dimensioning basis",
+      "why": "Shifts every wall in the run"
+    },
+    {
+      "title": "Choosing between conflicting documents",
+      "wrong": "Pick the detail that looks right and build",
+      "right": "RFI with both sources named; work elsewhere while waiting",
+      "why": "Guess becomes our rework at our cost"
+    },
+    {
+      "title": "Missing clouded revisions",
+      "wrong": "Ignore revision clouds on a reissued sheet",
+      "right": "Read every cloud and delta before mobilizing that area",
+      "why": "Changes hide in the clouded zones"
+    },
+    {
+      "title": "Skipping finish schedule",
+      "wrong": "Assume Level 4 until the painter arrives",
+      "right": "Cross-check room finish level before finishing mobilizes",
+      "why": "Level 5 or skim scope missed at bid hurts margin"
+    },
+    {
+      "title": "Skipping life safety plan",
+      "wrong": "Hunt rated walls only from memory",
+      "right": "Use life safety plan to find rated walls fast",
+      "why": "Unrated assembly on a rated line fails inspection"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "rfi-field",
+    "framing",
+    "ratedwalls",
+    "finish",
+    "changeorder",
+    "safety-orient"
+  ],
+  "next_steps": [
+    {
+      "procedure_id": "rfi-field",
+      "label": "RFI Field Playbook",
+      "why": "When two documents disagree — write it, do not guess"
+    },
+    {
+      "procedure_id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Verbal changes and missed scope still need documentation"
+    },
+    {
+      "procedure_id": "safety-orient",
+      "label": "Safety Orientation",
+      "why": "Next stop in first-week onboarding"
+    },
+    {
+      "procedure_id": "framing",
+      "label": "Metal Stud Framing",
+      "why": "Layout and wall types from the partition schedule"
+    }
+  ],
+  "search_tags": [
+    "drawings",
+    "blueprints",
+    "plans",
+    "title block",
+    "grid",
+    "partition schedule",
+    "dimension",
+    "revision",
+    "rfi",
+    "life safety",
+    "finish schedule",
+    "rcp",
+    "start here"
+  ],
+  "synonyms": [
+    "drawings",
+    "reading drawings",
+    "blueprints",
+    "blueprint",
+    "plans",
+    "plan reading",
+    "title block",
+    "partition schedule",
+    "grid lines",
+    "sheet numbers",
+    "architectural drawings"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Sheet numbering follows the widely used National CAD Standard convention — most commercial sets in our market use it, though not all; read the set's own index. Scales, title block, grids, and callouts are standard drafting practice. Document precedence is project-specific — read each project's clause. Residential/commercial comparison reflects GVC's mix of work.",
+    "sources": [
+      "National CAD Standard discipline designators",
+      "GVC Field Manual",
+      "Reading Drawings #dwg-precedence",
+      "Reading Drawings #dwg-res-comm"
+    ]
+  }
+}

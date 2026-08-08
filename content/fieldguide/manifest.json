@@ -11,6 +11,7 @@
         "framing",
         "insulation",
         "preboard-walk",
+        "stock-general",
         "stock-drywall",
         "hang",
         "scrape",
@@ -22,7 +23,8 @@
         "painting",
         "touchup-drywall",
         "touchup-paint",
-        "punch-cadence"
+        "punch-cadence",
+        "protection"
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
       "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
@@ -33,6 +35,10 @@
       "summary": "Handoff, access, conditions, openings — Job Check Ops logistics.",
       "icon": "ops",
       "procedure_ids": [
+        "drawings",
+        "dont",
+        "portal-field-tools",
+        "ai-field-rules",
         "jobstart-firstday",
         "job-conditions",
         "window-returns",
@@ -70,6 +76,16 @@
     }
   ],
   "categories": [
+    {
+      "id": "start-here",
+      "trade_id": "ops",
+      "title": "Start here",
+      "summary": "Day-one skills — read drawings before layout, framing, or hang.",
+      "procedure_ids": [
+        "drawings"
+      ],
+      "order": 0
+    },
     {
       "id": "drywall-sequence",
       "trade_id": "drywall",
@@ -161,6 +177,46 @@
       "summary": "Raking-light walk, drywall finish repair, and primer before paint.",
       "procedure_ids": ["touchup-drywall", "touchup-paint", "punch-cadence"],
       "order": 8
+    },
+    {
+      "id": "jobsite-care",
+      "trade_id": "drywall",
+      "title": "Jobsite care",
+      "summary": "Protect finished work and document other-trade damage before touching it.",
+      "procedure_ids": ["protection"],
+      "order": 8.5
+    },
+    {
+      "id": "materials",
+      "trade_id": "drywall",
+      "title": "Materials",
+      "summary": "Stocking and receiving — room-level placement before production starts.",
+      "procedure_ids": ["stock-general"],
+      "order": 1.5
+    },
+    {
+      "id": "quality-culture",
+      "trade_id": "ops",
+      "title": "Quality culture",
+      "summary": "Failure modes GVC does not accept — each links to the right procedure.",
+      "procedure_ids": ["dont"],
+      "order": 1
+    },
+    {
+      "id": "field-portal",
+      "trade_id": "ops",
+      "title": "Field portal",
+      "summary": "Job Check, Field Guide, Job Start, and Morning Brief — what each tile does.",
+      "procedure_ids": ["portal-field-tools"],
+      "order": 2
+    },
+    {
+      "id": "how-we-work",
+      "trade_id": "ops",
+      "title": "How we work",
+      "summary": "AI assists draft and suggest — humans authorize, tap Save, and keep briefs private.",
+      "procedure_ids": ["ai-field-rules"],
+      "order": 2.5
     },
     {
       "id": "ops-leadership",
@@ -317,6 +373,36 @@
     "tectum": "tectum",
     "tectum panels": "tectum",
     "wood fiber panel": "tectum",
-    "direct attach panel": "tectum"
+    "direct attach panel": "tectum",
+    "drawings": "drawings",
+    "reading drawings": "drawings",
+    "blueprints": "drawings",
+    "blueprint": "drawings",
+    "plans": "drawings",
+    "plan reading": "drawings",
+    "title block": "drawings",
+    "partition schedule": "drawings",
+    "dont": "dont",
+    "don't do this": "dont",
+    "dont do this": "dont",
+    "failure pack": "dont",
+    "bad habits": "dont",
+    "stock general": "stock-general",
+    "stocking any material": "stock-general",
+    "material stocking": "stock-general",
+    "material staging": "stock-general",
+    "portal": "portal-field-tools",
+    "portal tools": "portal-field-tools",
+    "job check guide": "portal-field-tools",
+    "field portal": "portal-field-tools",
+    "ai": "ai-field-rules",
+    "ai rules": "ai-field-rules",
+    "how we work with ai": "ai-field-rules",
+    "checklist coach": "ai-field-rules",
+    "protection": "protection",
+    "other trade damage": "protection",
+    "corner guards": "protection",
+    "floor protection": "protection",
+    "photo before touch": "protection"
   }
 }
