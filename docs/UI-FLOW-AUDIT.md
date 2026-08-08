@@ -82,6 +82,8 @@ support the field. Admin / Activity are company tools.
     when extract reports `multi_check > 1`; re-upload one check to continue.
 11. Money-form shared CSS extraction / Field Manual token convergence.
 12. ~~COI finalize success had no Next links~~ (r77) — hub / Admin template.
+13. ~~Estimate / CO draft resume dropped revise checkbox~~ (r83) — `_ui.revise`
+    persists in autosave; resume restores Update-this-document mode.
 
 ---
 

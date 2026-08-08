@@ -1055,8 +1055,14 @@ async function doAutosave() {
   const payload = collectData();
   if (!currentDraftId && isEmptyPayload(payload)) return;  // don't create empty drafts
   if (!currentDraftId) currentDraftId = genDraftId();
+  // Persist revise mode beside the form payload (CLAUDE known gap: resume used
+  // to clear the checkbox → finalize could mint a NEW number). `_ui` is stripped
+  // on resume and never sent to process_estimate.
+  const revise = isReviseMode();
+  const storePayload = Object.assign({}, payload, { _ui: { revise: revise } });
   const rec = {
-    id: currentDraftId, label: deriveLabel(payload), payload,
+    id: currentDraftId, label: deriveLabel(payload), payload: storePayload,
+    revise: revise,
     updated_at: new Date().toISOString(), updated_by: "(you)",
   };
   const existing = loadLocal()[currentDraftId] || {};
@@ -1131,6 +1137,8 @@ function renderDrafts(map) {
       `<div class="d-main">
          <div class="d-label">${escapeHtml(r.label || "Untitled estimate")}` +
          (isActive ? `<span class="badge active">editing</span>` : "") +
+         ((r.revise || (r.payload && r.payload._ui && r.payload._ui.revise))
+           ? `<span class="badge active">revise</span>` : "") +
          (synced ? `<span class="badge synced">synced</span>` : `<span class="badge local">this device</span>`) +
        `</div>
          <div class="d-meta">Updated ${relTime(r.updated_at)}${by}</div>
@@ -1154,11 +1162,19 @@ function escapeHtml(s) {
 function resumeDraft(id) {
   const rec = loadLocal()[id]; if (!rec) return;
   $("#dup-guard").style.display = "none"; pendingBidGuard = null;
-  applyData(rec.payload);
+  const p = Object.assign({}, rec.payload || {});
+  const ui = p._ui || {};
+  delete p._ui;
+  applyData(p);
+  const wantRevise = !!(rec.revise || ui.revise);
+  const ident = (($("#estimate-form").elements["identifier"] || {}).value || "").trim();
+  $("#revise-flag").checked = !!(wantRevise && ident);
+  updateReviseUI();
   currentDraftId = id;
   lastPreviewOk = false; $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
-  setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
+  setSaveState(rec._syncedAt ? "synced" : "local",
+    wantRevise && ident ? "Resumed draft · revise mode on" : "Resumed draft");
   renderDrafts();
   $("#estimate-form").scrollIntoView({ behavior: "smooth" });
 }
@@ -1336,6 +1352,7 @@ $("#dup-guard-revise").addEventListener("click", () => {
   setField("identifier", g.rev.estimate_number);
   $("#revise-flag").checked = true;
   updateReviseUI();
+  scheduleAutosave();
   $("#dup-guard").style.display = "none";
   pendingBidGuard = null;
   const tail = g.rev.sidecar_found
