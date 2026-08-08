@@ -11,6 +11,12 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ⚡ Morning Ops active-group fetch (r82) — BUILT 2026-08-08
+Cold Morning/Job Check was walking the entire Operations board (~2.1k items,
+mostly Completed Tasks) then filtering skip-groups in Python (~30s). Now lists
+board groups, drops `MORNING_SKIP_GROUP_IDS`, and pages only active groups in
+parallel. Live: ~53 active items, wall ~3–4s vs ~29s. Hub **r82**.
+
 ## ✨ FIELD GUIDE NEXTPATH + ACT CATALOG (r81) — BUILT 2026-08-08
 Catalog-backed Field Manual docs no longer dead-end offline: baked
 ``.nextpath[data-catalog-nav]`` from catalog ``next_steps`` in the HTML shell,

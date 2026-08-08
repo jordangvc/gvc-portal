@@ -12,10 +12,12 @@ from __future__ import annotations
 
 import json
 import sys
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
 from adapters.monday import cache as monday_cache
+from adapters.monday.client import MondayClient
 from shared import boards
 
 _VALUE_FRAGMENT = """
@@ -99,11 +101,85 @@ def fetch_ops_items(mc) -> list[dict]:
     )
 
 
-def _fetch_ops_items_uncached(mc) -> list[dict]:
-    # Never request excluded money columns even if someone widens the allowlist.
-    col_ids = [c for c in boards.MORNING_READ_COLUMN_IDS
-               if c not in boards.MORNING_HARD_EXCLUDED_IDS]
-    col_json = json.dumps(col_ids)
+def _ops_column_ids() -> list[str]:
+    """Allowlisted Morning columns — never money/hard-excluded ids."""
+    return [c for c in boards.MORNING_READ_COLUMN_IDS
+            if c not in boards.MORNING_HARD_EXCLUDED_IDS]
+
+
+def _list_active_ops_group_ids(mc) -> list[str]:
+    """Group ids on the Ops board that Morning/Job Check actually show."""
+    data = mc._query(
+        """
+        query ($boardId: [ID!]) {
+          boards(ids: $boardId) {
+            groups { id }
+          }
+        }
+        """,
+        {"boardId": [str(boards.MORNING_BOARD_ID)]},
+    )
+    boards_data = data.get("boards") or []
+    if not boards_data:
+        return []
+    skip = boards.MORNING_SKIP_GROUP_IDS
+    out: list[str] = []
+    for g in boards_data[0].get("groups") or []:
+        gid = (g or {}).get("id")
+        if gid and gid not in skip:
+            out.append(str(gid))
+    return out
+
+
+def _fetch_one_ops_group(group_id: str, col_json: str) -> list[dict]:
+    """Page one Ops group (own MondayClient — sessions are not thread-safe)."""
+    local = MondayClient()
+    query = """
+    query ($boardId: [ID!], $groupIds: [String], $cursor: String) {
+      boards(ids: $boardId) {
+        groups(ids: $groupIds) {
+          id
+          items_page(limit: 200, cursor: $cursor) {
+            cursor
+            items {
+              id
+              name
+              updated_at
+              group { id title }
+              column_values(ids: %s) { %s }
+            }
+          }
+        }
+      }
+    }
+    """ % (col_json, _VALUE_FRAGMENT)
+    rows: list[dict] = []
+    cursor: Optional[str] = None
+    while True:
+        data = local._query(query, {
+            "boardId": [str(boards.MORNING_BOARD_ID)],
+            "groupIds": [group_id],
+            "cursor": cursor,
+        })
+        boards_data = data.get("boards") or []
+        if not boards_data:
+            break
+        groups = boards_data[0].get("groups") or []
+        if not groups:
+            break
+        page = groups[0].get("items_page") or {}
+        for item in page.get("items") or []:
+            row = _normalize(item)
+            if row is not None:
+                rows.append(row)
+        cursor = page.get("cursor")
+        if not cursor:
+            break
+    return rows
+
+
+def _fetch_ops_items_full_board(mc, col_json: str) -> list[dict]:
+    """Legacy full-board pagination (includes skip groups, then filters)."""
     query = """
     query ($boardId: [ID!], $cursor: String) {
       boards(ids: $boardId) {
@@ -136,6 +212,46 @@ def _fetch_ops_items_uncached(mc) -> list[dict]:
         cursor = page.get("cursor")
         if not cursor:
             break
+    return rows
+
+
+def _fetch_ops_items_uncached(mc) -> list[dict]:
+    """Active Ops tasks only — skip Completed / Ready-to-Invoice at query time.
+
+    Live boards carry ~2k Completed Tasks items. Walking the whole board then
+    filtering in `_normalize` cost ~30s cold. Fetch only non-skip groups
+    (usually Upcoming + In-Progress), in parallel.
+    """
+    col_json = json.dumps(_ops_column_ids())
+    try:
+        group_ids = _list_active_ops_group_ids(mc)
+    except Exception as exc:  # noqa: BLE001 — fall back to full walk
+        print(f"[monday:morning] active-group list failed ({type(exc).__name__}: "
+              f"{exc}); falling back to full-board walk", file=sys.stderr, flush=True)
+        return _fetch_ops_items_full_board(mc, col_json)
+
+    if not group_ids:
+        # Unusual empty board / all groups skipped — don't invent a full walk
+        # that re-pulls Completed Tasks; return empty.
+        return []
+
+    if len(group_ids) == 1:
+        return _fetch_one_ops_group(group_ids[0], col_json)
+
+    rows: list[dict] = []
+    with ThreadPoolExecutor(max_workers=min(4, len(group_ids))) as pool:
+        futs = {
+            pool.submit(_fetch_one_ops_group, gid, col_json): gid
+            for gid in group_ids
+        }
+        for fut in as_completed(futs):
+            gid = futs[fut]
+            try:
+                rows.extend(fut.result())
+            except Exception as exc:  # noqa: BLE001
+                print(f"[monday:morning] group {gid} fetch failed: "
+                      f"{type(exc).__name__}: {exc}", file=sys.stderr, flush=True)
+                raise
     return rows
 
 
