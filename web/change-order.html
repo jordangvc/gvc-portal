@@ -148,6 +148,7 @@
     </div>
   </div>
 </header>
+<nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
 
 <main class="gvc-shell gvc-moneyform">
   <div class="gvc-page-hd">
@@ -978,8 +979,10 @@ refreshDrafts();
   lookupFromMonday();
 })();
 </script>
+<script src="/ui/gvc-flow.js"></script>
 <script src="/ui/gvc-theme.js"></script>
 <script>
+  if (window.GvcFlow) { window.GvcFlow.mount(document.getElementById("gvc-flow"), "change_order"); }
   if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
 </script>
 </body>
