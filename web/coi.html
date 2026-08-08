@@ -169,6 +169,7 @@
   </div>
 </div>
 
+<script src="/ui/gvc-field-jump.js"></script>
 <script src="/ui/gvc-theme.js"></script>
 <script>
 if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
@@ -186,10 +187,11 @@ function collectData() {
 
 function validateData(d) {
   const e = [];
-  if (!d.holder.name) e.push("Name / Project Name is required.");
-  if (!d.holder.address) e.push("Address is required.");
-  if (!d.contact.name) e.push("Contact name is required.");
-  if (!d.contact.email || d.contact.email.indexOf("@") < 0) e.push("A valid contact email is required.");
+  if (!d.holder.name) e.push({ label: "Name / Project Name is required", focus: "holder_name" });
+  if (!d.holder.address) e.push({ label: "Address is required", focus: "holder_address" });
+  if (!d.contact.name) e.push({ label: "Contact name is required", focus: "contact_name" });
+  if (!d.contact.email || d.contact.email.indexOf("@") < 0)
+    e.push({ label: "A valid contact email is required", focus: "contact_email" });
   return e;
 }
 
@@ -212,7 +214,16 @@ function showSpinner(on) {
 async function run(mode) {
   const data = collectData();
   const errs = validateData(data);
-  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  if (errs.length) {
+    const jump = window.GvcFieldJump;
+    setStatus("err",
+      "<strong>Please fix — tap to go there:</strong>" +
+      (jump
+        ? jump.list(errs)
+        : "<ul><li>" + errs.map((e) => escapeHtml(e.label || e)).join("</li><li>") + "</li></ul>"));
+    if (jump) jump.focus(errs[0].focus);
+    return;
+  }
   showSpinner(true); clearStatus();
   try {
     const resp = await fetch("/ui/api/coi/run", {

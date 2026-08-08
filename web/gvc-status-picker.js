@@ -143,7 +143,7 @@
     if (next) cls.push("chip-next");
     return (
       `<button type="button" class="${cls.join(" ")}" data-value="${esc(value)}" ` +
-      `aria-pressed="${active ? "true" : "false"}">${esc(value)}</button>`
+      `title="${esc(value)}" aria-pressed="${active ? "true" : "false"}">${esc(value)}</button>`
     );
   }
 
@@ -174,7 +174,7 @@
     function renderClosed() {
       const has = !!value;
       const currentHtml = has
-        ? `<button type="button" class="chip is-active" data-clear aria-pressed="true">${esc(value)}</button>`
+        ? `<button type="button" class="chip is-active" data-clear aria-pressed="true" title="${esc(value)}">${esc(value)}</button>`
         : `<span class="faint" style="font-size:var(--text-xs)">(not set)</span>`;
       const hint = cfg.hint
         ? `<em class="faint" style="font-size:var(--text-xs)">${esc(cfg.hint)}</em>`

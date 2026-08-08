@@ -1033,10 +1033,13 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
   gap: var(--space-4);
 }
 .rail__group { display: flex; flex-direction: column; gap: 2px; }
+.rail__foot .row__main { flex: 1 1 auto; min-width: 0; }
+.rail__foot .row__title,
 .rail__foot .row__sub {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  display: block;
 }
 .rail__foot {
   border-top: 1px solid var(--color-divider);
@@ -1044,6 +1047,45 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
   display: flex;
   align-items: center;
   gap: var(--space-3);
+  min-width: 0;
+}
+/* Status-picker chips: long Monday labels stay inside the bubble */
+.sp .chip {
+  max-width: min(100%, 18rem);
+  white-space: normal;
+  overflow-wrap: anywhere;
+  text-align: center;
+  line-height: 1.25;
+  height: auto;
+  min-height: var(--tap-sm, 36px);
+}
+.sp .row .cluster { min-width: 0; }
+.sp .row .chip.is-active {
+  max-width: min(100%, 14rem);
+}
+/* Clickable validation errors → jump to field */
+.field-jump {
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  font-weight: 700;
+  color: var(--color-accent-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  text-align: left;
+}
+.field-jump:hover { color: var(--color-primary); }
+.field-jump-list { margin: 8px 0 0; padding-left: 1.2rem; }
+.field-jump-list li { margin: 4px 0; }
+.is-jump-target {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+  border-radius: var(--radius-md);
+  transition: outline-color 0.2s ease;
 }
 
 .nav-item {

@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Field-jump errors + list polish (r105) — BUILT 2026-08-08
+Clicking validation errors (“Finish a client”, missing Job Start fields, COI
+requireds) jumps to the field via `gvc-field-jump.js` + form-stages gap banner.
+Also: salesperson card ellipsis, Resume-draft scroll caps, Job Start bid list
+split into per-stage scroll sections, Job Check Ops/Projects board headings,
+status-picker chip wrap, hub rail name nowrap + better email initials (JF).
+Hub **r105**.
+
 ## ✨ Remaining portal pages on gvc-ui.css (r104) — BUILT 2026-08-08
 Converted Job Start / Billing / Check / Morning (+ GM + Owner) / Field Manual
 / COI / Activity / Admin / Lien / Training / Time Off to redesign chrome:

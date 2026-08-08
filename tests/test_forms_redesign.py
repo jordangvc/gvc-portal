@@ -1,6 +1,7 @@
 """Money generators use the forms redesign pack (gvc-forms.css)."""
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -36,6 +37,26 @@ def test_forms_pages_match_pack_contract() -> None:
         assert "gvc-actionbar" in html and 'id="btn-next"' in html, name
         assert 'id="stages"' in html, name
         assert "sec-help" not in html, name
+
+
+def test_forms_template_tokens_are_substituted_by_their_route() -> None:
+    """A {{TOKEN}} left unrendered inside the inline script kills the whole page.
+
+    The money forms pass the signed-in email into GvcFormChrome.mount via
+    {{EMAIL_JSON}}, so each page's route must replace it. These pages have no
+    server-side render test otherwise.
+    """
+    service_src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
+    for name in FORMS:
+        html = (WEB / name).read_text(encoding="utf-8")
+        for token in sorted(set(re.findall(r"\{\{[A-Z0-9_]+\}\}", html))):
+            render = service_src.find(f'_cached_web_html("{name}")')
+            assert render != -1, f"{name} is not served via _cached_web_html"
+            block = service_src[render:render + 400]
+            assert f'.replace("{token}"' in block, (
+                f"{name} carries {token} but its route never substitutes it — "
+                "the browser would receive the literal token"
+            )
 
 
 def test_forms_chrome_js_shared_topbar() -> None:

@@ -24,13 +24,19 @@
       .replace(/"/g, "&quot;");
   }
 
-  function initials(email) {
+  function initials(email, name) {
+    var n = String(name || "").trim();
+    if (n) {
+      var np = n.replace(/,/g, " ").split(/\s+/).filter(Boolean);
+      if (np.length >= 2) return (np[0][0] + np[np.length - 1][0]).toUpperCase();
+      if (np.length) return np[0].slice(0, 2).toUpperCase();
+    }
     var s = String(email || "").trim();
     if (!s) return "GV";
     var local = s.split("@")[0] || s;
     var parts = local.replace(/[._-]+/g, " ").split(/\s+/).filter(Boolean);
     if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
+      return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
     }
     return local.slice(0, 2).toUpperCase();
   }
@@ -58,7 +64,8 @@
       );
     }).join("");
 
-    var av = esc(initials(opts.email));
+    var av = esc(initials(opts.email, opts.name));
+    var avTitle = esc(opts.name || opts.email || "Sign out");
     host.innerHTML =
       '<header class="gvc-topbar">' +
       '<div class="gvc-topbar-row">' +
@@ -76,7 +83,9 @@
       "</div>" +
       '<button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="theme-toggle" data-theme-label ' +
       'style="height:32px;padding:0 12px;border-color:#2c5a45;color:#9db3a6">Auto</button>' +
-      '<a class="gvc-avatar" href="/auth/logout" title="Sign out" ' +
+      '<a class="gvc-avatar" href="/auth/logout" title="' +
+      avTitle +
+      ' · Sign out" ' +
       'style="text-decoration:none">' +
       av +
       "</a>" +
