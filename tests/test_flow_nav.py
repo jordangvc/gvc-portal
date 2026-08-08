@@ -90,9 +90,18 @@ def test_jobstart_boot_warms_and_parallels_list() -> None:
         check(f"{page} warms monday", '/ui/api/monday/warm' in html)
 
 
+def test_estimate_finalize_deeplinks_jobstart_bid() -> None:
+    body = (ROOT / "web" / "estimate.html").read_text(encoding="utf-8")
+    check(
+        "finalize next uses jobstart?bid=",
+        "/ui/jobstart?bid=" in body and "monday_item_id" in body,
+    )
+
+
 if __name__ == "__main__":
     test_flow_nav_spine()
     test_takeoff_page_and_flow_js_on_disk()
     test_takeoff_route_registers()
     test_jobstart_boot_warms_and_parallels_list()
+    test_estimate_finalize_deeplinks_jobstart_bid()
     print("all ok")
