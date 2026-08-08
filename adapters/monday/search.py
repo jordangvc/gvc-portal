@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Any, Callable, Optional
 
 from adapters.monday import cache as monday_cache
-from adapters.monday.client import MondayClient
+from adapters.monday.client import MondayClient, is_auth_failure
 from shared.boards import BID_BOARD_ID, PROJECTS_BOARD_ID
 from shared.doc_number import search_needles
 
@@ -277,6 +277,8 @@ def _run_legs(
             try:
                 data = fut.result()
             except Exception as e:  # noqa: BLE001
+                if is_auth_failure(e):
+                    raise
                 print(f"[{log_prefix}] search leg {field_label!r} failed: {e}",
                       file=sys.stderr)
                 continue
