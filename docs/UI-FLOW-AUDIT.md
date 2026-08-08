@@ -55,15 +55,20 @@ support the field. Admin / Activity are company tools.
 4. **Billing activity “isn't wired yet”**  
    `web/billing.html` — honest unavailable / IAM copy.
 
+### Fixed later
+
+5. **Owner Pulse decisions** — wired from open Action Requests (NFJ /
+   aimed-at-owner); UI cards + Job Check links (no more `JSON.stringify`).
+   Hub Needs also surfaces top decisions.
+
 ### Still open (next passes)
 
-5. Job Start self-sent wait — clearer copy + hub/ops guidance (improved; still
-   needs a human Ops acceptor; no resend API yet).
-6. Owner Pulse — actionable links instead of raw JSON blobs.
+6. Job Start self-sent wait — still needs a human Ops acceptor; no resend API.
 7. COI / Time Off / Admin — hub “needs setup” badges before opening.
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
 9. Photos / Projects link discovery on Job Check — strengthen empty guidance.
 10. Multi-check photo soft-stop on Paid by Check.
+11. Money-form shared CSS extraction / Field Manual token convergence.
 
 ---
 
