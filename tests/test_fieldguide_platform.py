@@ -102,7 +102,9 @@ def test_repo_catalog_hang_scrape() -> None:
     spine = {"framing", "preboard-walk", "hang", "scrape", "finish",
              "level5-skim", "cleanout"}
     check("job-check spine migrated", spine <= set(cat["by_id"]))
-    check("approved cards", len(cat["cards"]) >= 7)
+    ops = {"jobstart-firstday", "job-conditions", "window-returns", "scaffold-lifts"}
+    check("ops logistics migrated", ops <= set(cat["by_id"]))
+    check("approved cards", len(cat["cards"]) >= 11)
     check("jobcheck hang", cat["jobcheck_anchors"].get("Hanging Status") == "hang")
     check("jobcheck scrape", cat["jobcheck_anchors"].get("Scrapping Status") == "scrape")
     check("jobcheck taped→finish", cat["jobcheck_anchors"].get("Taped Status") == "finish")
@@ -137,7 +139,7 @@ def test_repo_catalog_hang_scrape() -> None:
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
-    check("audit counts spine", audit["procedure_count"] >= 7)
+    check("audit counts spine + ops", audit["procedure_count"] >= 11)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)
@@ -179,8 +181,11 @@ def test_stale_draft_excluded_from_default_search() -> None:
 
 
 def test_jobcheck_anchors_match_catalog_spine() -> None:
-    """boards.py Field Manual deep-links must resolve in catalog (or known shell-only)."""
-    from shared.boards import JOBCHECK_FIELDGUIDE_ANCHORS
+    """boards.py Field Manual deep-links must resolve in the catalog."""
+    from shared.boards import (
+        JOBCHECK_FIELDGUIDE_ANCHORS,
+        JOBCHECK_OPS_FIELDGUIDE_ANCHORS,
+    )
     from subsystems.fieldguide.catalog import (
         clear_cache, load_catalog, resolve_procedure_id,
     )
@@ -188,12 +193,28 @@ def test_jobcheck_anchors_match_catalog_spine() -> None:
     clear_cache()
     known = set(load_catalog()["by_id"])
     missing = []
-    for _col, anchor in JOBCHECK_FIELDGUIDE_ANCHORS.items():
+    for _col, anchor in {
+        **JOBCHECK_FIELDGUIDE_ANCHORS,
+        **JOBCHECK_OPS_FIELDGUIDE_ANCHORS,
+    }.items():
         pid = resolve_procedure_id((anchor or "").lstrip("#"))
         if pid in known:
             continue
         missing.append(f"{_col}→{anchor}")
     check("no unknown Job Check→Field Manual anchors", missing == [])
+
+
+def test_ops_jobcheck_anchors_in_manifest() -> None:
+    """Ops Job Check column labels map to migrated catalog procedures."""
+    from subsystems.fieldguide.catalog import clear_cache, load_catalog
+
+    clear_cache()
+    anchors = load_catalog()["jobcheck_anchors"]
+    check("Scaffolding anchor", anchors.get("Scaffolding") == "scaffold-lifts")
+    check("Heater/Cans anchor", anchors.get("Heater/Cans") == "job-conditions")
+    check("Lock Box anchor", anchors.get("Lock Box") == "jobstart-firstday")
+    check("Window type anchor", anchors.get("Window type") == "window-returns")
+    check("Open questions anchor", anchors.get("Open questions") == "jobstart-firstday")
 
 
 def main() -> None:
@@ -204,6 +225,7 @@ def main() -> None:
     test_manifest_categories_alias()
     test_stale_draft_excluded_from_default_search()
     test_jobcheck_anchors_match_catalog_spine()
+    test_ops_jobcheck_anchors_in_manifest()
     print("ALL OK")
 
 

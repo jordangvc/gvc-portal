@@ -11,6 +11,14 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE OPS LOGISTICS CATALOG (r77) — BUILT 2026-08-08
+Job Check Ops how-to anchors are catalog procedures (not HTML-only):
+`jobstart-firstday` (Lock Box / Open questions), `job-conditions` (Heater/Cans),
+`window-returns` (Window type), `scaffold-lifts` (Scaffolding). New trade
+`ops` + category `ops-logistics`. Tests assert every
+`JOBCHECK_OPS_FIELDGUIDE_ANCHORS` target resolves in catalog;
+`audit_link_targets` stays clean. Hub **r77**.
+
 ## ✨ FIELD GUIDE CATALOG ↔ SHELL + JOB CHECK GATES (r76) — BUILT 2026-08-08
 Procedure API returns rendered HTML; Field Manual injects catalog `.nextpath`
 on spine docs (hang/scrape/finish/… were dead-ends). Home search also queries

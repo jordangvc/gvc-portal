@@ -20,6 +20,20 @@
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
       "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
+    },
+    {
+      "id": "ops",
+      "title": "Ops / Job Start",
+      "summary": "Handoff, access, conditions, openings — Job Check Ops logistics.",
+      "icon": "ops",
+      "procedure_ids": [
+        "jobstart-firstday",
+        "job-conditions",
+        "window-returns",
+        "scaffold-lifts"
+      ],
+      "search_tags": ["ops", "job start", "logistics", "access", "conditions"],
+      "synonyms": ["field ops", "job start", "handoff", "mobilize"]
     }
   ],
   "categories": [
@@ -49,6 +63,19 @@
         "closeout-rhythm"
       ],
       "order": 2
+    },
+    {
+      "id": "ops-logistics",
+      "trade_id": "ops",
+      "title": "Ops logistics",
+      "summary": "Job Start handoff, access, conditions, and openings — Ops Job Check columns.",
+      "procedure_ids": [
+        "jobstart-firstday",
+        "job-conditions",
+        "window-returns",
+        "scaffold-lifts"
+      ],
+      "order": 3
     }
   ],
   "featured_procedure_ids": ["framing", "hang", "scrape", "finish"],
@@ -64,7 +91,12 @@
     "Text/Skim": "level5-skim",
     "Cleaned Out": "cleanout",
     "Completion Date": "closeout-rhythm",
-    "Notes": "qc-walk"
+    "Notes": "qc-walk",
+    "Scaffolding": "scaffold-lifts",
+    "Heater/Cans": "job-conditions",
+    "Lock Box": "jobstart-firstday",
+    "Window type": "window-returns",
+    "Open questions": "jobstart-firstday"
   },
   "synonym_hints": {
     "frame": "framing",
@@ -77,6 +109,22 @@
     "raking light": "qc-walk",
     "closeout": "closeout-rhythm",
     "completion date": "closeout-rhythm",
-    "end of day": "closeout-rhythm"
+    "end of day": "closeout-rhythm",
+    "lock box": "jobstart-firstday",
+    "lockbox": "jobstart-firstday",
+    "first day": "jobstart-firstday",
+    "job start": "jobstart-firstday",
+    "handoff": "jobstart-firstday",
+    "open questions": "jobstart-firstday",
+    "scaffold": "scaffold-lifts",
+    "scaffolding": "scaffold-lifts",
+    "lifts": "scaffold-lifts",
+    "heater": "job-conditions",
+    "cans": "job-conditions",
+    "heat": "job-conditions",
+    "cold": "job-conditions",
+    "window returns": "window-returns",
+    "window type": "window-returns",
+    "windows": "window-returns"
   }
 }
