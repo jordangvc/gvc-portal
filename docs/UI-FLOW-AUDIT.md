@@ -27,7 +27,7 @@ support the field. Admin / Activity are company tools.
 | Owner Pulse | Pass | Hub brand | Pass* | *error state offers retry + Morning/hub; decisions are cards |
 | Job Check | Pass | Hub / Change job | Strong | Dirty confirm exists |
 | Job Start | Pass* | Hub / Change bid* | Strong | *autosave flush on leave; send/accept/send-back offer Next |
-| Billing | Pass | Hub | Pass* | *activity copy fixed; Ready rows show P5 proposed total |
+| Billing | Pass | Hub | Pass* | *activity copy fixed; Ready rows show P5 proposed total; progressive persist stages worksheets |
 | Invoice | Pass | Hub | Strong | Has Next: Billing / Check |
 | Estimate | Pass | Hub | Strong | Has Next: Job Start |
 | Change Order | Pass | Hub | Strong | Bill this CO CTA |
@@ -84,9 +84,11 @@ support the field. Admin / Activity are company tools.
 12. ~~COI finalize success had no Next links~~ (r77) — hub / Admin template.
 13. ~~Estimate / CO draft resume dropped revise checkbox~~ (r83) — `_ui.revise`
     persists in autosave; resume restores Update-this-document mode.
-14. ~~P5 Ready worksheet → Billing proposed $ → Invoice line prefill~~ (r84/r90) —
+14. ~~P5 Ready worksheet → Billing proposed $ → Invoice line prefill~~ (r84/r90/r91/r106) —
     staged GCS worksheets on hub load; capped on-demand P5 enrich fills Ready
-    rows still missing `$`. Stripe draft create still post-gauntlet. Finalize
+    rows still missing `$`. Progressive `/ready-worksheets?persist=1` stages
+    even when hub already shows display-only Proposed $ so Invoice `?ops_ready=`
+    prefills editable lines. Stripe draft create still post-gauntlet. Finalize
     with `ops_ready` stamps Ops Scheduled Day = Invoiced + leaves Ready queue.
 
 ---
