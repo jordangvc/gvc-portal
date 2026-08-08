@@ -360,6 +360,23 @@ button { font: inherit; color: inherit; }
   color: var(--color-text-inverse);
 }
 
+/* Status picker (Job Check) — picker-specific only.
+   Markup from docs/redesign/Status Picker Handoff.md. */
+.sp__panel[hidden] { display: none; }
+.sp__panel { flex-direction: column; align-items: stretch; }
+.sp__group { border-top: 1px solid var(--color-divider); }
+.sp__ghead {
+  width: 100%; display: flex; align-items: center; gap: var(--space-2);
+  min-height: 44px; padding: 8px 2px;
+  background: none; border: 0; font: inherit; text-align: left; cursor: pointer;
+}
+.sp__gname { flex: 1; font-size: var(--text-sm); font-weight: 600; color: var(--color-text); }
+.sp__ghead:hover .sp__gname { color: var(--color-primary); }
+.sp__gdot { width: 7px; height: 7px; border-radius: var(--radius-full); background: var(--color-accent); }
+.sp__gcaret { width: 12px; text-align: center; font-size: 11px; }
+.sp__group[data-open='false'] .sp__opts { display: none; }
+.sp__group .sp__opts { padding: 2px 0 var(--space-3); }
+
 .chip-lg { min-height: var(--tap); padding: 10px 18px; font-size: var(--text-sm); }
 
 /* A status word riding inside a chip (CONFIRMED / DRAFT / SENT) */

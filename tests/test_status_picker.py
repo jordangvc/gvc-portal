@@ -16,6 +16,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 PICKER = ROOT / "web" / "gvc-status-picker.js"
+UI_CSS = ROOT / "web" / "gvc-ui.css"
+JOBCHECK = ROOT / "web" / "jobcheck.html"
 
 
 def check(label: str, cond: bool) -> None:
@@ -53,6 +55,8 @@ process.stdout.write(JSON.stringify({
   sugBlocked,
   flatTradeNames: flatTrade.map(g => g.name),
   flatTradeItems: flatTrade[0] && flatTrade[0].items,
+  emitsChipNext: code.includes('chip-next') && !code.includes('chip--next'),
+  emitsHandoffRoot: code.includes('card card-flush sp') && code.includes('row__main'),
 }));
 """
     r = subprocess.run(
@@ -83,6 +87,8 @@ def test_status_picker_groups() -> None:
     check("ungrouped column → All statuses", data["flatTradeNames"] == ["All statuses"])
     check("trade labels preserved",
           data["flatTradeItems"] == ["Hanging Not Started", "100% Hanging Completed"])
+    check("handoff chip-next class", data["emitsChipNext"] is True)
+    check("handoff closed markup", data["emitsHandoffRoot"] is True)
 
 
 def test_route_registers() -> None:
@@ -93,13 +99,18 @@ def test_route_registers() -> None:
 
 
 def test_row_align_css() -> None:
-    """§7 handoff: meta takes leftover width; date inputs are pill-rounded."""
-    css = (ROOT / "web" / "gvc.css").read_text(encoding="utf-8")
-    check(".sp__meta uses flex 1 1 auto", "flex: 1 1 auto" in css)
-    check(".sp__date pill input exists", ".sp__date" in css)
-    check(".sp__row nowrap", "flex-wrap: nowrap" in css)
-    jc = (ROOT / "web" / "jobcheck.html").read_text(encoding="utf-8")
-    check("date fields use dateFieldHtml / sp__date", "sp__date" in jc and "dateFieldHtml" in jc)
+    """Handoff §4/§6: picker CSS in gvc-ui; dates use .kicker + .input."""
+    css = UI_CSS.read_text(encoding="utf-8")
+    check("picker panel CSS in gvc-ui", ".sp__panel" in css and ".sp__ghead" in css)
+    check("chip-next in gvc-ui", ".chip-next" in css)
+    check("row__main flex leftover", ".row__main" in css and "flex: 1 1 auto" in css)
+    jc = JOBCHECK.read_text(encoding="utf-8")
+    check("jobcheck on gvc-ui only", 'href="/ui/gvc-ui.css"' in jc)
+    check("no competing gvc.css", 'href="/ui/gvc.css"' not in jc)
+    check("date fields use kicker + input", "dateFieldHtml" in jc and 'class="input"' in jc)
+    check("no legacy sp__date", "sp__date" not in jc and "sp__meta" not in jc)
+    check("save uses btn-primary", 'id="save"' in jc and "btn-primary" in jc)
+    check("status picker host + mount", "status-picker-host" in jc and "GvcStatusPicker.mount" in jc)
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
     # Footer rN bumps every user-visible ship — assert the marker, not a pinned rev.
     check("hub footer has Portal rN", "Portal" in hub and ">r" in hub and "</b>" in hub)
