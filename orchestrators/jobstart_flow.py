@@ -716,6 +716,10 @@ def get_handoff_detail(bid_id: int, actor: str = "", *,
                    and not already_ops))
     can_accept = (waiting
                   and (is_admin or not actor or actor != sent_by))
+    # Send Back is an Ops action (name what's missing). Never offer it to the
+    # sender — that looked like a "recall" escape hatch and broke the two-party
+    # wording. Partial-accept retries use Accept, not Send Back.
+    can_send_back = (status == drafts.STATUS_WITH_OPS and can_accept)
 
     return {
         "ok": True,
@@ -744,6 +748,7 @@ def get_handoff_detail(bid_id: int, actor: str = "", *,
         "editable": status in drafts.EDITABLE_STATUSES,
         "can_send": not missing and status in drafts.EDITABLE_STATUSES,
         "can_accept": can_accept,
+        "can_send_back": can_send_back,
         "self_sent": bool(actor and actor == sent_by),
         "sent_by": sent_by,
         "sent_at": (saved or {}).get("sent_at"),
@@ -943,13 +948,33 @@ def send_back(bid_id: int, note: str, actor: str) -> dict:
     """
     Operations returns a packet, naming what's missing. Sales can edit again.
     Deliberately lightweight — a note, not a formal rejection document.
+
+    Same two-party rule as accept(): the sender cannot send their own packet
+    back (admins excepted). Only `with_ops` packets are eligible — a draft or
+    accepted handoff must not be flipped by this route.
     """
     from subsystems.jobstart import drafts
+    from shared import access
 
     bid_id = int(bid_id)
     note = (note or "").strip()
     if not note:
         return {"ok": False, "detail": "Say what's missing so Sales can fix it."}
+
+    record = drafts.get_draft(bid_id)
+    if record is None:
+        return {"ok": False, "detail": "No handoff packet exists for this bid."}
+
+    status = record.get("status")
+    if status != drafts.STATUS_WITH_OPS:
+        return {"ok": False,
+                "detail": f"This packet is '{status}', not waiting on Operations."}
+
+    if (actor and actor == record.get("sent_by")
+            and not access.has_feature(actor, "admin")):
+        return {"ok": False, "self_send_back": True,
+                "detail": "You sent this packet — Operations must review it. "
+                          "Ask Ops to send it back if something needs fixing."}
 
     record = drafts.set_status(bid_id, status=drafts.STATUS_SENT_BACK,
                                actor=actor, note=note)

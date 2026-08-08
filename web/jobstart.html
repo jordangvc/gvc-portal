@@ -662,11 +662,11 @@ function renderState() {
   $("#statebox").innerHTML = html;
 
   // Buttons. Ops sees Accept / Send back while the packet is with them, or
-  // when a prior partial accept left Projects without an Ops task.
-  const showOps = status === "with_ops" || !!d.can_accept;
+  // Accept alone when a prior partial accept left Projects without Ops.
+  // Send Back is ops-only (can_send_back) — never the sender's "recall".
   $("#send").style.display = d.editable ? "" : "none";
   $("#accept").style.display = d.can_accept ? "" : "none";
-  $("#sendback").style.display = status === "with_ops" ? "" : "none";
+  $("#sendback").style.display = d.can_send_back ? "" : "none";
 
   if (status === "with_ops" && !d.can_accept && d.self_sent) {
     $("#savestate").textContent =

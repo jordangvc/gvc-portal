@@ -61,10 +61,11 @@ support the field. Admin / Activity are company tools.
    aimed-at-owner); UI cards + Job Check links (no more `JSON.stringify`).
    Hub Needs also surfaces top decisions.
 
-6. **Job Start `with_ops` invisible on hub (r71)** — Ops had to open Job Start
-   to find packets. Hub now folds GCS drafts: Accept handoff Needs for
-   non-senders (admins included); senders see Waiting queue rows. Still needs
-   a human Ops acceptor; no resend API yet.
+6. **Job Start `with_ops` invisible on hub (r71 / r76)** — Ops had to open Job
+   Start to find packets. Hub now folds GCS drafts: Accept handoff Needs for
+   non-senders (admins included); senders see Waiting queue rows. Send Back is
+   ops-only (same two-party rule as Accept) — senders no longer see a mislabeled
+   "recall" button. Still needs a human Ops acceptor; no Sales pull-back API yet.
 
 ### Still open (next passes)
 
