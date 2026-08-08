@@ -13,7 +13,10 @@ Theme toggle lives in `web/gvc-theme.js`. Every emerald page sets
    tokens (`--color-*-ink`), not light-mode hexes like `#B91C1C` / `#9A3412`.
 4. **Inputs use `--color-input-bg`**, never bare `#fff`.
 5. **Status / sync / writeback copy** uses `.gvc-msg--danger|warn|muted|ok|info`.
-6. Test **both** themes before shipping UI.
+6. **Soft panels** (mismatch, multi-check, link prompts) use `.gvc-callout--warn|danger|ok|info`.
+7. Never invent page-local aliases like `--warn-bg` / `--line` / `--muted` outside
+   Field Manual — lint fails them. Use `--gvc-*` / `--color-*`.
+8. Test **both** themes before shipping UI.
 
 ## Semantic tokens (emerald)
 

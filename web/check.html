@@ -198,7 +198,7 @@
     <h3>Confirm check details</h3>
     <p class="muted">Edit anything OCR got wrong. Use the image below for reference. Nothing is recorded until you confirm.</p>
     <img id="m-image" class="check-img" alt="Uploaded check" />
-    <div id="multi-warn" style="display:none; background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px;"></div>
+    <div id="multi-warn" class="gvc-callout gvc-callout--warn" style="display:none; border-radius:8px; padding:10px 12px; margin-bottom:12px; font-size:13px;"></div>
     <div class="grid" style="margin-top:12px;">
       <div><label>Payer</label><input id="m-payer" /></div>
       <div><label>Amount</label><input id="m-amount" /></div>
@@ -217,7 +217,7 @@
         <div id="m-list" class="gvc-results"></div>
         <div id="m-picked" class="muted" style="margin-top:6px;">No invoice selected.</div>
         <div id="m-total" class="muted" style="margin-top:4px;"></div>
-        <div id="m-mismatch" style="display:none; background:var(--warn-bg); border:1px solid var(--warn-line); border-radius:8px; padding:8px 12px; margin-top:8px; font-size:13px;">
+        <div id="m-mismatch" class="gvc-callout gvc-callout--warn" style="display:none; border-radius:8px; padding:8px 12px; margin-top:8px; font-size:13px;">
           <div id="m-mismatch-text"></div>
           <button type="button" class="btn secondary" id="m-autosplit" style="margin-top:6px; font-size:13px; padding:4px 10px;">Auto-split the check (oldest first)</button>
           <label id="m-override-row" style="display:flex; align-items:center; gap:8px; margin-top:6px; font-weight:600; cursor:pointer;">

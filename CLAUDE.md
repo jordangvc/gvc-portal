@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 🔧 ORPHAN THEME VARS — Check/COI/Job Check (r93) — BUILT 2026-08-08
+Undefined `var(--warn-bg|--warn-line|--line|--muted|--green-dark)` silently
+broke multi-check/mismatch panels, COI bulk table borders, and Job Check
+status colors (especially dark mode). Pages now use `.gvc-callout--warn` /
+`--gvc-line` / `--color-*`; `scripts/ui_consistency_check.py` fails on
+reintroduction (Field Manual allowlisted). Hub **r93**. Supersedes #147.
+
 ## ✨ BILLING READY ON-DEMAND COSTING (r91) — BUILT 2026-08-08
 After hub first paint, `GET /ui/api/billing/ready-worksheets` costs linked
 Ready rows from Payroll + company rates, stages worksheets for Invoice
