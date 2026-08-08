@@ -116,41 +116,9 @@ def render_procedure_article(proc: dict, *, include_expert: bool = True) -> str:
         if ts_blocks else ""
     )
 
-    next_links = []
-    for link in proc.get("next_steps") or []:
-        link_pid = _e(link.get("procedure_id"))
-        label = _e(link.get("label") or link.get("procedure_id"))
-        why = _e(link.get("why") or "")
-        btn = (
-            f'<button type="button" class="doclink" data-go="{link_pid}">'
-            f"{label}</button>"
-        )
-        if why:
-            btn += f' <span class="why">({why})</span>'
-        next_links.append(btn)
-    related_links = []
-    for link in proc.get("related") or []:
-        link_pid = _e(link.get("procedure_id"))
-        label = _e(link.get("label") or link.get("procedure_id"))
-        related_links.append(
-            f'<button type="button" class="doclink" data-go="{link_pid}">'
-            f"{label}</button>"
-        )
-
-    next_html = ""
-    if next_links or related_links:
-        next_html = (
-            '<div class="nextpath" data-catalog-nav="1" aria-label="What next">'
-            '<span class="tag">What&apos;s next</span>'
-        )
-        if next_links:
-            next_html += "<p>" + " · ".join(next_links) + "</p>"
-        if related_links:
-            next_html += (
-                '<p><span class="tag">Related</span> '
-                + " · ".join(related_links) + "</p>"
-            )
-        next_html += "</div>"
+    next_html = render_nextpath_html(
+        proc, include_related=True, catalog_nav=True,
+    )
 
     gov = proc.get("governance") or {}
     prov = proc.get("provenance") or {}
@@ -161,6 +129,7 @@ def render_procedure_article(proc: dict, *, include_expert: bool = True) -> str:
         f' · <span>Reviewed: {_e(gov.get("last_reviewed") or "—")}</span>'
         f'</footer>'
     )
+    # Shell HTML uses <div class="provenance">; keep article footer + note.
     prov_html = ""
     if prov.get("note"):
         prov_html = (
@@ -191,6 +160,61 @@ def render_procedure_article(proc: dict, *, include_expert: bool = True) -> str:
         f"{trouble_html}{expert_html}{next_html}{prov_html}{meta}"
         f"</section>"
     )
+
+
+def render_nextpath_html(
+    proc: dict,
+    *,
+    include_related: bool = False,
+    catalog_nav: bool = True,
+) -> str:
+    """Shell-compatible ``.nextpath`` block from catalog ``next_steps`` / related.
+
+    Used by API article render and by baking static fallbacks into
+    ``web/fieldguide.html`` so Job Check how-tos are not dead-ends offline
+    before the catalog fetch runs (or when it fails).
+    """
+    next_links = []
+    for link in proc.get("next_steps") or []:
+        link_pid = _e(link.get("procedure_id"))
+        if not link_pid:
+            continue
+        label = _e(link.get("label") or link.get("procedure_id"))
+        why = _e(link.get("why") or "")
+        btn = (
+            f'<button type="button" class="doclink" data-go="{link_pid}">'
+            f"{label}</button>"
+        )
+        if why:
+            btn += f' <span class="why">({why})</span>'
+        next_links.append(btn)
+    related_links = []
+    if include_related:
+        for link in proc.get("related") or []:
+            link_pid = _e(link.get("procedure_id"))
+            if not link_pid:
+                continue
+            label = _e(link.get("label") or link.get("procedure_id"))
+            related_links.append(
+                f'<button type="button" class="doclink" data-go="{link_pid}">'
+                f"{label}</button>"
+            )
+    if not next_links and not related_links:
+        return ""
+    nav_attr = ' data-catalog-nav="1"' if catalog_nav else ""
+    html_out = (
+        f'<div class="nextpath"{nav_attr} aria-label="What next">'
+        '<span class="tag">What&apos;s next</span>'
+    )
+    if next_links:
+        html_out += "<p>" + " · ".join(next_links) + "</p>"
+    if related_links:
+        html_out += (
+            '<p><span class="tag">Related</span> '
+            + " · ".join(related_links) + "</p>"
+        )
+    html_out += "</div>"
+    return html_out
 
 
 def render_card_tile(card: dict) -> str:

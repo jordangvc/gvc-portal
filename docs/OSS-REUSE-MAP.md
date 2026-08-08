@@ -89,7 +89,7 @@ Portal stack = FastAPI + vanilla HTML/JS + WeasyPrint. Takeoff = separate React 
 
 ## 6. Fastest wins (ordered)
 
-1. **Wire Field Manual shell → catalog** (nextpath inject, procedure HTML API, coach related merge, home → `/search`) — **done r76** (also qc-walk + closeout-rhythm in catalog).  
+1. **Wire Field Manual shell → catalog** (nextpath inject, procedure HTML API, coach related merge, home → `/search`) — **done r76–r81** (Job Check spine + gates + Ops logistics + ACT; baked offline nextpath).  
 2. **Vendor Fuse.js** only if client fuzzy over *all* HTML tiles is still weak after catalog search boost.  
 3. **Takeoff:** read OpenTakeoff `oneclick.ts` / scale patterns before writing more measure code.  
 4. **Extract fieldguide SVGs** into `content/fieldguide/diagrams/` (reuse render `diagram_ids`).  

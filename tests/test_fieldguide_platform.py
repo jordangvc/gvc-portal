@@ -104,7 +104,9 @@ def test_repo_catalog_hang_scrape() -> None:
     check("job-check spine migrated", spine <= set(cat["by_id"]))
     ops = {"jobstart-firstday", "job-conditions", "window-returns", "scaffold-lifts"}
     check("ops logistics migrated", ops <= set(cat["by_id"]))
-    check("approved cards", len(cat["cards"]) >= 11)
+    check("approved cards", len(cat["cards"]) >= 12)
+    check("act migrated", "act" in cat["by_id"])
+    check("act approved card", any(c["id"] == "act" for c in cat["cards"]))
     check("jobcheck hang", cat["jobcheck_anchors"].get("Hanging Status") == "hang")
     check("jobcheck scrape", cat["jobcheck_anchors"].get("Scrapping Status") == "scrape")
     check("jobcheck taped→finish", cat["jobcheck_anchors"].get("Taped Status") == "finish")
@@ -123,6 +125,8 @@ def test_repo_catalog_hang_scrape() -> None:
     check("frame alias → framing", hits5 and hits5[0]["id"] == "framing")
 
     check("resolve frame", resolve_procedure_id("frame") == "framing")
+    check("resolve drop-ceiling", resolve_procedure_id("drop-ceiling") == "act")
+    check("resolve act", resolve_procedure_id("act") == "act")
     check("get_procedure taped", get_procedure("taped")["id"] == "finish")
 
     rel = related_suggestions("hang")
@@ -139,7 +143,7 @@ def test_repo_catalog_hang_scrape() -> None:
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
-    check("audit counts spine + ops", audit["procedure_count"] >= 11)
+    check("audit counts spine + ops + act", audit["procedure_count"] >= 12)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)
@@ -219,12 +223,16 @@ def test_ops_jobcheck_anchors_in_manifest() -> None:
 
 def test_shell_catalog_nav_wiring() -> None:
     """Job Check → Field Guide must not dead-end: shell injects catalog nextpath."""
+    import re
+
     shell = (ROOT / "web" / "fieldguide.html").read_text(encoding="utf-8")
     service = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
     check("shell enhanceCatalogDoc", "function enhanceCatalogDoc" in shell)
     check("shell fetches procedure API", "/ui/api/fieldguide/procedure/" in shell)
     check("shell builds nextpath", "buildCatalogNextpathEl" in shell
           and "data-catalog-nav" in shell)
+    check("shell sync nextpath from cards", "catalogNextById" in shell
+          and "mountCatalogNextpath" in shell)
     check("shell hydrates synonyms or search",
           "hydrateCatalogSearch" in shell or "scheduleCatalogSearch" in shell)
     check("procedure API returns render html",
@@ -232,9 +240,9 @@ def test_shell_catalog_nav_wiring() -> None:
     check("html key not hard-None",
           '"html": None,  # shell still owns' not in service)
 
-    from subsystems.fieldguide.catalog import clear_cache, get_procedure
+    from subsystems.fieldguide.catalog import clear_cache, get_procedure, load_catalog
     from subsystems.fieldguide.coach import coach_payload
-    from subsystems.fieldguide.render import render_procedure_article
+    from subsystems.fieldguide.render import render_nextpath_html, render_procedure_article
 
     clear_cache()
     hang = get_procedure("hang")
@@ -243,11 +251,33 @@ def test_shell_catalog_nav_wiring() -> None:
     html = render_procedure_article(hang)
     check("rendered html has nextpath", 'class="nextpath"' in html)
     check("rendered scrape button", 'data-go="scrape"' in html)
+    frag = render_nextpath_html(hang, include_related=False, catalog_nav=True)
+    check("nextpath helper data-go", 'data-go="scrape"' in frag)
+
+    # Offline-first: every catalog procedure's shell section already has nextpath.
+    missing_bake = []
+    for pid, proc in load_catalog()["by_id"].items():
+        m = re.search(
+            rf'<section class="doc" id="{re.escape(pid)}">(.*?)</section>',
+            shell,
+            re.S,
+        )
+        if not m or 'data-catalog-nav="1"' not in m.group(1):
+            missing_bake.append(pid)
+            continue
+        for link in proc.get("next_steps") or []:
+            tid = link.get("procedure_id") or ""
+            if tid and f'data-go="{tid}"' not in m.group(1):
+                missing_bake.append(f"{pid}→{tid}")
+    check("baked nextpath for all catalog docs", missing_bake == [])
 
     coach = coach_payload("hang")
     check("coach catalog_backed", coach.get("catalog_backed") is True)
     related_ids = {r.get("id") for r in coach.get("related") or []}
     check("coach related includes scrape", "scrape" in related_ids)
+
+    act_coach = coach_payload("act")
+    check("act catalog_backed", act_coach.get("catalog_backed") is True)
 
 def main() -> None:
     print("test_fieldguide_platform")

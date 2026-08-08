@@ -34,6 +34,15 @@
       ],
       "search_tags": ["ops", "job start", "logistics", "access", "conditions"],
       "synonyms": ["field ops", "job start", "handoff", "mobilize"]
+    },
+    {
+      "id": "act",
+      "title": "Acoustical ceilings",
+      "summary": "Suspended ACT/CT grid and tile — layout, level mains, even borders.",
+      "icon": "act",
+      "procedure_ids": ["act"],
+      "search_tags": ["act", "acoustical", "drop ceiling", "grid", "suspended ceiling", "ct"],
+      "synonyms": ["drop ceiling", "suspended ceiling", "ceiling grid", "tile ceiling"]
     }
   ],
   "categories": [
@@ -76,6 +85,14 @@
         "scaffold-lifts"
       ],
       "order": 3
+    },
+    {
+      "id": "act-ceilings",
+      "trade_id": "act",
+      "title": "Acoustical ceilings",
+      "summary": "CT / ACT grid layout, hanger wire, and tile — level and even borders.",
+      "procedure_ids": ["act"],
+      "order": 4
     }
   ],
   "featured_procedure_ids": ["framing", "hang", "scrape", "finish"],
@@ -125,6 +142,10 @@
     "cold": "job-conditions",
     "window returns": "window-returns",
     "window type": "window-returns",
-    "windows": "window-returns"
+    "windows": "window-returns",
+    "act": "act",
+    "drop ceiling": "act",
+    "suspended ceiling": "act",
+    "ceiling grid": "act"
   }
 }
