@@ -46,6 +46,13 @@ PROCEDURE_ID_ALIASES: dict[str, str] = {
     "clean-out": "cleanout",
     "cleaned-out": "cleanout",
     "cleanup": "cleanout",
+    "qc": "qc-walk",
+    "quality-control": "qc-walk",
+    "raking-light": "qc-walk",
+    "closeout": "closeout-rhythm",
+    "end-of-day": "closeout-rhythm",
+    "eod": "closeout-rhythm",
+    "completion-date": "closeout-rhythm",
 }
 
 _CACHE: dict[str, Any] = {

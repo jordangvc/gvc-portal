@@ -1,0 +1,161 @@
+{
+  "id": "closeout-rhythm",
+  "slug": "closeout-rhythm",
+  "title": "End-of-Day / End-of-Week Closeout",
+  "short_answer": "Morning Brief opens the day. Closeout closes it: honest Job Check, photos, material, and tomorrow's first hour — without broadcasting prep to #operations.",
+  "summary": "Morning Brief opens the day. Closeout closes it: honest Job Check, photos, material, and tomorrow's first hour — without broadcasting prep to #operations.",
+  "plain_words": "Do not leave the site with Monday still lying and tomorrow's stock unknown. A five-minute closeout beats a twenty-minute argument in the morning huddle.",
+  "when_to_use": [
+    "End of every work day on an active job",
+    "End of week before crew leaves the site",
+    "Before claiming Completion Date on Job Check"
+  ],
+  "prerequisites": [
+    "QC walk done for any stage you plan to advance",
+    "Lead knows tomorrow's first room and material state"
+  ],
+  "trade_id": "drywall",
+  "category_id": "jobcheck-gates",
+  "template": "task_guide",
+  "jobcheck_stage": "Completion Date",
+  "role_tags": [
+    "lead",
+    "foreman",
+    "ops"
+  ],
+  "tools": [
+    {
+      "name": "Phone camera (job Pictures habit)"
+    },
+    {
+      "name": "Job Check / portal access"
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Job Check: only stages that passed QC. Clear mistakes; do not advance on hope.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Photos of finished areas / hold points / damage — job Pictures habit the lead uses.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Material: cover what needs covering; note shortages; stage tomorrow's first room.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Action Requests / open questions from the brief — ack or escalate; silence is not a plan.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Standing-by or extras today: written record same day (Change Order page).",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Week end: returnable overage counted; Cleaned Out honest where claimed; punch list ownership clear.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Never post prep to #operations",
+      "body": "Closeout notes that are really prep/route/huddle content stay in side chat or DM — never Slack #operations. Same locked rule as Morning Brief. Jordan 2026-08-05."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "id": "co-jobcheck-honest",
+      "prompt": "Job Check stages match QC reality — no hope advances",
+      "severity": "required"
+    },
+    {
+      "id": "co-tomorrow-ready",
+      "prompt": "Tomorrow's first room and material shortages are known",
+      "severity": "required"
+    },
+    {
+      "id": "co-slack-boundary",
+      "prompt": "Prep/route/huddle content stayed in side chat or DM, not #operations",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Monday still lying",
+      "wrong": "Leave with inflated Job Check chips and no photos",
+      "right": "Five-minute closeout: honest board, pictures, material note",
+      "why": "Morning huddle arguments are expensive"
+    },
+    {
+      "title": "Broadcasting prep",
+      "wrong": "Post route/prep/huddle content to Slack #operations",
+      "right": "Side chat or DM only — same rule as Morning Brief",
+      "why": "Locked ops rule — Jordan 2026-08-05 / AGENTS.md"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "finish",
+    "hang",
+    "qc-walk",
+    "cleanout"
+  ],
+  "next_steps": [
+    {
+      "id": "qc-walk",
+      "label": "Before advancing stages",
+      "why": "Pass/fix walk decides whether Job Check moves"
+    },
+    {
+      "id": "cleanout",
+      "label": "Stage clean standards",
+      "why": "Honest Cleaned Out before closeout claims completion"
+    }
+  ],
+  "search_tags": [
+    "closeout",
+    "end of day",
+    "completion date",
+    "eod",
+    "eow",
+    "morning brief"
+  ],
+  "synonyms": [
+    "closeout",
+    "end of day",
+    "completion date",
+    "eod",
+    "eow",
+    "end of week closeout"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC ops practice completing Lead Day + Morning Prep loops. Slack rule: Jordan 2026-08-05 / AGENTS.md locked #0.",
+    "sources": [
+      "GVC Field Manual",
+      "AGENTS.md",
+      "Job Check Completion Date column"
+    ]
+  }
+}

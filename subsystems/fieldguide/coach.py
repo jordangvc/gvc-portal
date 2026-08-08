@@ -529,23 +529,65 @@ def resolve_procedure_id(
 
 
 def coach_payload(procedure_id: Optional[str]) -> dict[str, Any]:
-    """Build the coach content dict for one procedure (or fallback)."""
-    if procedure_id and procedure_id in PROCEDURE_COACH:
-        entry = PROCEDURE_COACH[procedure_id]
-        return {
-            "procedure": procedure_id,
-            "title": entry["title"],
-            "summary": entry["summary"],
-            "next_steps": list(entry["next_steps"]),
-            "related": list(entry["related"]),
-        }
-    fb = FALLBACK_COACH
+    """Build the coach content dict for one procedure (or fallback).
+
+    Stand-behind checklist steps stay in ``PROCEDURE_COACH``. When the
+    Field Guide catalog has the same id, merge its ``next_steps`` /
+    ``related`` into the related list so coach navigation matches the
+    catalog spine (no dual next-path drift).
+    """
+    from subsystems.fieldguide.catalog import (
+        get_procedure,
+        resolve_procedure_id as catalog_resolve,
+    )
+
+    pid = procedure_id
+    if pid:
+        pid = catalog_resolve(pid) or pid
+
+    if pid and pid in PROCEDURE_COACH:
+        entry = PROCEDURE_COACH[pid]
+        related = [dict(r) for r in entry["related"]]
+        summary = entry["summary"]
+        title = entry["title"]
+        next_steps = list(entry["next_steps"])
+    else:
+        fb = FALLBACK_COACH
+        related = [dict(r) for r in fb["related"]]
+        summary = fb["summary"]
+        title = fb["title"]
+        next_steps = list(fb["next_steps"])
+        pid = pid or "unknown"
+
+    proc = None
+    try:
+        proc = get_procedure(pid) if pid and pid != "unknown" else None
+    except (FileNotFoundError, ValueError, OSError):
+        proc = None
+    if proc:
+        if proc.get("short_answer"):
+            summary = proc["short_answer"]
+        if proc.get("title"):
+            title = proc["title"]
+        seen = {str(r.get("id") or "") for r in related}
+        for link in (proc.get("next_steps") or []) + (proc.get("related") or []):
+            target = link.get("procedure_id") or ""
+            if not target or target in seen:
+                continue
+            related.append({
+                "id": target,
+                "title": link.get("label") or target,
+                "why": link.get("why") or "",
+            })
+            seen.add(target)
+
     return {
-        "procedure": procedure_id or "unknown",
-        "title": fb["title"],
-        "summary": fb["summary"],
-        "next_steps": list(fb["next_steps"]),
-        "related": list(fb["related"]),
+        "procedure": pid,
+        "title": title,
+        "summary": summary,
+        "next_steps": next_steps,
+        "related": related,
+        "catalog_backed": bool(proc),
     }
 
 

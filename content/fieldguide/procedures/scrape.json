@@ -3,7 +3,7 @@
   "slug": "scrape",
   "title": "Scraping (Knockdown)",
   "short_answer": "After hang, before tape: knock down high edges, proud screws, and loose paper so the first coat has a fair plane.",
-  "summary": "Light knockdown pass that prepares hung board for tape \u2014 not a full finish skim.",
+  "summary": "The cheapest labor in the entire drywall sequence, and it directly replaces the most expensive. This is why it's a tracked stage of its own.",
   "when_to_use": [
     "Hanging Status is Done",
     "Before Taped Status / first coat",
@@ -22,7 +22,7 @@
     "crew",
     "lead"
   ],
-  "plain_words": "Scraping is the knockdown pass between hang and tape. You are not finishing \u2014 you are removing the things that make tape fail: proud screw heads, raised mill edges, torn face paper, and loose crumbs. A fair plane now saves coats later.",
+  "plain_words": "Before the tapers come in, somebody walks every room with a knife and cleans it up \u2014 shave the bumps off the seams, set every proud screw, cut out the boxes that got missed, sweep out the scrap. Then between coats, you shave the ridges off while the mud is still soft. That's it. It's simple work and it saves more time than almost anything else we do.",
   "tools": [
     {
       "name": "6\u20138\" taping knife",
@@ -50,32 +50,80 @@
   "steps": [
     {
       "order": 1,
-      "title": "Walk with raking light if you can",
-      "body": "Sight along the plane. Mark high edges and proud fasteners \u2014 do not chase every cosmetic nick.",
+      "title": "",
+      "body": "Run a knife over every seam and edge \u2014 knock off crumbs, dust ridges, and loose torn paper.",
       "checklist": true
     },
     {
       "order": 2,
-      "title": "Reset proud screws",
-      "body": "Back out and reset beside torn paper. Dimple clean heads; never leave a crater of torn face paper.",
+      "title": "",
+      "body": "Check every screw. Proud ones get set. Broken-paper ones get a new screw beside them.",
       "checklist": true
     },
     {
       "order": 3,
-      "title": "Knock down high mill edges",
-      "body": "Light knife or rasp on raised factory edges at butts. Do not dig into the core.",
+      "title": "",
+      "body": "Find and cut the missed openings \u2014 boxes, sprinkler drops, access panels. Found here, not by an electrician with a hammer.",
       "checklist": true
     },
     {
       "order": 4,
-      "title": "Trim loose paper",
-      "body": "Cut torn face paper clean; loose flaps become blisters under tape.",
+      "title": "",
+      "body": "Knock down high spots at butt joints and anywhere board isn't sitting flat.",
       "checklist": true
     },
     {
       "order": 5,
-      "title": "Sweep / vacuum",
-      "body": "Crumbs under tape = blisters. Clean the plane before mud.",
+      "title": "",
+      "body": "Pre-fill oversized gaps and voids with setting compound now, so the taper isn't building a bridge.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Clear scrap and debris out of the room and off the floor.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Walk it the way the taper will: if you'd have to stop and fix something, fix it now.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Every seam and edge clean of crumbs and loose paper.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Every screw set; broken ones addressed.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "All openings cut, including the missed ones.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Oversized gaps and voids pre-filled.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Floor clear of scrap and cured mud.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "A taper could start without stopping. Scrapping Status updated.",
       "checklist": true
     }
   ],

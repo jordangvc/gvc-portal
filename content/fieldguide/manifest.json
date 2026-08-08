@@ -14,7 +14,9 @@
         "scrape",
         "finish",
         "level5-skim",
-        "cleanout"
+        "cleanout",
+        "qc-walk",
+        "closeout-rhythm"
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
       "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
@@ -36,6 +38,17 @@
         "cleanout"
       ],
       "order": 1
+    },
+    {
+      "id": "jobcheck-gates",
+      "trade_id": "drywall",
+      "title": "Job Check gates",
+      "summary": "QC walk and closeout — honest board updates before stages advance or the day ends.",
+      "procedure_ids": [
+        "qc-walk",
+        "closeout-rhythm"
+      ],
+      "order": 2
     }
   ],
   "featured_procedure_ids": ["framing", "hang", "scrape", "finish"],
@@ -49,7 +62,9 @@
     "Sanded": "finish",
     "Finishing Stage": "finish",
     "Text/Skim": "level5-skim",
-    "Cleaned Out": "cleanout"
+    "Cleaned Out": "cleanout",
+    "Completion Date": "closeout-rhythm",
+    "Notes": "qc-walk"
   },
   "synonym_hints": {
     "frame": "framing",
@@ -57,6 +72,11 @@
     "scrapping": "scrape",
     "knockdown": "scrape",
     "hang rock": "hang",
-    "level 5": "level5-skim"
+    "level 5": "level5-skim",
+    "qc": "qc-walk",
+    "raking light": "qc-walk",
+    "closeout": "closeout-rhythm",
+    "completion date": "closeout-rhythm",
+    "end of day": "closeout-rhythm"
   }
 }

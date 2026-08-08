@@ -6251,6 +6251,7 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       if (NON_PROC.indexOf(docId) === -1) { renderBar(); }
       syncCoachBar(docId);
       if (docId === "home") { renderContinueCard(); }
+      enhanceCatalogDoc(docId);
     };
 
     /* Migrate the old index-array format once, then load initial state. */
@@ -6410,6 +6411,84 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
     /* Catalog synonyms (content/fieldguide) — expands home search for migrated ids. */
     var catalogSynonyms = null;
+    var catalogIds = null;
+    var catalogNavDone = {};
+    var catalogNavPending = {};
+
+    function buildCatalogNextpathEl(proc) {
+      var next = (proc && proc.next_steps) || [];
+      var related = (proc && proc.related) || [];
+      if (!next.length && !related.length) { return null; }
+      var div = document.createElement("div");
+      div.className = "nextpath";
+      div.setAttribute("data-catalog-nav", "1");
+      div.setAttribute("aria-label", "What next");
+      var tag = document.createElement("span");
+      tag.className = "tag";
+      tag.textContent = "What's next";
+      div.appendChild(tag);
+      function row(links, label) {
+        if (!links.length) { return; }
+        var p = document.createElement("p");
+        if (label) {
+          var t = document.createElement("span");
+          t.className = "tag";
+          t.textContent = label;
+          p.appendChild(t);
+          p.appendChild(document.createTextNode(" "));
+        }
+        links.forEach(function (link, i) {
+          if (i) { p.appendChild(document.createTextNode(" · ")); }
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "doclink";
+          btn.setAttribute("data-go", link.procedure_id || link.id || "");
+          btn.textContent = link.label || link.title || link.procedure_id || link.id || "";
+          p.appendChild(btn);
+          if (link.why) {
+            p.appendChild(document.createTextNode(" "));
+            var why = document.createElement("span");
+            why.className = "why";
+            why.textContent = "(" + link.why + ")";
+            p.appendChild(why);
+          }
+        });
+        div.appendChild(p);
+      }
+      row(next, null);
+      row(related, "Related");
+      return div;
+    }
+
+    function enhanceCatalogDoc(docId) {
+      if (!docId || NON_PROC.indexOf(docId) !== -1) { return; }
+      if (catalogNavDone[docId] || catalogNavPending[docId]) { return; }
+      if (catalogIds && catalogIds.indexOf(docId) === -1) { return; }
+      if (typeof navigator !== "undefined" && navigator.onLine === false) { return; }
+      catalogNavPending[docId] = true;
+      fetch("/ui/api/fieldguide/procedure/" + encodeURIComponent(docId))
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (j) {
+          catalogNavPending[docId] = false;
+          if (!j || !j.procedure) { return; }
+          catalogNavDone[docId] = true;
+          var sec = document.getElementById(docId);
+          if (!sec) { return; }
+          var old = sec.querySelector(".nextpath[data-catalog-nav]");
+          if (old) { old.parentNode.removeChild(old); }
+          var nav = buildCatalogNextpathEl(j.procedure);
+          if (!nav) { return; }
+          var prov = sec.querySelector(".provenance");
+          if (prov && prov.parentNode === sec) {
+            sec.insertBefore(nav, prov);
+          } else {
+            sec.appendChild(nav);
+          }
+          sec.setAttribute("data-catalog", "1");
+        })
+        .catch(function () { catalogNavPending[docId] = false; });
+    }
+
     function hydrateCatalogSearch() {
       if (typeof navigator !== "undefined" && navigator.onLine === false) { return; }
       fetch("/ui/api/fieldguide/catalog")
@@ -6417,16 +6496,23 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
         .then(function (j) {
           if (!j || !j.cards) { return; }
           var map = {};
+          var ids = [];
           (j.cards || []).forEach(function (c) {
             if (!c || !c.id) { return; }
+            var id = String(c.id).toLowerCase();
+            ids.push(id);
             var bits = []
               .concat(c.synonyms || [])
               .concat(c.tags || [])
               .concat(c.jobcheck_stage ? [c.jobcheck_stage] : []);
-            map[String(c.id).toLowerCase()] = bits.join(" ").toLowerCase();
+            map[id] = bits.join(" ").toLowerCase();
           });
           catalogSynonyms = map;
+          catalogIds = ids;
           applyHomeFilter();
+          if (currentDoc && currentDoc !== "home") {
+            enhanceCatalogDoc(currentDoc);
+          }
         })
         .catch(function () { /* shell search still works without catalog */ });
     }
@@ -6442,9 +6528,20 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
 
     function applyHomeFilter() {
       var q = (homeSearch && homeSearch.value || "").trim().toLowerCase();
+      applyHomeFilterLocal(q);
+      scheduleCatalogSearch(q);
+    }
+
+    var catalogSearchBoost = {};
+    var catalogSearchTimer = null;
+    var catalogSearchQuery = "";
+
+    function applyHomeFilterLocal(q) {
+      q = (q != null ? q : (homeSearch && homeSearch.value || "")).trim().toLowerCase();
       var anyVisible = false;
       homeTiles.forEach(function (tile) {
-        var textOk = !q || tileSearchText(tile).indexOf(q) !== -1;
+        var go = (tile.getAttribute("data-go") || "").toLowerCase();
+        var textOk = !q || tileSearchText(tile).indexOf(q) !== -1 || !!catalogSearchBoost[go];
         var roleOk = tileMatchesRole(tile, selectedRole);
         var showTile = textOk && roleOk;
         tile.classList.toggle("is-hidden", !showTile);
@@ -6466,6 +6563,35 @@ main { max-width:64rem; margin:0 auto; padding:24px 16px 60px; }
       if (homeSearchClear) {
         homeSearchClear.hidden = !q;
       }
+    }
+
+    function scheduleCatalogSearch(q) {
+      if (catalogSearchTimer) { clearTimeout(catalogSearchTimer); catalogSearchTimer = null; }
+      if (!q) {
+        if (Object.keys(catalogSearchBoost).length) {
+          catalogSearchBoost = {};
+          applyHomeFilterLocal("");
+        }
+        catalogSearchQuery = "";
+        return;
+      }
+      if (typeof navigator !== "undefined" && navigator.onLine === false) { return; }
+      catalogSearchTimer = setTimeout(function () {
+        catalogSearchTimer = null;
+        catalogSearchQuery = q;
+        fetch("/ui/api/fieldguide/search?q=" + encodeURIComponent(q) + "&limit=20")
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            if (catalogSearchQuery !== q) { return; } /* stale */
+            var boost = {};
+            ((j && j.results) || []).forEach(function (hit) {
+              if (hit && hit.id) { boost[String(hit.id).toLowerCase()] = true; }
+            });
+            catalogSearchBoost = boost;
+            applyHomeFilterLocal(q);
+          })
+          .catch(function () { /* local filter still works */ });
+      }, 160);
     }
 
     function setRoleFilter(role, persist) {

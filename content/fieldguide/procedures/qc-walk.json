@@ -1,0 +1,225 @@
+{
+  "id": "qc-walk",
+  "slug": "qc-walk",
+  "title": "QC Walk Before \"Done\"",
+  "short_answer": "The five-to-ten-minute walk that decides whether Job Check advances. Raking light tells the truth; hope does not.",
+  "summary": "The five-to-ten-minute walk that decides whether Job Check advances. Raking light tells the truth; hope does not.",
+  "plain_words": "Do not mark a stage complete because the crew is tired or the GC is waiting. Walk it. Use light at a low angle. If you would be embarrassed to hand the phone to a finisher or a painter, it is not done.",
+  "when_to_use": [
+    "Before advancing any Job Check stage chip",
+    "Leadership pass before the office or GC trusts the board",
+    "Notes column context when a stage is borderline"
+  ],
+  "prerequisites": [
+    "Stage work claimed complete enough to walk",
+    "Bright light available for raking pass"
+  ],
+  "trade_id": "drywall",
+  "category_id": "jobcheck-gates",
+  "template": "task_guide",
+  "jobcheck_stage": "Notes",
+  "role_tags": [
+    "lead",
+    "foreman",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Bright work light (raking / grazing angle)"
+    },
+    {
+      "name": "Low-tack tape or pencil for marking"
+    },
+    {
+      "name": "Phone camera",
+      "optional": true
+    }
+  ],
+  "materials": [],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Bring a bright light you can hold near-parallel to the wall (raking light).",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Mark outside the defect — low-tack tape or pencil, never marker (marker bleeds).",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Photo representative fails if the crew needs a teaching moment or the office needs evidence.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Only then update Job Check. Status is a promise to the next trade and to the office.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Ship / fix / call: ship if it passes; fix if it is our work; call if it is scope, rating, or another trade's damage.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "The expensive work is the work you do twice",
+      "body": "Scraping deletes sanding. Layout deletes butt joints. A QC walk deletes remobilization. Front-load the cheap step."
+    }
+  ],
+  "variations": [
+    {
+      "id": "qc-framing",
+      "title": "Framing",
+      "when": "Framing Status walk",
+      "changes": [
+        "Pass: layout true; studs on module; backing present; RO correct",
+        "Fix: missing backing, wrong gauge/spacing, head-of-wall guesswork"
+      ]
+    },
+    {
+      "id": "qc-hang",
+      "title": "Hang",
+      "when": "Hanging Status walk",
+      "changes": [
+        "Pass: factory edges used; fasteners set; cutouts clean; rated layers match listing",
+        "Fix: forced board, proud screws, boarded-over wrong MEP"
+      ]
+    },
+    {
+      "id": "qc-scrap",
+      "title": "Scrap",
+      "when": "Scrapping Status walk",
+      "changes": [
+        "Pass: high spots shaved; dirt/dust off for tape",
+        "Fix: skipping scrape to \"sand later\""
+      ]
+    },
+    {
+      "id": "qc-finish",
+      "title": "Finish",
+      "when": "Tape / coat / sand / skim walk",
+      "changes": [
+        "Pass: coat sequence honest; level matches spec; no telegraphing ridges",
+        "Fix: advancing coats over green mud; Level 5 never confirmed"
+      ]
+    },
+    {
+      "id": "qc-act",
+      "title": "ACT",
+      "when": "Ceiling grid / tile walk",
+      "changes": [
+        "Pass: level grid; equal borders; wires on structure; clean tile",
+        "Fix: wires on duct; dirty borders; seismic carried from last job wrongly"
+      ]
+    },
+    {
+      "id": "qc-punch",
+      "title": "Punch",
+      "when": "Pre-paint / handoff walk",
+      "changes": [
+        "Pass: drywall defects fixed before paint touch-up",
+        "Fix: paint over dust or unprimed compound"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "qc-raking-light",
+      "prompt": "Walked with raking light at a low angle",
+      "severity": "required"
+    },
+    {
+      "id": "qc-pass-fix",
+      "prompt": "Each visible defect is ship, fix, or call — not hope",
+      "severity": "required"
+    },
+    {
+      "id": "qc-jobcheck-honest",
+      "prompt": "Job Check updated only after the walk passes",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Advancing on hope",
+      "wrong": "Flip the chip because the GC is waiting or the crew is tired",
+      "right": "Walk it with raking light first",
+      "why": "Status is a promise to the next trade and the office"
+    },
+    {
+      "title": "Marker on finish",
+      "wrong": "Circle defects with permanent marker",
+      "right": "Low-tack tape or pencil outside the defect",
+      "why": "Marker bleeds through primer and paint"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "hang",
+    "framing",
+    "level5-skim",
+    "cleanout"
+  ],
+  "next_steps": [
+    {
+      "id": "finish",
+      "label": "If coats remain",
+      "why": "Back to finishing sequence after fixes"
+    },
+    {
+      "id": "scrape",
+      "label": "If scrape was skipped",
+      "why": "High spots belong before tape — not \"sand later\""
+    },
+    {
+      "id": "cleanout",
+      "label": "After fixes",
+      "why": "Honest Cleaned Out before the next trade"
+    },
+    {
+      "id": "closeout-rhythm",
+      "label": "End of day",
+      "why": "Close the loop — honest Job Check and tomorrow prep"
+    }
+  ],
+  "search_tags": [
+    "qc",
+    "quality control",
+    "raking light",
+    "punch walk",
+    "pass fail",
+    "job check notes"
+  ],
+  "synonyms": [
+    "qc",
+    "quality control",
+    "raking light",
+    "punch walk",
+    "pass fail",
+    "qc walk",
+    "quality walk"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "GVC practice + GA-214 finish levels (see Finishing). Raking-light ritual also drives Drywall Touch-Up. No production rates — stage history in Job Check is the real measure later.",
+    "sources": [
+      "GVC Field Manual",
+      "GA-214",
+      "Job Check Notes column"
+    ]
+  }
+}

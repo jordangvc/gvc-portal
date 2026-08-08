@@ -131,9 +131,9 @@ def test_repo_catalog_hang_scrape() -> None:
     html = render_procedure_article(cat["by_id"]["hang"])
     check("article doc class", 'class="doc"' in html and 'id="hang"' in html)
     check("plainwords", "plainwords" in html)
-    check("steps checklist", 'class="steps"' in html)
-    check("nextpath", "nextpath" in html)
-    check("no dead end — next scrape", "#scrape" in html)
+    check("steps checklist", 'class="steps"' in html and 'class="txt"' in html)
+    check("nextpath data-go", "nextpath" in html and 'data-go="scrape"' in html)
+    check("no dead end — next scrape", "#scrape" in html or 'data-go="scrape"' in html)
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
@@ -187,11 +187,10 @@ def test_jobcheck_anchors_match_catalog_spine() -> None:
 
     clear_cache()
     known = set(load_catalog()["by_id"])
-    shell_only = {"closeout-rhythm", "qc-walk"}  # still HTML-only
     missing = []
     for _col, anchor in JOBCHECK_FIELDGUIDE_ANCHORS.items():
         pid = resolve_procedure_id((anchor or "").lstrip("#"))
-        if pid in known or pid in shell_only:
+        if pid in known:
             continue
         missing.append(f"{_col}→{anchor}")
     check("no unknown Job Check→Field Manual anchors", missing == [])
