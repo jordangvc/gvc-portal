@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Money-form CSS extracted into gvc.css (r97) — BUILT 2026-08-08
+Estimate / Invoice / Change Order / Check / Job Start / COI no longer ship the
+~110-line money-generator `<style>` clone. Shared dialect lives under
+`.gvc-moneyform` in `web/gvc.css` (inputs use `--color-input-bg`; topbar
+`#health`/`.dot` + `.modal-overlay` are document-level). Page widgets stay
+local. Hub **r97**.
+
 ## ✨ Owner Pulse + search Monday auth honesty (r96) — BUILT 2026-08-08
 Follow-on to r94: Owner Pulse returns `ok`/`monday_ok` false on auth death
 (hub never gold-clears over empty safety stops). Search legs

@@ -153,6 +153,6 @@ that can finish the job. Never leave a control that silently no-ops.
 
 1. Tokens + button/savebar aliases in `gvc.css` (done in this system pass)
 2. Dead-end flow fixes (Morning Maps, Job Start leave-save, hub dim toast, …)
-3. Extract remaining money-page CSS clones into `gvc.css` / shared sheet
+3. ~~Extract remaining money-page CSS clones into `gvc.css` / shared sheet~~ **Done (r97)**
 4. One HTML shell include (server-side) when we stop shipping full documents
 5. Field Manual token convergence (keep content; drop private greens)

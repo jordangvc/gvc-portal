@@ -965,6 +965,296 @@ a.gvc-flow__step:hover{ background:var(--gvc-surface); text-decoration:underline
 }
 .gvc-back:hover{ text-decoration:underline; color:var(--gvc-green); }
 
+/* ---------- money-form shared dialect (Estimate / Invoice / CO / Check / Job Start / COI)
+   Opt-in: class "gvc-moneyform" on <main class="gvc-shell">.
+   JS keeps legacy .btn / .card / .line-item class names.
+   Topbar #health/.dot and .modal-overlay live at document level (outside main). */
+
+/* Topbar health (shared across money + billing/jobcheck/lien) */
+.gvc-topbar #health{
+  font-size:var(--gvc-fs-caption);
+  color:var(--color-text-on-brand-muted, #DCE8DD);
+  display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; align-items:center;
+}
+.gvc-topbar .dot{
+  width:9px; height:9px; border-radius:50%;
+  background:var(--color-status-idle, #C8C2B0);
+  display:inline-block; margin-right:5px;
+}
+.gvc-topbar .dot.ok{ background:var(--gvc-brand-bright); }
+.gvc-topbar .dot.bad{ background:var(--gvc-danger-soft, #E88070); }
+
+/* Legacy correction / picker modals (body-level; money pages only today) */
+.modal-overlay{
+  position:fixed; inset:0; background:rgba(28,25,23,.45);
+  display:none; align-items:center; justify-content:center;
+  z-index:80; padding:var(--gvc-space-4);
+}
+.modal-overlay.show{ display:flex; }
+.modal-overlay .modal,
+.gvc-moneyform .modal{
+  background:var(--gvc-surface); border-radius:var(--gvc-r-lg);
+  border:1px solid var(--gvc-line); max-width:640px; width:100%;
+  max-height:90vh; overflow:auto; box-shadow:0 16px 40px rgba(0,0,0,.18);
+}
+.modal-overlay .modal-hd, .modal-overlay .modal-head,
+.gvc-moneyform .modal-hd{
+  padding:var(--gvc-space-4) var(--gvc-space-5);
+  border-bottom:1px solid var(--gvc-line);
+  display:flex; justify-content:space-between; align-items:center; gap:var(--gvc-space-3);
+}
+.modal-overlay .modal-bd, .modal-overlay .modal-body,
+.gvc-moneyform .modal-bd{
+  padding:var(--gvc-space-5);
+}
+.modal-overlay .modal-ft,
+.gvc-moneyform .modal-ft{
+  padding:var(--gvc-space-4) var(--gvc-space-5);
+  border-top:1px solid var(--gvc-line);
+  display:flex; gap:var(--gvc-space-3); flex-wrap:wrap; justify-content:flex-end;
+}
+.modal-overlay .modal-x{
+  border:0; background:transparent; font-size:22px; line-height:1;
+  cursor:pointer; color:var(--gvc-muted); padding:4px 8px;
+}
+.modal-overlay .modal-x:hover{ color:var(--gvc-ink); }
+
+.gvc-moneyform #status{ display:none; }
+.gvc-moneyform #status.show{ display:flex; }
+.gvc-moneyform #preview-card{ display:none; }
+.gvc-moneyform #preview-card.show{ display:block; }
+.gvc-moneyform iframe{
+  width:100%; height:760px; border:1px solid var(--gvc-line);
+  border-radius:var(--gvc-r-md); background:var(--gvc-surface);
+}
+
+.gvc-moneyform .card{
+  background:var(--gvc-surface); border:1px solid var(--gvc-line);
+  border-radius:var(--gvc-r-lg);
+  box-shadow:var(--gvc-shadow-sm, 0 1px 2px rgba(28,25,23,.06));
+  overflow:hidden;
+}
+.gvc-moneyform .card > h2{
+  margin:0; padding:14px 18px; font-size:var(--gvc-fs-small); font-weight:700;
+  letter-spacing:.04em; text-transform:uppercase; color:var(--gvc-ink-soft);
+  border-bottom:1px solid var(--gvc-line-soft);
+  /* background/color: density block below tints the header */
+}
+.gvc-moneyform .card > h2 .opt{
+  text-transform:none; letter-spacing:0; font-weight:400; color:var(--gvc-muted);
+}
+.gvc-moneyform .card > :not(h2){ margin-left:18px; margin-right:18px; }
+.gvc-moneyform .card > :not(h2):first-of-type{ margin-top:16px; }
+.gvc-moneyform .card > :last-child{ margin-bottom:18px; }
+.gvc-moneyform .card .actions{ margin:16px 18px 18px; }
+.gvc-moneyform .card .grid{ margin:16px 18px; }
+.gvc-moneyform .card .hint{ margin-left:18px; margin-right:18px; }
+
+.gvc-moneyform .grid{
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:var(--gvc-space-4);
+}
+.gvc-moneyform .grid .full{ grid-column:1 / -1; }
+@media (max-width:720px){
+  .gvc-moneyform .grid{ grid-template-columns:1fr; }
+}
+
+.gvc-moneyform label{
+  display:block; font-size:var(--gvc-fs-small); font-weight:600;
+  margin-bottom:4px; color:var(--gvc-ink-soft);
+}
+.gvc-moneyform label .opt{ font-weight:400; color:var(--gvc-muted); }
+.gvc-moneyform input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]),
+.gvc-moneyform textarea,
+.gvc-moneyform select{
+  width:100%; padding:9px 12px;
+  border:1px solid var(--gvc-line-strong, var(--gvc-line));
+  border-radius:var(--gvc-r-md);
+  font:inherit; font-size:var(--gvc-fs-body); color:var(--gvc-ink);
+  background:var(--color-input-bg, var(--gvc-surface));
+  min-height:var(--gvc-ctl-h);
+  transition: border-color .12s ease, box-shadow .12s ease;
+}
+.gvc-moneyform textarea{ resize:vertical; min-height:64px; height:auto; }
+.gvc-moneyform input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):hover,
+.gvc-moneyform textarea:hover,
+.gvc-moneyform select:hover{ border-color: var(--gvc-muted); }
+.gvc-moneyform input:not([type=checkbox]):not([type=radio]):not([type=file]):not([type=hidden]):focus,
+.gvc-moneyform textarea:focus,
+.gvc-moneyform select:focus{
+  outline: none;
+  border-color: var(--gvc-green);
+  box-shadow: var(--gvc-focus);
+}
+.gvc-moneyform .hint{
+  font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:4px;
+}
+
+/* Money primary is green fill; Command .btn stays surface elsewhere. */
+.gvc-moneyform .btn{
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  border:1px solid transparent; border-radius:var(--gvc-r-md);
+  padding:0 16px; min-height:var(--gvc-ctl-h);
+  font:inherit; font-size:var(--gvc-fs-small); font-weight:700; cursor:pointer;
+  background:var(--gvc-green); color:var(--color-on-primary, #fff);
+}
+.gvc-moneyform .btn:hover{ background:var(--gvc-green-dark); }
+.gvc-moneyform .btn.secondary{
+  background:var(--gvc-surface); color:var(--gvc-green-dark);
+  border-color:var(--gvc-line);
+}
+.gvc-moneyform .btn.secondary:hover{ background:var(--gvc-tint-green); }
+.gvc-moneyform .btn.danger{
+  background:var(--gvc-surface); color:var(--gvc-danger);
+  border-color:var(--color-danger-border, #E2C3BA);
+}
+.gvc-moneyform .btn.gold{
+  background:var(--gvc-gold); color:var(--color-on-accent, #3A2D0E);
+  border-color:var(--gvc-gold-dark); font-weight:700;
+}
+.gvc-moneyform .btn.gold:hover{
+  background:var(--gvc-gold-dark); color:var(--color-text-inverse, #fff);
+}
+.gvc-moneyform .btn.small{
+  min-height:36px; padding:0 12px; font-size:var(--gvc-fs-caption);
+}
+.gvc-moneyform .btn:disabled{ opacity:.5; cursor:not-allowed; }
+
+.gvc-moneyform .actions{
+  display:flex; gap:var(--gvc-space-3); align-items:center; flex-wrap:wrap;
+}
+.gvc-moneyform .totals{
+  margin-left:auto; text-align:right;
+  font-size:var(--gvc-fs-small); color:var(--gvc-muted);
+}
+.gvc-moneyform .totals strong{ color:var(--gvc-ink); font-size:var(--gvc-fs-body); }
+.gvc-moneyform .result-line{ padding:4px 0; }
+.gvc-moneyform .result-line a{ color:var(--gvc-green-dark); font-weight:600; }
+.gvc-moneyform code{
+  background:var(--gvc-line-soft); padding:1px 5px;
+  border-radius:var(--gvc-r-sm); font-size:var(--gvc-fs-caption);
+}
+.gvc-moneyform .spinner{ display:none; }
+.gvc-moneyform .spinner.show{ display:inline; }
+.gvc-moneyform .save-state{
+  font-size:var(--gvc-fs-caption); color:var(--gvc-muted);
+  margin-left:auto; align-self:center;
+}
+.gvc-moneyform .save-state.synced{ color:var(--gvc-green-dark); }
+.gvc-moneyform .save-state.local{ color:var(--gvc-gold-dark); }
+
+.gvc-moneyform .draft-row{
+  display:flex; align-items:center; gap:var(--gvc-space-3);
+  padding:10px 12px; border:1px solid var(--gvc-line);
+  border-radius:var(--gvc-r-md); margin-bottom:8px; background:var(--gvc-bg);
+}
+.gvc-moneyform .draft-row.active{
+  border-color:var(--gvc-green); background:var(--gvc-tint-green);
+}
+.gvc-moneyform .draft-row .d-main{ flex:1; min-width:0; }
+.gvc-moneyform .draft-row .d-label{
+  font-weight:600; color:var(--gvc-ink);
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+}
+.gvc-moneyform .draft-row .d-meta{
+  font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:2px;
+}
+.gvc-moneyform .badge{
+  display:inline-block; font-size:11px; padding:1px 7px;
+  border-radius:var(--gvc-r-pill); margin-left:6px; font-weight:600;
+}
+.gvc-moneyform .badge.synced{
+  background:var(--gvc-warn-tint); color:var(--gvc-green-dark);
+  border:1px solid var(--color-warn-border, #E3CFA0);
+}
+.gvc-moneyform .badge.local{
+  background:var(--gvc-warn-tint); color:var(--gvc-gold-dark);
+  border:1px solid var(--color-warn-border, #E3CFA0);
+}
+.gvc-moneyform .badge.active{
+  background:var(--color-info-soft); color:var(--color-info-ink);
+  border:1px solid var(--color-info-border);
+}
+
+.gvc-moneyform .line-item{
+  border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+  padding:12px; margin-bottom:10px; background:var(--gvc-bg);
+}
+.gvc-moneyform .line-item .row1{
+  display:grid; grid-template-columns:1fr 130px 70px auto;
+  gap:10px; align-items:end;
+}
+@media (max-width:720px){
+  .gvc-moneyform .line-item .row1{ grid-template-columns:1fr 1fr; }
+  .gvc-moneyform .line-item .row1 > :last-child{ grid-column:1/-1; }
+}
+.gvc-moneyform .line-item .detail{ margin-top:8px; }
+.gvc-moneyform .line-item .opt-row{
+  margin-top:8px; font-size:var(--gvc-fs-small); color:var(--gvc-ink-soft);
+  display:flex; align-items:center; gap:6px;
+}
+.gvc-moneyform .line-item .opt-row input{ width:auto; min-height:auto; }
+
+.gvc-moneyform .li-scope-badge{
+  display:inline-block; font-size:11px; padding:1px 7px;
+  border-radius:var(--gvc-r-pill); margin-left:6px;
+  background:var(--gvc-warn-tint); color:var(--gvc-green-dark);
+  border:1px solid var(--color-warn-border, #E3CFA0); font-weight:600;
+}
+.gvc-moneyform .scope-trade{ margin-bottom:12px; }
+.gvc-moneyform .scope-trade + .scope-trade{
+  border-top:1px dashed var(--gvc-line); padding-top:12px;
+}
+.gvc-moneyform .scope-trade-name{
+  font-size:var(--gvc-fs-caption); font-weight:700; text-transform:uppercase;
+  letter-spacing:.04em; color:var(--gvc-green-dark); margin-bottom:6px;
+}
+.gvc-moneyform .scope-item{ padding:5px 0; }
+.gvc-moneyform .scope-check{
+  display:flex; align-items:center; gap:8px; font-weight:600;
+  color:var(--gvc-ink-soft); cursor:pointer; margin:0;
+}
+.gvc-moneyform .scope-check input{ width:auto; min-height:auto; }
+.gvc-moneyform .scope-editor{
+  margin:8px 0 4px 26px; padding:10px 12px;
+  border:1px solid var(--gvc-line); border-left:3px solid var(--gvc-green);
+  border-radius:var(--gvc-r-md); background:var(--gvc-surface);
+}
+.gvc-moneyform .scope-editor-row{
+  display:flex; align-items:end; gap:12px; margin-top:8px; flex-wrap:wrap;
+}
+.gvc-moneyform .scope-editor-row .price-wrap{ width:150px; }
+.gvc-moneyform .sc-state{ font-size:var(--gvc-fs-caption); color:var(--gvc-muted); }
+.gvc-moneyform .sc-state.ok{ color:var(--gvc-green-dark); font-weight:600; }
+.gvc-moneyform .sc-state.err{ color:var(--gvc-danger); font-weight:600; }
+.gvc-moneyform .scope-hint{
+  font-size:var(--gvc-fs-caption); color:var(--gvc-muted); margin-top:6px;
+}
+.gvc-moneyform #scope-admin{
+  margin-top:12px; padding:12px; border:1px dashed var(--gvc-green);
+  border-radius:var(--gvc-r-md); background:var(--gvc-surface);
+}
+.gvc-moneyform .cat-trade{
+  border:1px solid var(--gvc-line); border-radius:var(--gvc-r-md);
+  padding:10px; margin-bottom:10px; background:var(--gvc-bg);
+}
+.gvc-moneyform .cat-trade-head{
+  display:flex; gap:8px; align-items:end; margin-bottom:8px;
+}
+.gvc-moneyform .cat-trade-head .grow{ flex:1; }
+.gvc-moneyform .cat-scope{
+  border-top:1px dashed var(--gvc-line); padding:8px 0; margin-top:4px;
+}
+.gvc-moneyform .cat-scope .row{ display:flex; gap:8px; align-items:end; }
+.gvc-moneyform .cat-scope .row .grow{ flex:1; }
+.gvc-moneyform .cat-scope .row .price{ width:120px; }
+
+.gvc-moneyform .sub{
+  margin-top:var(--gvc-space-3); padding:var(--gvc-space-3);
+  border:1px dashed var(--gvc-line); border-radius:var(--gvc-r-md);
+  background:var(--gvc-bg);
+}
+
 /* ---------- money-form density (Estimate / Invoice / Change Order) ----------
    Opt-in: put class "gvc-moneyform" on <main class="gvc-shell">. Keeps legacy
    .card/.btn markup (JS depends on those) but tightens mobile rhythm and
