@@ -131,6 +131,7 @@ def test_hub_refresh_shape() -> None:
     out = hub_flow.build_hub_refresh("dev-bypass@localhost")
     check("refresh ok", out.get("ok") is True)
     check("refresh badges", isinstance(out.get("badges"), dict))
+    check("refresh setup", isinstance(out.get("setup"), dict))
     check("refresh needs", isinstance(out.get("needs"), list))
     check("refresh metrics", isinstance(out.get("metrics"), list))
     check("refresh queue", isinstance((out.get("queue") or {}).get("rows"), list))
@@ -147,12 +148,52 @@ def test_hub_skips_morning_gfolder_attach():
           "attach_gfolder=False" in chunk)
 
 
+def test_hub_setup_flags() -> None:
+    """Config cliffs surface as sparse setup[feature]=True — never secrets."""
+    from orchestrators import hub_flow
+
+    saved_url = os.environ.get("GVC_TIMEOFF_FORM_URL")
+    saved_backend = os.environ.get("GVC_GRANTS_BACKEND")
+    try:
+        os.environ.pop("GVC_TIMEOFF_FORM_URL", None)
+        os.environ["GVC_GRANTS_BACKEND"] = "env"
+        flags = hub_flow.setup_flags()
+        check("timeoff needs setup without URL", flags.get("timeoff") is True)
+        check("admin needs setup without gcs", flags.get("admin") is True)
+        # coi may or may not be ready depending on store; just type-check
+        check("setup values are bools", all(isinstance(v, bool) for v in flags.values()))
+
+        os.environ["GVC_TIMEOFF_FORM_URL"] = "https://forms.example/timeoff"
+        os.environ["GVC_GRANTS_BACKEND"] = "gcs"
+        flags2 = hub_flow.setup_flags()
+        check("timeoff ready clears flag", "timeoff" not in flags2)
+        check("admin ready clears flag", "admin" not in flags2)
+
+        os.environ["GVC_PORTAL_ALLOWED_EMAILS"] = "dev-bypass@localhost"
+        payload = hub_flow.build_hub_payload("dev-bypass@localhost")
+        check("payload has setup", isinstance(payload.get("setup"), dict))
+        refresh = hub_flow.build_hub_refresh("dev-bypass@localhost")
+        check("refresh has setup", isinstance(refresh.get("setup"), dict))
+    finally:
+        if saved_url is None:
+            os.environ.pop("GVC_TIMEOFF_FORM_URL", None)
+        else:
+            os.environ["GVC_TIMEOFF_FORM_URL"] = saved_url
+        if saved_backend is None:
+            os.environ.pop("GVC_GRANTS_BACKEND", None)
+        else:
+            os.environ["GVC_GRANTS_BACKEND"] = saved_backend
+
+
+
 def test_hub_files_and_route() -> None:
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
     check("hub shell classes", "hub-app" in hub and "hub-rail" in hub and "hub-dock" in hub)
     check("brand mark", "hub-rail__brand" in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r73 footer", ">r73<" in hub)
+    check("r74 footer", ">r74<" in hub)
+    check("setup badge class", "is-setup" in hub)
+    check("setup in refresh slice", "payload.setup" in hub)
     check("light refresh endpoint", "/ui/api/hub/refresh" in hub)
     check("refresh debounce", "REFRESH_MIN_MS" in hub)
     fetch_fn = hub.split("async function fetchPayload")[1].split("async function refreshBadges")[0]
@@ -421,6 +462,7 @@ if __name__ == "__main__":
     test_hub_payload_shape()
     test_hub_brief_billing_parallel_contract()
     test_hub_skips_morning_gfolder_attach()
+    test_hub_setup_flags()
     test_hub_files_and_route()
     test_hub_refresh_shape()
     test_need_urgent_flag()

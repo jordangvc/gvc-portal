@@ -68,7 +68,7 @@ support the field. Admin / Activity are company tools.
 
 ### Still open (next passes)
 
-7. COI / Time Off / Admin — hub “needs setup” badges before opening.
+7. ~~COI / Time Off / Admin — hub “needs setup” badges~~ (r74).
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
    Path strip now also mounts on Change Order + Paid by Check (spine includes
    CO + Check).
