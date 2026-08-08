@@ -303,9 +303,30 @@ def fetch_recent_update_authors(
     original behavior). Best-effort throughout — creator email/created_at may
     be absent depending on Monday schema/permissions; those updates still
     count (never filtered out for lack of a parseable date).
+
+    Short-TTL cached: hub polls `/hub/refresh` every 60s and would otherwise
+    re-query authors on every tick even when Ops membership is L1-fresh.
     """
     if not item_ids:
         return {}
+    ids = [int(i) for i in item_ids]
+    # Cap key size — callers already pass ≤80 for the brief.
+    sig = ",".join(str(i) for i in ids[:80])
+    cache_key = (
+        f"morning:update_authors:d{within_days}:l{int(limit)}:{sig}"
+    )
+    return monday_cache.get_or_set(
+        cache_key,
+        lambda: _fetch_recent_update_authors_uncached(
+            mc, ids, limit=limit, within_days=within_days),
+        ttl=monday_cache.search_ttl(),
+    )
+
+
+def _fetch_recent_update_authors_uncached(
+    mc, item_ids: list[int], *, limit: int = 25,
+    within_days: Optional[int] = 14,
+) -> dict[int, set[str]]:
     query = """
     query ($itemIds: [ID!], $limit: Int!) {
       items(ids: $itemIds) {

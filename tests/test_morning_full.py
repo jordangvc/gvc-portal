@@ -377,6 +377,29 @@ def test_build_employee_brief_can_skip_gfolder():
         flow._attach_gfolder_urls = orig_gfolder
 
 
+def test_fetch_recent_update_authors_is_cached():
+    from adapters.monday import cache as monday_cache
+    monday_cache.clear()
+    calls = {"n": 0}
+
+    class _MC:
+        def _query(self, q, v):
+            calls["n"] += 1
+            return {"items": [{
+                "id": "9",
+                "updates": [{
+                    "created_at": "2026-08-08T12:00:00Z",
+                    "creator": {"name": "Mark", "email": "mark@x.com"},
+                }],
+            }]}
+
+    a = mm.fetch_recent_update_authors(_MC(), [9], limit=5, within_days=None)
+    b = mm.fetch_recent_update_authors(_MC(), [9], limit=5, within_days=None)
+    assert calls["n"] == 1
+    assert a == b
+    assert "mark" in a[9]
+
+
 def test_hub_morning_route_aliases_registered():
     """Hub links /ui/morning-gm and /ui/morning-owner; canonical is /ui/morning/gm."""
     src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
@@ -477,6 +500,7 @@ if __name__ == "__main__":
         test_card_includes_gfolder_url,
         test_attach_gfolder_urls_soft_fails,
         test_build_employee_brief_can_skip_gfolder,
+        test_fetch_recent_update_authors_is_cached,
         test_hub_morning_route_aliases_registered,
         test_normalize_updated_at_feeds_hold_in_card,
         test_ar_escalation_sweep_dms_ack_and_overdue,

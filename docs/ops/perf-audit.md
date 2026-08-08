@@ -84,5 +84,6 @@ Run scale-to-zero empties L1 — warm + L2 matter.
 - `tests/test_hub_home.py` — single first-paint `/hub`, warm-after-paint, hub
   skips GFolder, footer rN
 - `tests/test_billing_hub.py` — parallel queues + parallel rich search + warm
-  derive accepted_bids
+  derive accepted_bids / jobcheck
+- `tests/test_jobcheck.py` — Morning→Job Check reshape + dual invalidate
 - `tests/test_morning_full.py` — `attach_gfolder` flag + soft-fail GFolder
