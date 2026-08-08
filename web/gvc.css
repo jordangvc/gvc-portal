@@ -744,6 +744,34 @@ a:hover{ color:var(--gvc-green-dark); }
 .gvc-msg--faint,
 .gvc-text-faint{ color:var(--color-text-faint, var(--gvc-muted)); }
 
+/* Soft callout panels (multi-check warn, link panels, mismatch) */
+.gvc-callout{
+  border:1px solid var(--color-chip-border, var(--gvc-line));
+  border-radius:var(--gvc-r);
+  padding:10px 12px;
+  font-size:var(--gvc-fs-small);
+}
+.gvc-callout--warn{
+  background:var(--color-warn-soft, var(--gvc-warn-tint));
+  border-color:var(--color-warn-border, #E0CDA9);
+  color:var(--color-warn-ink, var(--gvc-gold-dark));
+}
+.gvc-callout--danger{
+  background:var(--color-danger-soft, var(--gvc-danger-tint));
+  border-color:var(--color-danger-border, #E2C3BA);
+  color:var(--color-danger-ink, var(--gvc-danger));
+}
+.gvc-callout--ok{
+  background:var(--color-primary-soft, var(--gvc-ok-tint));
+  border-color:var(--color-ok-border, #C6DCC6);
+  color:var(--color-ok-ink, var(--gvc-green-dark));
+}
+.gvc-callout--info{
+  background:var(--color-info-soft, #EAF2FF);
+  border-color:var(--color-info-border, #9CC4E4);
+  color:var(--color-info-ink, var(--color-info, #1a5270));
+}
+
 /* Money-page / lien / jobcheck shared status chips (override page hex clones) */
 [data-palette='emerald'] .badge.active,
 [data-palette='emerald'] .pill.open{
