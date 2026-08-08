@@ -90,16 +90,24 @@ def test_validate_approved_requires_field_language() -> None:
 
 
 def test_repo_catalog_hang_scrape() -> None:
-    from subsystems.fieldguide.catalog import clear_cache, load_catalog, catalog_summary
+    from subsystems.fieldguide.catalog import (
+        clear_cache, load_catalog, catalog_summary, audit_link_targets,
+        get_procedure, resolve_procedure_id,
+    )
     from subsystems.fieldguide.search import search_procedures, related_suggestions
     from subsystems.fieldguide.render import render_procedure_article
 
     clear_cache()
     cat = load_catalog(strict=True)
-    check("two pilots", set(cat["by_id"]) >= {"hang", "scrape"})
-    check("approved cards", len(cat["cards"]) >= 2)
+    spine = {"framing", "preboard-walk", "hang", "scrape", "finish",
+             "level5-skim", "cleanout"}
+    check("job-check spine migrated", spine <= set(cat["by_id"]))
+    check("approved cards", len(cat["cards"]) >= 7)
     check("jobcheck hang", cat["jobcheck_anchors"].get("Hanging Status") == "hang")
     check("jobcheck scrape", cat["jobcheck_anchors"].get("Scrapping Status") == "scrape")
+    check("jobcheck taped→finish", cat["jobcheck_anchors"].get("Taped Status") == "finish")
+    check("jobcheck framing", cat["jobcheck_anchors"].get("Framing Status") == "framing")
+    check("jobcheck skim", cat["jobcheck_anchors"].get("Text/Skim") == "level5-skim")
 
     hits = search_procedures("scrapping")
     check("scrapping → scrape first", hits and hits[0]["id"] == "scrape")
@@ -107,9 +115,18 @@ def test_repo_catalog_hang_scrape() -> None:
     check("hang rock → hang", hits2 and hits2[0]["id"] == "hang")
     hits3 = search_procedures("knockdown")
     check("knockdown → scrape", hits3 and hits3[0]["id"] == "scrape")
+    hits4 = search_procedures("taped")
+    check("taped alias → finish", hits4 and hits4[0]["id"] == "finish")
+    hits5 = search_procedures("frame")
+    check("frame alias → framing", hits5 and hits5[0]["id"] == "framing")
+
+    check("resolve frame", resolve_procedure_id("frame") == "framing")
+    check("get_procedure taped", get_procedure("taped")["id"] == "finish")
 
     rel = related_suggestions("hang")
-    check("hang has next/related", any(r["id"] == "scrape" for r in rel))
+    check("hang has next scrape", any(r["id"] == "scrape" for r in rel))
+    rel_f = related_suggestions("scrape")
+    check("scrape next reaches finish", any(r["id"] == "finish" for r in rel_f))
 
     html = render_procedure_article(cat["by_id"]["hang"])
     check("article doc class", 'class="doc"' in html and 'id="hang"' in html)
@@ -117,6 +134,10 @@ def test_repo_catalog_hang_scrape() -> None:
     check("steps checklist", 'class="steps"' in html)
     check("nextpath", "nextpath" in html)
     check("no dead end — next scrape", "#scrape" in html)
+
+    audit = audit_link_targets()
+    check("next_steps audit clean", audit["ok"] is True)
+    check("audit counts spine", audit["procedure_count"] >= 7)
 
     summary = catalog_summary()
     check("summary ok", summary["ok"] is True)
@@ -157,6 +178,25 @@ def test_stale_draft_excluded_from_default_search() -> None:
     check("score positive", score_procedure(draft, "zzzunique") > 0)
 
 
+def test_jobcheck_anchors_match_catalog_spine() -> None:
+    """boards.py Field Manual deep-links must resolve in catalog (or known shell-only)."""
+    from shared.boards import JOBCHECK_FIELDGUIDE_ANCHORS
+    from subsystems.fieldguide.catalog import (
+        clear_cache, load_catalog, resolve_procedure_id,
+    )
+
+    clear_cache()
+    known = set(load_catalog()["by_id"])
+    shell_only = {"closeout-rhythm", "qc-walk"}  # still HTML-only
+    missing = []
+    for _col, anchor in JOBCHECK_FIELDGUIDE_ANCHORS.items():
+        pid = resolve_procedure_id((anchor or "").lstrip("#"))
+        if pid in known or pid in shell_only:
+            continue
+        missing.append(f"{_col}→{anchor}")
+    check("no unknown Job Check→Field Manual anchors", missing == [])
+
+
 def main() -> None:
     print("test_fieldguide_platform")
     test_normalize_authoring_aliases()
@@ -164,6 +204,7 @@ def main() -> None:
     test_repo_catalog_hang_scrape()
     test_manifest_categories_alias()
     test_stale_draft_excluded_from_default_search()
+    test_jobcheck_anchors_match_catalog_spine()
     print("ALL OK")
 
 

@@ -189,7 +189,8 @@
   ],
   "diagram_ids": [],
   "related_ids": [
-    "frame",
+    "framing",
+    "preboard-walk",
     "scrape",
     "finish"
   ],
@@ -197,7 +198,7 @@
     {
       "id": "scrape",
       "label": "Next: Scraping",
-      "why": "Job Check Scrapping Status \u2014 knock down after hang"
+      "why": "Job Check Scrapping Status \u2014 knockdown after hang"
     },
     {
       "id": "finish",
@@ -217,9 +218,9 @@
   "synonyms": [
     "hang board",
     "hang rock",
+    "hanging status",
     "screw board",
-    "sheet rock hang",
-    "hanging status"
+    "sheet rock hang"
   ],
   "owner": "field-ops",
   "review_status": "approved",

@@ -18,11 +18,50 @@ from subsystems.fieldguide.validate import validate_manifest, validate_procedure
 
 DEFAULT_CONTENT_DIR = REPO_ROOT / "content" / "fieldguide"
 
+# Field-language / legacy ids → canonical procedure ids (HTML anchors).
+# Keeps Job Check labels, coach aliases, and old related_ids from dead-ending
+# the catalog API while content migrates.
+PROCEDURE_ID_ALIASES: dict[str, str] = {
+    "frame": "framing",
+    "framing-status": "framing",
+    "hanging": "hang",
+    "hanging-status": "hang",
+    "scraping": "scrape",
+    "scrapping": "scrape",
+    "scrapping-status": "scrape",
+    "knockdown": "scrape",
+    "taped": "finish",
+    "tape": "finish",
+    "taping": "finish",
+    "finishing": "finish",
+    "bed": "finish",
+    "coat": "finish",
+    "sanded": "finish",
+    "2nd-bed-coat": "finish",
+    "3rd-coat": "finish",
+    "level5": "level5-skim",
+    "level-5": "level5-skim",
+    "skim": "level5-skim",
+    "text-skim": "level5-skim",
+    "clean-out": "cleanout",
+    "cleaned-out": "cleanout",
+    "cleanup": "cleanout",
+}
+
 _CACHE: dict[str, Any] = {
     "dir": None,
     "mtime_key": None,
     "catalog": None,
 }
+
+
+def resolve_procedure_id(procedure_id: str) -> str:
+    """Map alias / field language → canonical catalog id (or strip as-is)."""
+    raw = (procedure_id or "").strip()
+    if not raw:
+        return ""
+    key = raw.lower().replace(" ", "-").replace("_", "-")
+    return PROCEDURE_ID_ALIASES.get(key, raw)
 
 
 def content_dir(path: Optional[Path] = None) -> Path:
@@ -133,7 +172,45 @@ def clear_cache() -> None:
 
 def get_procedure(procedure_id: str, path: Optional[Path] = None) -> Optional[dict]:
     cat = load_catalog(path)
-    return cat["by_id"].get((procedure_id or "").strip())
+    pid = resolve_procedure_id(procedure_id)
+    return cat["by_id"].get(pid)
+
+
+def audit_link_targets(path: Optional[Path] = None) -> dict:
+    """Report next_steps/related targets missing from the catalog.
+
+    ``ok`` is True only when every ``next_steps`` target resolves (no dead-end
+    forward path). ``related`` may still point at HTML-only pages during
+    incremental migration — those are listed but do not fail the audit.
+    """
+    cat = load_catalog(path, strict=False)
+    known = set(cat["by_id"])
+    dangling_next: list[dict[str, str]] = []
+    dangling_related: list[dict[str, str]] = []
+    for proc in cat["procedures"]:
+        for link in proc.get("next_steps") or []:
+            target = resolve_procedure_id(link.get("procedure_id") or "")
+            if target and target not in known:
+                dangling_next.append({
+                    "from": proc["id"],
+                    "target": target,
+                    "label": link.get("label") or "",
+                })
+        for link in proc.get("related") or []:
+            target = resolve_procedure_id(link.get("procedure_id") or "")
+            if target and target not in known:
+                dangling_related.append({
+                    "from": proc["id"],
+                    "target": target,
+                    "label": link.get("label") or "",
+                })
+    return {
+        "ok": len(dangling_next) == 0,
+        "dangling_next_steps": dangling_next,
+        "dangling_related": dangling_related,
+        "procedure_count": len(known),
+        "alias_count": len(PROCEDURE_ID_ALIASES),
+    }
 
 
 def list_cards(

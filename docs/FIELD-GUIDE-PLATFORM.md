@@ -19,7 +19,9 @@ looks like, what changes on site, and what to open next.
 | Coupling | Editing a procedure = editing a giant HTML file |
 | New layer | Repo JSON catalog + normalize/validate/load/search/render + APIs |
 
-**Pilot migrated:** `hang`, `scrape` (Job Check Hanging / Scrapping Status).
+**Pilot migrated:** Job Check drywall spine —
+`framing`, `preboard-walk`, `hang`, `scrape`, `finish`, `level5-skim`, `cleanout`
+(coat-stage chips share `finish`).
 
 ## 2. Assumptions
 
@@ -126,10 +128,12 @@ Shallow: home → procedure → next procedure. No orphan pages: `next_steps` + 
 
 ## 11. Next highest-leverage steps
 
-1. Migrate `frame` + `finish` (+ coat sequence ids) into JSON
-2. Add `scripts/audit_fieldguide_catalog.py` (missing next_steps, empty synonyms)
-3. Optional: server-render catalog articles into shell for migrated ids only
-4. Expand Component Index from catalog tags/synonyms
+1. Migrate high-traffic non-spine pages (rated walls, firestop, ACT, touch-up)
+2. Server-render catalog articles into the shell for migrated ids only
+3. Align coach `related` lists with catalog `next_steps` where ids match
+4. Diagram assets under `content/fieldguide/diagrams/` with caption contract
+
+**Done (r71):** Job Check spine in catalog; alias map; next_steps link audit.
 
 ---
 

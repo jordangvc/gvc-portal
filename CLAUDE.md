@@ -11,6 +11,15 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE JOB-CHECK SPINE (r71) — BUILT 2026-08-08
+Catalog now covers the drywall Job Check spine end-to-end:
+`framing` → `preboard-walk` → `hang` → `scrape` → `finish` → `level5-skim` →
+`cleanout`. Coat chips (Taped / 2nd Bed / 3rd Coat / Sanded / Finishing Stage)
+all resolve to `finish`; Text/Skim → `level5-skim`. Aliases (`frame`, `taped`,
+`scrapping`, …) keep search/API from dead-ending. `audit_link_targets` +
+`GET /ui/api/fieldguide/audit` require every `next_steps` target to resolve.
+Hub **r71**.
+
 ## ✨ FIELD GUIDE PLATFORM FOUNDATION (r70) — BUILT 2026-08-08
 Scalable content layer under the live Field Manual shell (not a UI-only polish).
 `content/fieldguide/` + `subsystems/fieldguide/{schema,validate,catalog,search,render}`

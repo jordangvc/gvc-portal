@@ -1,0 +1,455 @@
+{
+  "id": "framing",
+  "slug": "framing",
+  "title": "Metal Stud Framing",
+  "short_answer": "Layout the whole floor first, then build by operation \u2014 all bottoms, all tops, all studs \u2014 not wall-by-wall.",
+  "summary": "Lay out the whole floor first. Then build by operation, not by wall.",
+  "plain_words": "You mark every wall on the floor first, for the whole floor. Then you go around and set all the bottom track. Then all the top track. Then fill in all the studs. One tool in your hand at a time, one motion repeated. It feels slower and it isn't \u2014 the walking and the tool-swapping is what costs the money, not the screwing.",
+  "when_to_use": [
+    "Starting metal stud framing on a floor or area",
+    "Before hanging \u2014 framing must be true with backing in",
+    "Job Check Framing Status is the gate for hang"
+  ],
+  "prerequisites": [
+    "Current drawing set and wall-type legend",
+    "Building control / column grid established",
+    "Door/frame schedule and backing list from casework drawings"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "Framing Status",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Laser / chalk line / 3-4-5 square check"
+    },
+    {
+      "name": "Chop saw / snips for track and stud"
+    },
+    {
+      "name": "Screw gun + framing screws"
+    },
+    {
+      "name": "Level / plumb bob"
+    },
+    {
+      "name": "Camera for backing + rated photo record",
+      "optional": true
+    }
+  ],
+  "materials": [
+    {
+      "name": "Track and stud per wall type (gauge/width)"
+    },
+    {
+      "name": "Deflection track / head-of-wall materials per detail"
+    },
+    {
+      "name": "Bridging / bracing / backing as detailed"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Pull the current drawing set and confirm the revision.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Find the building control lines / column grid. Every dimension comes off grid \u2014 never off an existing wall or a slab edge. Existing walls lie.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Verify control is square: 3-4-5 at the biggest multiple that fits \u2014 12-16-20",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Shoot the slab along the wall runs for high spots and dips.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Read the wall type legend: gauge, width, spacing, height (to ceiling vs. to deck), rating.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Confirm the head-of-wall detail. This one detail governs your whole top track operation.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "",
+      "body": "Get the door/frame schedule for rough opening dimensions.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "",
+      "body": "Build the backing list from casework and equipment drawings \u2014 before layout.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "",
+      "body": "Snap the primary control line off grid, then a perpendicular. Verify square before snapping anything else.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "",
+      "body": "Chain every wall from a single reference point. Never measure wall-to-wall cumulatively \u2014 error stacks down the corridor.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "",
+      "body": "Snap both faces, or one line plus a keel X on the track side. Pick one convention for the whole crew.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "",
+      "body": "Write the wall type on the slab: A1 \u00b7 3-5/8 25GA @16 \u00b7 1HR \u00b7 TO DECK",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "",
+      "body": "Mark every opening with its rough opening dimension and swing.",
+      "checklist": true
+    },
+    {
+      "order": 14,
+      "title": "",
+      "body": "Mark off-module studs now: jambs, corners, intersections, backing.",
+      "checklist": true
+    },
+    {
+      "order": 15,
+      "title": "",
+      "body": "Transfer to the deck with a plumb laser as you go. Coming back later means a second lift trip for every wall.",
+      "checklist": true
+    },
+    {
+      "order": 16,
+      "title": "",
+      "body": "Walk the layout with the super before any track goes down.",
+      "checklist": true
+    },
+    {
+      "order": 17,
+      "title": "",
+      "body": "Count studs off the layout on the floor, not the plan. You just walked it.",
+      "checklist": true
+    },
+    {
+      "order": 18,
+      "title": "",
+      "body": "Drop bundles at the walls they belong to. Cut a story pole for the repeat stud length.",
+      "checklist": true
+    },
+    {
+      "order": 19,
+      "title": "",
+      "body": "Track tight to the line, all of it, before you look at a top track.",
+      "checklist": true
+    },
+    {
+      "order": 20,
+      "title": "",
+      "body": "Run long and continuous; lap splices per spec, don't butt them.",
+      "checklist": true
+    },
+    {
+      "order": 21,
+      "title": "",
+      "body": "Fastener spacing per the approved submittal, plus one near every end and splice.",
+      "checklist": true
+    },
+    {
+      "order": 22,
+      "title": "",
+      "body": "Rated walls: track sits in the sealant bed per the listed detail. Not retrofittable.",
+      "checklist": true
+    },
+    {
+      "order": 23,
+      "title": "",
+      "body": "Build the head of wall per the approved detail, not per habit. See the systems reference below.",
+      "checklist": true
+    },
+    {
+      "order": 24,
+      "title": "",
+      "body": "Studs cut short of the track web by the gap the detail calls for.",
+      "checklist": true
+    },
+    {
+      "order": 25,
+      "title": "",
+      "body": "Rated walls: the head-of-wall joint is a listed assembly. Build it as listed.",
+      "checklist": true
+    },
+    {
+      "order": 26,
+      "title": "",
+      "body": "Photograph the head of wall as you go, by area.",
+      "checklist": true
+    },
+    {
+      "order": 27,
+      "title": "",
+      "body": "Pass one: stand loose studs in the track down every wall, roughly spaced. No measuring, no screws.",
+      "checklist": true
+    },
+    {
+      "order": 28,
+      "title": "",
+      "body": "Pass two: set exact spacing and fasten.",
+      "checklist": true
+    },
+    {
+      "order": 29,
+      "title": "",
+      "body": "Every stud open side the same direction, facing the run. MEP and board hangers both depend on it.",
+      "checklist": true
+    },
+    {
+      "order": 30,
+      "title": "",
+      "body": "Line the knockouts up down the wall so the electrician pulls straight.",
+      "checklist": true
+    },
+    {
+      "order": 31,
+      "title": "",
+      "body": "Attachment per the submittal \u2014 see the note below, it's a large labor number.",
+      "checklist": true
+    },
+    {
+      "order": 32,
+      "title": "",
+      "body": "At deflection heads, fasten only where the detail permits so the joint can move.",
+      "checklist": true
+    },
+    {
+      "order": 33,
+      "title": "",
+      "body": "RO = frame dimension plus the manufacturer's clearance. Off the schedule, never guessed.",
+      "checklist": true
+    },
+    {
+      "order": 34,
+      "title": "",
+      "body": "Jamb studs per the detail \u2014 doubled, boxed, or heavier gauge. Wider and heavier doors take more.",
+      "checklist": true
+    },
+    {
+      "order": 35,
+      "title": "",
+      "body": "Header track over the opening, cripples above back on module.",
+      "checklist": true
+    },
+    {
+      "order": 36,
+      "title": "",
+      "body": "Check every opening plumb and square as you build it, not at punch.",
+      "checklist": true
+    },
+    {
+      "order": 37,
+      "title": "",
+      "body": "Work from the written list, not memory: casework, countertops, grab bars, handrails, TVs and mounts, wall-hung fixtures, headwalls, marker boards, signage, corner guards, door stops, extinguisher cabinets.",
+      "checklist": true
+    },
+    {
+      "order": 38,
+      "title": "",
+      "body": "Heights from the casework/equipment shop drawings when they exist \u2014 they beat the elevations.",
+      "checklist": true
+    },
+    {
+      "order": 39,
+      "title": "",
+      "body": "Keel-mark every backing location on the stud face.",
+      "checklist": true
+    },
+    {
+      "order": 40,
+      "title": "",
+      "body": "Photograph every wall with backing, tagged by room, before it's covered.",
+      "checklist": true
+    },
+    {
+      "order": 41,
+      "title": "",
+      "body": "String line or laser the walls \u2014 straight and plumb.",
+      "checklist": true
+    },
+    {
+      "order": 42,
+      "title": "",
+      "body": "Every RO: dimension, plumb, square, header, jambs.",
+      "checklist": true
+    },
+    {
+      "order": 43,
+      "title": "",
+      "body": "All backing in, right height, marked.",
+      "checklist": true
+    },
+    {
+      "order": 44,
+      "title": "",
+      "body": "No stud hard-bearing on a deflection track anywhere.",
+      "checklist": true
+    },
+    {
+      "order": 45,
+      "title": "",
+      "body": "Bridging/bracing installed and anchored per the detail.",
+      "checklist": true
+    },
+    {
+      "order": 46,
+      "title": "",
+      "body": "Photo record, then framing inspection \u2014 before rock.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "stop",
+      "title": "Hard-bearing on deflection track",
+      "body": "Studs must not hard-bear on a deflection / slip track. That kills the joint\u2019s movement and fails inspection."
+    },
+    {
+      "severity": "warn",
+      "title": "Layout off a crooked wall",
+      "body": "Every dimension comes off grid \u2014 never off an existing wall or a slab edge that isn\u2019t control."
+    },
+    {
+      "severity": "money",
+      "title": "Wall-by-wall tool swapping",
+      "body": "Batch by operation. Walking and tool-swapping costs more than fastening."
+    }
+  ],
+  "variations": [
+    {
+      "id": "framing-tall",
+      "title": "Tall / stacked walls",
+      "when": "Walls above stock stud length or multi-story stacked",
+      "changes": [
+        "Follow tall-wall / splice detail",
+        "Confirm L/240 vs L/360 before arguing with the GC",
+        "Do not invent a splice"
+      ]
+    },
+    {
+      "id": "framing-rated",
+      "title": "Rated / shaft walls",
+      "when": "UL / rated assemblies",
+      "changes": [
+        "Assembly tag governs gauge, spacing, liner, HOWall",
+        "Photo plan before covering layers"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "prompt": "Plumb and straight; no twisted studs"
+    },
+    {
+      "prompt": "ROs match door/frame schedule"
+    },
+    {
+      "prompt": "Backing installed and photographed before board"
+    },
+    {
+      "prompt": "No stud hard-bearing on deflection track"
+    },
+    {
+      "prompt": "Bridging/bracing per detail"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Framing off the slab edge",
+      "wrong": "Snap from a crooked existing wall",
+      "right": "Snap from building control",
+      "why": "Errors compound across the floor"
+    },
+    {
+      "title": "Missing backing",
+      "wrong": "Hang then discover no grab-bar backing",
+      "right": "Backing list before layout; photo before close",
+      "why": "Tear-out after hang is expensive"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Track won\u2019t sit flat on slab",
+      "likely_cause": "High spot / dip",
+      "fix": "Shoot slab along runs; grind or shim per detail \u2014 don\u2019t force twisted track"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "preboard-walk",
+    "hang"
+  ],
+  "next_steps": [
+    {
+      "id": "preboard-walk",
+      "label": "Next: Pre-board walk",
+      "why": "Last cheap check before hang"
+    },
+    {
+      "id": "hang",
+      "label": "Then: Hanging",
+      "why": "Job Check Hanging Status"
+    }
+  ],
+  "search_tags": [
+    "framing",
+    "metal stud",
+    "track",
+    "stud",
+    "layout",
+    "backing",
+    "deflection"
+  ],
+  "synonyms": [
+    "frame",
+    "metal framing",
+    "studs",
+    "track and stud",
+    "framing status",
+    "layout floor"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Migrated from Field Manual HTML #framing; aligned with Job Check where applicable.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check stage columns"
+    ]
+  }
+}

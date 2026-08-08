@@ -1,0 +1,162 @@
+{
+  "id": "level5-skim",
+  "slug": "level5-skim",
+  "title": "Level 5 / Full Skim",
+  "short_answer": "Full skim only when Level 5 (or equivalent) is specified or CO\u2019d \u2014 never a free upgrade from Level 4.",
+  "summary": "Job Check's Text/Skim stage is not a free upgrade. Level 5 is a specified (or change-ordered) finish \u2014 GA-214 says so, and so does our money.",
+  "plain_words": "Level 5 means a full skim over the whole surface, for gloss/semi-gloss or critical lighting. If the job was sold at Level 4, skimming the whole floor to silence a complaint is unpaid work unless the office turns it into a CO. Confirm the level before you start the skim.",
+  "when_to_use": [
+    "Finish schedule / spec calls Level 5 or full skim",
+    "Office authorized a change order for skim",
+    "Job Check Text/Skim chip"
+  ],
+  "prerequisites": [
+    "Level 4 substrate correct \u2014 joints and fasteners finished",
+    "Written confirmation of Level 5 or CO",
+    "Conditions in range for skim"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "Text/Skim",
+  "role_tags": [
+    "finisher",
+    "lead"
+  ],
+  "tools": [
+    {
+      "name": "Wide knives / trowel"
+    },
+    {
+      "name": "Raking light"
+    },
+    {
+      "name": "Sander for blend"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Topping / lightweight skim compound"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "",
+      "body": "Confirm Level 5 (or equivalent full skim) is specified \u2014 finish schedule / spec \u2014 or that the office authorized a CO.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "",
+      "body": "Level 4 substrate must be right first \u2014 joints and fasteners finished; skim is not a way to hide skipped coats.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "",
+      "body": "Conditions: heat/humidity in range (Cold & Wet Conditions). Skim over cold damp board fails later.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "",
+      "body": "Skim thin and even \u2014 topping/lightweight where appropriate; scrape ridges; sand to blend.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "",
+      "body": "Raking-light QC before calling Text/Skim done on Job Check.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "",
+      "body": "Prime handoff to paint \u2014 bare compound under paint is flashing waiting to happen.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "money",
+      "title": "Unpaid Level 5",
+      "body": "Skimming a Level 4 job to silence a complaint without a CO is unpaid work."
+    },
+    {
+      "severity": "stop",
+      "title": "Skim over bad Level 4",
+      "body": "Skim is not a way to hide skipped coats."
+    }
+  ],
+  "variations": [],
+  "quality_checks": [
+    {
+      "prompt": "Spec/CO confirmed before skim started"
+    },
+    {
+      "prompt": "Raking-light QC before Text/Skim Done"
+    },
+    {
+      "prompt": "Prime handoff planned \u2014 bare compound flashes"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Gift skim",
+      "wrong": "Full skim because paint looked bad",
+      "right": "Confirm Level 5 or get a CO",
+      "why": "Burns margin and trains bad expectations"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "symptom": "Flash after paint",
+      "likely_cause": "No primer over compound",
+      "fix": "Prime all repaired/skimmed areas before finish paint"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "finish",
+    "cleanout"
+  ],
+  "next_steps": [
+    {
+      "id": "finish",
+      "label": "Back: coat sequence",
+      "why": "If coats were the real gap"
+    },
+    {
+      "id": "cleanout",
+      "label": "Next: Clean-out",
+      "why": "Dust control after skim/sand"
+    }
+  ],
+  "search_tags": [
+    "level 5",
+    "skim",
+    "text skim",
+    "full skim",
+    "critical lighting"
+  ],
+  "synonyms": [
+    "level5",
+    "text/skim",
+    "text skim",
+    "ga-214 level 5",
+    "full skim"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Migrated from Field Manual HTML #level5-skim; aligned with Job Check where applicable.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check stage columns"
+    ]
+  }
+}
