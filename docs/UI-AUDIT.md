@@ -77,7 +77,7 @@ Documented in `docs/UI-SYSTEM.md` §1–5 and `docs/UX-CHECKLIST.md`.
 | P1 | Kill Job Check gradient; reuse shared savebar | This PR |
 | P1 | Training theme bootstrap parity | This PR |
 | P1 | `scripts/ui_consistency_check.py` | This PR |
-| P2 | Extract money-form shared CSS from page clones | Next |
+| P2 | Extract money-form shared CSS from page clones | Done (r97) |
 | P2 | Single server-side HTML shell include | Next |
 | P3 | Field Manual token convergence | Later |
 | P3 | Compact tool-nav drawer on tool pages | Later |

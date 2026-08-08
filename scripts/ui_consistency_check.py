@@ -76,6 +76,17 @@ ORPHAN_VAR_RE = re.compile(
 )
 ORPHAN_VAR_ALLOW = {"fieldguide.html"}
 
+# Money generators must opt into the shared dialect (r95) — no page-local clone.
+MONEY_FORM_PAGES = {
+    "estimate.html",
+    "invoice.html",
+    "change-order.html",
+    "check.html",
+    "jobstart.html",
+    "coi.html",
+}
+MONEY_CLONE_RE = re.compile(r"Money-generator page-local styles")
+
 
 def html_pages() -> list[Path]:
     return sorted(
@@ -188,11 +199,26 @@ def main() -> int:
                         f"(use --gvc-* / --color-* / .gvc-callout--* / .gvc-msg--*)"
                     )
 
+        if path.name in MONEY_FORM_PAGES:
+            if MONEY_CLONE_RE.search(text):
+                violations.append(
+                    f"{rel}: money-generator CSS clone must live in gvc.css "
+                    f"(.gvc-moneyform dialect)"
+                )
+            if "gvc-moneyform" not in text:
+                violations.append(
+                    f"{rel}: missing gvc-moneyform opt-in on <main>"
+                )
+
     # Shared CSS must keep the aliases pages already use.
     css = (WEB / "gvc.css").read_text(encoding="utf-8")
     for token in (
         "--gvc-radius:", "--gvc-fs-sm:", "--gvc-green-tint:",
         ".btn--commit", ".gvc-empty",
+        "money-form shared dialect",
+        ".gvc-moneyform .btn{",
+        ".gvc-moneyform .card{",
+        ".gvc-topbar #health",
         *REQUIRED_CSS_TOKENS,
     ):
         if token not in css:

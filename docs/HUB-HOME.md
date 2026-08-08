@@ -7,9 +7,9 @@ tools live in a left rail (desktop) or drawer + bottom bar (phone).
 `orchestrators/hub_flow.py` · `subsystems/hub/pinned.py` · `GET /ui/api/hub` ·
 `PUT /ui/api/hub/pinned`
 
-Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r90**.
+Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r97**.
 
-## Fast first paint (r90)
+## Fast first paint (r90+)
 
 The hub is still the personal home — not a separate marketing landing — but
 **time-to-first-action no longer waits on Monday**:
@@ -22,6 +22,8 @@ The hub is still the personal home — not a separate marketing landing — but
 5. Hub brief/GM paths skip GFolder attach **and** Open-Meteo weather.
 6. Hub billing uses ``billing_hub_payload(for_hub=True)`` — Ready + Accepted
    only (no Projects board walk, no P5 worksheet enrich).
+7. Dead Monday auth (`monday_ok` / `ok` false, `MONDAY_AUTH`) is treated as
+   unreachable — never a gold "You're clear" over empty queues (r94).
 
 ## Shell
 
