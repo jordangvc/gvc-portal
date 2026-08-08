@@ -267,7 +267,7 @@
           );
         } else {
           html.push(
-            `<span class="${cls}" title="Ask an admin for access" data-feature="${esc(t.feature)}">` +
+            `<span class="${cls}" role="button" tabindex="0" title="Ask an admin for access" data-feature="${esc(t.feature)}" data-denied="1">` +
             `<span class="hub-rail__item-name">${esc(t.name)}</span>${badge}</span>`
           );
         }
@@ -281,6 +281,14 @@
         const tool = flatTools().find((t) => t.feature === feat && t.href === a.getAttribute("href"));
         if (tool) pushRecent(tool);
         setDrawer(false);
+      });
+    });
+    // Dimmed tools used to be silent — users thought the app was broken.
+    into.querySelectorAll(".hub-rail__item[data-denied]").forEach((el) => {
+      const deny = () => toast("Ask an admin for access to this tool");
+      el.addEventListener("click", deny);
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") { e.preventDefault(); deny(); }
       });
     });
   }

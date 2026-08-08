@@ -108,6 +108,7 @@
   /* --- shape --- */
   --gvc-r-sm:3px; --gvc-r:5px; --gvc-r-lg:8px; --gvc-r-pill:999px; --gvc-rule:2.5px;
   --gvc-r-md: var(--gvc-r); /* alias used by money pages */
+  --gvc-radius: var(--gvc-r); /* alias used by admin + older pages */
 
   /* --- elevation --- */
   --gvc-shadow-1:0 1px 2px rgba(28,25,23,.06);
@@ -125,6 +126,18 @@
 
   /* --- controls --- */
   --gvc-ctl-h:40px; --gvc-ctl-h-lg:48px; --gvc-ctl-px:12px; --gvc-row-py:9px;
+
+  /* --- type aliases (stop undefined-token drift) --- */
+  --gvc-fs-sm: var(--gvc-fs-small);
+  --gvc-green-tint: var(--gvc-tint-green);
+
+  /* --- breakpoints + stacking (document in docs/UI-SYSTEM.md) --- */
+  --bp-phone: 640px;
+  --bp-tablet: 768px;
+  --z-topbar: 40;
+  --z-savebar: 50;
+  --z-modal: 100;
+  --z-toast: 110;
 }
 :root[data-density="compact"]{ --gvc-row-py:6px; --gvc-ctl-h:34px; }
 :root[data-radius="square"]{ --gvc-r-sm:0px; --gvc-r:0px; --gvc-r-lg:2px; }
@@ -386,6 +399,40 @@ html,body{ margin:0; padding:0; }
   color: var(--color-text-muted, var(--gvc-muted));
 }
 .btn--ghost:hover { background: var(--color-surface-offset, var(--gvc-line-soft)); }
+
+/* Commitment / "Save to Monday" / Accept — solid gold, never a gradient.
+   `.btn.gold` is the legacy money-page class; keep both spellings identical. */
+.btn--commit,
+.btn.gold {
+  background: var(--gvc-gold);
+  border: 1px solid var(--gvc-gold-dark);
+  color: #3A2D0E;
+  font-weight: 700;
+  box-shadow: inset 0 -1px 0 rgba(58, 45, 14, .18);
+}
+.btn--commit:hover,
+.btn.gold:hover {
+  background: var(--gvc-gold-dark);
+  color: #fff;
+  filter: none;
+}
+.btn--commit:disabled,
+.btn.gold:disabled {
+  opacity: .45;
+  cursor: not-allowed;
+  filter: none;
+}
+.btn--secondary,
+.btn.secondary {
+  background: var(--gvc-surface);
+  border: 1px solid var(--gvc-line-strong);
+  color: var(--gvc-green-dark);
+}
+.btn--secondary:hover,
+.btn.secondary:hover {
+  background: var(--gvc-tint-green);
+  border-color: var(--gvc-green);
+}
 
 .chipset { display: inline-flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
 .chipset__label {
@@ -751,14 +798,59 @@ a.gvc-flow__step:hover{ background:var(--gvc-surface); text-decoration:underline
 .gvc-modal-hd{ padding:var(--gvc-space-4); border-bottom:1px solid var(--gvc-line); display:flex; align-items:center; gap:var(--gvc-space-3); }
 .gvc-modal-bd{ padding:var(--gvc-space-4); }
 .gvc-modal-ft{ padding:var(--gvc-space-3) var(--gvc-space-4); border-top:1px solid var(--gvc-line); background:var(--gvc-bg); display:flex; gap:var(--gvc-space-3); justify-content:flex-end; flex-wrap:wrap; }
-.gvc-savebar{
-  position:sticky; bottom:0; z-index:5; background:var(--gvc-surface);
+.gvc-savebar,
+.savebar{
+  position:sticky; bottom:0; z-index:var(--z-savebar, 50); background:var(--gvc-surface);
   border-top:var(--gvc-rule) solid var(--gvc-gold); box-shadow:0 -6px 18px rgba(28,25,23,.1);
-  padding:var(--gvc-space-3) var(--gvc-space-4); display:flex; align-items:center; gap:var(--gvc-space-3);
+  padding:var(--gvc-space-3) var(--gvc-space-4) calc(var(--gvc-space-3) + env(safe-area-inset-bottom, 0px));
+  display:flex; align-items:center; gap:var(--gvc-space-3);
   flex-wrap:wrap;
 }
 .gvc-savebar-count{ font-size:var(--gvc-fs-small); color:var(--gvc-ink-soft); }
 .gvc-savebar-count b{ font-variant-numeric:tabular-nums; }
+/* Job Check / Job Start historically hide the bar until a job is open. */
+.savebar:not(.show){ display:none; }
+.savebar.show{ display:flex; }
+.savebar .inner{
+  width:100%; max-width:760px; margin:0 auto;
+  display:flex; gap:var(--gvc-space-3); align-items:center; flex-wrap:wrap;
+}
+
+/* ---------- shared empty / error / loading states ---------- */
+.gvc-empty{
+  padding:var(--gvc-space-5); text-align:center;
+  color:var(--gvc-muted); font-size:var(--gvc-fs-small);
+  background:var(--gvc-bg); border:1px dashed var(--gvc-line); border-radius:var(--gvc-r-lg);
+}
+.gvc-empty strong{ display:block; color:var(--gvc-ink); font-size:var(--gvc-fs-body); margin-bottom:var(--gvc-space-2); }
+.gvc-state-loading{ color:var(--gvc-muted); font-size:var(--gvc-fs-small); }
+.gvc-state-error{
+  padding:var(--gvc-space-3) var(--gvc-space-4);
+  background:var(--gvc-danger-tint); border:1px solid #E2C3BA; border-left:4px solid var(--gvc-danger);
+  border-radius:var(--gvc-r); color:var(--gvc-danger-dark); font-size:var(--gvc-fs-small);
+}
+.gvc-state-success{
+  padding:var(--gvc-space-3) var(--gvc-space-4);
+  background:var(--gvc-ok-tint); border:1px solid #C6DCC6; border-left:4px solid var(--gvc-brand-mid);
+  border-radius:var(--gvc-r); color:var(--gvc-green-dark); font-size:var(--gvc-fs-small);
+}
+
+/* ---------- page shell: primary action rail (non-sticky companion) ---------- */
+.gvc-page-actions{
+  display:flex; flex-wrap:wrap; gap:var(--gvc-space-3);
+  align-items:center; justify-content:flex-end;
+  margin-top:var(--gvc-space-4);
+}
+.gvc-page-actions .gvc-page-actions__meta{
+  margin-right:auto; font-size:var(--gvc-fs-small); color:var(--gvc-muted);
+}
+.gvc-back{
+  display:inline-flex; align-items:center; gap:6px;
+  font-size:var(--gvc-fs-small); font-weight:600;
+  color:var(--gvc-green-dark); text-decoration:none;
+  min-height:var(--gvc-ctl-h); padding:0 var(--gvc-space-2);
+}
+.gvc-back:hover{ text-decoration:underline; color:var(--gvc-green); }
 
 /* ---------- money-form density (Estimate / Invoice / Change Order) ----------
    Opt-in: put class "gvc-moneyform" on <main class="gvc-shell">. Keeps legacy

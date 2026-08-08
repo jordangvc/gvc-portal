@@ -423,15 +423,19 @@ async function loadActivity() {
     const r = await fetch("/ui/api/billing/activity?limit=30");
     const body = await r.json();
     if (!r.ok || body.ok === false) {
+      const detail = (body.detail && (body.detail.detail || body.detail.message)) || body.message || "";
       $("#activity-list").innerHTML =
-        `<div class="empty">Activity feed isn't wired yet, or logging is unavailable. The integrator adds GET /ui/api/billing/activity — until then, use /ui/activity.</div>`;
+        `<div class="empty"><strong>Activity unavailable</strong>` +
+        `${detail ? esc(String(detail)) + " " : ""}` +
+        `Queues above still work. Open <a href="/ui/activity">Activity</a> for the full log, or ask an admin if Cloud Logging access is missing.</div>`;
       return;
     }
     activityRows = body.events || body.items || body.activity || [];
     renderActivity($("#act-filter").value);
   } catch (e) {
     $("#activity-list").innerHTML =
-      `<div class="empty">Couldn't load activity (${esc(e.message)}). Try /ui/activity, or ask an admin if Cloud Logging access is missing.</div>`;
+      `<div class="empty"><strong>Couldn't load activity</strong>` +
+      `${esc(e.message)}. Queues above still work. Try <a href="/ui/activity">Activity</a>, or ask an admin if logging access is missing.</div>`;
   }
 }
 

@@ -106,16 +106,9 @@
   .checkwrap input[type="checkbox"] { width: 28px; height: 28px; accent-color: var(--gvc-green); cursor: pointer; }
   .checkwrap span { font-size: 16px; }
 
-  .savebar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 5;
-    background: rgba(250,250,248,.96); border-top: 1px solid var(--gvc-line);
-    padding: 12px 16px calc(12px + env(safe-area-inset-bottom, 0px)); display: none; }
-  .savebar.show { display: block; }
-  .savebar .inner { max-width: 760px; margin: 0 auto; display: flex; gap: 12px; align-items: center; }
-  .btn.gold { background: linear-gradient(0deg, var(--gvc-gold-matte), var(--gvc-gold)); color: #231A08;
-    font-weight: 700; border: 0; border-radius: var(--gvc-r-lg); min-height: 52px; padding: 12px 22px;
-    font-size: 17px; cursor: pointer; flex: 1; }
-  .btn.gold:hover { filter: brightness(1.06); }
-  .btn.gold:disabled { opacity: .6; cursor: default; filter: none; }
+  /* Sticky commit bar + .btn.gold come from gvc.css (solid gold, no gradient). */
+  .savebar { position: fixed; left: 0; right: 0; bottom: 0; }
+  .savebar .inner .btn.gold { flex: 1; min-height: 52px; font-size: 17px; padding: 12px 22px; }
   .field.disabled { opacity: .55; }
   .field.disabled input, .field.disabled select, .field.disabled textarea {
     pointer-events: none; cursor: not-allowed;

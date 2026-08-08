@@ -320,6 +320,36 @@ async function api(url, opts) {
   return body;
 }
 
+function showMorningErr(msg) {
+  const el = $("#status");
+  if (!el) return;
+  el.className = "show";
+  el.textContent = String(msg || "Something went wrong — try again.");
+}
+
+function clearMorningErr() {
+  const el = $("#status");
+  if (!el) return;
+  el.className = "";
+  el.textContent = "";
+}
+
+/** Keep the Maps CTA in sync with BRIEF.maps_url (saveRoute + optimize). */
+function syncMapsBtn(mapsUrl) {
+  const maps = $("#btnMaps");
+  if (!maps) return;
+  if (mapsUrl) {
+    maps.href = mapsUrl;
+    maps.style.pointerEvents = "auto";
+    maps.style.opacity = "1";
+    maps.setAttribute("aria-disabled", "false");
+  } else {
+    maps.removeAttribute("href");
+    maps.style.opacity = ".45";
+    maps.setAttribute("aria-disabled", "true");
+  }
+}
+
 function projectCard(p) {
   const blocked = !!(p.blocked && String(p.blocked).toLowerCase() !== "clear");
   const overdue = !!(p.overdue && String(p.overdue).toLowerCase() !== "on time"
@@ -461,14 +491,18 @@ function renderStops(stops) {
       const act = e.target.dataset.act;
       let next = BRIEF.stops.slice();
       const idx = next.findIndex((x) => Number(x.item_id) === id);
-      if (act === "up" && idx > 0) { [next[idx-1], next[idx]] = [next[idx], next[idx-1]]; await saveRoute(next, true); }
-      if (act === "down" && idx < next.length-1) { [next[idx+1], next[idx]] = [next[idx], next[idx+1]]; await saveRoute(next, true); }
-      if (act === "done") {
-        await api("/ui/api/morning/route/complete", {
-          method: "POST", headers: {"Content-Type":"application/json"},
-          body: JSON.stringify({ item_id: id, post_monday: true })
-        });
-        await load(false);
+      try {
+        if (act === "up" && idx > 0) { [next[idx-1], next[idx]] = [next[idx], next[idx-1]]; await saveRoute(next, true); }
+        if (act === "down" && idx < next.length-1) { [next[idx+1], next[idx]] = [next[idx], next[idx+1]]; await saveRoute(next, true); }
+        if (act === "done") {
+          await api("/ui/api/morning/route/complete", {
+            method: "POST", headers: {"Content-Type":"application/json"},
+            body: JSON.stringify({ item_id: id, post_monday: true })
+          });
+          await load(false);
+        }
+      } catch (err) {
+        showMorningErr(`Route update failed — ${err.message || err}. Reload the brief if the list looks wrong.`);
       }
     });
   });
@@ -476,11 +510,16 @@ function renderStops(stops) {
     cb.addEventListener("change", async () => {
       if (!cb.checked) return;
       const id = Number(cb.closest(".stop").dataset.id);
-      await api("/ui/api/morning/route/complete", {
-        method: "POST", headers: {"Content-Type":"application/json"},
-        body: JSON.stringify({ item_id: id, post_monday: true })
-      });
-      await load(false);
+      try {
+        await api("/ui/api/morning/route/complete", {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ item_id: id, post_monday: true })
+        });
+        await load(false);
+      } catch (err) {
+        cb.checked = false;
+        showMorningErr(`Couldn't mark stop complete — ${err.message || err}. Try again.`);
+      }
     });
   });
 }
@@ -503,16 +542,21 @@ function renderRouteSheet(stops, origin, mapsUrl) {
 }
 
 async function saveRoute(stops, markOverride) {
-  const body = await api("/ui/api/morning/route", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ stops, mark_override: !!markOverride })
-  });
-  BRIEF.stops = body.route.stops;
-  BRIEF.maps_url = body.maps_url;
-  renderStops(BRIEF.stops);
-  renderRouteSheet(BRIEF.stops, BRIEF.origin, BRIEF.maps_url);
-  const maps = $("#btnMaps");
-  if (BRIEF.maps_url) { maps.href = BRIEF.maps_url; maps.style.opacity = "1"; }
+  clearMorningErr();
+  try {
+    const body = await api("/ui/api/morning/route", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ stops, mark_override: !!markOverride })
+    });
+    BRIEF.stops = body.route.stops;
+    BRIEF.maps_url = body.maps_url;
+    renderStops(BRIEF.stops);
+    renderRouteSheet(BRIEF.stops, BRIEF.origin, BRIEF.maps_url);
+    syncMapsBtn(BRIEF.maps_url);
+  } catch (e) {
+    showMorningErr(`Couldn't save route — ${e.message || e}. Try again.`);
+    throw e;
+  }
 }
 
 function render(brief, { offline } = {}) {
@@ -602,9 +646,7 @@ function render(brief, { offline } = {}) {
   $("#stopcount").textContent = String((brief.stops||[]).length);
   renderStops(brief.stops || []);
   renderRouteSheet(brief.stops || [], brief.origin, brief.maps_url);
-  const maps = $("#btnMaps");
-  if (brief.maps_url) { maps.href = brief.maps_url; maps.style.pointerEvents = "auto"; maps.style.opacity = "1"; }
-  else { maps.removeAttribute("href"); maps.style.opacity = ".45"; }
+  syncMapsBtn(brief.maps_url);
 
   const ar = brief.action_requests || {};
   const incoming = ar.incoming || [];
@@ -681,14 +723,20 @@ async function load(record = true) {
 }
 
 $("#btnOptimize").addEventListener("click", async () => {
-  const body = await api("/ui/api/morning/route/optimize", {
-    method: "POST", headers: {"Content-Type":"application/json"},
-    body: JSON.stringify({ stops: BRIEF.stops || [] })
-  });
-  BRIEF.stops = body.route.stops;
-  BRIEF.maps_url = body.maps_url;
-  renderStops(BRIEF.stops);
-  renderRouteSheet(BRIEF.stops, BRIEF.origin, BRIEF.maps_url);
+  clearMorningErr();
+  try {
+    const body = await api("/ui/api/morning/route/optimize", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ stops: BRIEF.stops || [] })
+    });
+    BRIEF.stops = body.route.stops;
+    BRIEF.maps_url = body.maps_url;
+    renderStops(BRIEF.stops);
+    renderRouteSheet(BRIEF.stops, BRIEF.origin, BRIEF.maps_url);
+    syncMapsBtn(BRIEF.maps_url);
+  } catch (e) {
+    showMorningErr(`Couldn't optimize route — ${e.message || e}. Your stops are unchanged; try again or open Maps after Save route.`);
+  }
 });
 
 $("#btnRouteSheet").addEventListener("click", () => {
@@ -697,24 +745,34 @@ $("#btnRouteSheet").addEventListener("click", () => {
 });
 
 $("#origsave").addEventListener("click", async () => {
-  await api("/ui/api/morning/origin", {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({ kind: "custom", address: $("#origaddr").value, label: "Custom" })
-  });
-  await load(false);
+  clearMorningErr();
+  try {
+    await api("/ui/api/morning/origin", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ kind: "custom", address: $("#origaddr").value, label: "Custom" })
+    });
+    await load(false);
+  } catch (e) {
+    showMorningErr(`Couldn't save origin — ${e.message || e}. Check the address and try again.`);
+  }
 });
 
 $("#arSend").addEventListener("click", async () => {
-  await api("/ui/api/morning/action-requests", {
-    method:"POST", headers:{"Content-Type":"application/json"},
-    body: JSON.stringify({
-      needed_from_email: $("#arTo").value,
-      category: $("#arCat").value,
-      need: $("#arNeed").value
-    })
-  });
-  $("#arNeed").value = "";
-  await load(false);
+  clearMorningErr();
+  try {
+    await api("/ui/api/morning/action-requests", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({
+        needed_from_email: $("#arTo").value,
+        category: $("#arCat").value,
+        need: $("#arNeed").value
+      })
+    });
+    $("#arNeed").value = "";
+    await load(false);
+  } catch (e) {
+    showMorningErr(`Couldn't send Action Request — ${e.message || e}. Fix the fields and retry.`);
+  }
 });
 
 let notesTimer = null;
