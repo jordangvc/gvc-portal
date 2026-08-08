@@ -1,0 +1,178 @@
+{
+  "id": "scrape",
+  "slug": "scrape",
+  "title": "Scraping (Knockdown)",
+  "short_answer": "After hang, before tape: knock down high edges, proud screws, and loose paper so the first coat has a fair plane.",
+  "summary": "Light knockdown pass that prepares hung board for tape \u2014 not a full finish skim.",
+  "when_to_use": [
+    "Hanging Status is Done",
+    "Before Taped Status / first coat",
+    "You can see proud joints, torn paper, or high fasteners"
+  ],
+  "prerequisites": [
+    "Board hung and fastened",
+    "Major cutouts already made",
+    "Debris path clear for vacuum/sweep"
+  ],
+  "trade_id": "drywall",
+  "category_id": "drywall-sequence",
+  "template": "task_guide",
+  "jobcheck_stage": "Scrapping Status",
+  "role_tags": [
+    "crew",
+    "lead"
+  ],
+  "plain_words": "Scraping is the knockdown pass between hang and tape. You are not finishing \u2014 you are removing the things that make tape fail: proud screw heads, raised mill edges, torn face paper, and loose crumbs. A fair plane now saves coats later.",
+  "tools": [
+    {
+      "name": "6\u20138\" taping knife",
+      "optional": false
+    },
+    {
+      "name": "Utility knife",
+      "optional": false
+    },
+    {
+      "name": "Hand sander / pole sander (light)",
+      "optional": true
+    },
+    {
+      "name": "Vacuum / broom",
+      "optional": false
+    }
+  ],
+  "materials": [
+    {
+      "name": "Replacement screws (for popped / proud fasteners)",
+      "optional": true
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Walk with raking light if you can",
+      "body": "Sight along the plane. Mark high edges and proud fasteners \u2014 do not chase every cosmetic nick.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Reset proud screws",
+      "body": "Back out and reset beside torn paper. Dimple clean heads; never leave a crater of torn face paper.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Knock down high mill edges",
+      "body": "Light knife or rasp on raised factory edges at butts. Do not dig into the core.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Trim loose paper",
+      "body": "Cut torn face paper clean; loose flaps become blisters under tape.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Sweep / vacuum",
+      "body": "Crumbs under tape = blisters. Clean the plane before mud.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "Over-sanding into the core",
+      "body": "Scraping is knockdown, not leveling the whole wall. Digging into gypsum weakens the face for tape."
+    },
+    {
+      "severity": "tip",
+      "title": "Job Check label",
+      "body": "Monday calls this Scrapping Status \u2014 same pass as scrape/knockdown in the Field Manual."
+    }
+  ],
+  "variations": [
+    {
+      "id": "scrape-minimal",
+      "title": "Clean hang",
+      "when": "Board landed well and fasteners are consistent",
+      "changes": [
+        "Short walk + vacuum may be enough",
+        "Still check butts and cutouts before tape"
+      ]
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "qc-scrape-fasteners",
+      "prompt": "No proud or torn-paper screw heads left for tape",
+      "severity": "required"
+    },
+    {
+      "id": "qc-scrape-clean",
+      "prompt": "Plane free of crumbs and loose paper",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "id": "cm-scrape-skip",
+      "title": "Skipping scrape on a rough hang",
+      "wrong": "Go straight to tape over proud edges",
+      "right": "Knock down first",
+      "why": "First coat bridges highs and fails early"
+    }
+  ],
+  "troubleshooting": [
+    {
+      "id": "ts-scrape-blister",
+      "symptom": "Tape blisters at butts after first coat",
+      "likely_cause": "Debris or loose paper left on plane",
+      "fix": "Peel, clean, re-scrape, re-tape"
+    }
+  ],
+  "diagram_ids": [],
+  "related_ids": [
+    "hang",
+    "finish",
+    "taped"
+  ],
+  "next_steps": [
+    {
+      "id": "finish",
+      "label": "Next: Finishing (tape & coats)",
+      "why": "Taped Status and coat sequence"
+    },
+    {
+      "id": "taped",
+      "label": "Coat sequence detail",
+      "why": "If coat-stage chips need the deeper finish path"
+    }
+  ],
+  "search_tags": [
+    "scrape",
+    "scraping",
+    "scrapping",
+    "knockdown",
+    "prep for tape"
+  ],
+  "synonyms": [
+    "scrapping",
+    "scraping status",
+    "knock down",
+    "knockdown",
+    "prep board"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-06",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "gvc_practice",
+    "note": "Aligned with Job Check Scrapping Status. Spelling on Monday is Scrapping; field language is scrape/knockdown.",
+    "sources": [
+      "GVC Field Manual",
+      "Job Check column Scrapping Status"
+    ]
+  }
+}
