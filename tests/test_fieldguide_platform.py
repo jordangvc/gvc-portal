@@ -111,6 +111,11 @@ def test_repo_catalog_hang_scrape() -> None:
     check("touchup-drywall 21 steps", len(tud.get("steps") or []) == 21)
     check("touchup-drywall expert block",
           any(e.get("id") == "tud-defects" for e in (tud.get("experts") or [])))
+    check("touchup-paint migrated", "touchup-paint" in cat["by_id"])
+    tup = cat["by_id"]["touchup-paint"]
+    check("touchup-paint 13 steps", len(tup.get("steps") or []) == 13)
+    check("touchup-paint expert block",
+          any(e.get("id") == "tu-why" for e in (tup.get("experts") or [])))
     check("firestop migrated", "firestop" in cat["by_id"])
     check("safety-orient migrated", "safety-orient" in cat["by_id"])
     check("approved cards", len(cat["cards"]) >= 15)
@@ -148,6 +153,11 @@ def test_repo_catalog_hang_scrape() -> None:
     hits6 = search_procedures("drywall touch-up")
     check("drywall touch-up → touchup-drywall",
           hits6 and hits6[0]["id"] == "touchup-drywall")
+    check("resolve paint-touchup", resolve_procedure_id("paint-touchup") == "touchup-paint")
+    check("resolve flashing", resolve_procedure_id("flashing") == "touchup-paint")
+    check("resolve paint-punch", resolve_procedure_id("paint-punch") == "touchup-paint")
+    hits7 = search_procedures("flashing")
+    check("flashing → touchup-paint", hits7 and hits7[0]["id"] == "touchup-paint")
     check("get_procedure taped", get_procedure("taped")["id"] == "finish")
     check("get_procedure firestopping", get_procedure("firestopping")["id"] == "firestop")
 

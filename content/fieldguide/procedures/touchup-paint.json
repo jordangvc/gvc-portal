@@ -1,0 +1,279 @@
+{
+  "id": "touchup-paint",
+  "slug": "touchup-paint",
+  "title": "Paint Touch-Up",
+  "short_answer": "Same paint, same can, same tool — and prime anything bare first. Flashing is a sheen and porosity problem, not a color problem.",
+  "summary": "The last thing anyone sees and the easiest thing to get visibly wrong. Flashing has specific, avoidable causes.",
+  "plain_words": "Same paint, same can, same tool, and prime anything bare first. If you rolled it originally, roll the touch-up; if you brushed it, brush it. And if the paint has any shine to it, spot touch-up usually won't work — plan on recoating the whole wall from corner to corner.",
+  "when_to_use": [
+    "Punch phase after drywall touch-up and primer",
+    "Post-paint defect repair on a finished plane",
+    "Owner or GC walk finds visible paint flaws"
+  ],
+  "prerequisites": [
+    "Drywall Touch-Up pass complete",
+    "Every repair coated, textured to match, and primed",
+    "Labeled leftover paint from the original application when possible"
+  ],
+  "trade_id": "drywall",
+  "category_id": "repair-punch",
+  "template": "task_guide",
+  "stage_line": "Punch · step 2 · paint touch-up",
+  "role_tags": [
+    "finisher",
+    "lead",
+    "crew"
+  ],
+  "tools": [
+    {
+      "name": "Roller covers in the naps used on the job"
+    },
+    {
+      "name": "Clean brush"
+    },
+    {
+      "name": "Taping knives (small selection)"
+    },
+    {
+      "name": "Bright work light (raking / grazing angle)"
+    },
+    {
+      "name": "Low-tack tape for marking"
+    },
+    {
+      "name": "Drop cloths"
+    }
+  ],
+  "materials": [
+    {
+      "name": "Labeled paint from every job (job name, room, product, sheen, color code, date)"
+    },
+    {
+      "name": "Fast-setting compound"
+    },
+    {
+      "name": "Stain-blocking primer"
+    },
+    {
+      "name": "General-purpose primer"
+    }
+  ],
+  "steps": [
+    {
+      "order": 1,
+      "title": "Prime bare spots",
+      "body": "Prime any bare spot, patch, or repair first. This fixes the porosity difference — skipping it is the most common cause of a visible touch-up.",
+      "checklist": true
+    },
+    {
+      "order": 2,
+      "title": "Same product",
+      "body": "Same product — not just the same color. Same manufacturer, same line, same sheen.",
+      "checklist": true
+    },
+    {
+      "order": 3,
+      "title": "Same batch",
+      "body": "Same batch where possible. Keep labeled leftover paint from the original job for exactly this.",
+      "checklist": true
+    },
+    {
+      "order": 4,
+      "title": "Same applicator",
+      "body": "Apply it the way it was originally applied — roller over rolled, brush over brushed, same nap length.",
+      "checklist": true
+    },
+    {
+      "order": 5,
+      "title": "Feather edges",
+      "body": "Feather the edges. Don't stop the touch-up with a hard edge.",
+      "checklist": true
+    },
+    {
+      "order": 6,
+      "title": "Thin to blend",
+      "body": "Thinning slightly can help it blend — test it before doing it on a finished wall.",
+      "checklist": true
+    },
+    {
+      "order": 7,
+      "title": "Check the real light",
+      "body": "Check it under the light the owner will see it under — same fixtures, same time of day, same viewing angle.",
+      "checklist": true
+    },
+    {
+      "order": 8,
+      "title": "Drywall ready",
+      "body": "Confirm every drywall repair is coated, textured to match, and primed before you open a can.",
+      "checklist": true
+    },
+    {
+      "order": 9,
+      "title": "One paint pass",
+      "body": "Do the paint in one pass through the area rather than following the drywall crew around room by room.",
+      "checklist": true
+    },
+    {
+      "order": 10,
+      "title": "Spot or recoat",
+      "body": "Decide per wall: spot touch-up or recoat the plane. Make that call before you start on it, not halfway through.",
+      "checklist": true
+    },
+    {
+      "order": 11,
+      "title": "GC walk",
+      "body": "Re-walk with the GC or owner afterward, in the same light, and get it signed off.",
+      "checklist": true
+    },
+    {
+      "order": 12,
+      "title": "Chronic damage",
+      "body": "Note anything that will keep getting damaged — the fix is protection or a corner guard, not another touch-up next month.",
+      "checklist": true
+    },
+    {
+      "order": 13,
+      "title": "Label the can",
+      "body": "Leave labeled paint on site or log what was used, so the next touch-up starts from the right can.",
+      "checklist": true
+    }
+  ],
+  "warnings": [
+    {
+      "severity": "warn",
+      "title": "Do the drywall first",
+      "body": "This step assumes the Drywall Touch-Up pass is done and every repair is primed. Painting over an unprimed repair is the number one cause of a touch-up that shows, and no amount of care with the paint will fix it."
+    },
+    {
+      "severity": "stop",
+      "title": "When to stop touching up and recoat",
+      "body": "Spot touch-up works on flat paint in normal light. It fights you on eggshell and satin, and it essentially does not work on semi-gloss and gloss, or on any surface under raking or critical light. In those conditions the right call is to recoat the full plane — corner to corner, break to break — rather than chase spots. Recognizing this early saves an afternoon of making the wall worse. On a job with a lot of sheen or critical lighting, price the recoat rather than assume touch-up."
+    }
+  ],
+  "experts": [
+    {
+      "id": "tu-why",
+      "tag": "Full detail · the physics",
+      "summary": "A touch-up that shows is almost never a color problem — it's a sheen and porosity problem. The paint matches; what doesn't match is how the surface reflects light and how much paint it absorbed. Different porosity (bare or patched spots drink binder and drop sheen), different applicator (roller stipple vs brush texture), different batch (sheen or tone drift), different conditions (temperature, humidity, dry time), and sheen level (higher sheen = less forgiving) are the causes. Prime the patch, match product/batch/tool, feather edges — or recoat the full plane when sheen or lighting won't forgive spots."
+    }
+  ],
+  "quality_checks": [
+    {
+      "id": "tup-primed",
+      "prompt": "Every bare spot and repair primed before paint",
+      "severity": "required"
+    },
+    {
+      "id": "tup-match",
+      "prompt": "Same product, batch, and applicator as original coat",
+      "severity": "required"
+    },
+    {
+      "id": "tup-recoat-call",
+      "prompt": "Spot vs full-plane recoat decided before starting each wall",
+      "severity": "required"
+    },
+    {
+      "id": "tup-signoff",
+      "prompt": "GC or owner walk in the same light with sign-off",
+      "severity": "required"
+    }
+  ],
+  "common_mistakes": [
+    {
+      "title": "Painting over unprimed repair",
+      "wrong": "Touch up bare compound or patch without primer",
+      "right": "Prime every repair before paint",
+      "why": "Porosity mismatch guarantees flashing"
+    },
+    {
+      "title": "Color match only",
+      "wrong": "Match color code but use different product or sheen",
+      "right": "Same manufacturer, line, and sheen",
+      "why": "Flashing is sheen and texture, not hue"
+    },
+    {
+      "title": "Brush over rolled wall",
+      "wrong": "Brush a spot on a rolled plane",
+      "right": "Roller over rolled, brush over brushed, same nap",
+      "why": "Applicator texture shows in the light"
+    },
+    {
+      "title": "Chasing spots on semi-gloss",
+      "wrong": "Keep spot-touching a glossy or critical-light wall",
+      "right": "Recoat the full plane corner to corner",
+      "why": "Spot touch-up essentially does not work at high sheen"
+    },
+    {
+      "title": "Hard edge on the repair",
+      "wrong": "Stop the touch-up with a visible boundary",
+      "right": "Feather edges into the surrounding coat",
+      "why": "The edge is where flashing reads"
+    },
+    {
+      "title": "No labeled leftover",
+      "wrong": "Mix a new batch from memory for the next visit",
+      "right": "Leave labeled paint on site or log product and batch",
+      "why": "Next touch-up starts wrong without the right can"
+    }
+  ],
+  "troubleshooting": [],
+  "diagram_ids": [],
+  "related_ids": [
+    "touchup-drywall",
+    "punch-cadence",
+    "finish",
+    "qc-walk"
+  ],
+  "next_steps": [
+    {
+      "id": "touchup-drywall",
+      "label": "Drywall Touch-Up",
+      "why": "Wall defects and primer before paint — step 1 of punch"
+    },
+    {
+      "id": "qc-walk",
+      "label": "QC walk",
+      "why": "Honest pass/fail before stages advance"
+    },
+    {
+      "id": "finish",
+      "label": "Finishing Drywall",
+      "why": "Surface never reached spec — skim, don't chase paint spots"
+    },
+    {
+      "id": "changeorder",
+      "label": "Spotting a Change Order",
+      "why": "Chronic or other-trade damage needs protection or scope, not another touch-up"
+    }
+  ],
+  "search_tags": [
+    "paint touch-up",
+    "touchup paint",
+    "flashing",
+    "paint punch",
+    "sheen",
+    "porosity",
+    "recoat",
+    "punch paint"
+  ],
+  "synonyms": [
+    "paint touch-up",
+    "touchup paint",
+    "flashing",
+    "paint punch"
+  ],
+  "owner": "field-ops",
+  "review_status": "approved",
+  "last_reviewed": "2026-08-08",
+  "review_cycle_days": 180,
+  "provenance": {
+    "kind": "standard",
+    "note": "Flashing causes and remedies follow published guidance from paint manufacturers — Sherwin-Williams material on paint flashing, plus trade-press coverage of why patches telegraph. The rules (prime the patch, same product, same batch, brush-over-brush and roller-over-roller, thin slightly to blend) are consistent across those sources. The recoat-the-full-plane guidance on sheens above flat is standard painting-contractor practice and the item most likely to save GVC money on punch work.",
+    "sources": [
+      "Sherwin-Williams — paint flashing guidance",
+      "Trade press — patch telegraphing",
+      "GVC Field Manual"
+    ]
+  }
+}

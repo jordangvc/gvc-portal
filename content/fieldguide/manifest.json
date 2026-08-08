@@ -17,7 +17,8 @@
         "cleanout",
         "qc-walk",
         "closeout-rhythm",
-        "touchup-drywall"
+        "touchup-drywall",
+        "touchup-paint"
       ],
       "search_tags": ["drywall", "rock", "board", "gypsum"],
       "synonyms": ["sheetrock", "sheet rock", "gypsum board", "hang rock"]
@@ -135,7 +136,7 @@
       "trade_id": "drywall",
       "title": "Repair & punch",
       "summary": "Raking-light walk, drywall finish repair, and primer before paint.",
-      "procedure_ids": ["touchup-drywall"],
+      "procedure_ids": ["touchup-drywall", "touchup-paint"],
       "order": 6
     }
   ],
@@ -214,6 +215,8 @@
     "verbal add": "changeorder",
     "verbal-add": "changeorder",
     "standing by": "changeorder",
-    "standing-by": "changeorder"
+    "standing-by": "changeorder",
+    "flashing": "touchup-paint",
+    "paint punch": "touchup-paint"
   }
 }
