@@ -22,6 +22,10 @@ scheduler, NO cron, NO route, and NO wiring into any existing loop calling
 it. ONLY JORDAN enables that flag, and only once the team is ready to
 absorb the pings.
 
+Dedup (sent-markers) lives in subsystems/lien_watch/alert_state.py so a
+scheduled sweep can run more than once per day without re-pinging the same
+T-14/7/3/1 mark. Markers key on item + kind + mark + due_date.
+
 Monday is READ-ONLY here — no notice-status writebacks until a later phase.
 """
 from __future__ import annotations
@@ -163,10 +167,8 @@ def send_lien_alerts(tracker: Optional[dict] = None, *,
 
     Gate first, work later: nothing below the check runs while dark. Channel
     comes ONLY from GVC_LIEN_SLACK_CHANNEL (COI pattern — no named fallback,
-    so a half-configured deploy can't spray pings into #bids). NOTE for the
-    eventual enable: there is no sent-marker state yet, so a caller invoking
-    this more than once per day would re-ping the same marks — build dedup
-    state (or a Monday writeback) before anyone schedules it.
+    so a half-configured deploy can't spray pings into #bids). Dedup via
+    alert_state sent-markers — safe to schedule once the flag is on.
     """
     # THE GATE (top of function, per the amendment). Exactly "true" — not
     # "1", not "yes" — so nothing enables it by accident.
@@ -174,15 +176,19 @@ def send_lien_alerts(tracker: Optional[dict] = None, *,
         print("[lien-watch] lien alerts disabled "
               "(GVC_LIEN_ALERTS_ENABLED != 'true'); nothing sent.",
               file=sys.stderr)
-        return {"ok": True, "enabled": False, "sent": [], "errors": []}
+        return {"ok": True, "enabled": False, "sent": [], "errors": [],
+                "skipped": []}
 
     from adapters import slack_notify
+    from subsystems.lien_watch import alert_state
 
     if tracker is None:
         tracker = build_tracker()
     channel = (os.environ.get("GVC_LIEN_SLACK_CHANNEL") or "").strip()
+    sent_doc, dedup_backend = alert_state.load_sent_doc()
     out: dict = {"ok": True, "enabled": True, "dry_run": dry_run,
-                 "sent": [], "errors": []}
+                 "dedup": dedup_backend, "sent": [], "skipped": [],
+                 "errors": []}
     if not channel:
         out["ok"] = False
         out["errors"].append("GVC_LIEN_SLACK_CHANNEL not set; no pings sent.")
@@ -192,8 +198,16 @@ def send_lien_alerts(tracker: Optional[dict] = None, *,
         for deadline in job.get("deadlines", []):
             if deadline.get("days_remaining") not in ALERT_MARKS:
                 continue
+            key = alert_state.alert_key(
+                job["item_id"], deadline["kind"],
+                deadline["days_remaining"], deadline.get("due_date"))
             entry = {"item_id": job["item_id"], "kind": deadline["kind"],
-                     "days_remaining": deadline["days_remaining"]}
+                     "days_remaining": deadline["days_remaining"],
+                     "key": key}
+            if alert_state.already_sent(sent_doc, key):
+                entry["skipped"] = "already_sent"
+                out["skipped"].append(entry)
+                continue
             if dry_run:
                 entry["would_send"] = True
                 out["sent"].append(entry)
@@ -202,6 +216,11 @@ def send_lien_alerts(tracker: Optional[dict] = None, *,
                 slack_notify.post_message(_alert_message(job, deadline),
                                           channel=channel)
                 entry["sent"] = True
+                backend = alert_state.remember_sent(key)
+                out["dedup"] = backend
+                # Keep the in-sweep view current so a duplicate row in the
+                # same tracker can't double-post before GCS round-trips.
+                sent_doc = alert_state.with_sent(sent_doc, key)
             except slack_notify.SlackNotConfigured:
                 out["errors"].append("SLACK_BOT_TOKEN not set; ping skipped.")
                 entry["sent"] = False
