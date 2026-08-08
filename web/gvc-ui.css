@@ -906,6 +906,30 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
 .errorbox__body { font-size: var(--text-sm); color: var(--color-text-muted); text-wrap: pretty; }
 .errorbox__actions { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-top: var(--space-1); }
 
+/* Brief status after an action (pin saved, access denied). Shared across screens. */
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(var(--space-6) + env(safe-area-inset-bottom, 0px));
+  z-index: 80;
+  max-width: min(92vw, 28rem);
+  padding: 10px 16px;
+  border-radius: var(--radius-full);
+  background: var(--color-text);
+  color: var(--color-surface);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  text-align: center;
+  box-shadow: var(--shadow-md);
+  transform: translateX(-50%) translateY(140%);
+  transition: transform var(--transition-interactive);
+  pointer-events: none;
+}
+.toast.is-on { transform: translateX(-50%) translateY(0); }
+@media (max-width: 900px) {
+  .toast { bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)); }
+}
+
 /* Field-level error: the input turns, the message sits under it */
 .input.is-invalid, input.is-invalid, textarea.is-invalid {
   border-color: var(--color-danger) !important;

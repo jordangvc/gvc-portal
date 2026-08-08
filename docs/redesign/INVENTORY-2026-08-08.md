@@ -107,12 +107,13 @@ Green primary + gold hairline (redesign rule) is **not** consistently applied; m
 
 ## Linked stylesheets today
 
-Every portal HTML page: **`/ui/gvc.css` only**. None yet load `gvc-ui.css` or `gvc-v2-patch.css`.
+- **`takeoff.html`**, **`hub.html`**: `/ui/gvc-ui.css` only
+- Remaining portal HTML: `/ui/gvc.css` only (none load `gvc-v2-patch.css` yet)
 
 ## Proposed conversion order (portal only)
 
 1. ~~**`takeoff.html` bridge**~~ **Done** — redesign shell + handoff + honest empty queue; `GvcFlow` mounts `.path`
-2. **Shell on hub** — map redesign `.app/.rail/.topbar/.tabbar` onto hub home
+2. ~~**Shell on hub**~~ **Done (r101)** — `.app/.rail/.topbar/.tabbar`; single rail drawer; needs/metrics/queue on redesign cards
 3. **Estimate** — drop `<select>`s, delete leftover page CSS, checklist
 4. **Job Check** status picker — `Status Picker Handoff.md`
 5. Remaining money spine → morning → fieldguide last (private palette)
