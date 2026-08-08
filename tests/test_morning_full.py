@@ -377,6 +377,41 @@ def test_build_employee_brief_can_skip_gfolder():
         flow._attach_gfolder_urls = orig_gfolder
 
 
+def test_gfolder_urls_for_items_batch():
+    from unittest.mock import patch
+
+    class _MC:
+        pass
+
+    def fake_attach(_mc, cards):
+        for c in cards:
+            c["gfolder_url"] = f"https://drive.example/{c['item_id']}"
+
+    orig = flow._attach_gfolder_urls
+    flow._attach_gfolder_urls = fake_attach
+    try:
+        with patch("orchestrators.morning_flow.MondayClient", _MC):
+            out = flow.gfolder_urls_for_items([3, 7])
+        assert out["ok"] is True
+        assert out["urls"]["3"] == "https://drive.example/3"
+        assert out["urls"]["7"] == "https://drive.example/7"
+        empty = flow.gfolder_urls_for_items([])
+        assert empty == {"ok": True, "urls": {}}
+    finally:
+        flow._attach_gfolder_urls = orig
+
+
+def test_morning_brief_route_defaults_lite_gfolder():
+    src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
+    chunk = src.split("def ui_morning_brief")[1].split("def ui_morning_gfolders")[0]
+    assert "attach_gfolder=attach_gfolder" in chunk
+    assert 'gfolder_q in ("1", "true", "yes")' in chunk
+    assert '@app.get("/ui/api/morning/gfolders")' in src
+    morning_html = (ROOT / "web" / "morning.html").read_text(encoding="utf-8")
+    assert "enrichGfolders" in morning_html
+    assert "/ui/api/morning/gfolders?item_ids=" in morning_html
+
+
 def test_fetch_recent_update_authors_is_cached():
     from adapters.monday import cache as monday_cache
     monday_cache.clear()
@@ -500,6 +535,8 @@ if __name__ == "__main__":
         test_card_includes_gfolder_url,
         test_attach_gfolder_urls_soft_fails,
         test_build_employee_brief_can_skip_gfolder,
+        test_gfolder_urls_for_items_batch,
+        test_morning_brief_route_defaults_lite_gfolder,
         test_fetch_recent_update_authors_is_cached,
         test_hub_morning_route_aliases_registered,
         test_normalize_updated_at_feeds_hold_in_card,
