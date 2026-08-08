@@ -178,6 +178,25 @@ def test_stale_draft_excluded_from_default_search() -> None:
     check("score positive", score_procedure(draft, "zzzunique") > 0)
 
 
+def test_jobcheck_anchors_match_catalog_spine() -> None:
+    """boards.py Field Manual deep-links must resolve in catalog (or known shell-only)."""
+    from shared.boards import JOBCHECK_FIELDGUIDE_ANCHORS
+    from subsystems.fieldguide.catalog import (
+        clear_cache, load_catalog, resolve_procedure_id,
+    )
+
+    clear_cache()
+    known = set(load_catalog()["by_id"])
+    shell_only = {"closeout-rhythm", "qc-walk"}  # still HTML-only
+    missing = []
+    for _col, anchor in JOBCHECK_FIELDGUIDE_ANCHORS.items():
+        pid = resolve_procedure_id((anchor or "").lstrip("#"))
+        if pid in known or pid in shell_only:
+            continue
+        missing.append(f"{_col}→{anchor}")
+    check("no unknown Job Check→Field Manual anchors", missing == [])
+
+
 def main() -> None:
     print("test_fieldguide_platform")
     test_normalize_authoring_aliases()
@@ -185,6 +204,7 @@ def main() -> None:
     test_repo_catalog_hang_scrape()
     test_manifest_categories_alias()
     test_stale_draft_excluded_from_default_search()
+    test_jobcheck_anchors_match_catalog_spine()
     print("ALL OK")
 
 
