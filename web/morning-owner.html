@@ -19,86 +19,102 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-  body { background: var(--gvc-bg); }
-  main { max-width: 640px; margin: 0 auto; padding: 16px 16px 48px; display: grid; gap: 12px; }
-  .card { background: var(--gvc-surface); border: 1px solid var(--gvc-line); border-radius: var(--gvc-r-lg);
-    border-top: 2.5px solid var(--gvc-gold-matte); padding: 14px 16px; }
-  .card h2 { margin: 0 0 8px; font-size: var(--gvc-fs-small); text-transform: uppercase; letter-spacing: .06em; color: var(--gvc-green-dark); }
-  .big { font-size: 40px; font-weight: 700; color: var(--gvc-green-dark); line-height: 1; }
-  .muted { color: var(--gvc-muted); font-size: var(--gvc-fs-small); }
-  .item { padding: 10px 0; border-bottom: 1px solid var(--gvc-line-soft); }
+  body { margin: 0; background: var(--color-bg); color: var(--color-text); font-family: var(--font-body); }
+  .page {
+    max-width: 640px; margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+    display: grid; gap: var(--space-4);
+  }
+  .page > .card { padding: var(--space-5); }
+  .page-hd h1 {
+    margin: var(--space-1) 0 0;
+    font-size: var(--text-2xl); font-weight: 700;
+    font-family: var(--font-display);
+  }
+  .page > .card > h2 {
+    margin: 0 0 var(--space-3);
+    font-size: var(--text-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted);
+  }
+  .big { font-size: 2.5rem; font-weight: 700; color: var(--color-primary); line-height: 1; }
+  .item { padding: 10px 0; border-bottom: 1px solid var(--color-divider); }
   .item:last-child { border-bottom: 0; }
-  .item-title { font-weight: 700; color: var(--gvc-ink); margin: 0 0 4px; }
-  .item-meta { color: var(--gvc-muted); font-size: var(--gvc-fs-caption); margin: 0 0 8px; }
+  .item-title { font-weight: 700; margin: 0 0 4px; }
+  .item-meta { color: var(--color-text-muted); font-size: var(--text-xs); margin: 0 0 8px; }
   .item-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-  .item-actions a {
-    display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px;
-    border-radius: var(--gvc-r-pill); border: 1px solid var(--gvc-line-strong);
-    background: var(--gvc-surface); color: var(--gvc-green-dark); font-weight: 600;
-    font-size: var(--gvc-fs-small); text-decoration: none;
+  .tag {
+    display: inline-block; padding: 2px 8px; border-radius: var(--radius-full);
+    font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    background: var(--color-warn-soft); color: var(--color-accent-ink); margin-right: 6px;
   }
-  .item-actions a.primary {
-    background: var(--gvc-green); border-color: var(--gvc-green); color: var(--color-on-primary, #fff);
-    box-shadow: inset 0 0 0 1px var(--gvc-gold);
+  .tag.warn { background: var(--color-danger-soft); color: var(--color-danger); }
+  #err {
+    display: none; padding: 12px 14px; border-radius: var(--radius-md);
+    background: var(--color-danger-soft); border: 1px solid var(--color-danger); color: var(--color-danger);
+    font-size: var(--text-sm);
   }
-  .chip {
-    display: inline-block; padding: 2px 8px; border-radius: 999px;
-    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-    background: var(--gvc-tint-sand); color: var(--gvc-gold-dark); margin-right: 6px;
-  }
-  .chip.warn { background: var(--gvc-danger-tint); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
-  #err { display:none; padding:12px; background: var(--gvc-danger-tint); border-radius: var(--gvc-r); color: var(--color-danger-ink, var(--gvc-danger-dark)); }
-  #err.show { display:block; }
+  #err.show { display: block; }
   #err .err-title { font-weight: 700; margin: 0 0 6px; }
   #err .err-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
-  #err .err-actions a, #err .err-actions button {
-    display: inline-flex; align-items: center; min-height: 40px; padding: 0 12px;
-    border-radius: var(--gvc-r-pill); border: 1px solid var(--gvc-line-strong);
-    background: var(--gvc-surface); color: var(--gvc-green-dark); font-weight: 600;
-    font-size: var(--gvc-fs-small); text-decoration: none; cursor: pointer;
-  }
-  #err .err-actions button.primary {
-    background: var(--gvc-green); border-color: var(--gvc-green); color: var(--color-on-primary, #fff);
+  .page-foot { font-size: var(--text-sm); color: var(--color-text-muted); margin: 0; }
+  .page-foot a { color: var(--color-primary); }
+  @media (max-width: 640px) {
+    .page { padding: var(--space-4) var(--space-3) var(--space-12); }
   }
 </style>
 </head>
 <body>
-<header class="gvc-topbar"><div class="gvc-topbar-in">
-  <a class="gvc-brand" href="/"><span class="gvc-mono">G</span><span class="gvc-wordmark">Green Valley Contractors</span></a>
-  <span class="gvc-topbar-sep"></span><span class="gvc-topbar-title">Owner Pulse</span>
-  <div class="gvc-topbar-right"><span class="gvc-topbar-user">{{EMAIL}}</span>
-    <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a></div>
-</div></header>
-<main>
-  <div><p class="gvc-eyebrow">Exception only</p><h1 class="gvc-h1">Owner Pulse</h1>
-    <p class="muted">High-level signals — not a task list. Routine ops stay with the GM.</p></div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Owner Pulse</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
+  </div>
+</header>
+
+<div class="page">
+  <div class="page-hd">
+    <p class="kicker">Exception only</p>
+    <h1>Owner Pulse</h1>
+    <p class="muted" style="margin:var(--space-2) 0 0;max-width:36ch">High-level signals — not a task list. Routine ops stay with the GM.</p>
+  </div>
   <div id="err"></div>
-  <div class="card"><h2>Team preparation</h2><div class="big" id="pct">—</div>
-    <div class="muted" id="pctsub"></div></div>
-  <div class="card"><h2>Safety stops</h2><div id="safety" class="muted">None flagged</div></div>
-  <div class="card"><h2>Prep alerts (3+/5 day)</h2><div id="alerts" class="muted">None</div></div>
-  <div class="card"><h2>Huddle outcome</h2><div id="huddle" class="muted">—</div></div>
-  <div class="card"><h2>Planning signals</h2><div id="plan" class="muted">None</div></div>
-  <div class="card"><h2>Owner decisions</h2><div id="dec" class="muted">None waiting</div></div>
-  <p class="muted" id="nextstrip">Next: <a href="/ui/morning">Morning Brief</a> · <a href="/ui/billing">Billing Hub</a> · <a href="/">hub</a>.</p>
-</main>
+
+  <section class="card">
+    <h2>Team preparation</h2>
+    <div class="big" id="pct">—</div>
+    <div class="muted" id="pctsub" style="font-size:var(--text-sm);margin-top:6px"></div>
+  </section>
+  <section class="card"><h2>Safety stops</h2><div id="safety" class="muted" style="font-size:var(--text-sm)">None flagged</div></section>
+  <section class="card"><h2>Prep alerts (3+/5 day)</h2><div id="alerts" class="muted" style="font-size:var(--text-sm)">None</div></section>
+  <section class="card"><h2>Huddle outcome</h2><div id="huddle" class="muted" style="font-size:var(--text-sm)">—</div></section>
+  <section class="card"><h2>Planning signals</h2><div id="plan" class="muted" style="font-size:var(--text-sm)">None</div></section>
+  <section class="card"><h2>Owner decisions</h2><div id="dec" class="muted" style="font-size:var(--text-sm)">None waiting</div></section>
+
+  <p class="page-foot" id="nextstrip">Next: <a href="/ui/morning">Morning Brief</a> · <a href="/ui/billing">Billing Hub</a> · <a href="/">hub</a>.</p>
+</div>
+
 <script src="/ui/gvc-command.js"></script>
 <script>
 const esc = (s) => String(s??"").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;"}[c]));
 
 function escChip(label, warn) {
   if (!label) return "";
-  return `<span class="chip${warn ? " warn" : ""}">${esc(label)}</span>`;
+  return `<span class="tag${warn ? " warn" : ""}">${esc(label)}</span>`;
 }
 
 function safetyCard(s) {
   const href = s.href || (s.item_id ? `/ui/jobcheck?item=${encodeURIComponent(s.item_id)}` : "");
   const actions = href
-    ? `<div class="item-actions"><a class="primary" href="${esc(href)}">Open Job Check</a>
-         <a href="/ui/morning-owner">Stay on Pulse</a></div>`
+    ? `<div class="item-actions"><a class="btn btn-primary" href="${esc(href)}">Open Job Check</a>
+         <a class="btn" href="/ui/morning-owner">Stay on Pulse</a></div>`
     : "";
   return `<div class="item">
     <div class="item-title">${escChip("Safety", true)}${esc(s.name || "Job")}</div>
@@ -123,8 +139,8 @@ function decisionCard(x) {
     <div class="item-title">${escChip(escLabel || "Decision", warn)}${esc(title)}</div>
     <p class="item-meta">${esc(detail || "Needs your call.")}</p>
     <div class="item-actions">
-      <a class="primary" href="${esc(href)}">${x.project_item_id ? "Open Job Check" : "Open Morning Brief"}</a>
-      <a href="/ui/morning">My brief</a>
+      <a class="btn btn-primary" href="${esc(href)}">${x.project_item_id ? "Open Job Check" : "Open Morning Brief"}</a>
+      <a class="btn" href="/ui/morning">My brief</a>
     </div>
   </div>`;
 }
@@ -161,9 +177,9 @@ async function load(){
       `<div class="err-title">Couldn't load Owner Pulse</div>` +
       `<div>${esc(e.message || "Monday or network error.")}</div>` +
       `<div class="err-actions">` +
-      `<button type="button" class="primary" id="err-retry">Try again</button>` +
-      `<a href="/ui/morning">Open Morning Brief</a>` +
-      `<a href="/">Hub</a>` +
+      `<button type="button" class="btn btn-primary" id="err-retry">Try again</button>` +
+      `<a class="btn" href="/ui/morning">Open Morning Brief</a>` +
+      `<a class="btn" href="/">Hub</a>` +
       `</div>`;
     const btn = document.getElementById("err-retry");
     if (btn) btn.addEventListener("click", function () { load(); });

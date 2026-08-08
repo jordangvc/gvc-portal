@@ -19,61 +19,136 @@
   }
 })();
 </script>
-<link rel="stylesheet" href="/ui/gvc.css" />
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
 <style>
-  /* Billing hub — layout/behavior only; brand tokens from gvc.css. */
-.queue-row {
-    display: grid; gap: 10px; padding: 14px 0;
-    border-bottom: 1px solid var(--gvc-line-soft);
+  /* Billing hub — layout/behavior only; tokens from gvc-ui.css */
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: var(--space-5) var(--space-4) var(--space-12);
+    display: grid;
+    gap: var(--space-4);
+  }
+  .page > .card { padding: var(--space-5); }
+  .page > .card > h2, .page > .card > .card-head h2 {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--color-text-muted);
+    margin: 0 0 var(--space-3);
+    font-weight: 700;
+  }
+  .card-head {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+    margin-bottom: var(--space-3);
+  }
+  .card-head h2 { margin: 0; flex: 1; min-width: 0; }
+  .field-label {
+    display: block;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--color-text-muted);
+    margin-bottom: var(--space-2);
+  }
+
+  .queue-row {
+    display: grid;
+    gap: 10px;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--color-divider);
   }
   .queue-row:last-child { border-bottom: 0; }
-  .queue-row .title { font-size: var(--gvc-fs-body); font-weight: 700; }
-  .queue-row .title a { color: var(--gvc-ink); text-decoration: none; }
-  .queue-row .title a:hover { color: var(--gvc-green-dark); text-decoration: underline; }
+  .queue-row .title { font-size: var(--text-base); font-weight: 700; }
+  .queue-row .title a { color: var(--color-text); text-decoration: none; }
+  .queue-row .title a:hover { color: var(--color-primary); text-decoration: underline; }
   .queue-meta {
-    display: flex; flex-wrap: wrap; gap: 6px 12px;
-    font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px 12px;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
-  .queue-meta b { color: var(--gvc-ink); font-weight: 600; }
-  .chip {
-    display: inline-flex; align-items: center; font-size: var(--gvc-fs-micro);
-    font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
-    padding: 2px 9px; border-radius: var(--gvc-r-pill); white-space: nowrap;
-    background: var(--gvc-warn-tint); color: var(--gvc-gold-dark);
-    border: 1px solid #E3CFA0;
-  }
-  .chip.ok { background: var(--gvc-ok-tint); color: var(--gvc-green-dark); border-color: #BCD6C8; }
-  .chip.warn { background: var(--gvc-warn-tint); color: var(--color-warn-ink, #9A3412); border-color: var(--color-warn-border, #E0CDA9); }
+  .queue-meta b { color: var(--color-text); font-weight: 600; }
   .row-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .row-note { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); }
+  .row-note { font-size: var(--text-xs); color: var(--color-text-muted); }
   .empty {
-    padding: 18px 4px; font-size: var(--gvc-fs-small); color: var(--gvc-muted);
+    padding: 18px 4px;
+    font-size: var(--text-sm);
+    color: var(--color-text-muted);
   }
   .count-pill {
-    font-size: var(--gvc-fs-small); font-weight: 600; padding: 4px 12px;
-    border-radius: var(--gvc-r-pill); border: 1px solid var(--gvc-line);
-    background: var(--gvc-surface);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: var(--radius-full);
+    border: 1px solid var(--color-border);
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
   }
   .act-row {
-    display: grid; gap: 2px; padding: 10px 0;
-    border-bottom: 1px solid var(--gvc-line-soft); font-size: var(--gvc-fs-small);
+    display: grid;
+    gap: 2px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--color-divider);
+    font-size: var(--text-sm);
   }
   .act-row:last-child { border-bottom: 0; }
-  .act-row .when { color: var(--gvc-muted); font-size: var(--gvc-fs-caption); }
-  #status { display: none; }
-  #status.show { display: flex; }
-  #search-status { font-size: var(--gvc-fs-caption); color: var(--gvc-muted); margin-top: 8px; }
+  .act-row .when { color: var(--color-text-muted); font-size: var(--text-xs); }
+  .results-heading {
+    font-size: var(--text-xs);
+    text-transform: uppercase;
+    letter-spacing: .08em;
+    color: var(--color-text-muted);
+    font-weight: 700;
+    margin: 8px 0;
+  }
+  .dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    background: var(--color-text-faint);
+    vertical-align: middle;
+  }
+  .dot.ok { background: var(--color-primary); }
+  .dot.bad { background: var(--color-danger); }
 
-  /* Fat queue rows (title + meta + chips + actions) need a taller scroll
-     pane than the compact 44px-row picker default in gvc.css. */
+  #status {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+    display: none;
+  }
+  #status.show { display: block; }
+  #status.info { background: var(--color-info-soft); border: 1px solid var(--color-info); }
+  #status.ok { background: var(--color-primary-soft); border: 1px solid var(--color-primary); color: var(--color-primary); }
+  #status.warn {
+    background: var(--color-warn-soft);
+    border: 1px solid var(--color-warn);
+    color: var(--color-accent-ink);
+  }
+  #status.err {
+    background: var(--color-danger-soft);
+    border: 1px solid var(--color-danger);
+    color: var(--color-danger);
+  }
+  #status ul { margin: 6px 0 0; padding-left: 20px; }
+  #search-status { font-size: var(--text-xs); color: var(--color-text-muted); margin-top: 8px; }
+
   .billing-scroll {
     max-height: min(56vh, 520px);
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     overscroll-behavior: contain;
-    border: 1px solid var(--gvc-line-strong);
-    border-radius: var(--gvc-r);
-    background: var(--gvc-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background: var(--color-surface-2);
     padding: 0 14px;
   }
   .billing-scroll > .empty { padding: 18px 4px; }
@@ -82,138 +157,111 @@
   #search-results.billing-scroll { margin-top: 14px; padding-top: 4px; }
 
   @media (max-width: 640px) {
-    .gvc-topbar-in { padding: 12px 16px; flex-wrap: wrap; gap: 8px 12px; }
-    .gvc-wordmark { font-size: 15px; }
+    .page { padding: var(--space-4) var(--space-3) var(--space-12); }
     .billing-scroll { max-height: min(48vh, 420px); }
   }
 </style>
 </head>
 <body>
 
-<header class="gvc-topbar">
-  <div class="gvc-topbar-in">
-    <a class="gvc-brand" href="/">
-      <span class="gvc-mono">G</span>
-      <span class="gvc-wordmark">Green Valley Contractors</span>
-    </a>
-    <span class="gvc-topbar-sep"></span>
-    <span class="gvc-topbar-title">Billing</span>
-    <div class="gvc-topbar-right">
-      <div id="health">Checking service…</div>
-      <span class="gvc-topbar-sep"></span>
-      <span class="gvc-topbar-user">{{EMAIL}}</span>
-      <button type="button" class="gvc-signout" id="theme-toggle" data-theme-label>Auto</button>
-      <a class="gvc-signout" href="/auth/logout">Sign out</a>
-    </div>
+<header class="topbar">
+  <div class="topbar__title">
+    <span class="kicker"><a href="/" style="color:inherit;text-decoration:none">GVC Portal</a></span>
+    <h1>Billing</h1>
+  </div>
+  <div class="topbar__actions">
+    <span class="muted" id="health" style="font-size:var(--text-xs)">Checking service…</span>
+    <span class="muted" style="font-size:var(--text-xs);max-width:10rem;overflow:hidden;text-overflow:ellipsis" title="{{EMAIL}}">{{EMAIL}}</span>
+    <button type="button" class="btn btn-sm" id="theme-toggle" data-theme-label>Auto</button>
+    <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
   </div>
 </header>
 
-<main class="gvc-shell">
-  <nav id="gvc-flow" class="gvc-flow" aria-label="Money path"></nav>
-  <div class="gvc-page-hd">
-    <p class="gvc-eyebrow">Invoicing</p>
-    <h1 class="gvc-h1">Billing</h1>
-    <p class="gvc-sub">Find work ready to bill without memorizing project numbers — search by builder, address, or estimate.</p>
+<div class="page">
+  <nav id="gvc-flow" class="path" aria-label="Money path"></nav>
+
+  <p class="muted" style="margin:0;max-width:52ch">Find work ready to bill without memorizing project numbers — search by builder, address, or estimate.</p>
+
+  <div id="status"></div>
+
+  <div class="card">
+    <h2>Search</h2>
+    <p class="muted" style="font-size:var(--text-xs);margin:0 0 var(--space-3)">builder · supervisor · street · city · Project # · Estimate #</p>
+    <label class="field-label" for="billing-q">Look up a job</label>
+    <input class="input" id="billing-q" type="search"
+           placeholder="e.g. Bryant, Gertrude, Zicka, 2026-0804-001"
+           autocomplete="off" />
+    <div id="search-status"></div>
+    <div id="search-results" class="billing-scroll" style="display:none;"></div>
   </div>
 
-  <div class="gvc-stack">
-    <div class="gvc-banner" id="status"></div>
-
-    <div class="gvc-card">
-      <div class="gvc-card-hd">
-        <span class="gvc-card-title">Search</span>
-        <span class="gvc-help">builder · supervisor · street · city · Project # · Estimate #</span>
-      </div>
-      <div class="gvc-card-bd">
-        <label class="gvc-label" for="billing-q">Look up a job</label>
-        <div class="gvc-searchwrap">
-          <input class="gvc-input gvc-input--lg" id="billing-q" type="search"
-                 placeholder="e.g. Bryant, Gertrude, Zicka, 2026-0804-001"
-                 autocomplete="off" />
-        </div>
-        <div id="search-status"></div>
-        <div id="search-results" class="billing-scroll" style="display:none;"></div>
-      </div>
+  <div class="card">
+    <div class="card-head">
+      <h2>Ready to Invoice</h2>
+      <span class="count-pill" id="count-ready">—</span>
     </div>
-
-    <div class="gvc-card">
-      <div class="gvc-card-hd">
-        <span class="gvc-card-title">Ready to Invoice</span>
-        <span class="count-pill" id="count-ready">—</span>
-      </div>
-      <div class="gvc-card-bd">
-        <div class="billing-scroll" id="queue-ready">
-          <div class="empty">Loading Operations Ready to Invoice…</div>
-        </div>
-      </div>
+    <div class="billing-scroll" id="queue-ready">
+      <div class="empty">Loading Operations Ready to Invoice…</div>
     </div>
-
-    <div class="gvc-card">
-      <div class="gvc-card-hd">
-        <span class="gvc-card-title">Accepted bids</span>
-        <span class="gvc-help">need handoff / next office step</span>
-        <span class="count-pill" id="count-bids">—</span>
-      </div>
-      <div class="gvc-card-bd">
-        <div class="billing-scroll" id="queue-bids">
-          <div class="empty">Loading accepted bids…</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="gvc-card">
-      <div class="gvc-card-hd">
-        <span class="gvc-card-title">Projects with invoice status</span>
-        <span class="gvc-help">secondary — Invoice Status set on Projects</span>
-        <span class="count-pill" id="count-projects">—</span>
-      </div>
-      <div class="gvc-card-bd">
-        <div class="billing-scroll" id="queue-projects">
-          <div class="empty">Loading Projects billing list…</div>
-        </div>
-      </div>
-    </div>
-
-    <div class="gvc-card">
-      <div class="gvc-card-hd">
-        <span class="gvc-card-title">Recent activity</span>
-        <span class="gvc-help">office billing / estimate events</span>
-      </div>
-      <div class="gvc-card-bd">
-        <label class="gvc-label" for="act-filter">Filter this list</label>
-        <input class="gvc-input" id="act-filter" type="search"
-               placeholder="Filter by action, customer, job…" autocomplete="off" />
-        <div class="billing-scroll" id="activity-list" style="margin-top:12px;">
-          <div class="empty">Loading recent activity…</div>
-        </div>
-      </div>
-    </div>
-
-    <p class="gvc-help" id="hub-meta"></p>
   </div>
-</main>
 
-<script src="/ui/gvc-command.js"></script>
+  <div class="card">
+    <div class="card-head">
+      <h2>Accepted bids</h2>
+      <span class="muted" style="font-size:var(--text-xs)">need handoff / next office step</span>
+      <span class="count-pill" id="count-bids">—</span>
+    </div>
+    <div class="billing-scroll" id="queue-bids">
+      <div class="empty">Loading accepted bids…</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-head">
+      <h2>Projects with invoice status</h2>
+      <span class="muted" style="font-size:var(--text-xs)">secondary — Invoice Status set on Projects</span>
+      <span class="count-pill" id="count-projects">—</span>
+    </div>
+    <div class="billing-scroll" id="queue-projects">
+      <div class="empty">Loading Projects billing list…</div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Recent activity</h2>
+    <p class="muted" style="font-size:var(--text-xs);margin:0 0 var(--space-3)">office billing / estimate events</p>
+    <label class="field-label" for="act-filter">Filter this list</label>
+    <input class="input" id="act-filter" type="search"
+           placeholder="Filter by action, customer, job…" autocomplete="off" />
+    <div class="billing-scroll" id="activity-list" style="margin-top:12px;">
+      <div class="empty">Loading recent activity…</div>
+    </div>
+  </div>
+
+  <p class="muted" style="font-size:var(--text-xs)" id="hub-meta"></p>
+</div>
+
 <script>
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g,
-  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+  (c) => ({"&":"&amp;","<":"&lt;",">":"&gt;","'":"&#39;","\"":"&quot;"}[c]));
 
 let searchTimer = null;
 let activityRows = [];
 
 function showStatus(kind, html) {
   const el = $("#status");
-  const cls = kind === "err" ? "gvc-banner--bad"
-    : kind === "warn" ? "gvc-banner--warn"
-    : "gvc-banner--info";
-  el.className = "gvc-banner show " + cls;
-  el.innerHTML = "<div>" + html + "</div>";
+  const cls = kind === "err" ? "err"
+    : kind === "warn" ? "warn"
+    : kind === "ok" ? "ok"
+    : "info";
+  el.className = "show " + cls;
+  el.innerHTML = html;
 }
 
 function clearStatus() {
   const el = $("#status");
-  el.className = "gvc-banner";
+  el.className = "";
   el.innerHTML = "";
 }
 
@@ -221,10 +269,10 @@ function chips(labels, item) {
   const out = [];
   (labels || []).forEach((lab) => {
     const warn = /handoff|drift/i.test(lab);
-    out.push(`<span class="chip ${warn ? "warn" : "ok"}">${esc(lab)}</span>`);
+    out.push(`<span class="tag ${warn ? "tag-gold" : "tag-green"}">${esc(lab)}</span>`);
   });
   if (item && item.needs_handoff) {
-    out.push(`<span class="chip warn">Needs handoff</span>`);
+    out.push(`<span class="tag tag-gold">Needs handoff</span>`);
   }
   return out.join(" ");
 }
@@ -255,20 +303,20 @@ function rowHtml(item) {
     ? `<a href="${esc(item.monday_url)}" target="_blank" rel="noopener">${esc(item.name)}</a>`
     : esc(item.name);
   const primary = item.primary_href
-    ? `<a class="gvc-btn gvc-btn--gold" href="${esc(item.primary_href)}">${esc(item.primary_label || "Open")}</a>`
+    ? `<a class="btn btn-sm btn-primary" href="${esc(item.primary_href)}">${esc(item.primary_label || "Open")}</a>`
     : "";
   const secondary = [];
   if (item.invoice_href && item.invoice_href !== item.primary_href) {
-    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.invoice_href)}">Invoice</a>`);
+    secondary.push(`<a class="btn btn-sm btn-ghost" href="${esc(item.invoice_href)}">Invoice</a>`);
   }
   if (item.estimate_href && item.estimate_href !== item.primary_href) {
-    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.estimate_href)}">Estimate</a>`);
+    secondary.push(`<a class="btn btn-sm btn-ghost" href="${esc(item.estimate_href)}">Estimate</a>`);
   }
   if (item.jobstart_href && item.jobstart_href !== item.primary_href) {
-    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobstart_href)}">Job Start</a>`);
+    secondary.push(`<a class="btn btn-sm btn-ghost" href="${esc(item.jobstart_href)}">Job Start</a>`);
   }
   if (item.jobcheck_href && item.jobcheck_href !== item.primary_href) {
-    secondary.push(`<a class="gvc-btn gvc-btn--ghost" href="${esc(item.jobcheck_href)}">Job Check</a>`);
+    secondary.push(`<a class="btn btn-sm btn-ghost" href="${esc(item.jobcheck_href)}">Job Check</a>`);
   }
   return `<div class="queue-row">
     <div class="title">${title}</div>
@@ -300,11 +348,11 @@ function renderSearch(body) {
   }
   let html = "";
   if (projects.length) {
-    html += `<h3 class="gvc-card-title" style="margin:8px 0;">Projects (${projects.length})</h3>`;
+    html += `<h3 class="results-heading">Projects (${projects.length})</h3>`;
     html += projects.map(rowHtml).join("");
   }
   if (bids.length) {
-    html += `<h3 class="gvc-card-title" style="margin:16px 0 8px;">Bids (${bids.length})</h3>`;
+    html += `<h3 class="results-heading" style="margin-top:16px">Bids (${bids.length})</h3>`;
     html += bids.map(rowHtml).join("");
   }
   box.style.display = "block";
@@ -316,6 +364,7 @@ async function runSearch(q) {
   if (!q || q.trim().length < 2) {
     status.textContent = q ? "Type at least 2 characters." : "";
     $("#search-results").innerHTML = "";
+    $("#search-results").style.display = "none";
     return;
   }
   status.textContent = "Searching Monday…";
@@ -325,6 +374,7 @@ async function runSearch(q) {
     if (!r.ok || body.ok === false) {
       const d = body.detail || body;
       status.textContent = "";
+      $("#search-results").style.display = "block";
       $("#search-results").innerHTML =
         `<div class="empty"><b>${esc(d.code || "ERROR")}</b> — ${esc(d.detail || "Search failed.")} ${esc(d.advice || "")}</div>`;
       return;
@@ -334,6 +384,7 @@ async function runSearch(q) {
     renderSearch(body);
   } catch (e) {
     status.textContent = "";
+    $("#search-results").style.display = "block";
     $("#search-results").innerHTML =
       `<div class="empty">Network error — ${esc(e.message)}. Check your connection and try again.</div>`;
   }
