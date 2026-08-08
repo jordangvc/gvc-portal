@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ FIELD GUIDE CATALOG ↔ SHELL WIRING (r76) — BUILT 2026-08-08
+Procedure API returns rendered HTML; Field Manual injects catalog `.nextpath`
+on spine docs (hang/scrape/finish/… were dead-ends). Coach merges catalog
+related/next into related. hang/scrape steps re-synced from HTML. Home search
+hits `/ui/api/fieldguide/search` for synonyms. OSS reuse map:
+`docs/OSS-REUSE-MAP.md`. Hub **r76**.
+
 ## ⚡ Monday 429/complexity retry + multi-check commit guard — BUILT 2026-08-08
 `MondayClient._query` bounded-retries 429 / ComplexityException / 5xx /
 transport (Slack pattern). `commit_check` returns 409 `MULTI_CHECK_IMAGE`

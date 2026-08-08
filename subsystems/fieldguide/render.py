@@ -62,10 +62,10 @@ def render_procedure_article(proc: dict, *, include_expert: bool = True) -> str:
         steps_lis.append(
             f'<li id="{sid}"><label class="step">'
             f'<input type="checkbox" data-step="{sid}">'
-            f"<span>{_e(text)}</span></label></li>"
+            f'<span class="txt">{_e(text)}</span></label></li>'
         )
     steps_html = (
-        f'<ol class="steps">{"".join(steps_lis)}</ol>' if steps_lis else ""
+        f'<ul class="steps">{"".join(steps_lis)}</ul>' if steps_lis else ""
     )
 
     warn_blocks = []
@@ -118,27 +118,39 @@ def render_procedure_article(proc: dict, *, include_expert: bool = True) -> str:
 
     next_links = []
     for link in proc.get("next_steps") or []:
-        href = f"#{_e(link.get('procedure_id'))}"
+        link_pid = _e(link.get("procedure_id"))
         label = _e(link.get("label") or link.get("procedure_id"))
         why = _e(link.get("why") or "")
-        next_links.append(
-            f'<a class="doclink" href="{href}">{label}</a>'
-            + (f'<span class="why">{why}</span>' if why else "")
+        btn = (
+            f'<button type="button" class="doclink" data-go="{link_pid}">'
+            f"{label}</button>"
         )
+        if why:
+            btn += f' <span class="why">({why})</span>'
+        next_links.append(btn)
     related_links = []
     for link in proc.get("related") or []:
-        href = f"#{_e(link.get('procedure_id'))}"
+        link_pid = _e(link.get("procedure_id"))
         label = _e(link.get("label") or link.get("procedure_id"))
-        related_links.append(f'<a class="doclink" href="{href}">{label}</a>')
+        related_links.append(
+            f'<button type="button" class="doclink" data-go="{link_pid}">'
+            f"{label}</button>"
+        )
 
     next_html = ""
     if next_links or related_links:
-        next_html = '<nav class="nextpath" aria-label="What next">'
+        next_html = (
+            '<div class="nextpath" data-catalog-nav="1" aria-label="What next">'
+            '<span class="tag">What&apos;s next</span>'
+        )
         if next_links:
-            next_html += "<h3>What's next</h3><div class=\"next-row\">" + " · ".join(next_links) + "</div>"
+            next_html += "<p>" + " · ".join(next_links) + "</p>"
         if related_links:
-            next_html += "<h3>Related</h3><div class=\"related-row\">" + " · ".join(related_links) + "</div>"
-        next_html += "</nav>"
+            next_html += (
+                '<p><span class="tag">Related</span> '
+                + " · ".join(related_links) + "</p>"
+            )
+        next_html += "</div>"
 
     gov = proc.get("governance") or {}
     prov = proc.get("provenance") or {}
@@ -166,15 +178,18 @@ def render_procedure_article(proc: dict, *, include_expert: bool = True) -> str:
             )
 
     return (
-        f'<article class="doc" id="{pid}" data-trade="{_e(proc.get("trade"))}" '
+        f'<section class="doc" id="{pid}" data-trade="{_e(proc.get("trade"))}" '
         f'data-template="{_e(proc.get("template") or "task_guide")}" '
         f'data-source="catalog">'
+        f'<div class="doc-head">'
+        f"{stage_html}"
         f"<h2>{title}</h2>"
-        f"{stage_html}{plain}{when_html}{prereq_html}{needs}"
-        f'<section class="procedure"><h3>Steps</h3>{steps_html}</section>'
+        f"</div>"
+        f"{plain}{when_html}{prereq_html}{needs}"
+        f'<div class="block"><h3>Steps</h3>{steps_html}</div>'
         f"{warnings_html}{variations_html}{qc_html}{mistakes_html}"
         f"{trouble_html}{expert_html}{next_html}{prov_html}{meta}"
-        f"</article>"
+        f"</section>"
     )
 
 

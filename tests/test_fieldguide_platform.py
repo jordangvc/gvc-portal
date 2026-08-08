@@ -131,9 +131,9 @@ def test_repo_catalog_hang_scrape() -> None:
     html = render_procedure_article(cat["by_id"]["hang"])
     check("article doc class", 'class="doc"' in html and 'id="hang"' in html)
     check("plainwords", "plainwords" in html)
-    check("steps checklist", 'class="steps"' in html)
-    check("nextpath", "nextpath" in html)
-    check("no dead end — next scrape", "#scrape" in html)
+    check("steps checklist", 'class="steps"' in html and 'class="txt"' in html)
+    check("nextpath data-go", "nextpath" in html and 'data-go="scrape"' in html)
+    check("no dead end — next scrape", "#scrape" in html or 'data-go="scrape"' in html)
 
     audit = audit_link_targets()
     check("next_steps audit clean", audit["ok"] is True)
