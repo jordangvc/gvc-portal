@@ -1068,6 +1068,8 @@ class MondayClient:
                 try:
                     items = fut.result()
                 except Exception as exc:  # noqa: BLE001 — one needle fail ≠ total fail
+                    if is_auth_failure(exc):
+                        raise
                     print(f"[monday] find_project_by_number needle "
                           f"{futs[fut]!r} failed: {exc}", file=sys.stderr)
                     continue

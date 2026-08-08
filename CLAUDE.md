@@ -15,7 +15,9 @@ See also: `AGENTS.md` (agent quickstart + how to add a module) and
 Dead Monday token no longer paints Billing as an empty Ready queue or Hub
 "You're clear". Auth failures re-raise from billing fetches; payload sets
 `ok`/`monday_ok` false + MONDAY_AUTH; hub `_try_billing` returns None.
-Port of conflicting #155 onto post-r93 master. Hub **r94**.
+Owner Pulse returns ok/monday_ok false on auth death (same hub path).
+Search legs (Billing/Estimate/CO/Project #) re-raise auth instead of
+soft-empty "No matches". Port of conflicting #155 + follow-on. Hub **r94**.
 
 ## ⚡ Morning Ops active-group fetch + progressive GFolder (r92) — BUILT 2026-08-08
 Cold Morning/Job Check was walking the entire Operations board (~2.1k items,

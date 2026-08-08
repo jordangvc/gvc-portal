@@ -255,7 +255,7 @@ def _try_owner_pulse(email: str) -> Optional[dict]:
     try:
         from orchestrators import morning_flow
         out = morning_flow.build_owner_pulse(email)
-        if out.get("ok") is False:
+        if out.get("ok") is False or out.get("monday_ok") is False:
             return None
         return out
     except Exception as exc:  # noqa: BLE001

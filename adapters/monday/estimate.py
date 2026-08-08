@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import Optional
 
 from adapters.monday import cache as monday_cache
-from adapters.monday.client import MondayClient
+from adapters.monday.client import MondayClient, is_auth_failure
 from shared.boards import BID_BOARD_ID
 from shared.doc_number import is_spine_number, search_needles
 NEW_DEALS_GROUP_ID = "new_group__1"  # "New Deals (For Estimate)" — leads awaiting an estimate
@@ -379,6 +379,8 @@ def _search_bids_uncached(mc, q: str, *, limit: int = 15) -> list[dict]:
             try:
                 data = fut.result()
             except Exception as e:  # noqa: BLE001 — a failed leg shouldn't kill the other
+                if is_auth_failure(e):
+                    raise
                 print(f"[monday-estimate] search leg {column_id!r} failed: {e}",
                       file=sys.stderr)
                 continue

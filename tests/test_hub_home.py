@@ -391,6 +391,68 @@ def test_try_billing_drops_auth_dead_payload() -> None:
         billing_flow.billing_hub_payload = orig
 
 
+def test_try_owner_pulse_drops_auth_dead_payload() -> None:
+    """Owner hub must not gold-clear when pulse is auth-dead."""
+    from orchestrators import morning_flow, hub_flow
+
+    dead = {
+        "ok": False,
+        "monday_ok": False,
+        "code": "MONDAY_AUTH",
+        "safety_stops": [],
+        "prep_alerts": [],
+        "planning_signals": [],
+        "owner_decisions": [],
+    }
+    orig = morning_flow.build_owner_pulse
+    morning_flow.build_owner_pulse = lambda email: dead  # type: ignore[assignment]
+    try:
+        got = hub_flow._try_owner_pulse("owner@x.com")
+        check("auth-dead pulse is None", got is None)
+        owner = hub_flow._build_owner("owner@x.com", got, None, None)
+        check("owner not clear when pulse+billing unreachable",
+              owner["clear"] is False)
+    finally:
+        morning_flow.build_owner_pulse = orig
+
+
+def test_search_legs_reraises_auth() -> None:
+    """Parallel search must not soft-fail every 401 leg into 'No matches'."""
+    import requests
+    from adapters.monday import search as search_mod
+    from adapters.monday.client import is_auth_failure
+
+    class AuthBoom(requests.HTTPError):
+        def __init__(self):
+            super().__init__("401 Unauthorized")
+            self.response = type("R", (), {"status_code": 401})()
+
+    class FakeMC:
+        def _query(self, *a, **k):
+            raise AuthBoom()
+
+        session = type("S", (), {"headers": {}})()
+
+    # Patch per-leg client factory so we don't hit real MondayClient().
+    orig = search_mod._client_for_leg
+    search_mod._client_for_leg = lambda mc: FakeMC()  # type: ignore[assignment]
+    try:
+        search_mod._run_legs(
+            FakeMC(),
+            board_id=1,
+            query="query { boards { id } }",
+            q="test",
+            legs=(("name", "name"),),
+            shaper=lambda item, fields: {"item_id": int(item["id"])},
+            log_prefix="test-search",
+        )
+        check("search raised on auth", False)
+    except requests.HTTPError as exc:
+        check("search re-raised auth", is_auth_failure(exc) is True)
+    finally:
+        search_mod._client_for_leg = orig
+
+
 def test_build_gm_and_sales_shapes() -> None:
     from orchestrators import hub_flow
 
@@ -534,6 +596,8 @@ if __name__ == "__main__":
     test_office_queue_ids_and_handoffs()
     test_clear_summary_honest_when_unreachable()
     test_try_billing_drops_auth_dead_payload()
+    test_try_owner_pulse_drops_auth_dead_payload()
+    test_search_legs_reraises_auth()
     test_build_gm_and_sales_shapes()
     test_field_prep_badge()
     test_morning_deeplink_hyphens()

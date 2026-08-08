@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 from adapters.monday import jobcheck as mj
 from adapters.monday import lien as ml
 from adapters.monday import morning as mm
-from adapters.monday.client import MondayClient
+from adapters.monday.client import MondayClient, is_auth_failure
 from shared import access
 from subsystems.morning import action_requests as ar
 from subsystems.morning import link_suggest as ls
@@ -807,8 +807,25 @@ def build_owner_pulse(email: str) -> dict[str, Any]:
                     "href": (f"/ui/jobcheck?item={sid}" if sid
                              else "/ui/morning-owner"),
                 })
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        if is_auth_failure(exc):
+            # Empty safety_stops must not paint Hub "You're clear".
+            return {
+                "ok": False,
+                "monday_ok": False,
+                "code": "MONDAY_AUTH",
+                "detail": "Monday rejected the API token — Owner Pulse unavailable.",
+                "advice": (
+                    "Open /health and confirm monday_token_ok. Rotate "
+                    "MONDAY_API_TOKEN, then reload."
+                ),
+                "workdate": workdate,
+                "safety_stops": [],
+                "prep_alerts": [],
+                "planning_signals": [],
+                "owner_decisions": [],
+            }
+        print(f"[morning] owner pulse ops fetch skipped: {exc}", file=sys.stderr)
 
     owner_email = (
         os.environ.get("GVC_OWNER_SLACK_EMAIL")
@@ -835,6 +852,7 @@ def build_owner_pulse(email: str) -> dict[str, Any]:
     # Shape expected by morning-owner.html
     return {
         "ok": True,
+        "monday_ok": True,
         "workdate": workdate,
         "team_preparation_pct": pulse.get("team_prep_pct"),
         "team_preparation": prep_pct,
