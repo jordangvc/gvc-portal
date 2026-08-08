@@ -1,5 +1,5 @@
 """
-Money-spine navigation — Hub ↔ Takeoff ↔ Estimate ↔ Job Start ↔ Job Check ↔ Billing.
+Money-spine navigation — Hub ↔ Takeoff ↔ Estimate ↔ Job Start ↔ Job Check ↔ Billing ↔ Invoice.
 =========================================================================
 Shared step list for the portal Path strip (web/gvc-flow.js) and tests.
 Takeoff the *app* still lives on Netlify; the portal owns `/ui/takeoff` as the
@@ -24,6 +24,7 @@ MONEY_SPINE: tuple[tuple[str, str, str], ...] = (
     ("jobstart", "Job Start", "/ui/jobstart"),
     ("jobcheck", "Job Check", "/ui/jobcheck"),
     ("billing", "Billing", "/ui/billing"),
+    ("invoice", "Invoice", "/ui/invoice"),
 )
 
 
