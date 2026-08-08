@@ -203,6 +203,7 @@ def build_employee_brief(
     *,
     record_open: bool = True,
     attach_gfolder: bool = True,
+    include_weather: bool = True,
 ) -> dict[str, Any]:
     email = (email or "").strip().lower()
     display_name = _person_name_for(email)
@@ -341,6 +342,14 @@ def build_employee_brief(
         except Exception as e:  # noqa: BLE001
             print(f"[morning] gfolder attach skipped: {e}", file=sys.stderr)
 
+    weather_payload = None
+    if include_weather:
+        try:
+            weather_payload = weather.weather_for_origin(origin)
+        except Exception as e:  # noqa: BLE001
+            print(f"[morning] weather skipped: {e}", file=sys.stderr)
+            weather_payload = None
+
     payload = {
         "ok": True,
         "generated_at": now.isoformat(),
@@ -348,7 +357,7 @@ def build_employee_brief(
         "timezone": "America/New_York",
         "employee": {"email": email, "name": display_name},
         "roles": roles,
-        "weather": weather.weather_for_origin(origin),
+        "weather": weather_payload,
         "leave": None,
         "preparation": preparation,
         "origin": origin,
@@ -679,7 +688,12 @@ def suggest_links(item_id: int, *, limit: int = 100) -> dict[str, Any]:
     }
 
 
-def build_gm_view(email: str) -> dict[str, Any]:
+def build_gm_view(
+    email: str,
+    *,
+    attach_gfolder: bool = True,
+    include_weather: bool = True,
+) -> dict[str, Any]:
     roles = access.morning_role(email)
     if not roles.get("is_gm") and not roles.get("is_owner"):
         return {"ok": False, "code": "FORBIDDEN", "detail": "GM role required."}
@@ -687,7 +701,14 @@ def build_gm_view(email: str) -> dict[str, Any]:
     workdate = now.date().isoformat()
     team = _ops_team_emails()
     prep_pct = _team_prep_percentage(team, workdate)
-    brief = build_employee_brief(email, record_open=False)
+    # Hub passes attach_gfolder=False — GM hub already fetched employee brief
+    # without Drive links; a second brief WITH GFolder was 2×N cold GraphQL.
+    brief = build_employee_brief(
+        email,
+        record_open=False,
+        attach_gfolder=attach_gfolder,
+        include_weather=include_weather,
+    )
     meeting = meet.get_run(workdate)
     ars = _list_open_ars()
     ff = personal.list_proposals(pending_only=True)

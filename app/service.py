@@ -1192,13 +1192,19 @@ def _portal_home_impl(request: Request) -> HTMLResponse:
                     "detail": f"{path} not found in the deployed image.",
                     "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
         )
-    feats = sorted(access.effective_features(email))
+    feats_set = access.effective_features(email)
+    feats = sorted(feats_set)
     activity.log_event("hub.open", actor=email, target=",".join(feats) or "none")
+    # Cheap boot shell (nav + home CTA + greeting) — no Monday / Cloud Logging.
+    # Person override (Admin home_tool) can wait for GET /ui/api/hub.
+    from shared import hub_nav
+    boot = hub_nav.boot_shell(email, feats_set, person={})
     html = (
         _cached_web_html("hub.html")
         .replace("{{EMAIL}}", html_escape(email))
         .replace("{{EMAIL_JSON}}", json.dumps(email))
         .replace("{{FEATURES_JSON}}", json.dumps(feats))
+        .replace("{{HUB_BOOT_JSON}}", json.dumps(boot, separators=(",", ":")))
     )
     return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
 
@@ -1294,6 +1300,18 @@ def ui_hub_refresh(request: Request) -> dict:
         print(f"[hub] refresh error: {type(e).__name__}: {e}", file=sys.stderr)
         return {"ok": False, "badges": {}, "needs": [], "needs_clear": False,
                 "summary": "", "metrics": [], "queue": {"rows": []}}
+
+
+@app.get("/ui/api/hub/activity")
+def ui_hub_activity(request: Request) -> dict:
+    """Deferred Activity panel (Cloud Logging) — after first hub paint."""
+    email = require_ui_access(request)
+    from orchestrators import hub_flow
+    try:
+        return hub_flow.build_hub_activity(email)
+    except Exception as e:  # noqa: BLE001
+        print(f"[hub] activity error: {type(e).__name__}: {e}", file=sys.stderr)
+        return {"ok": False, "activity": [], "activity_deferred": False}
 
 
 class HubPinnedRequest(BaseModel):

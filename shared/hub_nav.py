@@ -209,3 +209,78 @@ def greeting_for(name: str, *, hour: Optional[int] = None) -> str:
         part = "Good evening"
     first = (name or "there").split()[0]
     return f"{part}, {first}."
+
+
+def boot_shell(email: str, features: set[str], *,
+               person: Optional[dict] = None) -> dict[str, Any]:
+    """Cheap first-paint chrome — no Monday / Cloud Logging / GCS pins.
+
+    Injected into hub.html so the rail, home CTA, and greeting paint before
+    ``GET /ui/api/hub`` returns. Live needs/metrics hydrate progressively.
+    """
+    from datetime import datetime
+    try:
+        from zoneinfo import ZoneInfo
+        now = datetime.now(ZoneInfo("America/New_York"))
+    except Exception:  # noqa: BLE001
+        now = datetime.now()
+    feats = features or set()
+    person = person or {}
+    role = resolve_role(feats)
+    name = display_name(email, person)
+    title = (person.get("position") or "").strip() or ROLE_TITLE.get(role, "")
+    home_override = (person.get("home_tool") or "").strip()
+    home_tool = home_override or ROLE_HOME_TOOL.get(role, "morning")
+    home_href = home_tool_href(home_tool, role)
+    home_tool_name = home_tool_label(home_tool)
+    # Quick actions: home tool first, then a few high-traffic granted tools.
+    quick_feats = [
+        home_tool,
+        "jobcheck", "estimate", "invoice", "morning", "fieldguide", "jobstart",
+    ]
+    seen: set[str] = set()
+    quick: list[dict[str, Any]] = []
+    for feat in quick_feats:
+        if feat in seen or feat not in feats:
+            continue
+        seen.add(feat)
+        quick.append({
+            "name": home_tool_label(feat) if feat != home_tool else home_tool_name,
+            "feature": feat,
+            "href": home_tool_href(feat, role),
+        })
+        if len(quick) >= 4:
+            break
+    return {
+        "ok": True,
+        "boot": True,
+        "generated_at": now.isoformat(),
+        "user": {
+            "email": (email or "").strip().lower(),
+            "name": name,
+            "initials": initials_for(name, email),
+            "title": title,
+            "role": role,
+            "homeTool": home_tool,
+            "homeToolName": home_tool_name,
+            "homeHref": home_href,
+        },
+        "greeting": greeting_for(name, hour=now.hour),
+        "summary": "",
+        "needs": [],
+        "needs_clear": False,  # unknown until live slice
+        "metrics": [],
+        "queue": {"title": ROLE_QUEUE_TITLE.get(role, "Your queue"),
+                  "link": f"Open {home_tool_name}", "href": home_href, "rows": []},
+        "pinned": [],
+        "activity": [],
+        "activity_deferred": True,
+        "recent": [],
+        "badges": {},
+        "setup": {},
+        "quick_actions": quick,
+        "nav": {
+            "groups": groups_for_client(feats),
+            "features": sorted(feats),
+        },
+    }

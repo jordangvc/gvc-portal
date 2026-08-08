@@ -7,7 +7,19 @@ tools live in a left rail (desktop) or drawer + bottom bar (phone).
 `orchestrators/hub_flow.py` · `subsystems/hub/pinned.py` · `GET /ui/api/hub` ·
 `PUT /ui/api/hub/pinned`
 
-Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r50**.
+Contract: hub handoff + `docs/GVC-COMMAND-STYLE.md`. Footer **r94**.
+
+## Fast first paint (r94)
+
+The hub is still the personal home — not a separate marketing landing — but
+**time-to-first-action no longer waits on Monday**:
+
+1. HTML injects `HUB_BOOT_JSON` (grants → rail + greeting + home CTA + quick
+   actions). Zero Monday / Cloud Logging.
+2. Client paints that shell immediately (`paintInstantShell`).
+3. `GET /ui/api/hub` hydrates Needs / Metrics / Queue (Monday parallel slice).
+4. `GET /ui/api/hub/activity` fills Activity after paint (Cloud Logging).
+5. Hub brief/GM paths skip GFolder attach **and** Open-Meteo weather.
 
 ## Shell
 
@@ -71,5 +83,7 @@ bucket is missing (in-session only; toast says so). Queue rows have ★ pin.
 
 ## Still open
 
+- Hub-specific billing slice (skip projects_billing walk when hub only needs counts)
 - Richer Activity shared with Owner Pulse as adapters land
 - AR money-at-risk sort when billing exposes due amounts
+- Optional: cache-only `/hub/refresh` when L1/L2 Monday snapshots are fresh

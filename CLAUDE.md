@@ -11,6 +11,13 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ HUB FAST LANDING (r94) — BUILT 2026-08-08
+Time-to-first-action no longer waits on Monday. HTML injects `HUB_BOOT_JSON`
+(rail + greeting + Do-next quick actions from grants only); client paints via
+`paintInstantShell`; `GET /ui/api/hub` hydrates Needs/Metrics/Queue; Activity
+loads after via `GET /ui/api/hub/activity`. Hub morning/GM paths skip GFolder
+attach **and** weather. Port of conflicting #152 onto post-r91 master. Hub **r94**.
+
 ## ✨ BILLING READY ON-DEMAND COSTING (r91) — BUILT 2026-08-08
 After hub first paint, `GET /ui/api/billing/ready-worksheets` costs linked
 Ready rows from Payroll + company rates, stages worksheets for Invoice
