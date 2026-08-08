@@ -1,5 +1,6 @@
 """
-Money-spine navigation — Hub ↔ Takeoff ↔ Estimate ↔ Job Start ↔ Job Check ↔ Billing ↔ Invoice.
+Money-spine navigation — Hub ↔ Takeoff ↔ Estimate ↔ Job Start ↔ Job Check ↔
+Change Order ↔ Billing ↔ Invoice ↔ Paid by Check.
 =========================================================================
 Shared step list for the portal Path strip (web/gvc-flow.js) and tests.
 Takeoff the *app* still lives on Netlify; the portal owns `/ui/takeoff` as the
@@ -16,15 +17,17 @@ from urllib.parse import urlencode
 # Takeoff-side "Back to Portal" control — harmless if Takeoff ignores them.
 TAKEOFF_APP_URL = "https://gvctakeoff.netlify.app/v2.html"
 
-# (id, label, portal href) — order is the money spine.
+# (id, label, portal href) — order is the money spine (FLOW-AUDIT happy path).
 MONEY_SPINE: tuple[tuple[str, str, str], ...] = (
     ("hub", "Hub", "/"),
     ("takeoff", "Takeoff", "/ui/takeoff"),
     ("estimate", "Estimate", "/ui/estimate"),
     ("jobstart", "Job Start", "/ui/jobstart"),
     ("jobcheck", "Job Check", "/ui/jobcheck"),
+    ("change_order", "CO", "/ui/change-order"),
     ("billing", "Billing", "/ui/billing"),
     ("invoice", "Invoice", "/ui/invoice"),
+    ("check", "Check", "/ui/check"),
 )
 
 

@@ -70,6 +70,8 @@ support the field. Admin / Activity are company tools.
 
 7. COI / Time Off / Admin — hub “needs setup” badges before opening.
 8. Estimate/Invoice already have Next links — keep that pattern mandatory.
+   Path strip now also mounts on Change Order + Paid by Check (spine includes
+   CO + Check).
 9. Photos / Projects link discovery on Job Check — strengthen empty guidance.
 10. Multi-check photo soft-stop on Paid by Check.
 11. Money-form shared CSS extraction / Field Manual token convergence.
