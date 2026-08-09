@@ -67,6 +67,30 @@ def test_inputs_are_16px_on_phones() -> None:
         )
 
 
+def test_every_tool_page_has_a_visible_hub_button() -> None:
+    """Every page needs an obvious, tappable way back to the hub, top-left.
+
+    The old affordance was a bare text link ("GVC Portal" kicker) or the
+    brand mark — too small to find or hit on a phone in the field (Jordan,
+    2026-08-09). Money forms get the button from gvc-form-chrome.js; every
+    other tool page carries it in its own topbar. The hub is home itself.
+    """
+    chrome = (WEB / "gvc-form-chrome.js").read_text(encoding="utf-8")
+    assert 'class="gvc-hub-btn btn-hub" href="/"' in chrome
+    form_pages = {"estimate.html", "invoice.html", "change-order.html"}
+    for page in PAGES:
+        if page.name == "hub.html" or page.name in form_pages:
+            continue
+        html = page.read_text(encoding="utf-8")
+        assert 'btn-hub" href="/"' in html, (
+            f"{page.name} has no visible back-to-hub button in its topbar"
+        )
+    css = (WEB / "gvc-ui.css").read_text(encoding="utf-8")
+    assert ".btn-hub" in css and "min-height: var(--tap)" in css.split(".btn-hub", 1)[1][:300], (
+        "the hub button must keep a full tap target"
+    )
+
+
 def test_tap_target_token_exists() -> None:
     css = (WEB / "gvc-ui.css").read_text(encoding="utf-8")
     m = re.search(r"--tap:\s*(\d+)px", css)

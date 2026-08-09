@@ -81,6 +81,34 @@ def test_forms_health_widget_refs_are_null_guarded() -> None:
         assert '$("#health").textContent' not in html, name
 
 
+def test_forms_pack_owns_legacy_dialect_classes() -> None:
+    """Classes the money forms still emit must be styled by the forms pack.
+
+    The r103 conversion dropped legacy gvc.css (and its .gvc-moneyform scope)
+    but the pages kept emitting `.draft-row` rows and an empty `#preview-frame`
+    iframe — so draft/search lists rendered as bare unstyled text (nothing
+    separating one job from the next) and the Live Document panel showed a
+    default empty iframe box. Caught by Jordan on the live estimate page,
+    2026-08-09.
+    """
+    css = (WEB / "gvc-forms.css").read_text(encoding="utf-8")
+    assert ".gvc-results .draft-row" in css, "draft rows lost their styling"
+    assert "border-bottom" in css.split(".gvc-results .draft-row", 1)[1][:400], (
+        "draft rows need a separator between jobs"
+    )
+    assert ".gvc-doc iframe" in css and ".gvc-doc.show iframe" in css, (
+        "preview iframe must be hidden until a preview exists"
+    )
+    for name in FORMS:
+        html = (WEB / name).read_text(encoding="utf-8")
+        assert "gvc-doc-placeholder" in html, (
+            f"{name}: Live Document panel needs its empty-state placeholder"
+        )
+        assert 'classList.add("show")' in html, (
+            f"{name}: preview JS no longer reveals the document panel"
+        )
+
+
 def test_forms_chrome_js_shared_topbar() -> None:
     js = (WEB / "gvc-form-chrome.js").read_text(encoding="utf-8")
     assert "gvc-topbar" in js and "gvc-path" in js
