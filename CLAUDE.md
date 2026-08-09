@@ -8,6 +8,12 @@ first, then the dated build history, locked decisions, board IDs, and backlog.
 Workspace-level orientation (the other directories, people, what's in flight) lives
 in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read this.
 
+**READ FIRST for any code change:** `docs/DESIGN_SYSTEM.md` (UI rules, tokens,
+components, mobile baseline) and `docs/FEATURE_PROCESS.md` (workflow +
+definition of done). They are the canonical entry points since 2026-08-09 and
+supersede the older UI docs where they disagree. Then `docs/APP_MAP.md` for
+routes/roles/grants.
+
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
