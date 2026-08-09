@@ -59,6 +59,28 @@ def test_forms_template_tokens_are_substituted_by_their_route() -> None:
             )
 
 
+def test_forms_health_widget_refs_are_null_guarded() -> None:
+    """The r103 chrome conversion removed the #health strip from money forms.
+
+    checkHealth() survived it; an unguarded `$("#health").textContent` threw an
+    uncaught TypeError on every /ui/invoice load (caught by the screenshot
+    harness, 2026-08-09). If a page references #health without the element,
+    every touch must be null-guarded like estimate/change-order already are.
+    """
+    for name in FORMS:
+        html = (WEB / name).read_text(encoding="utf-8")
+        if '"#health"' not in html:
+            continue
+        if 'id="health"' in html:
+            continue  # element exists; direct writes are fine
+        assert 'if (!healthEl) return' in html and "if (healthEl)" in html, (
+            f"{name} references #health but the element is gone — guard every "
+            "access (see estimate.html checkHealth for the pattern)"
+        )
+        assert '$("#health").innerHTML' not in html, name
+        assert '$("#health").textContent' not in html, name
+
+
 def test_forms_chrome_js_shared_topbar() -> None:
     js = (WEB / "gvc-form-chrome.js").read_text(encoding="utf-8")
     assert "gvc-topbar" in js and "gvc-path" in js
