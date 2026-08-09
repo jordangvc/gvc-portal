@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="emerald">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GVC Inventory</title>
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
+<style>
+  /* Inventory layout only — every token/component comes from gvc-ui.css. */
+  .page { padding-bottom: 9rem; }
+  .screen { display: grid; gap: var(--space-4); }
+  .sr-only { position: absolute; width: 1px; height: 1px; margin: -1px;
+    padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+  .action-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-3); }
+  .action-grid .btn { min-height: 72px; font-size: var(--text-base); flex-direction: column; gap: 4px; }
+  .action-grid .btn small { font-size: var(--text-xs); font-weight: 400; opacity: .85; }
+  .scanbig { min-height: var(--tap-lg, 48px); width: 100%; }
+  .rowbtn { display: flex; width: 100%; text-align: left; align-items: center; gap: var(--space-3);
+    min-height: var(--tap, 44px); padding: 10px 14px; border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg); background: var(--color-surface); font: inherit;
+    color: inherit; cursor: pointer; }
+  .rowbtn:hover { border-color: var(--color-primary); }
+  .rowbtn .rb-main { flex: 1 1 auto; min-width: 0; }
+  .rowbtn .rb-name { font-weight: 600; overflow-wrap: anywhere; }
+  .rowbtn .rb-sub { font-size: var(--text-xs); color: var(--color-text-muted); }
+  .rowlist { display: grid; gap: 6px; max-height: min(46vh, 420px); overflow-y: auto;
+    overscroll-behavior: contain; }
+  .cartbar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30;
+    padding: 10px max(var(--space-4), env(safe-area-inset-right))
+             calc(10px + env(safe-area-inset-bottom))
+             max(var(--space-4), env(safe-area-inset-left));
+    background: var(--color-surface); border-top: 1px solid var(--color-border);
+    display: flex; align-items: center; gap: var(--space-3); }
+  .cartbar b { flex: 1 1 auto; }
+  @media (min-width: 900px) { .cartbar { left: 260px; } }
+  .cartline { display: flex; align-items: center; gap: var(--space-2);
+    padding: 8px 0; border-bottom: 1px solid var(--color-divider); }
+  .cartline:last-child { border-bottom: 0; }
+  .cartline .cl-main { flex: 1 1 auto; min-width: 0; }
+  .cartline .cl-err { font-size: var(--text-xs); color: var(--color-danger); margin-top: 2px; }
+  .video-wrap { position: relative; border-radius: var(--radius-lg); overflow: hidden;
+    background: #000; aspect-ratio: 4 / 3; max-height: 46vh; }
+  .video-wrap video { width: 100%; height: 100%; object-fit: cover; }
+  .banner-tap { display: flex; width: 100%; align-items: center; gap: var(--space-3);
+    min-height: var(--tap, 44px); padding: 10px 14px; font: inherit; cursor: pointer;
+    border: 1px solid var(--color-warn); background: var(--color-warn-soft);
+    color: var(--color-accent-ink); border-radius: var(--radius-lg); text-align: left; }
+  .banner-tap b { flex: 1 1 auto; }
+  .countline { display: grid; gap: 6px; padding: 12px 0; border-bottom: 1px solid var(--color-divider); }
+  .countline:last-child { border-bottom: 0; }
+  .countline .ct-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .countline .ct-name { flex: 1 1 12ch; font-weight: 600; overflow-wrap: anywhere; }
+  .countline input.input { max-width: 8.5rem; }
+  .photo-thumb { max-width: 160px; max-height: 160px; border-radius: var(--radius-md);
+    border: 1px solid var(--color-border); display: block; }
+  .qty-row { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
+  .qty-row .input { max-width: 8.5rem; }
+  .errorbox-inline { border: 1px solid var(--color-danger); background: var(--color-danger-soft);
+    border-radius: var(--radius-md); padding: 10px 12px; font-size: var(--text-sm); }
+  .errorbox-inline b { display: block; }
+  .errorbox-inline .adv { color: var(--color-text-muted); font-size: var(--text-xs); margin-top: 2px; }
+  .asof { font-size: var(--text-xs); color: var(--color-text-muted); }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <aside class="rail" id="rail" aria-label="Inventory">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <a class="kicker" href="/" style="text-decoration:none;color:inherit">GVC Hub</a>
+        <button type="button" class="btn btn-icon btn-ghost phone-only" id="rail-close" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="rail__job">Inventory</div>
+    </div>
+    <nav class="rail__nav" aria-label="Inventory sections">
+      <button type="button" class="nav-item" data-nav="home">Home</button>
+      <button type="button" class="nav-item" data-nav="scan">Scan</button>
+      <button type="button" class="nav-item" data-nav="counts">Counts</button>
+      <button type="button" class="nav-item" data-nav="outbox">Pending sync <span class="badge" id="railbadge" hidden>0</span></button>
+      <a class="nav-item" id="rail-admin" href="/ui/inventory/admin" hidden>Open admin</a>
+    </nav>
+    <div class="rail__foot">
+      <span class="avatar" id="railavatar" aria-hidden="true">?</span>
+      <span class="row__main">
+        <b class="row__title" id="railname">{{EMAIL}}</b>
+        <span class="row__sub" id="railrole">Inventory</span>
+      </span>
+      <button type="button" class="btn btn-sm btn-ghost" id="theme-toggle" data-theme-label>Auto</button>
+      <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button type="button" class="btn btn-icon phone-only" id="menubtn" aria-label="Menu">&#8801;</button>
+      <div class="topbar__title">
+        <span class="kicker" id="crumb">Field tool</span>
+        <h1 id="scr-title">Inventory</h1>
+      </div>
+      <div class="topbar__actions">
+        <a class="btn btn-sm btn-ghost btn-hub" href="/" aria-label="Back to hub">← Hub</a>
+        <button type="button" class="btn btn-icon" id="btn-top-scan" aria-label="Scan a label">&#9635;</button>
+      </div>
+    </header>
+
+    <div class="page">
+      <button type="button" class="banner-tap" id="sync-banner" hidden aria-label="Review pending sync items">
+        <b id="sync-banner-text">Pending sync</b>
+        <span class="tag tag-gold">Review</span>
+      </button>
+
+      <!-- ============================== HOME ============================== -->
+      <section class="screen" id="scr-home" aria-label="Inventory home">
+        <div class="card card-pad" id="resume-card" hidden>
+          <b id="resume-text">Unfinished move</b>
+          <div class="btn-row" style="margin-top:8px">
+            <button type="button" class="btn btn-primary" id="resume-go">Continue</button>
+            <button type="button" class="btn btn-ghost" id="resume-drop">Discard it</button>
+          </div>
+        </div>
+
+        <div class="card-note" id="viewonly-note" hidden>
+          You have view-only inventory access — browsing and counts are open,
+          but moving stock needs the field grant. Ask an admin.
+        </div>
+
+        <section class="stack" style="gap:var(--space-3)" aria-label="Start a movement">
+          <span class="kicker">What are you doing?</span>
+          <div class="action-grid" id="actions">
+            <button type="button" class="btn btn-primary" data-move="RECEIVE">Drop off<small>Bringing material in</small></button>
+            <button type="button" class="btn btn-primary" data-move="ISSUE">Pick up<small>Taking material out</small></button>
+            <button type="button" class="btn secondary" data-move="TRANSFER">Transfer<small>Move between spots</small></button>
+            <button type="button" class="btn secondary" id="btn-count">Count<small>Check the shelf</small></button>
+          </div>
+          <button type="button" class="btn btn-lg btn-primary scanbig" id="btn-home-scan" aria-label="Scan a label">Scan a label</button>
+        </section>
+
+        <section class="stack" style="gap:var(--space-3)" id="home-counts-wrap" hidden aria-label="My open counts">
+          <span class="kicker">My open counts</span>
+          <div class="rowlist" id="home-counts"></div>
+        </section>
+
+        <section class="stack" style="gap:var(--space-2)" id="home-recents-wrap" hidden aria-label="Recent">
+          <span class="kicker">Recent</span>
+          <div class="chipset"><div class="chipset__opts" id="home-recents"></div></div>
+        </section>
+
+        <p class="asof" id="home-asof" hidden></p>
+        <p class="muted" style="font-size:var(--text-xs);margin:0">
+          Signed in as {{EMAIL}}.
+          <a id="home-admin" href="/ui/inventory/admin" hidden>Open admin</a>
+        </p>
+      </section>
+
+      <!-- ============================== MOVE ============================== -->
+      <section class="screen" id="scr-move" hidden aria-label="Movement">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <span class="kicker" id="move-kicker">Step 1 · Where</span>
+          <div class="stack" style="gap:var(--space-2)" id="pick-src-wrap" hidden>
+            <label class="kicker-sm" for="pick-src" id="lbl-src">From</label>
+            <button type="button" class="rowbtn" id="pick-src" aria-label="Choose the source location">
+              <span class="rb-main"><span class="rb-name" id="src-name">Choose where it comes from…</span></span>
+              <span class="tag" id="src-tag" hidden>Set</span>
+            </button>
+          </div>
+          <div class="stack" style="gap:var(--space-2)" id="pick-dst-wrap" hidden>
+            <label class="kicker-sm" for="pick-dst" id="lbl-dst">To</label>
+            <button type="button" class="rowbtn" id="pick-dst" aria-label="Choose the destination location">
+              <span class="rb-main"><span class="rb-name" id="dst-name">Choose where it goes…</span></span>
+              <span class="tag" id="dst-tag" hidden>Set</span>
+            </button>
+          </div>
+
+          <div class="stack" id="locpanel" hidden style="gap:var(--space-2)">
+            <div class="cluster-split">
+              <span class="kicker-sm" id="locpanel-title">Pick a location</span>
+              <button type="button" class="btn btn-sm btn-ghost" id="locpanel-close">Close</button>
+            </div>
+            <div class="chipset__opts" id="locpanel-quick"></div>
+            <input type="search" class="input" id="locpanel-search" placeholder="Search locations"
+                   autocomplete="off" aria-label="Search locations" />
+            <div class="rowlist" id="locpanel-list" role="list"></div>
+            <p class="asof" id="locpanel-asof" hidden></p>
+            <button type="button" class="btn secondary" id="locpanel-scan">Scan a location label</button>
+          </div>
+        </div>
+
+        <div class="card card-pad stack" id="move-items" hidden style="gap:var(--space-3)">
+          <div class="cluster-split">
+            <span class="kicker">Step 2 · What</span>
+            <label class="toggle" id="cont-scan-wrap" hidden>
+              <input type="checkbox" id="cont-scan" />
+              <span>Scan continuously</span>
+            </label>
+          </div>
+          <div class="cluster">
+            <input type="search" class="input" id="item-search" placeholder="Search items"
+                   autocomplete="off" aria-label="Search items" style="flex:1 1 12ch" />
+            <button type="button" class="btn secondary" id="btn-move-scan" aria-label="Scan an item, tool, or kit">Scan</button>
+          </div>
+          <div class="chipset__opts" id="move-recents"></div>
+          <div class="rowlist" id="search-results" role="list"></div>
+          <button type="button" class="btn btn-dashed btn-block" id="btn-not-listed">Not listed &rarr;</button>
+
+          <div class="stack" id="qty-editor" hidden style="gap:var(--space-2)">
+            <b id="qty-item-name"></b>
+            <div class="qty-row">
+              <div class="stepper">
+                <button type="button" id="qty-minus" aria-label="Decrease quantity">&minus;</button>
+                <input class="input input-num stepper__val" id="qty-input" inputmode="decimal"
+                       value="1" aria-label="Quantity" />
+                <button type="button" class="is-plus" id="qty-plus" aria-label="Increase quantity">+</button>
+              </div>
+              <div class="chipset__opts" id="qty-units" role="group" aria-label="Unit"></div>
+            </div>
+            <div class="btn-row">
+              <button type="button" class="btn btn-primary" id="qty-add">Add to cart</button>
+              <button type="button" class="btn btn-ghost" id="qty-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-flush" id="cart-card" hidden>
+          <div class="card-head"><div class="row__main"><h2>Cart</h2></div>
+            <span class="badge" id="cart-count">0</span></div>
+          <div style="padding:0 var(--space-4) var(--space-3)" id="cart-lines"></div>
+          <div id="move-error" style="padding:0 var(--space-4) var(--space-4)" hidden></div>
+        </div>
+      </section>
+
+      <!-- ============================== SCAN ============================== -->
+      <section class="screen" id="scr-scan" hidden aria-label="Scan">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <span class="kicker" id="scan-purpose">Scan a label</span>
+          <div class="video-wrap" id="scan-video-wrap" hidden>
+            <video id="scan-video" playsinline muted></video>
+          </div>
+          <div class="card-note" id="scan-nocam" hidden></div>
+          <div class="stack" style="gap:var(--space-2)">
+            <label class="kicker-sm" for="scan-manual">Type the code printed on the label</label>
+            <div class="cluster">
+              <input class="input" id="scan-manual" autocomplete="off" autocapitalize="characters"
+                     placeholder="e.g. L-3f8a2c1d" aria-label="Type the code printed on the label"
+                     style="flex:1 1 10ch" />
+              <button type="button" class="btn btn-primary" id="scan-go">Go</button>
+            </div>
+          </div>
+          <div id="scan-result"></div>
+          <button type="button" class="btn btn-ghost" id="scan-back">Back</button>
+        </div>
+      </section>
+
+      <!-- ============================== COUNTS ============================ -->
+      <section class="screen" id="scr-counts" hidden aria-label="Counts">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <span class="kicker">My open counts</span>
+          <div class="rowlist" id="counts-list"></div>
+          <p class="muted" id="counts-empty" hidden>No counts assigned to you right now.
+            A manager starts counts from the admin page.</p>
+        </div>
+      </section>
+
+      <section class="screen" id="scr-count" hidden aria-label="Count session">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <div class="cluster-split">
+            <div><span class="kicker" id="count-loc">Count</span>
+              <span class="tag tag-gold" id="count-blind" hidden>Blind — no expected numbers shown</span></div>
+            <button type="button" class="btn btn-sm btn-ghost" id="count-back">Back</button>
+          </div>
+          <div id="count-lines"></div>
+          <div id="count-error" hidden></div>
+          <div id="count-done" hidden></div>
+          <button type="button" class="btn btn-lg btn-primary" id="count-submit">Submit count</button>
+        </div>
+      </section>
+
+      <!-- ============================ UNKNOWN ITEM ========================= -->
+      <section class="screen" id="scr-unknown" hidden aria-label="Unknown item">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <span class="kicker">Not listed — tell the office</span>
+          <p class="muted" style="margin:0;font-size:var(--text-sm)">Snap it, name it what the
+            crew calls it, and keep working. The office sorts out the catalog side.</p>
+          <div class="stack" style="gap:6px">
+            <label class="kicker-sm" for="unk-photo">Photo</label>
+            <input type="file" id="unk-photo" accept="image/*" capture="environment"
+                   class="input" aria-label="Photo of the item" />
+            <img id="unk-thumb" class="photo-thumb" alt="Photo preview" hidden />
+            <span class="muted" id="unk-photo-note" style="font-size:var(--text-xs)" hidden></span>
+          </div>
+          <div class="stack" style="gap:6px">
+            <label class="kicker-sm" for="unk-name">What do you call it?</label>
+            <input class="input" id="unk-name" autocomplete="off" placeholder="e.g. blue foam gasket" />
+          </div>
+          <div class="stack" style="gap:6px">
+            <span class="kicker-sm" id="unk-qty-label">How much</span>
+            <div class="qty-row">
+              <input class="input input-num" id="unk-qty" inputmode="decimal" value="1"
+                     aria-labelledby="unk-qty-label" />
+              <div class="chipset__opts" id="unk-units" role="group" aria-label="Unit"></div>
+            </div>
+          </div>
+          <p class="muted" id="unk-loc-note" style="font-size:var(--text-xs);margin:0" hidden></p>
+          <div id="unk-error" hidden></div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-lg btn-primary" id="unk-submit">Send it in</button>
+            <button type="button" class="btn btn-ghost" id="unk-cancel">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== DAMAGE ============================ -->
+      <section class="screen" id="scr-damage" hidden aria-label="Report damage">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <span class="kicker">Report a problem</span>
+          <b id="dmg-asset-name"></b>
+          <div class="chipset__opts" id="dmg-conditions" role="group" aria-label="Condition"></div>
+          <div class="stack" style="gap:6px">
+            <label class="kicker-sm" for="dmg-note">What happened</label>
+            <div class="chipset__opts" id="dmg-presets" role="group" aria-label="Quick notes"></div>
+            <input class="input" id="dmg-note" autocomplete="off" placeholder="Short note" aria-label="Damage note" />
+          </div>
+          <label class="toggle"><input type="checkbox" id="dmg-usable" checked />
+            <span>Still usable for now</span></label>
+          <div class="stack" style="gap:6px">
+            <label class="kicker-sm" for="dmg-photo">Photo (optional)</label>
+            <input type="file" id="dmg-photo" accept="image/*" capture="environment"
+                   class="input" aria-label="Photo of the damage" />
+            <img id="dmg-thumb" class="photo-thumb" alt="Damage photo preview" hidden />
+          </div>
+          <div id="dmg-error" hidden></div>
+          <div class="btn-row">
+            <button type="button" class="btn btn-lg btn-primary" id="dmg-submit">Report it</button>
+            <button type="button" class="btn btn-ghost" id="dmg-cancel">Cancel</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ============================== DETAIL ============================ -->
+      <section class="screen" id="scr-detail" hidden aria-label="Details">
+        <div class="card card-pad stack" style="gap:var(--space-3)" id="detail-body"></div>
+        <button type="button" class="btn btn-ghost" id="detail-back">Back</button>
+      </section>
+
+      <!-- ============================== OUTBOX ============================ -->
+      <section class="screen" id="scr-outbox" hidden aria-label="Pending sync">
+        <div class="card card-pad stack" style="gap:var(--space-3)">
+          <div class="cluster-split">
+            <span class="kicker">Pending sync</span>
+            <button type="button" class="btn btn-sm secondary" id="btn-sync-now">Sync now</button>
+          </div>
+          <p class="muted" style="margin:0;font-size:var(--text-sm)" id="outbox-blurb">
+            Work saved on this phone that has not reached the server yet.
+            Nothing here is confirmed until it syncs.</p>
+          <div class="stack" id="outbox-list" style="gap:var(--space-2)"></div>
+          <p class="muted" id="outbox-empty" hidden>Nothing waiting — everything is synced.</p>
+        </div>
+      </section>
+
+      <!-- ============================== RECEIPT ============================ -->
+      <section class="screen" id="scr-receipt" hidden aria-label="Receipt">
+        <div class="card card-pad stack" style="gap:var(--space-3)" id="receipt-body"></div>
+        <div class="btn-row">
+          <button type="button" class="btn btn-primary" id="receipt-again">Start another</button>
+          <button type="button" class="btn btn-ghost" id="receipt-home">Home</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="cartbar" id="cartbar" hidden>
+      <b id="cartbar-text">0 items</b>
+      <button type="button" class="btn btn-lg btn-primary" id="btn-submit-cart">Submit</button>
+    </div>
+
+    <nav class="tabbar" aria-label="Phone navigation">
+      <a href="#home" data-dock="home" class="is-active">Home</a>
+      <a href="#scan" data-dock="scan">Scan</a>
+      <a href="#counts" data-dock="counts">Counts</a>
+      <a href="#outbox" data-dock="outbox">Sync<span class="badge" id="dockbadge" hidden>0</span></a>
+    </nav>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<div class="sr-only" id="live" role="status" aria-live="polite"></div>
+
+<script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-inventory.js"></script>
+<script>
+(function () {
+  "use strict";
+  var G = window.GvcInventory;
+  var EMAIL = {{EMAIL_JSON}};
+  var LS = window.localStorage;
+
+  if (window.GvcTheme) { window.GvcTheme.mount(document.getElementById("theme-toggle")); }
+
+  /* ------------------------------------------------------------ helpers */
+  function $(id) { return document.getElementById(id); }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function toast(msg) {
+    var el = $("toast");
+    el.textContent = msg;
+    el.classList.add("is-on");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove("is-on"); }, 2400);
+  }
+  function announce(msg) { $("live").textContent = msg; toast(msg); }
+  function buzz() { if (navigator.vibrate) { try { navigator.vibrate(60); } catch (e) {} } }
+  function fmtTime(iso) {
+    try {
+      return new Date(iso).toLocaleString("en-US",
+        { timeZone: "America/New_York", month: "short", day: "numeric",
+          hour: "numeric", minute: "2-digit" });
+    } catch (e) { return iso; }
+  }
+  function errBox(env) {
+    var code = env && env.code ? env.code : "ERROR";
+    var detail = env && env.detail ? env.detail : "Something went wrong.";
+    var advice = env && env.advice ? env.advice : "";
+    return '<div class="errorbox-inline" role="alert"><b>' + esc(detail) + "</b>" +
+      (advice ? '<div class="adv">' + esc(advice) + "</div>" : "") +
+      '<div class="adv mono">' + esc(code) + "</div></div>";
+  }
+
+  function api(path, opts) {
+    opts = opts || {};
+    var init = { method: opts.method || "GET", credentials: "same-origin",
+                 headers: {} };
+    if (opts.body !== undefined) {
+      init.headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(opts.body);
+    }
+    return fetch(path, init).then(function (resp) {
+      return resp.json().catch(function () { return null; }).then(function (data) {
+        if (resp.ok) { return data; }
+        var env = (data && data.detail && typeof data.detail === "object")
+          ? data.detail
+          : (data && data.code ? data
+             : { code: "HTTP_" + resp.status, detail: "Request failed (" + resp.status + ")." });
+        var err = new Error(env.detail || env.code);
+        err.env = env; err.status = resp.status;
+        throw err;
+      });
+    }, function (netErr) {
+      var err = new Error("offline");
+      err.network = true; err.cause = netErr;
+      throw err;
+    });
+  }
+
+  /* -------------------------------------------------------------- state */
+  var ME = { can_move: false, can_manage: false, custody: null };
+  var cart = null;                 // active transaction cart (persisted)
+  var scanCtx = { purpose: "free", continuous: false, ret: "home" };
+  var currentCount = null;         // loaded count session
+  var qtyItem = null;              // item in the qty editor
+  var qtyUnit = "";
+  var dmgAsset = null;
+  var dmgCondition = "";
+  var dmgPhoto = "";
+  var unkPhoto = "";
+  var unkUnit = "each";
+  var unkFromCode = "";
+  var locationsCache = [];         // last fetched locations
+  var locationsAsOf = "";
+  var overviewData = null;
+
+  var MODE_LABEL = { RECEIVE: "Drop off", ISSUE: "Pick up", TRANSFER: "Transfer" };
+  var DMG_CONDITIONS = [
+    ["damaged", "Damaged"], ["needs_repair", "Needs repair"],
+    ["missing_components", "Missing parts"], ["lost", "Lost"]];
+  var DMG_PRESETS = ["bent", "missing parts", "won't start"];
+  var UNK_UNITS = ["each", "box", "bag", "roll", "sheet", "ft"];
+
+  /* ------------------------------------------------------------- outbox */
+  var outbox = G.createOutbox({
+    email: EMAIL,
+    keyBase: "gvc_inv_outbox_v1",
+    storage: LS,
+    onChange: function () { updateSyncBanner(); }
+  });
+
+  function updateSyncBanner() {
+    var c = outbox.counts();
+    var banner = $("sync-banner");
+    var badge = $("dockbadge");
+    var railb = $("railbadge");
+    if (c.total > 0) {
+      var txt = c.pending > 0
+        ? c.pending + " waiting to sync" : "";
+      if (c.attention > 0) {
+        txt += (txt ? " · " : "") + c.attention + " need" +
+          (c.attention === 1 ? "s" : "") + " attention";
+      }
+      $("sync-banner-text").textContent = txt;
+      banner.hidden = false;
+      badge.textContent = String(c.total); badge.hidden = false;
+      railb.textContent = String(c.total); railb.hidden = false;
+    } else {
+      banner.hidden = true; badge.hidden = true; railb.hidden = true;
+    }
+    if (!$("scr-outbox").hidden) { renderOutbox(); }
+  }
+
+  function syncNow(announceIt) {
+    outbox.sync({ force: true }).then(function (results) {
+      var posted = results.filter(function (r) { return r.state === "posted"; }).length;
+      var parked = results.filter(function (r) { return r.state === "needs_attention"; }).length;
+      if (posted) { announce(posted + " item(s) synced to the server."); loadOverview(); }
+      if (parked) { announce(parked + " item(s) need your attention — open Pending sync."); }
+      if (announceIt && !posted && !parked && outbox.counts().pending > 0) {
+        announce("Still offline — will keep trying.");
+      }
+      updateSyncBanner();
+    });
+  }
+
+  /* ------------------------------------------------------------- router */
+  var SCREENS = ["home", "move", "scan", "counts", "count", "unknown",
+                 "damage", "detail", "outbox", "receipt"];
+  var TITLES = { home: "Inventory", move: "Move", scan: "Scan",
+                 counts: "Counts", count: "Count", unknown: "Not listed",
+                 damage: "Report damage", detail: "Details",
+                 outbox: "Pending sync", receipt: "Done" };
+  var currentScreen = "home";
+
+  function show(name) {
+    if (currentScreen === "scan" && name !== "scan") { stopCamera(); }
+    currentScreen = name;
+    SCREENS.forEach(function (s) { $("scr-" + s).hidden = (s !== name); });
+    $("scr-title").textContent =
+      name === "move" && cart ? (MODE_LABEL[cart.type] || "Move") : (TITLES[name] || "Inventory");
+    $("cartbar").hidden = !(name === "move" && cart && cart.lines.length > 0);
+    document.querySelectorAll(".tabbar a").forEach(function (a) {
+      a.classList.toggle("is-active", a.getAttribute("data-dock") === name);
+    });
+    $("rail").classList.remove("is-open");
+    if (name === "home") { renderHome(); }
+    if (name === "outbox") { renderOutbox(); }
+    if (name === "counts") { renderCounts(); }
+    window.scrollTo(0, 0);
+  }
+
+  /* --------------------------------------------------------------- home */
+  function renderHome() {
+    $("viewonly-note").hidden = !!ME.can_move;
+    document.querySelectorAll("#actions [data-move]").forEach(function (b) {
+      b.disabled = !ME.can_move;
+    });
+    $("rail-admin").hidden = !ME.can_manage;
+    $("home-admin").hidden = !ME.can_manage;
+
+    var resume = $("resume-card");
+    if (cart && cart.type && (cart.lines.length || cart.src || cart.dst)) {
+      $("resume-text").textContent = "Unfinished " +
+        (MODE_LABEL[cart.type] || "move").toLowerCase() + " — " +
+        cart.lines.length + " item(s) in the cart.";
+      resume.hidden = false;
+    } else { resume.hidden = true; }
+
+    var r = G.loadRecents(LS, EMAIL);
+    var chips = [];
+    r.items.forEach(function (it) {
+      chips.push('<button type="button" class="chip" data-recent-item="' + esc(it.id) +
+        '" aria-label="Recent item ' + esc(it.name) + '">' + esc(it.name) + "</button>");
+    });
+    r.locations.forEach(function (lo) {
+      chips.push('<button type="button" class="chip" data-recent-loc="' + esc(lo.id) +
+        '" aria-label="Recent location ' + esc(lo.name) + '">&#128205; ' + esc(lo.name) + "</button>");
+    });
+    $("home-recents").innerHTML = chips.join("");
+    $("home-recents-wrap").hidden = chips.length === 0;
+
+    renderHomeCounts();
+  }
+
+  function renderHomeCounts() {
+    var wrap = $("home-counts-wrap");
+    var list = $("home-counts");
+    var mine = (overviewData && overviewData.my_counts) || [];
+    if (!mine.length) { wrap.hidden = true; return; }
+    list.innerHTML = mine.map(function (s) {
+      return '<button type="button" class="rowbtn" data-count="' + esc(s.id) + '">' +
+        '<span class="rb-main"><span class="rb-name">' + esc(s.location || "Count") + "</span>" +
+        '<span class="rb-sub">' + esc(s.kind === "blind" ? "Blind audit" : "Quick count") +
+        "</span></span><span class=\"tag tag-gold\">Open</span></button>";
+    }).join("");
+    wrap.hidden = false;
+  }
+
+  function loadOverview() {
+    api("/ui/api/inventory/overview").then(function (data) {
+      overviewData = data;
+      G.cachePut(LS, EMAIL, "overview", data);
+      $("home-asof").hidden = true;
+      renderHomeCounts();
+    }, function (err) {
+      if (!err.network) { return; }
+      var cached = G.cacheGet(LS, EMAIL, "overview");
+      if (cached) {
+        overviewData = cached.data;
+        $("home-asof").textContent = "Offline — showing saved data as of " + fmtTime(cached.at) + ".";
+        $("home-asof").hidden = false;
+        renderHomeCounts();
+      }
+    });
+  }
+
+  /* --------------------------------------------------------------- move */
+  function startMove(type) {
+    if (!ME.can_move) { announce("You have view-only access."); return; }
+    cart = G.newCart(type);
+    if (type === "RECEIVE") { /* destination only */ }
+    persistCart();
+    renderMove();
+    show("move");
+  }
+
+  function persistCart() {
+    if (cart) { G.saveCart(LS, EMAIL, cart); } else { G.clearCart(LS, EMAIL); }
+  }
+
+  function dropCart() {
+    cart = null;
+    persistCart();
+  }
+
+  function renderMove() {
+    if (!cart) { show("home"); return; }
+    var t = cart.type;
+    $("pick-src-wrap").hidden = !(t === "ISSUE" || t === "TRANSFER");
+    $("pick-dst-wrap").hidden = false;
+    $("lbl-src").textContent = t === "ISSUE" ? "From (where you're taking it)" : "From";
+    $("lbl-dst").textContent = t === "ISSUE" ? "To (you, a truck, a job)" : "To";
+    $("src-name").textContent = cart.src_name || "Choose where it comes from…";
+    $("dst-name").textContent = cart.dst_name || "Choose where it goes…";
+    $("src-tag").hidden = !cart.src;
+    $("dst-tag").hidden = !cart.dst;
+    var ready = locationsReady();
+    $("move-items").hidden = !ready;
+    $("cont-scan-wrap").hidden = t !== "TRANSFER";
+    renderMoveRecents();
+    renderCart();
+  }
+
+  function locationsReady() {
+    if (!cart) { return false; }
+    if (cart.type === "RECEIVE") { return !!cart.dst; }
+    if (cart.type === "ISSUE") { return !!cart.src && !!cart.dst; }
+    return !!cart.src && !!cart.dst;   // TRANSFER
+  }
+
+  function sourceForSearch() {
+    if (!cart) { return ""; }
+    return (cart.type === "ISSUE" || cart.type === "TRANSFER") ? cart.src : "";
+  }
+
+  /* location picker */
+  var pickerWhich = "";              // "src" | "dst"
+
+  function openLocPicker(which) {
+    pickerWhich = which;
+    $("locpanel").hidden = false;
+    $("locpanel-title").textContent = which === "src"
+      ? "Pick the source" : "Pick the destination";
+    $("locpanel-search").value = "";
+    var quick = [];
+    if (which === "dst" && cart && cart.type === "ISSUE" && ME.custody) {
+      // "Me" is the FIRST and quickest option — but never auto-assumed.
+      quick.push('<button type="button" class="chip chip-lg chip-next" data-loc-id="' +
+        esc(ME.custody.id) + '" data-loc-name="' + esc(ME.custody.name || "Me") +
+        '" aria-label="Assign to me">Me — ' + esc(ME.custody.name || EMAIL) + "</button>");
+    }
+    $("locpanel-quick").innerHTML = quick.join("");
+    fetchLocations().then(renderLocList);
+    renderLocList();
+  }
+
+  function fetchLocations() {
+    return api("/ui/api/inventory/locations").then(function (data) {
+      locationsCache = data.locations || [];
+      locationsAsOf = "";
+      G.cachePut(LS, EMAIL, "locations", locationsCache);
+      return locationsCache;
+    }, function (err) {
+      var cached = G.cacheGet(LS, EMAIL, "locations");
+      if (cached) {
+        locationsCache = cached.data || [];
+        locationsAsOf = cached.at;
+      }
+      return locationsCache;
+    });
+  }
+
+  function renderLocList() {
+    var q = $("locpanel-search").value.trim().toLowerCase();
+    var rows = locationsCache.filter(function (lo) {
+      if (!q) { return true; }
+      return (lo.name || "").toLowerCase().indexOf(q) !== -1 ||
+             (lo.path || "").toLowerCase().indexOf(q) !== -1;
+    }).slice(0, 60);
+    $("locpanel-list").innerHTML = rows.map(function (lo) {
+      return '<button type="button" class="rowbtn" data-loc-id="' + esc(lo.id) +
+        '" data-loc-name="' + esc(lo.name) + '">' +
+        '<span class="rb-main"><span class="rb-name">' + esc(lo.name) + "</span>" +
+        '<span class="rb-sub">' + esc(lo.path || "") + "</span></span></button>";
+    }).join("") || '<p class="muted" style="margin:0">No locations match.</p>';
+    var asof = $("locpanel-asof");
+    if (locationsAsOf) {
+      asof.textContent = "Offline — location list saved as of " + fmtTime(locationsAsOf) + ".";
+      asof.hidden = false;
+    } else { asof.hidden = true; }
+  }
+
+  function chooseLocation(id, name) {
+    if (!cart) { return; }
+    if (pickerWhich === "src") { cart.src = id; cart.src_name = name; }
+    else { cart.dst = id; cart.dst_name = name; }
+    // Location selection PERSISTS for the whole transaction.
+    persistCart();
+    G.pushRecent(LS, EMAIL, "location", { id: id, name: name });
+    $("locpanel").hidden = true;
+    renderMove();
+    announce((pickerWhich === "src" ? "Source" : "Destination") + ": " + name);
+  }
+
+  /* item search */
+  var searchTimer = null;
+  function onItemSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(doSearch, 250);
+  }
+
+  function doSearch() {
+    var q = $("item-search").value.trim();
+    if (!q) { $("search-results").innerHTML = ""; return; }
+    var src = sourceForSearch();
+    api("/ui/api/inventory/search?q=" + encodeURIComponent(q) +
+        (src ? "&location_id=" + encodeURIComponent(src) : ""))
+      .then(function (data) {
+        var rows = (data.results || []).map(function (r) {
+          var it = r.item;
+          var here = src ? ('<span class="tag">' + esc(r.on_hand_here) + " " +
+            esc(it.base_unit || "") + " here</span>") : "";
+          return '<button type="button" class="rowbtn" data-item-id="' + esc(it.id) + '">' +
+            '<span class="rb-main"><span class="rb-name">' + esc(it.name) + "</span>" +
+            '<span class="rb-sub">' + esc(it.tracking) +
+            (it.category ? " · " + esc(it.category) : "") + "</span></span>" + here +
+            "</button>";
+        });
+        $("search-results").innerHTML = rows.join("") ||
+          '<p class="muted" style="margin:0">No matches. Try another word, scan it, ' +
+          'or use “Not listed”.</p>';
+        $("search-results")._items = data.results || [];
+      }, function (err) {
+        $("search-results").innerHTML =
+          '<p class="muted" style="margin:0">' +
+          (err.network ? "Offline — search needs a connection. Scan or use recents."
+                       : esc(err.message)) + "</p>";
+      });
+  }
+
+  function pickSearchItem(itemId) {
+    var results = $("search-results")._items || [];
+    var hit = null;
+    results.forEach(function (r) { if (r.item.id === itemId) { hit = r.item; } });
+    if (!hit) { return; }
+    addItemToCart(hit);
+  }
+
+  function addItemToCart(item) {
+    if (item.tracking === "quantity") { openQtyEditor(item); return; }
+    // Assets/kits are added individually — open the item to pick the unit.
+    showItemDetail(item.id);
+  }
+
+  /* qty editor */
+  function openQtyEditor(item) {
+    qtyItem = item;
+    qtyUnit = item.base_unit || "each";
+    $("qty-item-name").textContent = item.name;
+    $("qty-input").value = "1";
+    var units = [item.base_unit || "each"];
+    Object.keys(item.conversions || {}).forEach(function (u) {
+      if (units.indexOf(u) === -1) { units.push(u); }
+    });
+    $("qty-units").innerHTML = units.map(function (u) {
+      return '<button type="button" class="chip" data-unit="' + esc(u) +
+        '" aria-pressed="' + (u === qtyUnit ? "true" : "false") + '">' + esc(u) + "</button>";
+    }).join("");
+    $("qty-editor").hidden = false;
+    $("qty-input").focus();
+  }
+
+  function qtyEditorAdd() {
+    if (!qtyItem || !cart) { return; }
+    var q = Number($("qty-input").value);
+    if (!(q > 0)) { announce("Enter a quantity above zero."); $("qty-input").focus(); return; }
+    G.cartAddQty(cart, qtyItem, q, qtyUnit);
+    persistCart();
+    G.pushRecent(LS, EMAIL, "item", { id: qtyItem.id, name: qtyItem.name });
+    announce("Added " + q + " " + qtyUnit + " " + qtyItem.name);
+    $("qty-editor").hidden = true;
+    qtyItem = null;
+    $("item-search").value = "";
+    $("search-results").innerHTML = "";
+    renderMove();
+  }
+
+  function renderMoveRecents() {
+    var r = G.loadRecents(LS, EMAIL);
+    $("move-recents").innerHTML = r.items.slice(0, 6).map(function (it) {
+      return '<button type="button" class="chip" data-move-recent="' + esc(it.id) +
+        '">' + esc(it.name) + "</button>";
+    }).join("");
+  }
+
+  /* cart */
+  function renderCart() {
+    var card = $("cart-card");
+    if (!cart || !cart.lines.length) {
+      card.hidden = true;
+      $("cartbar").hidden = true;
+      return;
+    }
+    card.hidden = false;
+    $("cart-count").textContent = String(cart.lines.length);
+    $("cart-lines").innerHTML = cart.lines.map(function (ln, i) {
+      var what = ln.kind === "quantity"
+        ? esc(ln.qty) + " " + esc(ln.unit) + " · " + esc(ln.name)
+        : (ln.kind === "asset" ? esc(ln.name) + " (" + esc(ln.asset_id) + ")"
+           : "Kit · " + esc(ln.name));
+      return '<div class="cartline"><div class="cl-main"><div>' + what + "</div>" +
+        (ln.error ? '<div class="cl-err" role="alert">' + esc(ln.error) + "</div>" : "") +
+        '</div><button type="button" class="btn btn-sm btn-ghost" data-rm-line="' + i +
+        '" aria-label="Remove ' + esc(ln.name) + '">&times;</button></div>';
+    }).join("");
+    var n = cart.lines.length;
+    $("cartbar-text").textContent = n + (n === 1 ? " item" : " items");
+    $("cartbar").hidden = currentScreen !== "move";
+  }
+
+  function submitCart() {
+    if (!cart || !cart.lines.length) { return; }
+    if (!locationsReady()) {
+      announce("Pick the location(s) first."); return;
+    }
+    var n = cart.lines.length;
+    var summary = MODE_LABEL[cart.type] + " " + n + " item(s)" +
+      (cart.src_name ? " from " + cart.src_name : "") +
+      (cart.dst_name ? " to " + cart.dst_name : "") + "?";
+    if (!window.confirm(summary)) { return; }
+    var payload = G.cartToTxn(cart);
+    $("btn-submit-cart").disabled = true;
+    api("/ui/api/inventory/txn", { method: "POST", body: payload })
+      .then(function (res) {
+        $("btn-submit-cart").disabled = false;
+        finishCartSuccess(res);
+      }, function (err) {
+        $("btn-submit-cart").disabled = false;
+        var status = err.status || 0;
+        if (err.network || status >= 500) {
+          // OFFLINE or server trouble: queue it honestly and let the
+          // outbox retry with the SAME client_uuid (5xx is retryable —
+          // review finding 17).
+          var entry = outbox.enqueue("/ui/api/inventory/txn", payload, {
+            label: MODE_LABEL[cart.type] + " · " + n + " item(s)" +
+              (cart.dst_name ? " → " + cart.dst_name : "")
+          });
+          if (!entry) {
+            // Storage full — the queue write did NOT persist. Keep the
+            // cart; never show success for a movement that isn't saved
+            // anywhere (review finding 3).
+            announce("This phone is out of storage — nothing was " +
+                     "queued. Clear synced items in Pending sync, then " +
+                     "submit again.");
+            applyTxnError({ code: "STORAGE_FULL",
+              detail: "This phone's storage is full — the transaction " +
+                      "was NOT queued.",
+              advice: "Open Pending sync and clear finished items, then " +
+                      "submit again. Your cart is untouched." });
+            return;
+          }
+          rememberCartRecents();
+          dropCart();
+          showQueued(entry);
+          outbox.sync();
+          return;
+        }
+        applyTxnError(err.env || {});
+      });
+  }
+
+  function rememberCartRecents() {
+    if (!cart) { return; }
+    cart.lines.forEach(function (ln) {
+      if (ln.kind === "quantity") {
+        G.pushRecent(LS, EMAIL, "item", { id: ln.item_id, name: ln.name });
+      }
+    });
+  }
+
+  function finishCartSuccess(res) {
+    var txn = res.txn || {};
+    rememberCartRecents();
+    var mode = MODE_LABEL[cart.type] || "Move";
+    dropCart();
+    loadOverview();
+    $("receipt-body").innerHTML =
+      '<span class="kicker">' + esc(mode) + " recorded</span>" +
+      '<b style="font-size:var(--text-lg)">' + esc(txn.txn_no || "Posted") + "</b>" +
+      (res.already ? '<p class="muted" style="margin:0">Already recorded earlier — ' +
+        "nothing was double-posted.</p>" : "") +
+      '<div>' + (txn.lines || []).map(function (ln) {
+        return '<div class="cartline"><div class="cl-main">' +
+          (ln.kind === "quantity"
+            ? esc(ln.entered_qty) + " " + esc(ln.entered_unit) + " · " + esc(ln.item_name)
+            : esc(ln.item_name || "") + " (" + esc(ln.asset_id || ln.kit_id || "") + ")") +
+          "</div></div>";
+      }).join("") + "</div>" +
+      '<p class="muted" style="margin:0;font-size:var(--text-sm)">Next: start another move, ' +
+      "run a count, or head back to the hub.</p>";
+    show("receipt");
+    announce(mode + " recorded — " + (txn.txn_no || "posted") + ".");
+  }
+
+  function showQueued(entry) {
+    $("receipt-body").innerHTML =
+      '<span class="kicker">Saved on this phone</span>' +
+      "<b style=\"font-size:var(--text-lg)\">Waiting to sync</b>" +
+      '<p class="muted" style="margin:0">' + esc(entry.label || "This movement") +
+      " is queued on this phone. It is <b>not confirmed</b> until it reaches the " +
+      'server — watch the Pending sync banner. It syncs automatically when you get ' +
+      "signal, or tap Sync now.</p>";
+    show("receipt");
+    announce("Offline — saved to this phone, waiting to sync.");
+  }
+
+  function applyTxnError(env) {
+    // 409 INSUFFICIENT_STOCK names the item in quotes — pin it to the line.
+    var box = $("move-error");
+    var matched = false;
+    if (env.code === "INSUFFICIENT_STOCK") {
+      var m = /'([^']+)'/.exec(env.detail || "");
+      if (m && cart) {
+        cart.lines.forEach(function (ln) {
+          if (ln.name === m[1]) {
+            ln.error = (env.detail || "") + (env.advice ? " " + env.advice : "");
+            matched = true;
+          }
+        });
+      }
+    }
+    if (matched) {
+      box.hidden = true;
+      persistCart();
+      renderCart();
+      announce("Not enough stock — check the flagged line.");
+    } else {
+      box.innerHTML = errBox(env);
+      box.hidden = false;
+      announce(env.detail || "The server refused that.");
+    }
+    show("move");
+  }
+
+  /* --------------------------------------------------------------- scan */
+  var camStream = null, camTimer = null, detector = null;
+  var lastScanCode = "", lastScanAt = 0;
+
+  function startScan(ctx) {
+    scanCtx = ctx || { purpose: "free", ret: currentScreen };
+    var labels = { "pick-src": "Scan the source location label",
+                   "pick-dst": "Scan the destination location label",
+                   "add-item": "Scan an item, tool, or kit",
+                   free: "Scan a label" };
+    $("scan-purpose").textContent = labels[scanCtx.purpose] || labels.free;
+    $("scan-result").innerHTML = "";
+    $("scan-manual").value = "";
+    show("scan");
+    initCamera();
+  }
+
+  function initCamera() {
+    var wrap = $("scan-video-wrap");
+    var nocam = $("scan-nocam");
+    if (typeof window.BarcodeDetector !== "function") {
+      wrap.hidden = true;
+      nocam.textContent = "This phone's browser can't scan through the camera here. " +
+        "No problem — every label also has its code printed on it. Type it below.";
+      nocam.hidden = false;
+      $("scan-manual").focus();
+      return;
+    }
+    try { detector = new window.BarcodeDetector(); } catch (e) { detector = null; }
+    if (!detector || !navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      wrap.hidden = true;
+      nocam.textContent = "Camera scanning isn't available here — type the code " +
+        "printed on the label instead.";
+      nocam.hidden = false;
+      return;
+    }
+    navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" } }, audio: false
+    }).then(function (stream) {
+      camStream = stream;
+      var video = $("scan-video");
+      video.srcObject = stream;
+      video.play().catch(function () {});
+      wrap.hidden = false;
+      nocam.hidden = true;
+      camTimer = setInterval(scanTick, 300);
+    }, function () {
+      wrap.hidden = true;
+      nocam.textContent = "Camera access was declined, so scanning is off. " +
+        "Type the code printed on the label below — it works exactly the same.";
+      nocam.hidden = false;
+      $("scan-manual").focus();
+    });
+  }
+
+  function stopCamera() {
+    if (camTimer) { clearInterval(camTimer); camTimer = null; }
+    if (camStream) {
+      camStream.getTracks().forEach(function (t) { t.stop(); });
+      camStream = null;
+    }
+  }
+
+  function scanTick() {
+    var video = $("scan-video");
+    if (!detector || !video.videoWidth) { return; }
+    detector.detect(video).then(function (codes) {
+      if (!codes || !codes.length) { return; }
+      var raw = codes[0].rawValue || "";
+      if (!raw) { return; }
+      var nowMs = Date.now();
+      if (raw === lastScanCode && nowMs - lastScanAt < 2500) { return; }
+      lastScanCode = raw; lastScanAt = nowMs;
+      handleCode(raw);
+    }).catch(function () {});
+  }
+
+  function handleCode(code) {
+    code = String(code || "").trim();
+    if (!code) { return; }
+    api("/ui/api/inventory/scan?code=" + encodeURIComponent(code))
+      .then(function (r) { routeScan(r, code); },
+            function (err) {
+              if (err.network) {
+                $("scan-result").innerHTML =
+                  '<div class="card-note">Offline — can\'t look codes up right now. ' +
+                  "Movements you queue will still sync later.</div>";
+                announce("Offline — scan lookup needs signal.");
+              } else {
+                $("scan-result").innerHTML = errBox(err.env || {});
+              }
+            });
+  }
+
+  function backFromScan() {
+    show(scanCtx.ret === "move" && cart ? "move" : (scanCtx.ret || "home"));
+    if (currentScreen === "move") { renderMove(); }
+  }
+
+  function routeScan(r, code) {
+    var purpose = scanCtx.purpose;
+    if (purpose === "pick-src" || purpose === "pick-dst") {
+      if (r.kind === "location") {
+        pickerWhich = purpose === "pick-src" ? "src" : "dst";
+        buzz();
+        chooseLocation(r.location.id, r.location.name);
+        backFromScan();
+      } else {
+        announce("That label is " + (r.kind === "unknown" ? "not recognized" : "not a location") +
+          " — scan a location label.");
+      }
+      return;
+    }
+    if (purpose === "add-item" && cart) {
+      if (r.kind === "item") {
+        buzz();
+        if (r.item.tracking === "quantity") {
+          backFromScan();
+          openQtyEditor(r.item);
+        } else { showItemDetail(r.item.id); }
+        return;
+      }
+      if (r.kind === "asset") {
+        var added = G.cartAddAsset(cart, { id: r.asset.id, name: r.asset.name });
+        if (added) {
+          persistCart(); buzz();
+          announce("Added " + (r.asset.name || r.asset.id) + " to the cart.");
+          flashScanOk(added.name);
+        } else {
+          announce((r.asset.name || r.asset.id) + " is already in the cart.");
+        }
+        if (scanCtx.continuous) { renderCart(); return; }  // keep scanning
+        backFromScan();
+        return;
+      }
+      if (r.kind === "kit") {
+        var kAdded = G.cartAddKit(cart, { id: r.kit.id, name: r.kit.name });
+        announce(kAdded ? "Kit added to the cart." : "That kit is already in the cart.");
+        if (kAdded) { persistCart(); buzz(); }
+        if (!scanCtx.continuous) { backFromScan(); }
+        return;
+      }
+      if (r.kind === "location") {
+        announce("That's a location label — you're adding items right now.");
+        return;
+      }
+      // unknown while adding → offer search or Unknown item, code prefilled.
+      $("scan-result").innerHTML =
+        '<div class="card-note">Code <b class="mono">' + esc(code) + "</b> isn't in the " +
+        'system.</div><div class="btn-row" style="margin-top:8px">' +
+        '<button type="button" class="btn secondary" id="scan-unk-search">Search instead</button>' +
+        '<button type="button" class="btn btn-primary" id="scan-unk-new">Not listed &rarr;</button></div>';
+      $("scan-unk-search").onclick = function () { backFromScan(); $("item-search").focus(); };
+      $("scan-unk-new").onclick = function () { openUnknown(code); };
+      return;
+    }
+    // free scan
+    if (r.kind === "location") { buzz(); showLocationDetail(r.location.id); return; }
+    if (r.kind === "item") { buzz(); showItemDetail(r.item.id); return; }
+    if (r.kind === "asset") { buzz(); showAssetDetail(r.asset); return; }
+    if (r.kind === "kit") { buzz(); showKitDetail(r.kit); return; }
+    $("scan-result").innerHTML =
+      '<div class="card-note">Code <b class="mono">' + esc(code) + "</b> isn't in the " +
+      'system yet.</div><div class="btn-row" style="margin-top:8px">' +
+      '<button type="button" class="btn secondary" id="scan-unk-search2">Search the catalog</button>' +
+      '<button type="button" class="btn btn-primary" id="scan-unk-new2">Not listed &rarr;</button></div>';
+    $("scan-unk-search2").onclick = function () {
+      if (cart) { backFromScan(); $("item-search").focus(); }
+      else { show("home"); }
+    };
+    $("scan-unk-new2").onclick = function () { openUnknown(code); };
+  }
+
+  function flashScanOk(name) {
+    $("scan-result").innerHTML =
+      '<div class="card-note" style="border-color:var(--color-primary)">' +
+      "&#10003; " + esc(name) + " added — keep scanning.</div>";
+  }
+
+  /* ------------------------------------------------------------- detail */
+  function showLocationDetail(locId) {
+    api("/ui/api/inventory/location/" + encodeURIComponent(locId)).then(function (d) {
+      var loc = d.location;
+      var html = '<span class="kicker">Location</span>' +
+        "<b style=\"font-size:var(--text-lg)\">" + esc(loc.name) + "</b>" +
+        '<span class="muted" style="font-size:var(--text-sm)">' + esc(loc.path || "") + "</span>";
+      if (cart) {
+        html += '<div class="btn-row">';
+        if (cart.type !== "RECEIVE") {
+          html += '<button type="button" class="btn secondary" id="det-use-src">Use as source</button>';
+        }
+        html += '<button type="button" class="btn btn-primary" id="det-use-dst">Use as destination</button></div>';
+      } else if (ME.can_move) {
+        html += '<div class="btn-row"><button type="button" class="btn btn-primary" id="det-dropoff-here">Drop off here</button></div>';
+      }
+      html += '<span class="kicker-sm">What\'s here</span>';
+      var rows = (d.items || []).map(function (it) {
+        return '<div class="cartline"><div class="cl-main">' + esc(it.name) +
+          '</div><span class="tag">' + esc(it.qty) + " " + esc(it.unit) + "</span></div>";
+      }).concat((d.assets || []).map(function (a) {
+        return '<div class="cartline"><div class="cl-main">' + esc(a.name) +
+          ' <span class="mono">' + esc(a.id) + '</span></div><span class="tag">' +
+          esc(a.condition) + "</span></div>";
+      })).concat((d.kits || []).map(function (k) {
+        return '<div class="cartline"><div class="cl-main">Kit · ' + esc(k.name) +
+          "</div></div>";
+      }));
+      html += rows.join("") || '<p class="muted" style="margin:0">Empty right now.</p>';
+      $("detail-body").innerHTML = html;
+      show("detail");
+      G.pushRecent(LS, EMAIL, "location", { id: loc.id, name: loc.name });
+      var useSrc = $("det-use-src"), useDst = $("det-use-dst"), dropHere = $("det-dropoff-here");
+      if (useSrc) { useSrc.onclick = function () { pickerWhich = "src"; chooseLocation(loc.id, loc.name); show("move"); }; }
+      if (useDst) { useDst.onclick = function () { pickerWhich = "dst"; chooseLocation(loc.id, loc.name); show("move"); }; }
+      if (dropHere) {
+        dropHere.onclick = function () {
+          startMove("RECEIVE");
+          pickerWhich = "dst";
+          chooseLocation(loc.id, loc.name);
+        };
+      }
+    }, detailFail);
+  }
+
+  function showItemDetail(itemId) {
+    api("/ui/api/inventory/item/" + encodeURIComponent(itemId)).then(function (d) {
+      var it = d.item;
+      var html = '<span class="kicker">' + esc(it.tracking) + " item</span>" +
+        "<b style=\"font-size:var(--text-lg)\">" + esc(it.name) + "</b>";
+      if (it.tracking === "quantity") {
+        html += '<span class="kicker-sm">On hand</span>' +
+          ((it.locations || []).map(function (row) {
+            return '<div class="cartline"><div class="cl-main">' + esc(row.location) +
+              '</div><span class="tag">' + esc(row.qty) + " " + esc(it.base_unit) + "</span></div>";
+          }).join("") || '<p class="muted" style="margin:0">None on hand anywhere.</p>');
+        if (cart && ME.can_move) {
+          html += '<div class="btn-row"><button type="button" class="btn btn-primary" id="det-add">Add to cart</button></div>';
+        }
+      } else {
+        html += '<span class="kicker-sm">Units</span>' +
+          ((d.item.assets || []).map(function (a, i) {
+            return '<button type="button" class="rowbtn" data-det-asset="' + i + '">' +
+              '<span class="rb-main"><span class="rb-name mono">' + esc(a.id) + "</span>" +
+              '<span class="rb-sub">' + esc(a.location || "") + " · " + esc(a.condition) +
+              "</span></span></button>";
+          }).join("") || '<p class="muted" style="margin:0">No units registered.</p>');
+      }
+      $("detail-body").innerHTML = html;
+      $("detail-body")._assets = (d.item.assets || []).map(function (a) {
+        return { id: a.id, name: it.name, condition: a.condition, location_path: a.location };
+      });
+      show("detail");
+      G.pushRecent(LS, EMAIL, "item", { id: it.id, name: it.name });
+      var add = $("det-add");
+      if (add) { add.onclick = function () { show("move"); openQtyEditor(it); }; }
+    }, detailFail);
+  }
+
+  function showAssetDetail(asset) {
+    var html = '<span class="kicker">Tool / equipment</span>' +
+      "<b style=\"font-size:var(--text-lg)\">" + esc(asset.name || asset.id) + "</b>" +
+      '<span class="muted mono" style="font-size:var(--text-sm)">' + esc(asset.id) + "</span>" +
+      '<div class="cluster"><span class="tag">' + esc(asset.condition || "") + "</span>" +
+      '<span class="tag">' + esc(asset.location_path || asset.location || "") + "</span></div>" +
+      '<div class="btn-row">';
+    if (cart && ME.can_move) {
+      html += '<button type="button" class="btn btn-primary" id="det-asset-add">Add to cart</button>';
+    }
+    html += '<button type="button" class="btn secondary" id="det-asset-dmg">Report damage</button></div>';
+    $("detail-body").innerHTML = html;
+    show("detail");
+    var add = $("det-asset-add");
+    if (add) {
+      add.onclick = function () {
+        var got = G.cartAddAsset(cart, { id: asset.id, name: asset.name || asset.id });
+        announce(got ? "Added to the cart." : "Already in the cart.");
+        if (got) { persistCart(); }
+        show("move"); renderMove();
+      };
+    }
+    $("det-asset-dmg").onclick = function () { openDamage(asset); };
+  }
+
+  function showKitDetail(kit) {
+    var html = '<span class="kicker">Kit</span>' +
+      "<b style=\"font-size:var(--text-lg)\">" + esc(kit.name || kit.id) + "</b>" +
+      '<span class="muted mono" style="font-size:var(--text-sm)">' + esc(kit.id) + "</span>" +
+      '<span class="kicker-sm">Components</span>' +
+      ((kit.components || []).map(function (cmp) {
+        return '<div class="cartline"><div class="cl-main">' + esc(cmp.item_id || "") +
+          '</div><span class="tag">' + esc(cmp.qty || "") + "</span></div>";
+      }).join("") || '<p class="muted" style="margin:0">No component list.</p>');
+    if (cart && ME.can_move) {
+      html += '<div class="btn-row"><button type="button" class="btn btn-primary" id="det-kit-add">Add to cart</button></div>';
+    }
+    $("detail-body").innerHTML = html;
+    show("detail");
+    var add = $("det-kit-add");
+    if (add) {
+      add.onclick = function () {
+        var got = G.cartAddKit(cart, { id: kit.id, name: kit.name || kit.id });
+        announce(got ? "Kit added to the cart." : "Kit already in the cart.");
+        if (got) { persistCart(); }
+        show("move"); renderMove();
+      };
+    }
+  }
+
+  function detailFail(err) {
+    $("detail-body").innerHTML = errBox(err.env ||
+      { code: err.network ? "OFFLINE" : "ERROR",
+        detail: err.network ? "You're offline — details need a connection." : err.message,
+        advice: err.network ? "Queued movements still sync later." : "" });
+    show("detail");
+  }
+
+  /* ------------------------------------------------------------- counts */
+  function renderCounts() {
+    loadOverview();
+    var mine = (overviewData && overviewData.my_counts) || [];
+    $("counts-list").innerHTML = mine.map(function (s) {
+      return '<button type="button" class="rowbtn" data-count="' + esc(s.id) + '">' +
+        '<span class="rb-main"><span class="rb-name">' + esc(s.location || "Count") + "</span>" +
+        '<span class="rb-sub">' + esc(s.kind === "blind" ? "Blind audit" : "Quick count") +
+        "</span></span></button>";
+    }).join("");
+    $("counts-empty").hidden = mine.length > 0;
+  }
+
+  function openCount(sid) {
+    api("/ui/api/inventory/count/" + encodeURIComponent(sid)).then(function (d) {
+      currentCount = d.session;
+      renderCountSession();
+      show("count");
+    }, function (err) {
+      announce(err.network ? "Offline — counts need a connection to open."
+                           : (err.env && err.env.detail) || err.message);
+    });
+  }
+
+  function renderCountSession() {
+    var s = currentCount;
+    if (!s) { return; }
+    var blind = s.kind === "blind";
+    $("count-loc").textContent = (blind ? "Blind audit" : "Quick count") + " · " + s.location_id;
+    $("count-blind").hidden = !blind;
+    $("count-done").hidden = true;
+    $("count-error").hidden = true;
+    $("count-submit").hidden = s.status !== "open";
+    $("count-lines").innerHTML = (s.lines || []).map(function (ln, i) {
+      // expected === "" means BLIND: never invent a number.
+      var expected = ln.expected === "" ? '<span class="tag tag-gold">Blind</span>'
+        : '<span class="tag">expect ' + esc(ln.expected) + "</span>";
+      var status = ln._queued ? '<span class="tag">queued</span>'
+        : (ln._saved ? '<span class="tag tag-green">saved</span>' : "");
+      return '<div class="countline" data-line="' + i + '">' +
+        '<div class="ct-row"><span class="ct-name">' + esc(ln.item_name) + "</span>" +
+        expected + status + "</div>" +
+        '<div class="ct-row">' +
+        '<input class="input input-num" inputmode="decimal" data-counted="' + i + '"' +
+        ' value="' + esc(ln.counted === null || ln.counted === undefined ? "" : ln.counted) + '"' +
+        ' aria-label="Counted quantity for ' + esc(ln.item_name) + '" placeholder="0 counts too" />' +
+        '<button type="button" class="btn btn-sm secondary" data-skip="' + i + '">' +
+        (ln.skipped ? "Skipped" : "Skip") + "</button></div>" +
+        '<div class="ct-row" data-skip-row="' + i + '" ' + (ln.skipped ? "" : "hidden") + ">" +
+        '<input class="input" data-skip-reason="' + i + '" placeholder="Why skip it?"' +
+        ' value="' + esc(ln.skip_reason || "") + '" aria-label="Skip reason for ' +
+        esc(ln.item_name) + '" />' +
+        '<button type="button" class="btn btn-sm btn-ghost" data-skip-save="' + i + '">Save skip</button>' +
+        "</div>" +
+        '<div class="ct-err" data-line-err="' + i + '" hidden></div>' +
+        "</div>";
+    }).join("");
+  }
+
+  function recordCountLine(i, payload) {
+    var s = currentCount;
+    var ln = s.lines[i];
+    var path = "/ui/api/inventory/count/" + encodeURIComponent(s.id) + "/record";
+    var body = Object.assign({ item_id: ln.item_id }, payload);
+    api(path, { method: "POST", body: body }).then(function () {
+      ln._saved = true; ln._queued = false;
+      if (payload.skipped) { ln.skipped = true; ln.skip_reason = payload.skip_reason; ln.counted = null; }
+      else { ln.counted = String(payload.counted); ln.skipped = false; }
+      renderCountSession();
+    }, function (err) {
+      if (err.network) {
+        // Progress must survive dead zones — queue the record.
+        outbox.enqueue(path, body, { label: "Count · " + ln.item_name });
+        ln._queued = true;
+        if (payload.skipped) { ln.skipped = true; ln.skip_reason = payload.skip_reason; }
+        else { ln.counted = String(payload.counted); }
+        renderCountSession();
+        announce("Offline — count saved on this phone, waiting to sync.");
+        return;
+      }
+      var el = document.querySelector('[data-line-err="' + i + '"]');
+      if (el) { el.innerHTML = errBox(err.env || {}); el.hidden = false; }
+    });
+  }
+
+  function submitCount() {
+    var s = currentCount;
+    if (!s) { return; }
+    api("/ui/api/inventory/count/" + encodeURIComponent(s.id) + "/submit",
+        { method: "POST", body: {} })
+      .then(function (res) {
+        var blind = s.kind === "blind";
+        var done = $("count-done");
+        if (blind) {
+          done.innerHTML = '<div class="card-note">Submitted for review — a manager ' +
+            "compares your numbers and closes it out.</div>";
+        } else {
+          var v = res.variances || [];
+          done.innerHTML = v.length
+            ? '<span class="kicker-sm">Variances found</span>' + v.map(function (row) {
+                return '<div class="cartline"><div class="cl-main">' + esc(row.item_name) +
+                  '</div><span class="tag tag-alert">' + esc(row.expected) + " &rarr; " +
+                  esc(row.counted) + "</span></div>";
+              }).join("") + '<p class="muted" style="font-size:var(--text-xs)">A manager ' +
+              "approves these before stock changes.</p>"
+            : '<div class="card-note">Everything matched — nice.</div>';
+        }
+        done.hidden = false;
+        $("count-submit").hidden = true;
+        $("count-error").hidden = true;
+        announce("Count submitted.");
+        loadOverview();
+      }, function (err) {
+        if (err.network) {
+          announce("Offline — submit needs a connection. Your line entries are queued; " +
+            "submit again when you have signal.");
+          return;
+        }
+        $("count-error").innerHTML = errBox(err.env || {});
+        $("count-error").hidden = false;
+      });
+  }
+
+  /* ------------------------------------------------------- unknown item */
+  function openUnknown(fromCode) {
+    unkFromCode = fromCode || "";
+    unkPhoto = "";
+    unkUnit = "each";
+    $("unk-name").value = "";
+    $("unk-qty").value = "1";
+    $("unk-thumb").hidden = true;
+    $("unk-photo").value = "";
+    $("unk-photo-note").hidden = true;
+    $("unk-error").hidden = true;
+    $("unk-units").innerHTML = UNK_UNITS.map(function (u) {
+      return '<button type="button" class="chip" data-unk-unit="' + esc(u) +
+        '" aria-pressed="' + (u === unkUnit ? "true" : "false") + '">' + esc(u) + "</button>";
+    }).join("");
+    var locNote = $("unk-loc-note");
+    var loc = currentTxnLocation();
+    if (loc) {
+      locNote.textContent = "It will be logged at: " + loc.name;
+      locNote.hidden = false;
+    } else { locNote.hidden = true; }
+    show("unknown");
+  }
+
+  function currentTxnLocation() {
+    if (!cart) { return null; }
+    if (cart.type === "RECEIVE" && cart.dst) { return { id: cart.dst, name: cart.dst_name }; }
+    if (cart.src) { return { id: cart.src, name: cart.src_name }; }
+    if (cart.dst) { return { id: cart.dst, name: cart.dst_name }; }
+    return null;
+  }
+
+  function submitUnknown() {
+    var name = $("unk-name").value.trim();
+    if (!name) {
+      $("unk-error").innerHTML = errBox({ code: "INVALID_INPUT",
+        detail: "Give it the name your crew uses.",
+        advice: "Any name is better than none — the office renames it later." });
+      $("unk-error").hidden = false;
+      $("unk-name").focus();
+      return;
+    }
+    var loc = currentTxnLocation();
+    var body = {
+      name: name,
+      qty: $("unk-qty").value.trim() || "1",
+      unit: unkUnit,
+      location_id: loc ? loc.id : "",
+      note: unkFromCode ? "Scanned code: " + unkFromCode : "",
+      photo_data: unkPhoto
+    };
+    api("/ui/api/inventory/unknown-item", { method: "POST", body: body })
+      .then(function () {
+        announce("Sent to the office — keep working.");
+        show(cart ? "move" : "home");
+      }, function (err) {
+        if (err.network) {
+          outbox.enqueue("/ui/api/inventory/unknown-item", body,
+            { label: "Unknown item · " + name });
+          announce("Offline — saved on this phone, waiting to sync.");
+          show(cart ? "move" : "home");
+          return;
+        }
+        $("unk-error").innerHTML = errBox(err.env || {});
+        $("unk-error").hidden = false;
+      });
+  }
+
+  /* ------------------------------------------------------------- damage */
+  function openDamage(asset) {
+    dmgAsset = asset;
+    dmgCondition = "";
+    dmgPhoto = "";
+    $("dmg-asset-name").textContent = (asset.name || asset.id) + " (" + asset.id + ")";
+    $("dmg-note").value = "";
+    $("dmg-usable").checked = true;
+    $("dmg-thumb").hidden = true;
+    $("dmg-photo").value = "";
+    $("dmg-error").hidden = true;
+    $("dmg-conditions").innerHTML = DMG_CONDITIONS.map(function (pair) {
+      return '<button type="button" class="chip chip-lg" data-dmg-cond="' + pair[0] +
+        '" aria-pressed="false">' + pair[1] + "</button>";
+    }).join("");
+    $("dmg-presets").innerHTML = DMG_PRESETS.map(function (p) {
+      return '<button type="button" class="chip" data-dmg-preset="' + esc(p) + '">' +
+        esc(p) + "</button>";
+    }).join("");
+    show("damage");
+  }
+
+  function submitDamage() {
+    if (!dmgAsset) { return; }
+    if (!dmgCondition) {
+      $("dmg-error").innerHTML = errBox({ code: "INVALID_INPUT",
+        detail: "Pick what's wrong with it first.", advice: "" });
+      $("dmg-error").hidden = false;
+      return;
+    }
+    var note = $("dmg-note").value.trim();
+    note += (note ? " · " : "") +
+      ($("dmg-usable").checked ? "Still usable for now" : "Not usable");
+    var body = {
+      client_uuid: G.uuid(),
+      type: "CONDITION_CHANGE",
+      lines: [{ asset_id: dmgAsset.id, condition_to: dmgCondition,
+                note: note, photo_url: dmgPhoto }]
+    };
+    api("/ui/api/inventory/txn", { method: "POST", body: body })
+      .then(function () {
+        announce("Reported — the office sees it in the attention queue.");
+        show("home");
+      }, function (err) {
+        if (err.network) {
+          outbox.enqueue("/ui/api/inventory/txn", body,
+            { label: "Damage · " + (dmgAsset.name || dmgAsset.id) });
+          announce("Offline — report saved on this phone, waiting to sync.");
+          show("home");
+          return;
+        }
+        $("dmg-error").innerHTML = errBox(err.env || {});
+        $("dmg-error").hidden = false;
+      });
+  }
+
+  /* ------------------------------------------------------------- outbox */
+  function renderOutbox() {
+    var q = outbox.list();
+    $("outbox-empty").hidden = q.length > 0;
+    $("outbox-list").innerHTML = q.map(function (e) {
+      var state;
+      if (e.state === "needs_attention") {
+        state = '<span class="tag tag-alert">Needs attention</span>';
+      } else if (e.state === "syncing") {
+        state = '<span class="tag tag-gold">Syncing…</span>';
+      } else {
+        state = '<span class="tag">Waiting to sync</span>';
+      }
+      var buttons = "";
+      if (e.state === "needs_attention") {
+        buttons = '<div class="btn-row" style="margin-top:6px">' +
+          '<button type="button" class="btn btn-sm secondary" data-ob-retry="' + esc(e.id) + '">Try again</button>' +
+          (e.path === "/ui/api/inventory/txn" && e.body && e.body.type !== "CONDITION_CHANGE"
+            ? '<button type="button" class="btn btn-sm secondary" data-ob-edit="' + esc(e.id) + '">Edit in cart</button>'
+            : "") +
+          '<button type="button" class="btn btn-sm btn-danger" data-ob-discard="' + esc(e.id) + '">Discard</button>' +
+          "</div>";
+      }
+      return '<div class="card card-pad" style="padding:12px">' +
+        '<div class="cluster-split"><b>' + esc(e.label || e.path) + "</b>" + state + "</div>" +
+        '<div class="muted" style="font-size:var(--text-xs)">Saved ' + esc(fmtTime(e.created_at)) +
+        (e.tries ? " · " + e.tries + " attempt(s)" : "") + "</div>" +
+        (e.last_error ? '<div class="cl-err" role="alert">' + esc(e.last_error) + "</div>" : "") +
+        buttons + "</div>";
+    }).join("");
+  }
+
+  function editOutboxInCart(id) {
+    var q = outbox.list();
+    var entry = null;
+    q.forEach(function (e) { if (e.id === id) { entry = e; } });
+    if (!entry || !entry.body) { return; }
+    // Rebuild a cart from the queued payload, KEEPING its client_uuid so the
+    // corrected retry still dedups against any half-arrived original.
+    var body = entry.body;
+    cart = G.newCart(body.type);
+    cart.client_uuid = body.client_uuid || cart.client_uuid;
+    cart.src = body.src || "";
+    cart.dst = body.dst || "";
+    cart.src_name = body.src || "";
+    cart.dst_name = body.dst || "";
+    (body.lines || []).forEach(function (ln) {
+      if (ln.asset_id) { cart.lines.push({ kind: "asset", asset_id: ln.asset_id, name: ln.asset_id }); }
+      else if (ln.kit_id) { cart.lines.push({ kind: "kit", kit_id: ln.kit_id, name: ln.kit_id }); }
+      else { cart.lines.push({ kind: "quantity", item_id: ln.item_id, name: ln.item_id,
+                               qty: String(ln.qty), unit: ln.unit || "" }); }
+    });
+    // Persist the rebuilt cart BEFORE discarding the queue entry — the
+    // reverse order could destroy the only copy if the cart write fails
+    // (review finding 3, second site).
+    persistCart();
+    outbox.discard(id);
+    renderMove();
+    show("move");
+    announce("Loaded back into the cart — fix it and submit again.");
+  }
+
+  /* --------------------------------------------------------- wire events */
+  $("menubtn").addEventListener("click", function () { $("rail").classList.add("is-open"); });
+  $("rail-close").addEventListener("click", function () { $("rail").classList.remove("is-open"); });
+  document.querySelectorAll("[data-nav]").forEach(function (b) {
+    b.addEventListener("click", function () { show(b.getAttribute("data-nav")); });
+  });
+  document.querySelectorAll(".tabbar a").forEach(function (a) {
+    a.addEventListener("click", function (ev) {
+      ev.preventDefault();
+      var name = a.getAttribute("data-dock");
+      if (name === "scan") { startScan({ purpose: cart ? "add-item" : "free", ret: currentScreen, continuous: false }); }
+      else { show(name); }
+    });
+  });
+  window.addEventListener("hashchange", function () {
+    var h = (location.hash || "#home").slice(1);
+    if (h === "scan") { startScan({ purpose: cart ? "add-item" : "free", ret: "home" }); }
+    else if (SCREENS.indexOf(h) !== -1) { show(h); }
+  });
+
+  $("sync-banner").addEventListener("click", function () { show("outbox"); });
+  $("btn-sync-now").addEventListener("click", function () { syncNow(true); });
+  $("btn-top-scan").addEventListener("click", function () {
+    startScan({ purpose: cart ? "add-item" : "free", ret: currentScreen,
+                continuous: !!(cart && cart.type === "TRANSFER" && $("cont-scan").checked) });
+  });
+  $("btn-home-scan").addEventListener("click", function () {
+    startScan({ purpose: "free", ret: "home" });
+  });
+
+  document.querySelectorAll("#actions [data-move]").forEach(function (b) {
+    b.addEventListener("click", function () { startMove(b.getAttribute("data-move")); });
+  });
+  $("btn-count").addEventListener("click", function () { show("counts"); });
+
+  $("resume-go").addEventListener("click", function () { renderMove(); show("move"); });
+  $("resume-drop").addEventListener("click", function () {
+    dropCart(); renderHome(); announce("Discarded.");
+  });
+
+  $("home-recents").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-recent-item],[data-recent-loc]");
+    if (!t) { return; }
+    if (t.hasAttribute("data-recent-item")) { showItemDetail(t.getAttribute("data-recent-item")); }
+    else { showLocationDetail(t.getAttribute("data-recent-loc")); }
+  });
+  $("home-counts").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-count]");
+    if (t) { openCount(t.getAttribute("data-count")); }
+  });
+  $("counts-list").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-count]");
+    if (t) { openCount(t.getAttribute("data-count")); }
+  });
+
+  $("pick-src").addEventListener("click", function () { openLocPicker("src"); });
+  $("pick-dst").addEventListener("click", function () { openLocPicker("dst"); });
+  $("locpanel-close").addEventListener("click", function () { $("locpanel").hidden = true; });
+  $("locpanel-search").addEventListener("input", renderLocList);
+  $("locpanel-scan").addEventListener("click", function () {
+    startScan({ purpose: pickerWhich === "src" ? "pick-src" : "pick-dst", ret: "move" });
+  });
+  $("locpanel-list").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-loc-id]");
+    if (t) { chooseLocation(t.getAttribute("data-loc-id"), t.getAttribute("data-loc-name")); }
+  });
+  $("locpanel-quick").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-loc-id]");
+    if (t) { chooseLocation(t.getAttribute("data-loc-id"), t.getAttribute("data-loc-name")); }
+  });
+
+  $("item-search").addEventListener("input", onItemSearch);
+  $("search-results").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-item-id]");
+    if (t) { pickSearchItem(t.getAttribute("data-item-id")); }
+  });
+  $("move-recents").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-move-recent]");
+    if (t) {
+      api("/ui/api/inventory/item/" + encodeURIComponent(t.getAttribute("data-move-recent")))
+        .then(function (d) { addItemToCart(d.item); },
+              function () { announce("Couldn't load that item right now."); });
+    }
+  });
+  $("btn-move-scan").addEventListener("click", function () {
+    startScan({ purpose: "add-item", ret: "move",
+                continuous: !!(cart && cart.type === "TRANSFER" && $("cont-scan").checked) });
+  });
+  $("btn-not-listed").addEventListener("click", function () { openUnknown(""); });
+
+  $("qty-minus").addEventListener("click", function () {
+    var v = Number($("qty-input").value) || 1;
+    $("qty-input").value = String(Math.max(1, v - 1));
+  });
+  $("qty-plus").addEventListener("click", function () {
+    var v = Number($("qty-input").value) || 0;
+    $("qty-input").value = String(v + 1);
+  });
+  $("qty-units").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-unit]");
+    if (!t) { return; }
+    qtyUnit = t.getAttribute("data-unit");
+    document.querySelectorAll("#qty-units .chip").forEach(function (c) {
+      c.setAttribute("aria-pressed", c === t ? "true" : "false");
+    });
+  });
+  $("qty-add").addEventListener("click", qtyEditorAdd);
+  $("qty-input").addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") { ev.preventDefault(); qtyEditorAdd(); }
+  });
+  $("qty-cancel").addEventListener("click", function () {
+    $("qty-editor").hidden = true; qtyItem = null;
+  });
+
+  $("cart-lines").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-rm-line]");
+    if (!t || !cart) { return; }
+    G.cartRemoveLine(cart, Number(t.getAttribute("data-rm-line")));
+    persistCart();
+    renderCart();
+    if (!cart.lines.length) { $("cartbar").hidden = true; }
+  });
+  $("btn-submit-cart").addEventListener("click", submitCart);
+
+  $("scan-go").addEventListener("click", function () { handleCode($("scan-manual").value); });
+  $("scan-manual").addEventListener("keydown", function (ev) {
+    if (ev.key === "Enter") { ev.preventDefault(); handleCode($("scan-manual").value); }
+  });
+  $("scan-back").addEventListener("click", backFromScan);
+
+  $("count-back").addEventListener("click", function () { show("counts"); });
+  $("count-submit").addEventListener("click", submitCount);
+  $("count-lines").addEventListener("change", function (ev) {
+    var t = ev.target;
+    if (t.hasAttribute("data-counted")) {
+      var i = Number(t.getAttribute("data-counted"));
+      var v = t.value.trim();
+      if (v === "") { return; }        // blank ≠ zero; zero must be explicit
+      recordCountLine(i, { counted: v });
+    }
+  });
+  $("count-lines").addEventListener("click", function (ev) {
+    var skipBtn = ev.target.closest("[data-skip]");
+    if (skipBtn) {
+      var i = Number(skipBtn.getAttribute("data-skip"));
+      var row = document.querySelector('[data-skip-row="' + i + '"]');
+      if (row) { row.hidden = !row.hidden; }
+      return;
+    }
+    var saveBtn = ev.target.closest("[data-skip-save]");
+    if (saveBtn) {
+      var j = Number(saveBtn.getAttribute("data-skip-save"));
+      var reason = document.querySelector('[data-skip-reason="' + j + '"]').value.trim();
+      if (!reason) { announce("Skipping needs a reason."); return; }
+      recordCountLine(j, { skipped: true, skip_reason: reason });
+    }
+  });
+
+  $("unk-photo").addEventListener("change", function () {
+    var f = $("unk-photo").files && $("unk-photo").files[0];
+    if (!f) { return; }
+    G.downscalePhoto(f, {}, function (err, dataUrl) {
+      if (err) {
+        $("unk-photo-note").textContent = err.message;
+        $("unk-photo-note").hidden = false;
+        return;
+      }
+      unkPhoto = dataUrl;
+      $("unk-thumb").src = dataUrl;
+      $("unk-thumb").hidden = false;
+      $("unk-photo-note").textContent = "Photo attached (shrunk for upload).";
+      $("unk-photo-note").hidden = false;
+    });
+  });
+  $("unk-units").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-unk-unit]");
+    if (!t) { return; }
+    unkUnit = t.getAttribute("data-unk-unit");
+    document.querySelectorAll("#unk-units .chip").forEach(function (c) {
+      c.setAttribute("aria-pressed", c === t ? "true" : "false");
+    });
+  });
+  $("unk-submit").addEventListener("click", submitUnknown);
+  $("unk-cancel").addEventListener("click", function () { show(cart ? "move" : "home"); });
+
+  $("dmg-conditions").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-dmg-cond]");
+    if (!t) { return; }
+    dmgCondition = t.getAttribute("data-dmg-cond");
+    document.querySelectorAll("#dmg-conditions .chip").forEach(function (c) {
+      c.setAttribute("aria-pressed", c === t ? "true" : "false");
+    });
+  });
+  $("dmg-presets").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-dmg-preset]");
+    if (!t) { return; }
+    var cur = $("dmg-note").value.trim();
+    $("dmg-note").value = cur ? cur + ", " + t.getAttribute("data-dmg-preset")
+                              : t.getAttribute("data-dmg-preset");
+  });
+  $("dmg-photo").addEventListener("change", function () {
+    var f = $("dmg-photo").files && $("dmg-photo").files[0];
+    if (!f) { return; }
+    G.downscalePhoto(f, {}, function (err, dataUrl) {
+      if (err) { announce(err.message); return; }
+      dmgPhoto = dataUrl;
+      $("dmg-thumb").src = dataUrl;
+      $("dmg-thumb").hidden = false;
+    });
+  });
+  $("dmg-submit").addEventListener("click", submitDamage);
+  $("dmg-cancel").addEventListener("click", function () { show("home"); });
+
+  $("detail-back").addEventListener("click", function () {
+    show(cart ? "move" : "home");
+    if (cart) { renderMove(); }
+  });
+  $("detail-body").addEventListener("click", function (ev) {
+    var t = ev.target.closest("[data-det-asset]");
+    if (!t) { return; }
+    var assets = $("detail-body")._assets || [];
+    var a = assets[Number(t.getAttribute("data-det-asset"))];
+    if (a) { showAssetDetail(a); }
+  });
+
+  $("outbox-list").addEventListener("click", function (ev) {
+    var retryB = ev.target.closest("[data-ob-retry]");
+    if (retryB) {
+      outbox.retry(retryB.getAttribute("data-ob-retry"));
+      syncNow(false);
+      return;
+    }
+    var editB = ev.target.closest("[data-ob-edit]");
+    if (editB) { editOutboxInCart(editB.getAttribute("data-ob-edit")); return; }
+    var discB = ev.target.closest("[data-ob-discard]");
+    if (discB) {
+      if (window.confirm("Discard this queued work? It was never posted and will be gone.")) {
+        outbox.discard(discB.getAttribute("data-ob-discard"));
+        renderOutbox();
+        announce("Discarded.");
+      }
+    }
+  });
+
+  $("receipt-again").addEventListener("click", function () { show("home"); });
+  $("receipt-home").addEventListener("click", function () { show("home"); });
+
+  // Retry on regained signal + app load; backoff handles the cadence.
+  window.addEventListener("online", function () { syncNow(false); });
+
+  /* --------------------------------------------------------------- init */
+  (function init() {
+    var initials = (EMAIL || "?").slice(0, 2).toUpperCase();
+    $("railavatar").textContent = initials;
+    cart = G.loadCart(LS, EMAIL);      // cart drafts survive reload
+    updateSyncBanner();
+    outbox.sync();                     // app-load sync attempt
+    api("/ui/api/inventory/me").then(function (me) {
+      ME = me;
+      renderHome();
+    }, function () { renderHome(); });
+    loadOverview();
+    fetchLocations();
+    var h = (location.hash || "#home").slice(1);
+    if (SCREENS.indexOf(h) !== -1 && h !== "scan") { show(h); } else { show("home"); }
+  })();
+})();
+</script>
+</body>
+</html>

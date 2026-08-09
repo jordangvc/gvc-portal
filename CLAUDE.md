@@ -17,6 +17,30 @@ routes/roles/grants.
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ INVENTORY (r112) — BUILT 2026-08-09
+Full inventory app per Jordan's master build prompt — docs/inventory/ is the
+canonical reference (README → everything). Field tool /ui/inventory (grant
+`inventory`), admin console /ui/inventory/admin (`inventory_manage`),
+read-only `inventory_view`; ops/crew presets gained `inventory`.
+ARCHITECTURE: no new database — GCS generation-guarded ledger
+(portal/inventory/ledger.json = append-only events + balance projection +
+asset custody + kits + idempotency in ONE doc, so a posting is one
+compare-and-swap; DECISIONS.md D1). Domain is PURE
+(subsystems/inventory/*), all I/O in orchestrators/inventory_flow.py, 30
+routes appended to app/service.py. 18 ledger invariants unit-tested incl.
+CAS-loser concurrency, idempotent client-UUID replay, reversal exactness,
+kit no-double-count, snapshot unit conversions, reasoned negative-stock
+override → attention. Offline = localStorage outbox + idempotent posts
+(D6 — deliberate v1 scope-down from a service worker; OFFLINE_SYNC.md).
+QR: opaque revocable tokens, BarcodeDetector + ALWAYS a typed fallback,
+labels PDF via WeasyPrint+qrcode (Avery 5160). Seed:
+scripts/seed_inventory.py (--yes gated, INITIAL_LOAD only). Release check:
+python scripts/inventory_verify.py. /health += inventory_store_ok (real
+read) + inventory_events. ⚠ RULES: ledger append-only — never edit posted
+events or write balances outside ledger.post/reverse
+(.claude/rules/inventory.md); tracking mode frozen after item creation;
+counts adjust, never overwrite. Adversarial review: 18 findings fixed + locked
+(tests/test_inventory_review_fixes.py); evidence in RELEASE_EVIDENCE.md. Hub **r112**.
 ## ✨ Morning stops: Route selection + explicit Done + asset cache fix (r111) — 2026-08-09
 Jordan, live on /ui/morning: "can't move stops up/down, can't check which ones
 to optimize." Repro'd with seeded stops: the ↑/↓ buttons existed and worked —

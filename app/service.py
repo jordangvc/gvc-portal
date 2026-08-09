@@ -450,6 +450,32 @@ class ActivityExportRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
+
+_INV_PROBE_CACHE: dict = {"at": 0.0, "ok": None, "events": None}
+
+
+def _inventory_probe() -> tuple:
+    """Cached inventory-store health probe (TTL GVC_INVENTORY_PROBE_TTL,
+    default 300s). A real read — but not on every monitor hit."""
+    import time as _time
+    ttl = float(os.environ.get("GVC_INVENTORY_PROBE_TTL") or "300")
+    nowt = _time.monotonic()
+    if _INV_PROBE_CACHE["ok"] is not None \
+            and nowt - _INV_PROBE_CACHE["at"] < ttl:
+        return _INV_PROBE_CACHE["ok"], _INV_PROBE_CACHE["events"]
+    ok, events = False, None
+    try:
+        from subsystems.inventory import store as _inv_store
+        _ledger, _ = _inv_store.read_doc(_inv_store.LEDGER)
+        ok = True
+        events = len(_ledger.get("events") or [])
+    except Exception as _inv_exc:  # noqa: BLE001 — health must not raise
+        print(f"[health] inventory store probe failed: {_inv_exc}",
+              file=sys.stderr)
+    _INV_PROBE_CACHE.update({"at": nowt, "ok": ok, "events": events})
+    return ok, events
+
 @app.get("/health")
 def healthz() -> dict:
     """
@@ -503,6 +529,12 @@ def healthz() -> dict:
         except Exception:  # noqa: BLE001 — health must not raise
             grants_store_ok = False
 
+    # Inventory store: a REAL read, not env presence (the portal has been
+    # burned three times by "configured" meaning "env var exists").
+    # TTL-cached so uptime monitors don't download the ledger every hit
+    # (review finding 10).
+    inventory_store_ok, inventory_events = _inventory_probe()
+
     return {
         "ok": True,
         "service": "gvc-invoice",
@@ -534,6 +566,8 @@ def healthz() -> dict:
         "grants_backend": grants_backend,
         "grants_store_ok": grants_store_ok,
         "grants_users": grants_users,
+        "inventory_store_ok": inventory_store_ok,
+        "inventory_events": inventory_events,
     }
 
 
@@ -5142,3 +5176,347 @@ def ui_activity_export(
 
 
 
+
+
+# =====================================================================
+# INVENTORY (2026-08-09) — docs/inventory/. Grants: inventory_view (read)
+# < inventory (field movements) < inventory_manage (admin ops); `*` = all.
+# All mutations are idempotent by client_uuid at the ledger. This region is
+# APPEND-ONLY by convention (multi-writer conflict surface — TASK_GRAPH.md).
+# =====================================================================
+
+from fastapi import Body as _InvBody  # noqa: E402
+
+from subsystems.inventory.model import InventoryError as _InvError  # noqa: E402
+
+_INV_STATUS = {"FORBIDDEN": 403, "INSUFFICIENT_STOCK": 409,
+               "ALREADY_REVERSED": 409, "SELF_APPROVAL": 409,
+               "SESSION_CLOSED": 409, "SESSION_NOT_SUBMITTED": 409,
+               "LOCATION_NOT_EMPTY": 409, "TRACKING_LOCKED": 409,
+               "ASSET_NOT_AT_SOURCE": 409, "ASSET_INACTIVE": 409,
+               "COUNT_INCOMPLETE": 409, "IMPORT_INVALID": 422}
+
+
+def _inv(fn, *args, **kwargs):
+    """Run an inventory_flow call, translating domain errors onto the
+    portal's {code, detail, advice} envelope with a sensible HTTP status."""
+    from subsystems.inventory.store import PortalStoreNotConfigured
+    try:
+        return fn(*args, **kwargs)
+    except _InvError as e:
+        raise HTTPException(status_code=_INV_STATUS.get(e.code, 422),
+                            detail=e.envelope())
+    except PortalStoreNotConfigured as e:
+        raise HTTPException(status_code=503, detail={
+            "ok": False, "code": "INVENTORY_NOT_CONFIGURED",
+            "detail": str(e),
+            "advice": "Set GVC_PORTAL_STATE_BUCKET / service-account JSON "
+                      "(same store as grants)."})
+
+
+def _inv_flow():
+    from orchestrators import inventory_flow
+    return inventory_flow
+
+
+@app.get("/ui/inventory", response_class=HTMLResponse)
+def ui_inventory_page(request: Request) -> HTMLResponse:
+    email = require_feature(request, "inventory_view")
+    activity.log_event("tool.open", actor=email, target="inventory")
+    html = (_cached_web_html("inventory.html")
+            .replace("{{EMAIL}}", html_escape(email))
+            .replace("{{EMAIL_JSON}}", json.dumps(email)))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
+
+
+@app.get("/ui/inventory/admin", response_class=HTMLResponse)
+def ui_inventory_admin_page(request: Request) -> HTMLResponse:
+    email = require_feature(request, "inventory_manage")
+    activity.log_event("tool.open", actor=email, target="inventory_admin")
+    html = (_cached_web_html("inventory-admin.html")
+            .replace("{{EMAIL}}", html_escape(email))
+            .replace("{{EMAIL_JSON}}", json.dumps(email)))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
+
+
+@app.get("/ui/api/inventory/me")
+def inv_me(request: Request) -> dict:
+    email = require_feature(request, "inventory_view")
+    feats = access.effective_features(email)
+    out = {"ok": True, "email": email,
+           "can_move": "inventory" in feats,
+           "can_manage": "inventory_manage" in feats}
+    if out["can_move"]:
+        out["custody"] = _inv(_inv_flow().my_custody_location,
+                              email)["location"]
+    return out
+
+
+@app.get("/ui/api/inventory/overview")
+def inv_overview(request: Request) -> dict:
+    email = require_feature(request, "inventory_view")
+    return _inv(_inv_flow().overview, email)
+
+
+@app.get("/ui/api/inventory/search")
+def inv_search(request: Request, q: str = "", location_id: str = "",
+               limit: int = 20, include_archived: int = 0) -> dict:
+    email = require_feature(request, "inventory_view")
+    return _inv(_inv_flow().search, email, q, location_id=location_id,
+                limit=limit, include_archived=bool(include_archived))
+
+
+@app.get("/ui/api/inventory/item/{item_id}")
+def inv_item(item_id: str, request: Request) -> dict:
+    require_feature(request, "inventory_view")
+    return _inv(_inv_flow().item_detail, item_id)
+
+
+@app.get("/ui/api/inventory/location/{loc_id}")
+def inv_location(loc_id: str, request: Request) -> dict:
+    require_feature(request, "inventory_view")
+    return _inv(_inv_flow().location_contents, loc_id)
+
+
+@app.get("/ui/api/inventory/locations")
+def inv_locations(request: Request, all: int = 0) -> dict:
+    require_feature(request, "inventory_view")
+    return _inv(_inv_flow().locations_list, include_inactive=bool(all))
+
+
+@app.get("/ui/api/inventory/history")
+def inv_history(request: Request, limit: int = 50, item_id: str = "",
+                location_id: str = "", actor: str = "",
+                txn_type: str = "") -> dict:
+    require_feature(request, "inventory_view")
+    return _inv(_inv_flow().history, limit=limit, item_id=item_id,
+                location_id=location_id, actor=actor, txn_type=txn_type)
+
+
+@app.get("/ui/api/inventory/scan")
+def inv_scan(request: Request, code: str = "") -> dict:
+    email = require_feature(request, "inventory_view")
+    return _inv(_inv_flow().resolve_scan, email, code)
+
+
+@app.post("/ui/api/inventory/txn")
+def inv_post_txn(request: Request, payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory")
+    feats = access.effective_features(email)
+    return _inv(_inv_flow().post_transaction, payload, actor=email,
+                can_manage="inventory_manage" in feats)
+
+
+@app.post("/ui/api/inventory/reverse")
+def inv_reverse(request: Request, payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().reverse_transaction,
+                str(payload.get("txn_no") or ""), actor=email,
+                reason=str(payload.get("reason") or ""),
+                client_uuid=str(payload.get("client_uuid") or ""),
+                allow_negative=bool(payload.get("allow_negative")))
+
+
+@app.post("/ui/api/inventory/item")
+@app.post("/ui/api/inventory/item/{item_id}")
+def inv_save_item(request: Request, item_id: str = "",
+                  payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().save_item, payload, actor=email,
+                item_id=item_id)
+
+
+@app.post("/ui/api/inventory/item/{item_id}/archive")
+def inv_archive_item(item_id: str, request: Request,
+                     payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().archive_item, item_id,
+                bool(payload.get("archived", True)), actor=email)
+
+
+@app.post("/ui/api/inventory/item-merge")
+def inv_merge_item(request: Request, payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().merge_item,
+                str(payload.get("source_id") or ""),
+                str(payload.get("target_id") or ""), actor=email)
+
+
+@app.post("/ui/api/inventory/location")
+@app.post("/ui/api/inventory/location/{loc_id}")
+def inv_save_location(request: Request, loc_id: str = "",
+                      payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().save_location, payload, actor=email,
+                loc_id=loc_id)
+
+
+@app.post("/ui/api/inventory/location/{loc_id}/active")
+def inv_location_active(loc_id: str, request: Request,
+                        payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().set_location_active, loc_id,
+                bool(payload.get("active", True)), actor=email)
+
+
+@app.post("/ui/api/inventory/location/{loc_id}/rotate-token")
+def inv_location_rotate(loc_id: str, request: Request) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().rotate_location_token, loc_id, actor=email)
+
+
+@app.post("/ui/api/inventory/asset")
+def inv_create_asset(request: Request,
+                     payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().create_asset, payload, actor=email)
+
+
+@app.post("/ui/api/inventory/count/start")
+def inv_count_start(request: Request,
+                    payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().start_count,
+                kind=str(payload.get("kind") or "quick"),
+                location_id=str(payload.get("location_id") or ""),
+                assignee=str(payload.get("assignee") or email),
+                actor=email,
+                extra_item_ids=list(payload.get("extra_item_ids") or []))
+
+
+@app.get("/ui/api/inventory/count/{sid}")
+def inv_count_view(sid: str, request: Request) -> dict:
+    email = require_feature(request, "inventory")
+    feats = access.effective_features(email)
+    return _inv(_inv_flow().count_view, sid, viewer=email,
+                can_manage="inventory_manage" in feats)
+
+
+@app.post("/ui/api/inventory/count/{sid}/record")
+def inv_count_record(sid: str, request: Request,
+                     payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory")
+    feats = access.effective_features(email)
+    return _inv(_inv_flow().count_record, sid,
+                str(payload.get("item_id") or ""),
+                counted=payload.get("counted"),
+                skipped=bool(payload.get("skipped")),
+                skip_reason=str(payload.get("skip_reason") or ""),
+                note=str(payload.get("note") or ""), actor=email,
+                can_manage="inventory_manage" in feats)
+
+
+@app.post("/ui/api/inventory/count/{sid}/submit")
+def inv_count_submit(sid: str, request: Request) -> dict:
+    email = require_feature(request, "inventory")
+    feats = access.effective_features(email)
+    return _inv(_inv_flow().count_submit, sid, actor=email,
+                can_manage="inventory_manage" in feats)
+
+
+@app.post("/ui/api/inventory/count/{sid}/approve")
+def inv_count_approve(sid: str, request: Request,
+                      payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().count_approve, sid, actor=email,
+                reject=bool(payload.get("reject")))
+
+
+@app.post("/ui/api/inventory/unknown-item")
+def inv_unknown_item(request: Request,
+                     payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory")
+    return _inv(_inv_flow().submit_unknown_item, payload, actor=email)
+
+
+@app.get("/ui/api/inventory/attention")
+def inv_attention(request: Request, kind: str = "") -> dict:
+    require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().attention_list, kind=kind)
+
+
+@app.post("/ui/api/inventory/attention/{aid}")
+def inv_attention_update(aid: str, request: Request,
+                         payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    return _inv(_inv_flow().attention_update, aid,
+                status=str(payload.get("status") or "acknowledged"),
+                actor=email, note=str(payload.get("note") or ""),
+                assigned_to=str(payload.get("assigned_to") or ""))
+
+
+@app.post("/ui/api/inventory/import/preview")
+@app.post("/ui/api/inventory/import/commit")
+def inv_import(request: Request, payload: dict = _InvBody(...)) -> dict:
+    email = require_feature(request, "inventory_manage")
+    commit = request.url.path.endswith("/commit")
+    fn = _inv_flow().import_commit if commit else _inv_flow().import_preview
+    return _inv(fn, str(payload.get("csv") or ""), actor=email)
+
+
+@app.get("/ui/api/inventory/export.csv")
+def inv_export(request: Request, kind: str = "balances") -> Response:
+    require_feature(request, "inventory_view")
+    text = _inv(_inv_flow().export_csv, kind)
+    return Response(content=text, media_type="text/csv",
+                    headers={"Content-Disposition":
+                             f'attachment; filename="inventory-{kind}.csv"'})
+
+
+@app.post("/ui/api/inventory/labels.pdf")
+def inv_labels(request: Request, payload: dict = _InvBody(...)) -> Response:
+    email = require_feature(request, "inventory_manage")
+    data = _inv(_inv_flow().labels_payload,
+                location_ids=list(payload.get("location_ids") or []),
+                asset_ids=list(payload.get("asset_ids") or []),
+                item_ids=list(payload.get("item_ids") or []))
+    import base64
+    from io import BytesIO
+
+    import qrcode
+    from jinja2 import Environment, FileSystemLoader
+    for row in data["labels"]:
+        img = qrcode.make(row["code"], box_size=6, border=1)
+        buf = BytesIO()
+        img.save(buf, format="PNG")
+        row["qr_b64"] = base64.b64encode(buf.getvalue()).decode("ascii")
+    env = Environment(loader=FileSystemLoader(str(paths.TEMPLATES_DIR)),
+                      autoescape=True)
+    html = env.get_template("inventory_labels.html.j2").render(
+        labels=data["labels"], company="Green Valley Contractors")
+    try:
+        from weasyprint import HTML as _WHTML
+    except Exception:
+        raise HTTPException(status_code=503, detail={
+            "ok": False, "code": "PDF_NOT_AVAILABLE",
+            "detail": "WeasyPrint is unavailable on this host.",
+            "advice": "Label PDFs render on the deployed service."})
+    pdf = _WHTML(string=html).write_pdf()
+    activity.log_event("inventory.labels", actor=email,
+                       target=str(len(data["labels"])), result="ok")
+    return Response(content=pdf, media_type="application/pdf",
+                    headers={"Content-Disposition":
+                             'attachment; filename="gvc-inventory-labels.pdf"'})
+
+
+@app.get("/ui/api/inventory/reconcile")
+def inv_reconcile(request: Request) -> dict:
+    require_admin(request)
+    return _inv(_inv_flow().reconcile)
+
+
+@app.get("/ui/gvc-inventory.js")
+def inv_shared_js() -> Response:
+    """Inventory shared module (outbox/cart/scan helpers). Ungated like
+    gvc-theme.js — no data, no secrets; short cache so deploys show up."""
+    path = WEB_DIR / "gvc-inventory.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in "
+                              "the Dockerfile."})
+    return Response(content=path.read_text(encoding="utf-8"),
+                    media_type="application/javascript",
+                    headers={"Cache-Control": "public, max-age=300"})

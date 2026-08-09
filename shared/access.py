@@ -44,6 +44,11 @@ FEATURES: tuple[str, ...] = (
     "estimate", "change_order", "invoice", "check",
     "coi", "lien", "jobcheck", "jobstart", "takeoff", "timeoff", "fieldguide",
     "training", "activity", "admin",
+    # Inventory (2026-08-09): `inventory` = field movements; `inventory_manage`
+    # = catalog/locations/counts-approval/reversals/imports (implies field);
+    # `inventory_view` = read-only auditor. Deliberately NOT baseline — the
+    # tile appears when an admin grants it (portal rollout rule, spec §22.6).
+    "inventory", "inventory_manage", "inventory_view",
 )
 ALL_FEATURES = frozenset(FEATURES)
 # Baseline = every provisioned store user gets this without an explicit grant.
@@ -66,6 +71,8 @@ WILDCARD = "*"
 #   morning_gm ⇒ morning_ops  (GM is on the Operations Team)
 #   morning_owner does NOT imply ops/gm — Owner Pulse is exception-only.
 IMPLIES: dict[str, frozenset] = {
+    "inventory_manage": frozenset({"inventory"}),
+    "inventory": frozenset({"inventory_view"}),
     "estimate": frozenset({"change_order"}),
     "invoice": frozenset({"check"}),
     "admin": frozenset({"activity"}),
@@ -83,9 +90,9 @@ ROLE_PRESETS: tuple[dict, ...] = (
     {"id": "sales", "label": "Sales",
      "features": ("estimate", "takeoff", "jobstart")},
     {"id": "ops", "label": "Operations",
-     "features": ("morning_ops", "jobcheck", "jobstart")},
+     "features": ("morning_ops", "jobcheck", "jobstart", "inventory")},
     {"id": "crew", "label": "Crew",
-     "features": ("morning_ops", "jobcheck")},
+     "features": ("morning_ops", "jobcheck", "inventory")},
     {"id": "office", "label": "Office billing",
      "features": ("estimate", "invoice", "coi")},
 )
@@ -93,7 +100,8 @@ ROLE_PRESETS: tuple[dict, ...] = (
 # Display groups on the admin page (unknown features fall into "Other").
 FEATURE_GROUPS: tuple[tuple[str, tuple[str, ...]], ...] = (
     ("Day", ("morning", "morning_ops", "morning_gm", "morning_owner")),
-    ("Field", ("jobcheck", "jobstart", "takeoff", "lien", "fieldguide")),
+    ("Field", ("jobcheck", "jobstart", "takeoff", "lien", "fieldguide",
+               "inventory", "inventory_manage", "inventory_view")),
     ("Money", ("estimate", "change_order", "invoice", "check", "coi")),
     ("Admin", ("activity", "admin", "timeoff", "training")),
 )
