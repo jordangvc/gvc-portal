@@ -1129,9 +1129,10 @@ def portal_stylesheet() -> Response:
     The shared GVC design system (web/gvc.css), served to every portal page.
 
     Deliberately NOT behind require_ui_access: a stylesheet carries no data, and
-    gating it would mean the sign-in page itself renders unstyled. Cached for an
-    hour — long enough to stop refetching on every page, short enough that a
-    redeploy shows up without anyone clearing a cache.
+    gating it would mean the sign-in page itself renders unstyled. Cached for
+    5 minutes to match the HTML (was an hour — Jordan reported a shipped CSS
+    fix as still broken because his browser held the hour-old stylesheet;
+    assets must never outlive the pages that reference them).
 
     Before this existed each page carried its own private <style> block, so a
     restyle meant editing twelve files and they drifted apart (activity.html was
@@ -1147,7 +1148,7 @@ def portal_stylesheet() -> Response:
         )
     return Response(content=path.read_text(encoding="utf-8"),
                     media_type="text/css",
-                    headers={"Cache-Control": "public, max-age=3600"})
+                    headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/ui/gvc-ui.css")
@@ -1167,7 +1168,7 @@ def portal_redesign_stylesheet() -> Response:
         )
     return Response(content=path.read_text(encoding="utf-8"),
                     media_type="text/css",
-                    headers={"Cache-Control": "public, max-age=3600"})
+                    headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/ui/gvc-v2-patch.css")
@@ -1186,7 +1187,7 @@ def portal_redesign_patch_stylesheet() -> Response:
         )
     return Response(content=path.read_text(encoding="utf-8"),
                     media_type="text/css",
-                    headers={"Cache-Control": "public, max-age=3600"})
+                    headers={"Cache-Control": "public, max-age=300"})
 
 
 @app.get("/ui/gvc-forms.css")
@@ -1206,7 +1207,7 @@ def portal_forms_stylesheet() -> Response:
         )
     return Response(content=path.read_text(encoding="utf-8"),
                     media_type="text/css",
-                    headers={"Cache-Control": "public, max-age=3600"})
+                    headers={"Cache-Control": "public, max-age=300"})
 
 
 _UI_FONT_ALLOWLIST = frozenset({
@@ -1414,7 +1415,7 @@ def portal_theme_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -1435,7 +1436,7 @@ def portal_command_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -1456,7 +1457,7 @@ def portal_flow_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -1474,7 +1475,7 @@ def portal_form_chrome_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -1492,7 +1493,7 @@ def portal_form_stages_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -1510,7 +1511,7 @@ def portal_field_jump_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 
@@ -1528,7 +1529,7 @@ def portal_status_picker_js() -> Response:
     return Response(
         content=path.read_text(encoding="utf-8"),
         media_type="application/javascript; charset=utf-8",
-        headers={"Cache-Control": "public, max-age=3600"},
+        headers={"Cache-Control": "public, max-age=300"},
     )
 
 

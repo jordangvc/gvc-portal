@@ -17,6 +17,37 @@ routes/roles/grants.
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ Morning stops: Route selection + explicit Done + asset cache fix (r111) — 2026-08-09
+Jordan, live on /ui/morning: "can't move stops up/down, can't check which ones
+to optimize." Repro'd with seeded stops: the ↑/↓ buttons existed and worked —
+but the BARE checkbox beside each stop didn't select anything: it **marked the
+stop COMPLETE and posted an update to Monday**. It read exactly like a pick-
+for-optimize box. (Check his Ops items for stray "Stop completed via Morning
+Brief (jordan)" updates from misreads.)
+REBUILT the stop row (`web/morning.html`):
+  • Labelled **Route** checkbox = include in Optimize / Maps (default on;
+    completed stops auto-excluded + disabled).
+  • Completing = explicit **Done** button (title warns it posts to Monday);
+    completed rows show "✓ Done". A bare checkbox never completes again.
+  • **Optimize sends ONLY checked stops**; excluded stops are reattached after
+    the optimized ones via a follow-up saveRoute (the server saves whatever
+    list it optimizes — dropping them was the naive-path bug). Maps URL kept
+    from the optimize response = included stops only, i.e. the actual drive.
+  • Empty selection → clear message, no API call.
+🐛 SECOND COMPLAINT ROOT CAUSE — **stale CSS, not a missing fix**: the r110
+draft-row separators WERE live but every portal CSS/JS asset shipped
+`max-age=3600` while HTML is 300s, so his browser held the hour-old
+stylesheet. ALL 11 asset routes now `max-age=300`; separator upgraded to
+`--color-border` so it reads at arm's length. Guard:
+`test_no_portal_asset_cached_longer_than_html` (greps service.py for 3600).
+TESTS: `tests/test_morning_stops_ui.py` (5 — labelled include, done-is-a-
+button-never-an-input, optimize include-only + reattach + empty message,
+reorder present, cache rule). Verified interactively via the local harness:
+exclude→EXCLUDED=[2], done stop auto-excluded, 2 Done buttons + 1 ✓ flag,
+zero pageerrors, phone + desktop screenshots reviewed. Hub **r111**.
+NOTE: built in worktree `wt-morning-stops` (multi-writer isolation — the
+nonneg-coach session was mid-flight in portal-current).
+
 ## ✨ 5 Daily Non-Negotiables — Jordan's personal tracker (r109) — BUILT 2026-08-09
 Jordan's ask: track his Dan Martell 5-daily-non-negotiables (source doc
 10KYt4NdXLgj6QCKIVtteHJWLhp2cx0z3Qg0VesI3GRE) inside the portal, "for only me."
