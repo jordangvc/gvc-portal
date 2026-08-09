@@ -69,6 +69,9 @@
     host.innerHTML =
       '<header class="gvc-topbar">' +
       '<div class="gvc-topbar-row">' +
+      // Explicit way home, top-left, full tap target — the brand mark alone
+      // read as decoration, not a button (Jordan, 2026-08-09).
+      '<a class="gvc-hub-btn btn-hub" href="/" aria-label="Back to hub">← Hub</a>' +
       '<a class="gvc-brand" href="/" style="text-decoration:none;color:inherit">' +
       '<div class="gvc-brand-mark">G</div>' +
       '<div class="gvc-brand-name">Green Valley</div>' +

@@ -53,6 +53,28 @@ offline queue for taps (jobsite offline matters less for a home/gym habit
 page; revisit if he asks). NOTE the tracker's own xlsx/brief claims in the
 source doc describe another system, not this portal.
 
+## ✨ Field-requested polish: hub button, doc placeholder, draft rows (r110) — 2026-08-09
+Three asks from Jordan using the live estimate page:
+  • 🐛 **Draft/search rows were bare unstyled text** — same fossil class as the
+    r108 #health bug: `.draft-row` styling lived in legacy `gvc.css` under
+    `.gvc-moneyform`, and the r103 conversion dropped both. Ported into
+    `gvc-forms.css` on current tokens with thin `--color-divider` separators
+    between jobs (r109 was taken by #177 mid-flight; his exact ask: "a thin line separating projects").
+  • 🐛 **Live Document panel showed a bare empty iframe** on load — no CSS ever
+    backed the `.show` class the preview JS toggles. `gvc-forms.css` now hides
+    the iframe until `.show`, sizes it 8.5/11 when shown, and the three forms
+    carry a styled `.gvc-doc-placeholder` ("tap Preview to see the exact PDF").
+  • ✨ **Visible ← Hub button, top-left, every page** — the old way home was a
+    tiny kicker text link or the brand mark. NEW `.btn-hub` (gvc-ui.css,
+    full --tap target) on all 16 tool pages + emitted by `gvc-form-chrome.js`
+    on the money forms (`.gvc-hub-btn` dark-chrome variant in gvc-forms.css).
+    Phone: `.topbar__actions > .muted` (email/health display text) hidden
+    <620px — it collided with the title once the button landed.
+Guards: `test_forms_pack_owns_legacy_dialect_classes` (draft rows + doc
+placeholder — the "page emits a class only legacy CSS styled" trap, second
+occurrence) + `test_every_tool_page_has_a_visible_hub_button`. Evidence
+re-run: 0 console errors, topbars verified at 390px and 1280px. Hub **r109**.
+
 ## ✅ Finalization CLOSED: harness + 4G evidence + invoice fix (r108) — 2026-08-09
 Items 2–4 of the close-out (item 1 = canonical docs, PR #175). NEW
 `scripts/screenshot_portal.py`: runs the portal locally with a THROWAWAY
