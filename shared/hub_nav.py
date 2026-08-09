@@ -137,7 +137,12 @@ def resolve_role(features: set[str]) -> str:
         return "gm"
     if feats & {"invoice", "coi"}:
         return "office"
-    if feats & {"estimate", "takeoff", "jobstart"}:
+    # Sales needs a bidding tool, NOT jobstart alone. The `ops` preset
+    # (morning_ops + jobcheck + jobstart — Mark / Robert) used to match here
+    # and got sent home to /ui/estimate, a page it holds no grant for: the
+    # home screen 303'd straight back to sign-in. Field PMs belong on the
+    # field home, which their grants can actually open.
+    if feats & {"estimate", "takeoff"}:
         return "sales"
     return "field"
 

@@ -209,6 +209,12 @@
   transition: border-color var(--transition-interactive), box-shadow var(--transition-interactive);
 }
 .gvc-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-ring); }
+
+/* See gvc-ui.css: anything under 16px makes iOS Safari zoom the page on focus.
+   The money forms are filled on phones in the field — pin to 16px there. */
+@media (max-width: 768px) {
+  .gvc-input, .gvc-textarea, .gvc-search input { font-size: 16px; }
+}
 .gvc-textarea {
   width: 100%; border-radius: 14px; border: 1px solid var(--color-border);
   background: var(--color-surface-2); padding: 12px 14px;

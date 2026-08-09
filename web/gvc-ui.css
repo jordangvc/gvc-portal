@@ -480,6 +480,18 @@ input[type='date'], input[type='email'], input[type='tel'], textarea {
 }
 textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; }
 
+/* iOS Safari auto-zooms the page when a focused input is under 16px, which on
+   a job site means every tap into a form yanks the layout. --text-sm lands at
+   ~14-15px, so pin inputs to 16px on phones only — desktop sizing unchanged. */
+@media (max-width: 768px) {
+  .input,
+  input[type='text'], input[type='search'], input[type='number'],
+  input[type='date'], input[type='email'], input[type='tel'],
+  input[type='password'], select, textarea {
+    font-size: 16px;
+  }
+}
+
 .input:focus, input:focus, textarea:focus {
   outline: none;
   border-color: var(--color-accent);
