@@ -32,6 +32,8 @@ PAGE_FEATURE: dict[str, str | None] = {
     "/ui/coi": "coi",
     "/ui/jobstart": "jobstart",
     "/ui/jobcheck": "jobcheck",
+    "/ui/inventory": "inventory_view",
+    "/ui/inventory/admin": "inventory_manage",
     "/ui/takeoff": "takeoff",
     "/ui/lien": "lien",
     "/ui/fieldguide": "fieldguide",

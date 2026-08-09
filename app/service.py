@@ -503,6 +503,20 @@ def healthz() -> dict:
         except Exception:  # noqa: BLE001 — health must not raise
             grants_store_ok = False
 
+    # Inventory store: a REAL read, not env presence (the portal has been
+    # burned three times by "configured" meaning "env var exists").
+    inventory_store_ok = None
+    inventory_events = None
+    try:
+        from subsystems.inventory import store as _inv_store
+        _ledger, _ = _inv_store.read_doc(_inv_store.LEDGER)
+        inventory_store_ok = True
+        inventory_events = len(_ledger.get("events") or [])
+    except Exception as _inv_exc:  # noqa: BLE001 — health must not raise
+        inventory_store_ok = False
+        print(f"[health] inventory store probe failed: {_inv_exc}",
+              file=sys.stderr)
+
     return {
         "ok": True,
         "service": "gvc-invoice",
@@ -534,6 +548,8 @@ def healthz() -> dict:
         "grants_backend": grants_backend,
         "grants_store_ok": grants_store_ok,
         "grants_users": grants_users,
+        "inventory_store_ok": inventory_store_ok,
+        "inventory_events": inventory_events,
     }
 
 
