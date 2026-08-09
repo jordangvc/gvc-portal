@@ -1263,7 +1263,7 @@ def build_hub_payload(email: str) -> dict[str, Any]:
         "badges": shaped["badges"],
         "setup": setup_flags(),
         "nav": {
-            "groups": hub_nav.groups_for_client(feats),
+            "groups": hub_nav.groups_for_client(feats, email=email),
             "features": sorted(feats),
         },
     }

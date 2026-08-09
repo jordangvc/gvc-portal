@@ -77,7 +77,10 @@ def _boot_app():
     os.environ["GVC_SESSION_SECRET"] = secrets.token_hex(32)
     os.environ["GVC_GRANTS_BACKEND"] = "env"
     os.environ.pop("GVC_UI_DEV_BYPASS", None)
-    os.environ.pop("GVC_PORTAL_ALLOWED_EMAILS", None)
+    # Grants come from the monkeypatch below; this env feeds ONLY
+    # access.superadmin_emails(), which gates owner-personal pages
+    # (/ui/nonneg) — cover them under the full preset.
+    os.environ["GVC_PORTAL_ALLOWED_EMAILS"] = "test-full@localhost"
     # Make every external adapter fail fast into its degraded state.
     for var in ("MONDAY_API_TOKEN", "STRIPE_API_KEY"):
         os.environ.pop(var, None)
@@ -133,6 +136,10 @@ def _pages_for(preset_id: str, feats: set[str]) -> list[tuple[str, str]]:
         if needed is None or needed in feats:
             name = "hub" if path == "/" else path.rsplit("/", 1)[-1]
             out.append((name, path))
+    # /ui/nonneg is superadmin-gated, not a grants feature — _boot_app puts
+    # test-full@localhost in the superadmin env so the full preset covers it.
+    if preset_id == "full":
+        out.append(("nonneg", "/ui/nonneg"))
     return out
 
 
