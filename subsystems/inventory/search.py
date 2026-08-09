@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from decimal import Decimal
 
+from subsystems.inventory.model import dec_str
+
 
 def _tokens(q: str) -> list[str]:
     return [t for t in (q or "").lower().replace(",", " ").replace("-", " ")
@@ -98,7 +100,7 @@ def search_items(catalog_doc: dict, ledger_doc: dict, query: str, *,
                          (balances.get(item["id"]) or {}).values()),
                         Decimal(0))
             out.append({"item": item, "score": s,
-                        "on_hand_total": str(total.normalize()),
+                        "on_hand_total": dec_str(total),
                         "on_hand_here": str(at_loc) if at_loc is not None
                         else None})
     out.sort(key=lambda r: (-r["score"], r["item"]["name"].lower()))

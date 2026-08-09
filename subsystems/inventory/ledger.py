@@ -26,7 +26,7 @@ from subsystems.inventory import locations as locs
 from subsystems.inventory import units as un
 from subsystems.inventory.model import (
     CONDITIONS, INACTIVE_CONDITIONS, InventoryError, OUTBOUND_TYPES,
-    TXN_TYPES, new_token, now_iso, require,
+    TXN_TYPES, dec_str, new_token, now_iso, require,
 )
 
 MAX_LINES = 200
@@ -61,7 +61,7 @@ def _bump(balances: dict, item_id: str, loc_id: str, delta: Decimal) -> None:
         if not row:
             balances.pop(item_id, None)
     else:
-        row[loc_id] = str(new.normalize())
+        row[loc_id] = dec_str(new)
 
 
 def location_holdings(ledger: dict, loc_id: str) -> dict:
@@ -138,11 +138,12 @@ def kit_completeness(kit: dict, template_item: dict) -> list[dict]:
             for c in kit.get("components", [])}
     out = []
     for comp in template_item.get("kit_components", []):
-        expected = Decimal(str(comp["qty"])).normalize()
-        present = have.get(comp["item_id"], Decimal(0)).normalize()
-        short = max(Decimal(0), expected - present).normalize()
-        out.append({"item_id": comp["item_id"], "expected": str(expected),
-                    "present": str(present), "short": str(short)})
+        expected = Decimal(str(comp["qty"]))
+        present = have.get(comp["item_id"], Decimal(0))
+        short = max(Decimal(0), expected - present)
+        out.append({"item_id": comp["item_id"],
+                    "expected": dec_str(expected),
+                    "present": dec_str(present), "short": dec_str(short)})
     return out
 
 
@@ -301,7 +302,7 @@ def _post_qty_line(new: dict, catalog_doc: dict, txn_type: str, txn: dict,
                 field="qty")
         negative_used = after < 0
         _bump(new["balances"], item["id"], loc, delta)
-        deltas.append({"loc": loc, "delta": str(delta.normalize())})
+        deltas.append({"loc": loc, "delta": dec_str(delta)})
         src, dst = "", loc
     else:
         require(sign == 1, "INVALID_INPUT",
@@ -326,10 +327,10 @@ def _post_qty_line(new: dict, catalog_doc: dict, txn_type: str, txn: dict,
                                "disagrees, or have a manager override with "
                                "a reason.")
             _bump(new["balances"], item["id"], src, -base)
-            deltas.append({"loc": src, "delta": str((-base).normalize())})
+            deltas.append({"loc": src, "delta": dec_str(-base)})
         if dst:  # RECEIVE / INITIAL_LOAD / TRANSFER / ISSUE destination
             _bump(new["balances"], item["id"], dst, base)
-            deltas.append({"loc": dst, "delta": str(base.normalize())})
+            deltas.append({"loc": dst, "delta": dec_str(base)})
 
     return ({"kind": "quantity", "item_id": item["id"],
              "item_name": item["name"], **snap, "sign": sign,
@@ -433,7 +434,7 @@ def _assemble(new: dict, catalog_doc: dict, locations_doc: dict, txn: dict,
                       "base_qty": str(need), "sign": -1,
                       "src": loc_id, "dst": f"kit:{kit_id}",
                       "deltas": [{"loc": loc_id,
-                                  "delta": str((-need).normalize())}]})
+                                  "delta": dec_str(-need)}]})
     kit = {"id": kit_id, "template_item_id": template["id"],
            "name": str(spec.get("name") or template["name"]),
            "location": loc_id, "components": components,
@@ -471,7 +472,7 @@ def _disassemble(new: dict, catalog_doc: dict, locations_doc: dict,
                           "base_qty": str(want), "sign": 1,
                           "src": f"kit:{kit['id']}", "dst": loc_id,
                           "deltas": [{"loc": loc_id,
-                                      "delta": str(want.normalize())}]})
+                                      "delta": dec_str(want)}]})
         if have - want > 0:
             remaining.append({"item_id": comp["item_id"],
                               "qty": float(have - want)})
@@ -527,7 +528,7 @@ def reverse(ledger: dict, catalog_doc: dict, locations_doc: dict,
                 delta = -Decimal(d["delta"])
                 _bump(new["balances"], line["item_id"], d["loc"], delta)
                 rev_deltas.append({"loc": d["loc"],
-                                   "delta": str(delta.normalize())})
+                                   "delta": dec_str(delta)})
             rev_lines.append({**line, "src": line.get("dst", ""),
                               "dst": line.get("src", ""),
                               "deltas": rev_deltas})

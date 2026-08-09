@@ -35,8 +35,10 @@ def test_feature_groups_cover_catalog():
 def test_sales_and_ops_match_grants_plan_intent():
     by_id = {r["id"]: set(r["features"]) for r in access.ROLE_PRESETS}
     assert by_id["sales"] == {"estimate", "takeoff", "jobstart"}
-    assert by_id["ops"] == {"morning_ops", "jobcheck", "jobstart"}
-    assert by_id["crew"] == {"morning_ops", "jobcheck"}
+    # Inventory (2026-08-09): field crews record material moves.
+    assert by_id["ops"] == {"morning_ops", "jobcheck", "jobstart",
+                            "inventory"}
+    assert by_id["crew"] == {"morning_ops", "jobcheck", "inventory"}
     assert by_id["full"] == {access.WILDCARD}
     assert "morning_owner" in by_id["owner"]
     assert "morning_gm" in by_id["gm"]

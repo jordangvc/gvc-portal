@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 
-from subsystems.inventory.model import InventoryError, require
+from subsystems.inventory.model import InventoryError, dec_str, require
 
 # unit id -> {label, precision (max decimal places), fractional (allow <1 and
 # non-integers at all)}. Organizations may add more via the catalog doc's
@@ -108,8 +108,8 @@ def normalize_line_qty(item: dict, raw_qty, unit_id: str,
     factor = conversion_factor(item, unit_id)
     base = (qty * factor).normalize()
     return {
-        "entered_qty": str(qty.normalize()),
+        "entered_qty": dec_str(qty),
         "entered_unit": unit_id,
-        "factor": str(factor.normalize()),
-        "base_qty": str(base),
+        "factor": dec_str(factor),
+        "base_qty": dec_str(base),
     }

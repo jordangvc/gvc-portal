@@ -16,7 +16,7 @@ import copy
 from decimal import Decimal
 
 from subsystems.inventory.model import (
-    InventoryError, new_uuid, now_iso, require,
+    InventoryError, dec_str, new_uuid, now_iso, require,
 )
 
 
@@ -94,7 +94,7 @@ def record_line(doc: dict, sid: str, item_id: str, *, counted=None,
         require(q >= 0, "INVALID_QTY",
                 "Counted quantity can't be negative — zero is a real "
                 "answer, enter 0.", field="counted")
-        line.update({"counted": str(q.normalize()), "skipped": False,
+        line.update({"counted": dec_str(q), "skipped": False,
                      "skip_reason": ""})
     if note:
         line["note"] = note.strip()
@@ -128,9 +128,9 @@ def variances(session: dict) -> list[dict]:
         if exp != got:
             out.append({"item_id": ln["item_id"],
                         "item_name": ln["item_name"],
-                        "expected": str(exp.normalize()),
-                        "counted": str(got.normalize()),
-                        "variance": str((got - exp).normalize()),
+                        "expected": dec_str(exp),
+                        "counted": dec_str(got),
+                        "variance": dec_str(got - exp),
                         "note": ln.get("note", "")})
     return out
 
@@ -160,7 +160,7 @@ def approve(doc: dict, sid: str, *, actor: str,
     for v in variances(s):
         delta = Decimal(v["variance"])
         lines.append({"item_id": v["item_id"],
-                      "qty": str(abs(delta)),
+                      "qty": dec_str(abs(delta)),
                       "unit": "",  # orchestrator fills base unit
                       "sign": 1 if delta > 0 else -1,
                       "note": f"count {v['counted']} vs expected "

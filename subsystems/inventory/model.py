@@ -68,6 +68,16 @@ class InventoryError(Exception):
         return out
 
 
+def dec_str(d) -> str:
+    """Decimal -> plain string, never scientific notation ('10', not
+    '1E+1'). Every stored/displayed quantity goes through this."""
+    from decimal import Decimal
+    d = Decimal(d).normalize()
+    if d == d.to_integral_value():
+        return str(d.quantize(Decimal(1)))
+    return format(d, "f")
+
+
 def now_iso() -> str:
     """UTC ISO-8601 to the second — every stored timestamp uses this."""
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat()

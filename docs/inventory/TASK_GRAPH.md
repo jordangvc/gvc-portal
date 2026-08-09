@@ -18,8 +18,8 @@ Shared-file rule: `app/service.py`, `shared/access.py`, `shared/hub_nav.py`,
 
 Status log (updated as slices land — a slice is DONE only with test evidence)
 - S1: DONE — 21 tests green (domain + ledger invariants)
-- S2: in progress
-- S3: pending
-- S4: pending
+- S2: DONE — 9 HTTP tests green (authz tiers, idempotency, counts, import, attention)
+- S3: in progress (field agent)
+- S4: in progress (office agent)
 - S5: pending
 - S6: pending
