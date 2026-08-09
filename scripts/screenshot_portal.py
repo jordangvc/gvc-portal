@@ -143,7 +143,10 @@ def _pages_for(preset_id: str, feats: set[str]) -> list[tuple[str, str]]:
     out = []
     for path, needed in sorted(PAGE_FEATURE.items()):
         if needed is None or needed in feats:
-            name = "hub" if path == "/" else path.rsplit("/", 1)[-1]
+            # /ui/inventory/admin and /ui/admin must not both become
+            # "admin.jpg" — join every segment after /ui/.
+            name = "hub" if path == "/" else "-".join(
+                path.strip("/").split("/")[1:]) or "hub"
             out.append((name, path))
     # /ui/nonneg is superadmin-gated, not a grants feature — _boot_app puts
     # test-full@localhost in the superadmin env so the full preset covers it.
@@ -204,6 +207,11 @@ def run(roles_filter: list[str] | None, throttle: bool) -> int:
                 page.on("console", lambda m, errs=errs: errs.append(m.text)
                         if m.type == "error" else None)
                 for name, path in pages:
+                    # Watchdog: if any single page wedges the run (native
+                    # hang, event-loop deadlock), dump every stack and die
+                    # loudly instead of silently holding the port.
+                    import faulthandler
+                    faulthandler.dump_traceback_later(90, exit=True)
                     dest = OUT / rid / vp_name
                     dest.mkdir(parents=True, exist_ok=True)
                     errs.clear()
@@ -228,6 +236,8 @@ def run(roles_filter: list[str] | None, throttle: bool) -> int:
                         findings.append(f"FAIL {rid} {vp_name} {path}: "
                                         f"{type(exc).__name__}: {exc}")
                 ctx.close()
+            import faulthandler
+            faulthandler.cancel_dump_traceback_later()
         browser.close()
 
     _write_index(role_ids, presets, shots, findings, console_issues, throttle)

@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Inventory labels</title>
+<style>
+  /* Avery 5160-style sheet: 30 labels per page, 3 columns x 10 rows,
+     each 2.625in x 1in. 0.5in top/bottom margin; 0.1875in side margin so
+     three 2.625in columns + two 0.125in gutters fill the 8.5in width. */
+  @page {
+    size: 8.5in 11in;
+    margin: 0.5in 0.1875in;
+  }
+  * {
+    box-sizing: border-box;
+  }
+  html, body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, "Helvetica Neue", Arial, sans-serif;
+    color: #111111;
+  }
+  .sheet {
+    page-break-after: always;
+  }
+  .sheet:last-child {
+    page-break-after: auto;
+  }
+  .lrow {
+    clear: both;
+    height: 1in;
+  }
+  .label {
+    float: left;
+    width: 2.625in;
+    height: 1in;
+    margin-right: 0.125in;
+    overflow: hidden;
+    padding: 0.05in 0.06in;
+  }
+  .label.last {
+    margin-right: 0;
+  }
+  .label img.qr {
+    float: left;
+    height: 0.85in;
+    width: 0.85in;
+    margin: 0.015in 0.06in 0 0;
+  }
+  .label .txt {
+    margin-left: 0.95in;
+  }
+  .label .code {
+    font-family: "Courier New", monospace;
+    font-weight: 700;
+    font-size: 9pt;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .label .title {
+    font-size: 7.5pt;
+    font-weight: 600;
+    line-height: 1.2;
+    max-height: 0.38in;
+    overflow: hidden;
+  }
+  .label .sub {
+    font-size: 6pt;
+    color: #4B5563;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+  .label .foot {
+    font-size: 5.5pt;
+    color: #6B7280;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+    overflow: hidden;
+  }
+</style>
+</head>
+<body>
+{% for sheet in labels|batch(30) %}
+<div class="sheet">
+  {% for row in sheet|batch(3) %}
+  <div class="lrow">
+    {% for label in row %}
+    <div class="label{% if loop.last %} last{% endif %}">
+      <img class="qr" src="data:image/png;base64,{{ label.qr_b64 }}" alt="">
+      <div class="txt">
+        <div class="code">{{ label.code }}</div>
+        <div class="title">{{ label.title }}</div>
+        {% if label.sub %}<div class="sub">{{ label.sub }}</div>{% endif %}
+        <div class="foot">{{ company }} · {{ label.kind }}</div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% endfor %}
+</div>
+{% endfor %}
+</body>
+</html>

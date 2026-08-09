@@ -76,6 +76,8 @@ is presentation only; the route is the gate.
 | `/ui/coi` | `coi` | Certificates of insurance |
 | `/ui/jobstart` | `jobstart` | Sales → Ops handoff packet |
 | `/ui/jobcheck` | `jobcheck` | Field job status → Monday |
+| `/ui/inventory` | `inventory_view` | Field inventory: drop off / pick up / transfer / count / scan (moves need `inventory`) |
+| `/ui/inventory/admin` | `inventory_manage` | Inventory admin: items, assets, kits, locations, counts, imports, labels, attention |
 | `/ui/takeoff` | `takeoff` | Takeoff app bridge |
 | `/ui/lien` | `lien` | Lien deadline tracker (read-only) |
 | `/ui/fieldguide` | `fieldguide` | Field Manual (baseline) |

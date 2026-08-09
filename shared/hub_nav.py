@@ -34,6 +34,9 @@ TOOL_GROUPS: tuple[tuple[str, tuple[tuple[str, str, str, bool], ...]], ...] = (
     )),
     ("Field", (
         ("Job Check", "jobcheck", "/ui/jobcheck", False),
+        ("Inventory", "inventory_view", "/ui/inventory", False),
+        ("Inventory Admin", "inventory_manage", "/ui/inventory/admin",
+         False),
         ("Field Manual", "fieldguide", "/ui/fieldguide", False),
     )),
     ("Paperwork", (
