@@ -450,6 +450,32 @@ class ActivityExportRequest(BaseModel):
 # Endpoints
 # ---------------------------------------------------------------------------
 
+
+
+_INV_PROBE_CACHE: dict = {"at": 0.0, "ok": None, "events": None}
+
+
+def _inventory_probe() -> tuple:
+    """Cached inventory-store health probe (TTL GVC_INVENTORY_PROBE_TTL,
+    default 300s). A real read — but not on every monitor hit."""
+    import time as _time
+    ttl = float(os.environ.get("GVC_INVENTORY_PROBE_TTL") or "300")
+    nowt = _time.monotonic()
+    if _INV_PROBE_CACHE["ok"] is not None \
+            and nowt - _INV_PROBE_CACHE["at"] < ttl:
+        return _INV_PROBE_CACHE["ok"], _INV_PROBE_CACHE["events"]
+    ok, events = False, None
+    try:
+        from subsystems.inventory import store as _inv_store
+        _ledger, _ = _inv_store.read_doc(_inv_store.LEDGER)
+        ok = True
+        events = len(_ledger.get("events") or [])
+    except Exception as _inv_exc:  # noqa: BLE001 — health must not raise
+        print(f"[health] inventory store probe failed: {_inv_exc}",
+              file=sys.stderr)
+    _INV_PROBE_CACHE.update({"at": nowt, "ok": ok, "events": events})
+    return ok, events
+
 @app.get("/health")
 def healthz() -> dict:
     """
@@ -505,17 +531,9 @@ def healthz() -> dict:
 
     # Inventory store: a REAL read, not env presence (the portal has been
     # burned three times by "configured" meaning "env var exists").
-    inventory_store_ok = None
-    inventory_events = None
-    try:
-        from subsystems.inventory import store as _inv_store
-        _ledger, _ = _inv_store.read_doc(_inv_store.LEDGER)
-        inventory_store_ok = True
-        inventory_events = len(_ledger.get("events") or [])
-    except Exception as _inv_exc:  # noqa: BLE001 — health must not raise
-        inventory_store_ok = False
-        print(f"[health] inventory store probe failed: {_inv_exc}",
-              file=sys.stderr)
+    # TTL-cached so uptime monitors don't download the ledger every hit
+    # (review finding 10).
+    inventory_store_ok, inventory_events = _inventory_probe()
 
     return {
         "ok": True,
@@ -5294,7 +5312,8 @@ def inv_reverse(request: Request, payload: dict = _InvBody(...)) -> dict:
     return _inv(_inv_flow().reverse_transaction,
                 str(payload.get("txn_no") or ""), actor=email,
                 reason=str(payload.get("reason") or ""),
-                client_uuid=str(payload.get("client_uuid") or ""))
+                client_uuid=str(payload.get("client_uuid") or ""),
+                allow_negative=bool(payload.get("allow_negative")))
 
 
 @app.post("/ui/api/inventory/item")
@@ -5367,25 +5386,31 @@ def inv_count_start(request: Request,
 @app.get("/ui/api/inventory/count/{sid}")
 def inv_count_view(sid: str, request: Request) -> dict:
     email = require_feature(request, "inventory")
-    return _inv(_inv_flow().count_view, sid, viewer=email)
+    feats = access.effective_features(email)
+    return _inv(_inv_flow().count_view, sid, viewer=email,
+                can_manage="inventory_manage" in feats)
 
 
 @app.post("/ui/api/inventory/count/{sid}/record")
 def inv_count_record(sid: str, request: Request,
                      payload: dict = _InvBody(...)) -> dict:
     email = require_feature(request, "inventory")
+    feats = access.effective_features(email)
     return _inv(_inv_flow().count_record, sid,
                 str(payload.get("item_id") or ""),
                 counted=payload.get("counted"),
                 skipped=bool(payload.get("skipped")),
                 skip_reason=str(payload.get("skip_reason") or ""),
-                note=str(payload.get("note") or ""), actor=email)
+                note=str(payload.get("note") or ""), actor=email,
+                can_manage="inventory_manage" in feats)
 
 
 @app.post("/ui/api/inventory/count/{sid}/submit")
 def inv_count_submit(sid: str, request: Request) -> dict:
     email = require_feature(request, "inventory")
-    return _inv(_inv_flow().count_submit, sid, actor=email)
+    feats = access.effective_features(email)
+    return _inv(_inv_flow().count_submit, sid, actor=email,
+                can_manage="inventory_manage" in feats)
 
 
 @app.post("/ui/api/inventory/count/{sid}/approve")

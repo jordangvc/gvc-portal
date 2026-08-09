@@ -350,12 +350,19 @@ def _post_asset_line(new: dict, catalog_doc: dict, txn_type: str, raw: dict,
                 field="condition_to")
         before = asset["condition"]
         asset["condition"] = to
+        photo_ref = str(raw.get("photo_url") or "").strip()
+        # Ledger lines carry REFERENCES, not payloads — a data-URL photo
+        # here would balloon the single-ledger doc (review finding 4).
+        require(len(photo_ref) <= 2000, "INVALID_INPUT",
+                "photo_url on a transaction line must be a short "
+                "reference; attach photos to the damage report instead.",
+                field="photo_url")
         return {"kind": "asset", "asset_id": asset_id,
                 "item_id": item["id"], "item_name": item["name"],
                 "condition_from": before, "condition_to": to,
                 "src": asset["location"], "dst": asset["location"],
                 "note": str(raw.get("note") or "").strip(),
-                "photo_url": str(raw.get("photo_url") or "").strip()}
+                "photo_url": photo_ref}
     require(txn_type in _ASSET_MOVE_TYPES, "INVALID_INPUT",
             f"Assets can't appear on a {txn_type} line.", field="asset_id")
     require(asset["condition"] not in INACTIVE_CONDITIONS, "ASSET_INACTIVE",
@@ -407,6 +414,9 @@ def _assemble(new: dict, catalog_doc: dict, locations_doc: dict, txn: dict,
     require(template["tracking"] == "kit", "INVALID_INPUT",
             f"'{template['name']}' is not a kit template.",
             field="template_item_id")
+    require(bool(template.get("kit_components")), "INVALID_INPUT",
+            f"'{template['name']}' has no components — an empty kit could "
+            "never be disassembled.", field="template_item_id")
     loc_id = str(spec.get("location") or txn.get("dst") or "")
     locs.get_location(locations_doc, loc_id)
     kit_id = str(spec.get("kit_id") or "").strip() \
@@ -426,7 +436,7 @@ def _assemble(new: dict, catalog_doc: dict, locations_doc: dict, txn: dict,
                 field="kit",
                 advice="Transfer the missing components there first.")
         _bump(new["balances"], item["id"], loc_id, -need)
-        components.append({"item_id": item["id"], "qty": float(need)})
+        components.append({"item_id": item["id"], "qty": dec_str(need)})
         lines.append({"kind": "quantity", "item_id": item["id"],
                       "item_name": item["name"],
                       "entered_qty": str(need), "entered_unit":
@@ -475,7 +485,7 @@ def _disassemble(new: dict, catalog_doc: dict, locations_doc: dict,
                                       "delta": dec_str(want)}]})
         if have - want > 0:
             remaining.append({"item_id": comp["item_id"],
-                              "qty": float(have - want)})
+                              "qty": dec_str(have - want)})
     require(bool(lines), "INVALID_INPUT",
             "Nothing selected to remove from the kit.", field="components")
     kit["components"] = remaining
@@ -492,8 +502,8 @@ _REVERSIBLE = frozenset({"RECEIVE", "ISSUE", "TRANSFER", "INITIAL_LOAD",
 
 
 def reverse(ledger: dict, catalog_doc: dict, locations_doc: dict,
-            txn_no: str, *, actor: str, reason: str,
-            client_uuid: str) -> tuple[dict, dict]:
+            txn_no: str, *, actor: str, reason: str, client_uuid: str,
+            allow_negative: bool = False) -> tuple[dict, dict]:
     """Equal-and-opposite compensating transaction, linked both ways."""
     ensure_shape(ledger)
     require(bool(str(reason or "").strip()), "INVALID_INPUT",
@@ -519,6 +529,7 @@ def reverse(ledger: dict, catalog_doc: dict, locations_doc: dict,
 
     new = copy.deepcopy(ledger)
     rev_lines = []
+    negative_used = False
     for line in original["lines"]:
         if line["kind"] == "quantity":
             # Undo exactly what the original applied — its recorded deltas,
@@ -526,6 +537,21 @@ def reverse(ledger: dict, catalog_doc: dict, locations_doc: dict,
             rev_deltas = []
             for d in line.get("deltas", []):
                 delta = -Decimal(d["delta"])
+                after = on_hand(new, line["item_id"], d["loc"]) + delta
+                if after < 0:
+                    # Invariant 8 holds on reversals too: later movements
+                    # consumed this stock. Reverse those first — or a
+                    # manager may knowingly go negative (flagged, and the
+                    # attention hook fires on the event).
+                    require(allow_negative, "INSUFFICIENT_STOCK",
+                            f"Reversing {txn_no} would take "
+                            f"'{line.get('item_name')}' to "
+                            f"{dec_str(after)} at a location.",
+                            field="txn_no",
+                            advice="Reverse the later movement first, or "
+                                   "override with allow_negative and run "
+                                   "a count.")
+                    negative_used = True
                 _bump(new["balances"], line["item_id"], d["loc"], delta)
                 rev_deltas.append({"loc": d["loc"],
                                    "delta": dec_str(delta)})
@@ -571,7 +597,8 @@ def reverse(ledger: dict, catalog_doc: dict, locations_doc: dict,
         "ts": now_iso(), "posted_at": now_iso(),
         "src": original.get("dst", ""), "dst": original.get("src", ""),
         "note": "", "reason": str(reason).strip(), "job_ref": "",
-        "device": "", "lines": rev_lines, "negative_override": False,
+        "device": "", "lines": rev_lines,
+        "negative_override": negative_used,
         "reverses": txn_no, "reversed_by": "",
     }
     new["events"].append(event)

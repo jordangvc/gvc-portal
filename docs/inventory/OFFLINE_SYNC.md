@@ -20,10 +20,20 @@ what v1 guarantees, what it deliberately does not, and how to recover.
   else took the last boxes), the server rejects with
   `INSUFFICIENT_STOCK` and the entry parks as `needs_attention` with the
   server's detail + advice. The user edits the line (or discards) — their
-  original intent is preserved in the entry. 409/4xx entries are never
-  auto-retried; only network failures are.
+  original intent is preserved in the entry. Genuine rejections are
+  never auto-retried (see the transient-failure rule below for what IS).
 - **Retry discipline.** Retries fire on `online`, on app open, and on
   "Sync now", with a tries counter for backoff. The UUID never changes.
+- **Transient failures stay retryable.** 5xx, network drops, 401
+  (session lapse — the most common jobsite failure), 408 and 429 keep
+  the entry `pending` (a 401 additionally surfaces a sign-in prompt);
+  only genuine rejections (409/422…) park as needs-attention. A failed
+  ONLINE submit with a 5xx also queues rather than making the user
+  re-tap.
+- **Full storage is loud.** If the phone's localStorage cannot persist
+  a queued transaction, the cart is KEPT and the user is told the
+  device is out of storage — a movement is never confirmed unless it
+  is on the server or durably queued.
 
 ## What v1 deliberately does not do (DECISIONS.md D6)
 

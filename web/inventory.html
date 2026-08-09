@@ -877,12 +877,29 @@
         finishCartSuccess(res);
       }, function (err) {
         $("btn-submit-cart").disabled = false;
-        if (err.network) {
-          // OFFLINE: queue it honestly. Same client_uuid rides every retry.
+        var status = err.status || 0;
+        if (err.network || status >= 500) {
+          // OFFLINE or server trouble: queue it honestly and let the
+          // outbox retry with the SAME client_uuid (5xx is retryable —
+          // review finding 17).
           var entry = outbox.enqueue("/ui/api/inventory/txn", payload, {
             label: MODE_LABEL[cart.type] + " · " + n + " item(s)" +
               (cart.dst_name ? " → " + cart.dst_name : "")
           });
+          if (!entry) {
+            // Storage full — the queue write did NOT persist. Keep the
+            // cart; never show success for a movement that isn't saved
+            // anywhere (review finding 3).
+            announce("This phone is out of storage — nothing was " +
+                     "queued. Clear synced items in Pending sync, then " +
+                     "submit again.");
+            applyTxnError({ code: "STORAGE_FULL",
+              detail: "This phone's storage is full — the transaction " +
+                      "was NOT queued.",
+              advice: "Open Pending sync and clear finished items, then " +
+                      "submit again. Your cart is untouched." });
+            return;
+          }
           rememberCartRecents();
           dropCart();
           showQueued(entry);
@@ -1581,8 +1598,11 @@
       else { cart.lines.push({ kind: "quantity", item_id: ln.item_id, name: ln.item_id,
                                qty: String(ln.qty), unit: ln.unit || "" }); }
     });
-    outbox.discard(id);
+    // Persist the rebuilt cart BEFORE discarding the queue entry — the
+    // reverse order could destroy the only copy if the cart write fails
+    // (review finding 3, second site).
     persistCart();
+    outbox.discard(id);
     renderMove();
     show("move");
     announce("Loaded back into the cart — fix it and submit again.");

@@ -127,8 +127,11 @@ def upsert_item(doc: dict, payload: dict, *, actor: str,
             require(q > 0, "INVALID_INPUT",
                     "Kit component qty must be positive.",
                     field="kit_components")
-            kit_components.append({"item_id": cid, "qty": q})
-        require(bool(kit_components) or bool(item_id), "INVALID_INPUT",
+            from subsystems.inventory.model import dec_str
+            kit_components.append({"item_id": cid, "qty": dec_str(q)})
+        # Applies on CREATE and EDIT alike — an empty template mints kits
+        # that can never be disassembled (review finding 18).
+        require(bool(kit_components), "INVALID_INPUT",
                 "A kit template needs at least one component.",
                 field="kit_components")
 

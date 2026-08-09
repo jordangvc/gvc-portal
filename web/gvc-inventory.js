@@ -66,7 +66,16 @@
   }
 
   function writeJSON(storage, key, value) {
-    try { storage.setItem(key, JSON.stringify(value)); } catch (e) { /* full */ }
+    // Returns false when the write did NOT persist (storage full/blocked).
+    // Callers that queue work MUST check this — a swallowed quota error
+    // here once meant a movement vanished behind a green confirmation
+    // (review finding 3).
+    try {
+      storage.setItem(key, JSON.stringify(value));
+      return true;
+    } catch (e) {
+      return false;
+    }
   }
 
   /* ------------------------------------------------------------ outbox */
@@ -82,7 +91,11 @@
     var syncing = false;
 
     function load() { return readJSON(storage, key, []); }
-    function save(q) { writeJSON(storage, key, q); onChange(q); }
+    function save(q) {
+      var okSave = writeJSON(storage, key, q);
+      onChange(q);
+      return okSave;
+    }
 
     function enqueue(path, body, meta) {
       meta = meta || {};
@@ -100,7 +113,11 @@
         next_at: 0
       };
       q.push(entry);
-      save(q);
+      if (!save(q)) {
+        // Storage is full — this entry did NOT persist. The caller keeps
+        // the cart and tells the user; never pretend it's queued.
+        return null;
+      }
       return entry;
     }
 
@@ -222,7 +239,9 @@
               code: "HTTP_" + resp.status,
               detail: "The server refused this (" + resp.status + ")."
             };
-            if (resp.status >= 400 && resp.status < 500) {
+            var transient = resp.status === 401 ||
+                resp.status === 408 || resp.status === 429;
+            if (resp.status >= 400 && resp.status < 500 && !transient) {
               // Server understood and said no (409 stock, 422 validation…).
               // Retrying the same payload can never succeed — park it for
               // the user. NOT retried silently.
@@ -232,8 +251,11 @@
               save(q2);
               results.push({ entry: q2[idx], state: "needs_attention", data: env });
             } else {
-              // 5xx — server trouble; back off and retry later with the
-              // SAME client_uuid.
+              // 5xx, or a transient 4xx (401 session lapse — the single
+              // most likely jobsite failure — 408, 429): back off and
+              // retry with the SAME client_uuid. A 401 additionally
+              // surfaces a sign-in banner via onChange state.
+              if (resp.status === 401) { q2[idx].needs_signin = true; }
               q2[idx].state = "pending";
               q2[idx].tries += 1;
               q2[idx].next_at = now() + backoffDelay(q2[idx].tries);
@@ -305,13 +327,24 @@
     };
   }
 
+  function addDecimalStrings(a, b) {
+    // 0.1 + 0.2 must be "0.3", not "0.30000000000000004" — the server
+    // rejects float artifacts as QTY_PRECISION (review finding 12).
+    var da = (String(a).split(".")[1] || "").length;
+    var db = (String(b).split(".")[1] || "").length;
+    var scale = Math.pow(10, Math.max(da, db));
+    var sum = Math.round(Number(a) * scale) + Math.round(Number(b) * scale);
+    var out = sum / scale;
+    return String(out);
+  }
+
   function cartAddQty(cart, item, qty, unit) {
     var q = Number(qty);
     if (!(q > 0)) { return null; }
     for (var i = 0; i < cart.lines.length; i++) {
       var ln = cart.lines[i];
       if (ln.kind === "quantity" && ln.item_id === item.id && ln.unit === unit) {
-        ln.qty = String(Number(ln.qty) + q);
+        ln.qty = addDecimalStrings(ln.qty, qty);
         return ln;
       }
     }
@@ -478,6 +511,7 @@
     backoffDelay: backoffDelay,
     createOutbox: createOutbox,
     newCart: newCart,
+    addDecimalStrings: addDecimalStrings,
     cartAddQty: cartAddQty,
     cartAddAsset: cartAddAsset,
     cartAddKit: cartAddKit,

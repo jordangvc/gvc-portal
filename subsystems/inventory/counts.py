@@ -135,8 +135,38 @@ def variances(session: dict) -> list[dict]:
     return out
 
 
+def pending_adjustments(doc: dict, sid: str, *, actor: str) -> list[dict]:
+    """Validate approvability WITHOUT mutating and return the adjustment
+    transactions to post. The orchestrator posts these FIRST (idempotent
+    client uuids), then calls approve(..., adjustment_txns=) - so a failed
+    post can be retried instead of stranding an 'approved' session with no
+    adjustments (review finding 5)."""
+    s = _get(ensure_shape(dict(doc)), sid)
+    require(s["status"] == "submitted", "SESSION_NOT_SUBMITTED",
+            f"Session is {s['status']}, not submitted.", field="session_id")
+    require(actor.lower() != s.get("submitted_by", "").lower()
+            or s["kind"] == "quick", "SELF_APPROVAL",
+            "A blind audit can't be approved by the person who counted it.",
+            field="session_id")
+    lines = []
+    for v in variances(s):
+        delta = Decimal(v["variance"])
+        lines.append({"item_id": v["item_id"], "qty": dec_str(abs(delta)),
+                      "unit": "", "sign": 1 if delta > 0 else -1,
+                      "note": f"count {v['counted']} vs expected "
+                              f"{v['expected']}"})
+    if not lines:
+        return []
+    return [{"type": "COUNT_ADJUSTMENT", "dst": s["location_id"],
+             "reason": f"Count session {sid} ({s['kind']}, approved by "
+                       f"{actor})",
+             "lines": lines, "count_session_id": sid}]
+
+
 def approve(doc: dict, sid: str, *, actor: str,
-            reject: bool = False) -> tuple[dict, dict, list[dict]]:
+            reject: bool = False,
+            adjustment_txns: list[str] | None = None
+            ) -> tuple[dict, dict, list[dict]]:
     """Close a submitted session. Returns (doc, session, adjustment_txns)
     — one COUNT_ADJUSTMENT transaction (possibly many lines) for the
     orchestrator to post. Rejection posts nothing."""
@@ -155,6 +185,11 @@ def approve(doc: dict, sid: str, *, actor: str,
     s["status"] = "approved"
     s["approved_by"] = actor
     s["approved_at"] = now_iso()
+    if adjustment_txns is not None:
+        # Invariant 12: the session permanently records which ledger txns
+        # its variances became (review finding 14).
+        s["adjustment_txns"] = list(adjustment_txns)
+        return new, s, []
     txns = []
     lines = []
     for v in variances(s):

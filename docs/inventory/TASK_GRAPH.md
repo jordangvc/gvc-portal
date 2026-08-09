@@ -22,4 +22,4 @@ Status log (updated as slices land — a slice is DONE only with test evidence)
 - S3: DONE — 8 tests green; outbox vm-tested (uuid stable, 409 parks, 200 drains)
 - S4: DONE — 12 tests green; labels render 35 QRs across 2 sheets
 - S5: DONE — nav, APP_MAP, health probe, seed, verify cmd, shared-JS route, r110
-- S6: in progress (fresh-context review)
+- S6: DONE — 18 findings (4 blocking) ALL fixed or documented; 9 regression locks in test_inventory_review_fixes.py

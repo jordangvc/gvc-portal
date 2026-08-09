@@ -254,6 +254,25 @@ def post_transaction(payload: dict, *, actor: str,
             "FORBIDDEN", "Only inventory managers can override stock.",
             advice="Ask a manager, or run a count if the shelf disagrees "
                    "with the app.")
+    # Retiring an asset removes it from circulation - manager territory
+    # even though field users may flag damage/lost (review finding 15).
+    if not can_manage and any(
+            str(ln.get("condition_to") or "") == "retired"
+            for ln in (txn.get("lines") or []) if isinstance(ln, dict)):
+        raise InventoryError(
+            "FORBIDDEN", "Only inventory managers can retire an asset.",
+            advice="Report it as damaged or needs repair; a manager "
+                   "retires it.")
+    # Photos never ride ledger lines (they'd balloon the single-doc
+    # ledger); lift them into the attention side-channel instead.
+    photos: list[dict] = []
+    txn["lines"] = [dict(ln) if isinstance(ln, dict) else ln
+                    for ln in (txn.get("lines") or [])]
+    for ln in txn["lines"]:
+        if isinstance(ln, dict) \
+                and len(str(ln.get("photo_url") or "")) > 2000:
+            photos.append({"asset_id": ln.get("asset_id", ""),
+                           "photo_data": str(ln.pop("photo_url"))[:400000]})
 
     def fn(doc: dict):
         return led.post(doc, c, l, txn, can_override_negative=can_manage)
@@ -266,11 +285,12 @@ def post_transaction(payload: dict, *, actor: str,
         result="duplicate" if result.get("already") else "ok",
         lines=len(event.get("lines") or []))
     if not result.get("already"):
-        _after_post_hooks(event, c, actor)
+        _after_post_hooks(event, c, actor, photos=photos)
     return result
 
 
-def _after_post_hooks(event: dict, c: dict, actor: str) -> None:
+def _after_post_hooks(event: dict, c: dict, actor: str, *,
+                      photos: list[dict] | None = None) -> None:
     """Attention side-effects. Best-effort — a hook failure never breaks a
     posted transaction (the post already committed)."""
     try:
@@ -291,6 +311,8 @@ def _after_post_hooks(event: dict, c: dict, actor: str) -> None:
                     detail=f"{h['on_hand']} on hand vs min {h['min_qty']}",
                     payload=h, actor="system",
                     dedupe_key=f"low:{h['item_id']}:{h['location_id']}"))
+        photo_by_asset = {p["asset_id"]: p["photo_data"]
+                          for p in (photos or [])}
         for ln in event.get("lines", []):
             if ln.get("condition_to") in FLAG_CONDITIONS:
                 store.mutate(store.ATTENTION, lambda d, ln=ln: att.raise_item(
@@ -299,6 +321,8 @@ def _after_post_hooks(event: dict, c: dict, actor: str) -> None:
                           f"→ {ln['condition_to']}",
                     detail=ln.get("note", ""),
                     payload={"asset_id": ln.get("asset_id"),
+                             "photo_data": photo_by_asset.get(
+                                 ln.get("asset_id", ""), ""),
                              "photo_url": ln.get("photo_url", "")},
                     actor=actor, txn_no=event["txn_no"]))
             if ln.get("condition_to") == "lost":
@@ -312,16 +336,20 @@ def _after_post_hooks(event: dict, c: dict, actor: str) -> None:
 
 
 def reverse_transaction(txn_no: str, *, actor: str, reason: str,
-                        client_uuid: str) -> dict:
+                        client_uuid: str,
+                        allow_negative: bool = False) -> dict:
     c, l, _ = _docs()
 
     def fn(doc: dict):
         return led.reverse(doc, c, l, txn_no, actor=actor, reason=reason,
-                           client_uuid=client_uuid)
+                           client_uuid=client_uuid,
+                           allow_negative=allow_negative)
 
     result = store.mutate(store.LEDGER, fn)
     activity.log_event("inventory.reverse", actor=actor, target=txn_no,
                        result="duplicate" if result.get("already") else "ok")
+    if not result.get("already"):
+        _after_post_hooks(result.get("txn") or {}, c, actor)
     return result
 
 
@@ -351,16 +379,18 @@ def archive_item(item_id: str, archived: bool, *, actor: str) -> dict:
 
 
 def merge_item(source_id: str, target_id: str, *, actor: str) -> dict:
-    """Merge metadata, then move any remaining source balances to the
-    target with an auditable MANUAL_ADJUSTMENT pair per location."""
-    g, _ = store.read_doc(store.LEDGER)
-    g = led.ensure_shape(g)
+    """Move the source's balances to the target FIRST (while both items
+    still resolve as themselves), then commit the catalog merge. Order
+    matters: after the merge, source ids resolve to the target, so a
+    post-merge transfer would net to zero on the target and strand the
+    source balance (adversarial review finding 1). Both steps are
+    idempotent (deterministic uuids; merge_items re-run is a no-op merge),
+    so a retry after a partial failure completes cleanly."""
+    c, l, g = _docs()
+    cat.merge_items(c, source_id, target_id, actor=actor)  # validate only
     src_balances = dict((g["balances"].get(source_id) or {}))
-    target = store.mutate(store.CATALOG, lambda d: cat.merge_items(
-        d, source_id, target_id, actor=actor))
-    c, l, _ = _docs()
     for loc_id, qty in src_balances.items():
-        txn = {"client_uuid": f"merge-{source_id}-{loc_id}-{new_uuid()[:8]}",
+        txn = {"client_uuid": f"merge-{source_id}-{target_id}-{loc_id}",
                "type": "MANUAL_ADJUSTMENT", "actor": actor,
                "reason": f"merge {source_id} → {target_id}",
                "dst": loc_id,
@@ -372,6 +402,8 @@ def merge_item(source_id: str, target_id: str, *, actor: str) -> dict:
         _fill_base_units(c, txn)
         store.mutate(store.LEDGER, lambda d, t=txn: led.post(
             d, c, l, t, can_override_negative=True))
+    target = store.mutate(store.CATALOG, lambda d: cat.merge_items(
+        d, source_id, target_id, actor=actor))
     activity.log_event("inventory.item.merge", actor=actor,
                        target=f"{source_id}->{target_id}", result="ok")
     return {"ok": True, "item": target,
@@ -414,8 +446,16 @@ def rotate_location_token(loc_id: str, *, actor: str) -> dict:
 
 
 def my_custody_location(email: str, display_name: str = "") -> dict:
+    before, _ = store.read_doc(store.LOCATIONS)
+    known = {x.get("employee_email") for x in
+             (before.get("locations") or {}).values()
+             if x.get("kind") == "employee"}
     loc = store.mutate(store.LOCATIONS, lambda d:
                        locs.ensure_employee_location(d, email, display_name))
+    if email.lower() not in known:
+        activity.log_event("inventory.location", actor=email,
+                           target=loc.get("id", ""), result="ok",
+                           kind="employee-custody-auto")
     return {"ok": True, "location": loc}
 
 
@@ -451,27 +491,48 @@ def start_count(*, kind: str, location_id: str, assignee: str,
     return {"ok": True, "session": session}
 
 
-def count_view(sid: str, *, viewer: str) -> dict:
+def _count_session(sid: str) -> dict:
     doc, _ = store.read_doc(store.COUNTS)
     s = (cnt.ensure_shape(doc).get("sessions") or {}).get(sid)
     require(s is not None, "UNKNOWN_SESSION",
             f"Count '{sid}' does not exist.", field="session_id")
-    if s["kind"] == "blind" and viewer.lower() == s.get("assignee") \
-            and s["status"] == "open":
+    return s
+
+
+def count_view(sid: str, *, viewer: str, can_manage: bool = False) -> dict:
+    s = _count_session(sid)
+    if s["kind"] == "blind" and s["status"] == "open" and not can_manage:
+        # Blind means blind: only the assignee may even open it, and the
+        # assignee sees no expected values (review finding 7).
+        require(viewer.lower() == s.get("assignee"), "FORBIDDEN",
+                "This blind audit is assigned to someone else.",
+                field="session_id")
         s = cnt.strip_expected(s)
     return {"ok": True, "session": s}
 
 
+def _require_counter(sid: str, actor: str, can_manage: bool) -> None:
+    s = _count_session(sid)
+    require(can_manage or actor.lower() == s.get("assignee"), "FORBIDDEN",
+            "This count is assigned to someone else.", field="session_id",
+            advice="Ask a manager to reassign it.")
+
+
 def count_record(sid: str, item_id: str, *, counted=None,
                  skipped: bool = False, skip_reason: str = "",
-                 note: str = "", actor: str = "") -> dict:
+                 note: str = "", actor: str = "",
+                 can_manage: bool = False) -> dict:
+    _require_counter(sid, actor, can_manage)
     s = store.mutate(store.COUNTS, lambda d: cnt.record_line(
         d, sid, item_id, counted=counted, skipped=skipped,
         skip_reason=skip_reason, note=note, actor=actor))
+    activity.log_event("inventory.count.record", actor=actor,
+                       target=f"{sid}:{item_id}", result="ok")
     return {"ok": True, "session_status": s["status"]}
 
 
-def count_submit(sid: str, *, actor: str) -> dict:
+def count_submit(sid: str, *, actor: str, can_manage: bool = False) -> dict:
+    _require_counter(sid, actor, can_manage)
     s = store.mutate(store.COUNTS, lambda d: cnt.submit(d, sid,
                                                         actor=actor))
     activity.log_event("inventory.count.submit", actor=actor, target=sid,
@@ -480,30 +541,40 @@ def count_submit(sid: str, *, actor: str) -> dict:
 
 
 def count_approve(sid: str, *, actor: str, reject: bool = False) -> dict:
-    box: dict = {}
-
-    def fn(doc: dict):
-        new, s, txns = cnt.approve(doc, sid, actor=actor, reject=reject)
-        box["session"], box["txns"] = s, txns
-        return new, s
-
-    store.mutate(store.COUNTS, fn)
-    posted = []
-    if box.get("txns"):
+    """Adjustments post FIRST with deterministic idempotent uuids; the
+    session flips to approved (recording the txn ids) only afterwards, so
+    a mid-flight failure is retryable instead of stranding an approved
+    session with no adjustments (review findings 5/14)."""
+    posted: list[str] = []
+    doc, _ = store.read_doc(store.COUNTS)
+    txns = cnt.pending_adjustments(doc, sid, actor=actor)  # validates state
+    if txns and not reject:
         c, l, _ = _docs()
-        for txn in box["txns"]:
-            txn["client_uuid"] = f"count-{sid}-{new_uuid()[:8]}"
+        for i, txn in enumerate(txns):
+            txn["client_uuid"] = f"count-{sid}-{i}"  # deterministic
             txn["actor"] = actor
             _fill_base_units(c, txn)
             res = store.mutate(store.LEDGER, lambda d, t=txn: led.post(
                 d, c, l, t, can_override_negative=True))
             posted.append(res["txn"]["txn_no"])
-            store.mutate(store.ATTENTION, lambda d, t=res["txn"]:
-                         att.raise_item(
-                             d, kind="count_discrepancy",
-                             title=f"Count variance posted ({sid})",
-                             detail=f"{len(t['lines'])} item(s) adjusted",
-                             actor=actor, txn_no=t["txn_no"]))
+            if not res.get("already"):
+                store.mutate(store.ATTENTION, lambda d, t=res["txn"]:
+                             att.raise_item(
+                                 d, kind="count_discrepancy",
+                                 title=f"Count variance posted ({sid})",
+                                 detail=f"{len(t['lines'])} item(s) "
+                                        "adjusted",
+                                 actor=actor, txn_no=t["txn_no"]))
+
+    box: dict = {}
+
+    def fn(doc2: dict):
+        new2, s, _ = cnt.approve(doc2, sid, actor=actor, reject=reject,
+                                 adjustment_txns=posted)
+        box["session"] = s
+        return new2, s
+
+    store.mutate(store.COUNTS, fn)
     activity.log_event("inventory.count.close", actor=actor, target=sid,
                        result="rejected" if reject else "ok",
                        adjustments=len(posted))
@@ -563,6 +634,11 @@ def import_preview(csv_text: str, *, actor: str) -> dict:
 
 
 def import_commit(csv_text: str, *, actor: str) -> dict:
+    """All items are created in ONE catalog write; balances land as
+    chunked INITIAL_LOAD txns with DETERMINISTIC uuids derived from the
+    CSV content, so a timed-out or retried commit resumes idempotently
+    instead of duplicating (review finding 9)."""
+    import hashlib
     c, l, g = _docs()
     rows, errors, plans = _parse_import(csv_text, c, l)
     require(not errors, "IMPORT_INVALID",
@@ -570,24 +646,42 @@ def import_commit(csv_text: str, *, actor: str) -> dict:
             field="csv",
             advice="Fix the rows in the error report and re-upload; the "
                    "import commits only when every row is clean.")
-    created_items, loaded_lines, created_assets = 0, [], 0
-    for p in plans:
-        if p["kind"] == "new_item":
-            res = save_item(p["item_payload"], actor=actor)
-            p["item_id"] = res["item"]["id"]
-            created_items += 1
-        c, _ = store.read_doc(store.CATALOG)   # refresh ids for later rows
-        c = cat.ensure_shape(c)
-    for p in plans:
-        if p.get("asset_payload") is not None:
-            ap = dict(p["asset_payload"])
-            ap["item_id"] = p.get("item_id") or ap["item_id"]
-            create_asset(ap, actor=actor)
-            created_assets += 1
-        elif p.get("load_line") is not None:
-            line = dict(p["load_line"])
-            line["item_id"] = p.get("item_id") or line["item_id"]
-            loaded_lines.append((p["location_id"], line))
+    digest = hashlib.sha256(csv_text.encode("utf-8")).hexdigest()[:12]
+
+    new_plans = [p for p in plans if p["kind"] == "new_item"]
+    created_items = 0
+    if new_plans:
+        def make_items(doc: dict):
+            cur = doc
+            made = []
+            for p2 in new_plans:
+                cur, item = cat.upsert_item(cur, p2["item_payload"],
+                                            actor=actor)
+                made.append(item)
+            return cur, made
+        made = store.mutate(store.CATALOG, make_items)
+        for p2, item in zip(new_plans, made):
+            p2["item_id"] = item["id"]
+        created_items = len(made)
+    c, _ = store.read_doc(store.CATALOG)
+    c = cat.ensure_shape(c)
+
+    created_assets = 0
+    loaded_lines = []
+    for p2 in plans:
+        if p2.get("asset_payload") is not None:
+            ap = dict(p2["asset_payload"])
+            ap["item_id"] = p2.get("item_id") or ap["item_id"]
+            try:
+                create_asset(ap, actor=actor)
+                created_assets += 1
+            except InventoryError as e:
+                if e.code != "DUPLICATE_ASSET":  # retry-safe
+                    raise
+        elif p2.get("load_line") is not None:
+            line = dict(p2["load_line"])
+            line["item_id"] = p2.get("item_id") or line["item_id"]
+            loaded_lines.append((p2["location_id"], line))
     posted = []
     if loaded_lines:
         c, l, _ = _docs()
@@ -595,14 +689,17 @@ def import_commit(csv_text: str, *, actor: str) -> dict:
         for loc_id, line in loaded_lines:
             by_loc.setdefault(loc_id, []).append(line)
         for loc_id, lines in by_loc.items():
-            txn = {"client_uuid": f"import-{new_uuid()[:10]}",
-                   "type": "INITIAL_LOAD", "actor": actor, "dst": loc_id,
-                   "lines": lines,
-                   "note": "CSV import"}
-            res = store.mutate(store.LEDGER, lambda d, t=txn: led.post(
-                d, c, l, t))
-            posted.append(res["txn"]["txn_no"])
-    job = {"id": f"imp-{new_uuid()[:8]}", "actor": actor, "at": now_iso(),
+            for ci in range(0, len(lines), 150):  # < ledger MAX_LINES
+                chunk = lines[ci:ci + 150]
+                txn = {"client_uuid":
+                       f"import-{digest}-{loc_id}-{ci // 150}",
+                       "type": "INITIAL_LOAD", "actor": actor,
+                       "dst": loc_id, "lines": chunk,
+                       "note": "CSV import"}
+                res = store.mutate(store.LEDGER, lambda d, t=txn: led.post(
+                    d, c, l, t))
+                posted.append(res["txn"]["txn_no"])
+    job = {"id": f"imp-{digest}", "actor": actor, "at": now_iso(),
            "rows": len(rows), "items_created": created_items,
            "assets_created": created_assets, "load_txns": posted}
     store.mutate(store.IMPORTS, lambda d: _append_import(d, job))

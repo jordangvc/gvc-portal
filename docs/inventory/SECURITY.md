@@ -34,8 +34,11 @@ Inherits the portal's security spine; this file covers what inventory adds.
   size-capped (2,000 rows), all-or-nothing commit; balances only ever
   enter via INITIAL_LOAD transactions.
 - Photos: client-downscaled data URLs, size-capped server-side (~400KB),
-  stored only inside attention/event payloads in the private state
-  bucket; no public URLs, no separate object storage keys to guess.
+  stored ONLY in attention-record payloads — ledger transaction lines
+  refuse anything over a 2KB reference so the ledger document never
+  balloons (enforced in ledger._post_asset_line + the flow's photo
+  side-channel; regression: test_f4_damage_photo_lands_in_attention…).
+  No public URLs, no separate object-storage keys to guess.
 - Scan tokens: opaque (no sequential ids, no embedded meaning), resolved
   server-side only for authenticated `inventory_view`+ users, revocable
   per location (`rotate-token`) — a photographed label can be killed.
@@ -66,3 +69,16 @@ to run without `--yes` and never touches users or credentials.
 - A hostile field user can still physically misreport counts — that is
   what blind audits, variance review, and the append-only history exist
   to bound. The system records who said what, when, immutably.
+
+## Known limitations (deliberate, documented)
+
+- **Blind audits bound honesty, not information theory.** The assignee
+  cannot open another user's blind session (403) and their own view strips
+  expected values — but any `inventory_view` holder can still read current
+  balances via location contents or the balances export. A determined
+  counter can therefore look up what the system expects. The control's
+  purpose is to prevent lazy confirm-the-number counting, not to defeat a
+  motivated insider; the append-only history is the backstop for that.
+- **Attention records grow until resolved and are never auto-pruned**;
+  resolved records keep their payloads (photos) for the audit trail. If
+  the object gets heavy, export + trim is a manual OPERATIONS task.
