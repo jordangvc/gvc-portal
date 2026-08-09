@@ -56,8 +56,9 @@ and the definition of done.
 - [ ] **Consistency lint** — `python scripts/ui_consistency_check.py` passes
       or failures are justified in the PR
 - [ ] **UI changes: screenshot evidence** at the four viewports
-      (375×667 / 390×844 / 768×1024 / 1280×800) for touched screens
-      *(harness: see §5 — being added; manual until it lands)*
+      (375×667 / 390×844 / 768×1024 / 1280×800) for touched screens —
+      `python scripts/screenshot_portal.py` (optionally `--roles <ids>`),
+      output committed under `docs/screenshots/` (latest run only)
 
 ## 4. Feature request template
 
@@ -85,8 +86,18 @@ python scripts/ui_consistency_check.py
 GVC_MONDAY_TRACE=1
 ```
 
-Screenshot harness (per-role, four viewports → `docs/screenshots/`): being
-added — will be documented here as a single repeatable command when it lands.
+```bash
+# screenshot evidence — per-role, four viewports → docs/screenshots/
+# one-time setup: pip install -r requirements-dev.txt && python -m playwright install chromium
+python scripts/screenshot_portal.py               # full matrix (wipes prior run)
+python scripts/screenshot_portal.py --roles ops   # touched roles only
+python scripts/screenshot_portal.py --throttle    # 4G evidence pass (role homes)
+```
+
+The harness runs the app locally with a throwaway session secret and
+harness-process-only grant patches (approved design, 2026-08-09) — production
+auth is never involved. Pages render degraded/empty states locally by design;
+`docs/screenshots/INDEX.md` records findings, console errors, and 4G timings.
 
 ## 6. Things that are always true
 

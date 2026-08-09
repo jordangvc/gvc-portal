@@ -17,6 +17,27 @@ routes/roles/grants.
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✅ Finalization CLOSED: harness + 4G evidence + invoice fix (r108) — 2026-08-09
+Items 2–4 of the close-out (item 1 = canonical docs, PR #175). NEW
+`scripts/screenshot_portal.py`: runs the portal locally with a THROWAWAY
+session secret and harness-process-only patches of `access.is_provisioned` /
+`effective_features` (Jordan-approved design — production auth never touched),
+mints real cookies via `make_session_cookie`, drives all 7 admin presets ×
+every page each can open × 4 viewports. **308 screenshots → docs/screenshots/**
+(latest-run-only; `docs/` already deploy-excluded via .gcloudignore; run is
+~77MB — dial `device_scale_factor`/quality in the script if that gets heavy).
+`--throttle` = 4G pass (150ms RTT/1.6Mbps): all 14 role-homes paint content
+<1.5s, settle ~4.3s, no blanks/hangs (`_throttled-4g/TIMINGS.txt`).
+🐛 HARNESS CAUGHT A REAL BUG: `/ui/invoice` threw an uncaught TypeError on
+EVERY load — `checkHealth()` still wrote `$("#health")`, an element r103's
+chrome conversion removed; the catch handler then threw the same way.
+estimate/CO were guarded, invoice missed. Fixed to the sibling pattern;
+`test_forms_health_widget_refs_are_null_guarded` locks it. Dev deps in
+`requirements-dev.txt` (playwright/uvicorn — NOT in the deploy image).
+FEATURE_PROCESS §3/§5 now carry the harness command in the definition of done.
+Finalization report updated — remaining list EMPTY, finalization closed; all
+future changes ride `docs/FEATURE_PROCESS.md`. Hub **r108**.
+
 ## 🔧 Finalization pass 1: mobile baseline + ops home (r107) — BUILT 2026-08-09
 Phase 0/2/4 of Jordan's portal-finalization brief. Audit written to
 `docs/APP_MAP.md` (stack, 5 roles, 7 presets, 21 page routes → grant, daily

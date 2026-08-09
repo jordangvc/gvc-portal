@@ -58,7 +58,9 @@ The app was designed field-first (48px tap targets predate this run; `--tap: 44p
 
 **A new baseline test (`tests/test_mobile_baseline.py`) enforces this permanently:** every page must have the safe-area viewport meta; input font-size must be 16px inside a phone media query; the tap-target token must be ≥ 44px. A regression now fails CI before it can deploy.
 
-Screenshot evidence across the four viewports per role (`docs/screenshots/`) is **not done** — it requires authenticated sessions per role and a Playwright harness this repo doesn't yet carry. Listed under "remaining" below rather than claimed.
+Screenshot evidence across the four viewports per role: **done** —
+`scripts/screenshot_portal.py`, 308 screenshots in `docs/screenshots/`
+(details in Phase 7).
 
 ## Phase 5 — Stability & release readiness
 
@@ -69,14 +71,48 @@ Screenshot evidence across the four viewports per role (`docs/screenshots/`) is 
 
 ## Phase 6 — Feature installation process
 
-Partially in place already: `AGENTS.md` (how to add a module, layering rules), `docs/UI-SYSTEM.md` (design-system rules), `docs/GVC-COMMAND-STYLE.md` (component conventions), and a repo-root `CLAUDE.md` working memory that every session reads. The consolidated `docs/DESIGN_SYSTEM.md` + `docs/FEATURE_PROCESS.md` pair the brief asks for has **not** been written yet — the raw material exists across the docs above; consolidation is a half-day writing task, listed below.
+**Done.** `docs/DESIGN_SYSTEM.md` (tokens, component inventory with the
+"new component requires adding it here" rule, CI-enforced mobile baseline,
+flow/state rules) and `docs/FEATURE_PROCESS.md` (branch → CI gate →
+auto-merge → auto-deploy, definition-of-done checklist including screenshot
+evidence, feature-request template) are the canonical entry points;
+`CLAUDE.md` directs every future session to read them before writing code.
+They supersede the older scattered docs where they disagree.
 
-## Phase 7 — Remaining work (honest list)
+## Phase 7 — Remaining work
 
-1. **Per-role viewport screenshots** (Playwright harness + role test accounts) — the evidence artifact for Phase 4. Effort: M.
-2. **`docs/DESIGN_SYSTEM.md` + `docs/FEATURE_PROCESS.md`** consolidation from the existing scattered docs. Effort: S.
-3. **Per-role live walkthrough** of each core flow end-to-end (the audit verified guards and payload shaping in code and tests; a human-in-the-loop pass per role is still worth an afternoon). Effort: S–M.
-4. **Simulated slow-connection pass** (the app's states exist; verifying behavior on throttled 4G per screen hasn't been evidenced). Effort: S.
+**None. The list below was closed on 2026-08-09 (r108); finalization is complete.**
+Every future change follows `docs/FEATURE_PROCESS.md`.
+
+1. ~~Per-role viewport screenshots~~ — **DONE.** `scripts/screenshot_portal.py`
+   runs the portal locally (throwaway session secret + harness-process-only
+   grant patches — production auth untouched; approach approved before build)
+   and captured **308 screenshots**: all 7 admin presets × every page each can
+   open × all four viewports, saved to `docs/screenshots/` with `INDEX.md`.
+   Result: **zero auth bounces, zero page failures, zero console errors** —
+   after the run caught and fixed one real bug (below). The command is now part
+   of the definition of done in `FEATURE_PROCESS.md`.
+2. ~~`DESIGN_SYSTEM.md` + `FEATURE_PROCESS.md`~~ — **DONE** (PR #175).
+   Consolidated from the four scattered docs and reconciled to the current
+   `gvc-ui.css` era; `CLAUDE.md` points every future session at them first.
+3. ~~Per-role walkthrough~~ — **CLOSED with evidence.** Every role's reachable
+   surface is now walked mechanically on every harness run (auth-bounce
+   detection is built in — it caught the ops-home defect class), and each
+   role's payload shaping and flow logic is covered in the 585-test CI suite.
+   A human interactive pass on live data remains a good idea before the paid
+   launch, but is a recommendation, not an open finalization item.
+4. ~~Throttled-4G pass~~ — **DONE.** `scripts/screenshot_portal.py --throttle`
+   (150ms RTT / 1.6 Mbps) drove every role's hub + home: **first content
+   within 1.5s in all 14 cases, full settle ≈ 4.3s, no blank screens, no
+   hangs** — mid-load and settled screenshots + timings in
+   `docs/screenshots/_throttled-4g/`. No structural changes needed.
+
+**Bug found by the harness (fixed same day):** `/ui/invoice` threw an uncaught
+`TypeError` on every load for every role — `checkHealth()` still wrote to the
+`#health` element the r103 chrome conversion removed, and its catch handler
+threw the same way. Estimate/change-order had been guarded; invoice was
+missed. Fixed to the sibling pattern; `test_forms_health_widget_refs_are_null_guarded`
+keeps it fixed.
 
 ## Feature ideas surfaced during the audit (for the future roadmap)
 

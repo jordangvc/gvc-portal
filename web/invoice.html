@@ -1014,13 +1014,14 @@ $("#correct-overlay").addEventListener("click", (e) => { if (e.target.id === "co
 async function checkHealth() {
   try {
     const r = await fetch("/health"); const h = await r.json();
+    const healthEl = $("#health"); if (!healthEl) return;
     const dot = (ok) => `<span class="dot ${ok ? "ok" : "bad"}"></span>`;
-    $("#health").innerHTML =
+    healthEl.innerHTML =
       `<span>${dot(h.stripe_configured)} Stripe</span>` +
       `<span>${dot(h.gmail_ready)} Gmail draft</span>` +
       `<span>${dot(h.preview_bucket_configured)} Preview</span>` +
       `<span>${dot(h.drive_configured)} Drive</span>`;
-  } catch (e) { $("#health").textContent = "Service status unavailable"; }
+  } catch (e) { const healthEl = $("#health"); if (healthEl) healthEl.textContent = "Service status unavailable"; }
 }
 
 /* ---- Project # prefill (Projects board = source of truth) ---- */
