@@ -167,7 +167,28 @@ def tools_for_client(features: set[str]) -> list[dict[str, Any]]:
     return out
 
 
-def groups_for_client(features: set[str]) -> list[dict[str, Any]]:
+def personal_tools_for(email: str) -> list[dict[str, Any]]:
+    """Owner-only Personal rail entries.
+
+    Server-side gated to access.superadmin_emails() — deliberately NOT a
+    grants feature, because every ``*`` admin's wildcard would absorb a
+    feature key and these tools are personal. Non-owners never receive the
+    group at all (ungranted tools normally render dimmed; personal tools
+    must be invisible, not dimmed).
+    """
+    try:
+        from shared import access
+        if (email or "").strip().lower() not in access.superadmin_emails():
+            return []
+    except Exception:  # noqa: BLE001 — nav must never break the hub
+        return []
+    return [{
+        "name": "5 Daily", "feature": "nonneg", "href": "/ui/nonneg",
+        "external": False, "granted": True,
+    }]
+
+
+def groups_for_client(features: set[str], *, email: str = "") -> list[dict[str, Any]]:
     """Grouped tools for rail rendering."""
     feats = features or set()
     groups = []
@@ -182,6 +203,9 @@ def groups_for_client(features: set[str]) -> list[dict[str, Any]]:
                 "granted": feature in feats,
             })
         groups.append({"name": group, "tools": rows})
+    personal = personal_tools_for(email)
+    if personal:
+        groups.append({"name": "Personal", "tools": personal})
     return groups
 
 
@@ -292,7 +316,7 @@ def boot_shell(email: str, features: set[str], *,
         "setup": {},
         "quick_actions": quick,
         "nav": {
-            "groups": groups_for_client(feats),
+            "groups": groups_for_client(feats, email=email),
             "features": sorted(feats),
         },
     }

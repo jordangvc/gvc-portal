@@ -219,7 +219,7 @@ def test_hub_files_and_route() -> None:
     check("no competing gvc.css", 'href="/ui/gvc.css"' not in hub)
     check("topbar + page", 'class="topbar"' in hub and 'class="page"' in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r108 footer", ">r108<" in hub)
+    check("r109 footer", ">r109<" in hub)
     check("boot json placeholder", "{{HUB_BOOT_JSON}}" in hub or "HUB_BOOT" in hub)
     check("instant shell paint", "paintInstantShell" in hub)
     check("quick actions", "quickactions" in hub)

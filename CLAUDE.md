@@ -17,6 +17,42 @@ routes/roles/grants.
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## ✨ 5 Daily Non-Negotiables — Jordan's personal tracker (r109) — BUILT 2026-08-09
+Jordan's ask: track his Dan Martell 5-daily-non-negotiables (source doc
+10KYt4NdXLgj6QCKIVtteHJWLhp2cx0z3Qg0VesI3GRE) inside the portal, "for only me."
+365-day run starting Mon 2026-08-10; the five = review goals / sweat 45 /
+read 10p / post 3 / send 5; a day counts only at 5/5; ANY missed day resets
+the streak.
+🔒 ACCESS MODEL — deliberately NOT a grants feature: any feature key is
+absorbed by every `*` admin's wildcard (Andrea holds `*`), so the gate is
+`email in access.superadmin_emails()` (env GVC_PORTAL_ALLOWED_EMAILS —
+exactly jordan@ today). Non-owners get **404** (invisible, not forbidden) and
+the hub rail's new "Personal" group is appended server-side only for
+superadmins (`hub_nav.personal_tools_for` — ungranted tools normally render
+dimmed; personal tools must not render at all). Regression-tested with the
+Andrea-shaped case (provisioned, full grants, NOT superadmin → 404, no rail
+group).
+BUILT: `subsystems/nonneg/{tracker,store}.py` (pure logic incl. streak math —
+today-in-progress never breaks a streak, absent day = missed day; store =
+per-email GCS doc `portal/nonneg/{email}.json`, generation-guarded mutate,
+same contract as the other doc stores); routes `/ui/nonneg` +
+`GET /ui/api/nonneg` + `PUT /ui/api/nonneg/day|goals` (422 on future/pre-start
+days, 503 NONNEG_STORE when GCS is down, goals TEXT never logged to
+activity); `web/nonneg.html` (56px tap rows, Mon-first week strip, streak
+metrics, editable 12-month goals with last-review stamp — ticking "Review
+goals" stamps it). `groups_for_client` gained an `email=` kwarg (3 call
+sites). Harness covers the page under the full preset
+(GVC_PORTAL_ALLOWED_EMAILS=test-full@localhost in `_boot_app`).
+TESTS: `tests/test_nonneg.py` (14 — streak resets, week grid, toggle
+validation, owner gate incl. 404s, PUT round-trip on a fake store).
+VERIFIED with seeded data: streak/perfect-day/most-missed math matches a
+hand-checked 12-day scenario; page renders clean at phone+desktop with zero
+pageerrors; rail shows Personal for owner only. Hub **r109**.
+NOT BUILT (deliberate v1 cuts): morning-brief status line, reminders/nudges,
+offline queue for taps (jobsite offline matters less for a home/gym habit
+page; revisit if he asks). NOTE the tracker's own xlsx/brief claims in the
+source doc describe another system, not this portal.
+
 ## ✅ Finalization CLOSED: harness + 4G evidence + invoice fix (r108) — 2026-08-09
 Items 2–4 of the close-out (item 1 = canonical docs, PR #175). NEW
 `scripts/screenshot_portal.py`: runs the portal locally with a THROWAWAY

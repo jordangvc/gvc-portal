@@ -1356,7 +1356,7 @@ def ui_hub_payload(request: Request) -> dict:
             "recent": [],
             "badges": {},
             "nav": {
-                "groups": hub_nav.groups_for_client(feats),
+                "groups": hub_nav.groups_for_client(feats, email=email),
                 "features": sorted(feats),
             },
         }
@@ -2669,6 +2669,137 @@ def ui_training(request: Request) -> HTMLResponse:
         .replace("{{EMAIL_JSON}}", json.dumps(email))
     )
     return HTMLResponse(html)
+
+
+# ---------------------------------------------------------------------------
+# 5 Daily Non-Negotiables — Jordan's personal tracker (owner-only)
+# ---------------------------------------------------------------------------
+
+def _nonneg_owner(request: Request) -> str:
+    """Owner gate. NOT a grants feature — a feature key would be absorbed by
+    every `*` admin's wildcard; this tool is personal. Non-owners get 404 so
+    the route is invisible, not merely forbidden."""
+    email = require_ui_access(request)
+    if email not in access.superadmin_emails():
+        raise HTTPException(
+            status_code=404,
+            detail={"ok": False, "code": "NOT_FOUND", "detail": "Not found."},
+        )
+    return email
+
+
+def _nonneg_today():
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    return datetime.now(ZoneInfo("America/New_York")).date()
+
+
+def _nonneg_payload(doc: dict) -> dict:
+    from subsystems.nonneg import tracker
+    doc = doc or tracker.blank_doc()
+    return {
+        "ok": True,
+        "goals": list(doc.get("goals") or ["", "", "", "", ""]),
+        "goals_last_review": doc.get("goals_last_review") or "",
+        "days": dict(doc.get("days") or {}),
+        "habits": [{"key": k, "label": l, "sub": s} for k, l, s in tracker.HABITS],
+        "stats": tracker.compute_stats(doc, today=_nonneg_today()),
+    }
+
+
+_NONNEG_STORE_503 = {
+    "ok": False, "code": "NONNEG_STORE",
+    "detail": "The portal state store (GCS) isn't reachable.",
+    "advice": "Confirm GVC_PORTAL_STATE_BUCKET + the service-account JSON — "
+              "same store the estimate drafts use.",
+}
+
+
+@app.get("/ui/nonneg", response_class=HTMLResponse)
+def ui_nonneg_page(request: Request) -> HTMLResponse:
+    email = _nonneg_owner(request)
+    activity.log_event("tool.open", actor=email, target="nonneg")
+    path = WEB_DIR / "nonneg.html"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in the Dockerfile."},
+        )
+    html = _cached_web_html("nonneg.html").replace("{{EMAIL}}", html_escape(email))
+    return HTMLResponse(html, headers=_PRIVATE_HTML_CACHE_HEADERS)
+
+
+@app.get("/ui/api/nonneg")
+def ui_nonneg_doc(request: Request) -> dict:
+    email = _nonneg_owner(request)
+    from subsystems.nonneg import store
+    try:
+        doc, _ = store.read_doc(store.object_for(email))
+    except store.PortalStoreNotConfigured:
+        raise HTTPException(status_code=503, detail=_NONNEG_STORE_503)
+    return _nonneg_payload(doc)
+
+
+class NonnegDayRequest(BaseModel):
+    date: str
+    key: str
+    done: bool
+
+
+@app.put("/ui/api/nonneg/day")
+def ui_nonneg_day(req: NonnegDayRequest, request: Request) -> dict:
+    email = _nonneg_owner(request)
+    from subsystems.nonneg import store, tracker
+    today = _nonneg_today()
+
+    def _mut(doc: dict):
+        base = doc if doc else tracker.blank_doc()
+        new = tracker.toggle(base, req.date, req.key, req.done, today=today)
+        return new, new
+
+    try:
+        new_doc = store.mutate(store.object_for(email), _mut)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "INVALID_INPUT", "detail": str(e)},
+        )
+    except store.PortalStoreNotConfigured:
+        raise HTTPException(status_code=503, detail=_NONNEG_STORE_503)
+    activity.log_event("nonneg.save", actor=email,
+                       target=f"{req.date}:{req.key}",
+                       result="on" if req.done else "off")
+    return _nonneg_payload(new_doc)
+
+
+class NonnegGoalsRequest(BaseModel):
+    goals: list[str] = []
+
+
+@app.put("/ui/api/nonneg/goals")
+def ui_nonneg_goals(req: NonnegGoalsRequest, request: Request) -> dict:
+    email = _nonneg_owner(request)
+    from subsystems.nonneg import store, tracker
+
+    def _mut(doc: dict):
+        base = doc if doc else tracker.blank_doc()
+        new = tracker.set_goals(base, req.goals)
+        return new, new
+
+    try:
+        new_doc = store.mutate(store.object_for(email), _mut)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "INVALID_INPUT", "detail": str(e)},
+        )
+    except store.PortalStoreNotConfigured:
+        raise HTTPException(status_code=503, detail=_NONNEG_STORE_503)
+    # Log the act, never the goal text — goals are personal.
+    activity.log_event("nonneg.goals", actor=email, target="goals")
+    return _nonneg_payload(new_doc)
 
 
 @app.get("/ui/takeoff", response_class=HTMLResponse)
