@@ -186,7 +186,12 @@ def test_personal_nav_group_is_owner_only(monkeypatch):
     monkeypatch.setenv("GVC_PORTAL_ALLOWED_EMAILS", "owner-test@localhost")
     owner_groups = hub_nav.groups_for_client(set(), email="owner-test@localhost")
     other_groups = hub_nav.groups_for_client(set(), email="andrea-test@localhost")
-    assert any(g["name"] == "Personal" for g in owner_groups)
+    assert owner_groups[0]["name"] == "Personal", (
+        "Personal must lead the rail — top of the screen, Jordan 2026-08-09")
+    boot = hub_nav.boot_shell("owner-test@localhost", set())
+    qa = boot.get("quick_actions") or []
+    assert qa and qa[0]["href"] == "/ui/nonneg", (
+        "5 Daily must be the first DO-NEXT chip for the owner")
     # Invisible — not merely dimmed — for everyone else.
     assert not any(g["name"] == "Personal" for g in other_groups)
 

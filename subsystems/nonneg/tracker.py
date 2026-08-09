@@ -35,6 +35,7 @@ HABIT_KEYS = tuple(k for k, _, _ in HABITS)
 def blank_doc() -> dict:
     return {
         "goals": ["", "", "", "", ""],
+        "goal_notes": ["", "", "", "", ""],
         "goals_last_review": "",
         "start_date": START_DATE,
         "days": {},

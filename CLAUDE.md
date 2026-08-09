@@ -17,6 +17,46 @@ routes/roles/grants.
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 🤖 5 Daily COACH — the portal's FIRST LLM feature (r111) — BUILT 2026-08-09
+Jordan: "live, working, living, breathing tracker" — notes spots + tips that
+update from his notes (things to post, people to reach out to), and 5 Daily
+moved to the TOP of the hub (first DO-NEXT chip + Personal group leads the
+rail — `personal_tools_for` feeds both).
+NEW `adapters/llm.py` — the portal's ONLY LLM module. Two transports:
+`ANTHROPIC_API_KEY` (direct, model `GVC_LLM_MODEL` default claude-sonnet-5)
+else **`GVC_CLAUDE_PROXY_URL` → the Takeoff app's Netlify Claude proxy
+(DEFAULT ON — zero new secrets; its key + GVC voice prompt already live
+there; set env to "" to disable)**. stdlib urllib, no new deps. /health
+gains `llm_transport/llm_ok/llm_error` via a LIVE probe (proxy
+`__healthcheck` task = token-free; direct = models-endpoint auth), cached 1h.
+`subsystems/nonneg/coach.py` — PURE prompt build + response hardening.
+Grounding rules IN THE PROMPT: every tip traces to his notes/goals; people
+named only if the notes name them, else described by role; no generic
+content-marketing filler; prior tips listed to avoid repeats. `parse_tips`
+whitelists exactly {focus, post_ideas[≤5]{idea,why}, outreach[≤5]{who,why,
+opener}} — a malicious/malformed model response CANNOT touch any other doc
+field (regression-tested with an `evil` payload carrying days/goals keys).
+Notes: per-day journal (`days[d].note`, 2000 cap, day-before warm-up
+allowed) + per-goal notes (`goal_notes[5]`). Routes: PUT
+/ui/api/nonneg/note, goals PUT gains goal_notes, POST /ui/api/nonneg/coach
+(refresh-now; 60s min-interval guard against double-spend), POST
+/v1/tasks/nonneg-coach (X-API-Key; for Cloud Scheduler `gvc-nonneg-coach`
+daily ~4:30am ET so tips are waiting with the coffee; loops
+superadmin_emails; skips quietly on LLM/store failure — retries safe).
+NOTE TEXT / GOALS NEVER LOGGED to activity (act only). Errors honest:
+COACH_NOT_CONFIGURED 503 / COACH_UPSTREAM 502 ("notes unaffected").
+UI: day-note autosave (900ms debounce, failure keeps text + says so), goal
+note per goal, Coach card = focus line + Things to post (idea+why) + People
+to reach out to (who+why+opener) + honest stamps ("Generated X · from notes
+through Y") + unconfigured/empty states.
+✅ VERIFIED LIVE pre-deploy: seeded notes → Refresh → REAL proxy → REAL
+Claude → tips rendered grounded in the seeded notes (named CMSquared super
+from the note; described the unnamed Florence GC by role — the rule held),
+zero pageerrors. ⚠ LESSON (cost ~40 min): crashed harness runs leave zombie
+uvicorns on 8765 serving STALE code with STALE session secrets — auth
+bounces + phantom old pages. Kill the port or use a fresh one before
+chasing ghosts. Tests: `tests/test_nonneg_coach.py` (13). Hub **r111**. (r110 was taken mid-flight by the concurrent session's #178 — this work was stash-recovered from dangling commit 77b6b558.)
+
 ## ✨ 5 Daily Non-Negotiables — Jordan's personal tracker (r109) — BUILT 2026-08-09
 Jordan's ask: track his Dan Martell 5-daily-non-negotiables (source doc
 10KYt4NdXLgj6QCKIVtteHJWLhp2cx0z3Qg0VesI3GRE) inside the portal, "for only me."

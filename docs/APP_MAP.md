@@ -83,7 +83,7 @@ is presentation only; the route is the gate.
 | `/ui/timeoff` | `timeoff` | Time off (baseline) |
 | `/ui/activity` | `activity` | Audit log (implied by `admin`) |
 | `/ui/admin` | `admin` | Grants + templates |
-| `/ui/nonneg` | *superadmin only* | 5 Daily Non-Negotiables — Jordan's personal habit tracker. NOT a grants feature: gated to `access.superadmin_emails()` so a `*` admin's wildcard never absorbs it; non-owners get 404 and never see the rail entry |
+| `/ui/nonneg` | *superadmin only* | 5 Daily Non-Negotiables — Jordan's personal habit tracker + AI coach (notes → post ideas / outreach tips via `adapters/llm.py`; nightly refresh `/v1/tasks/nonneg-coach`). NOT a grants feature: gated to `access.superadmin_emails()` so a `*` admin's wildcard never absorbs it; non-owners get 404 and never see the rail entry or hub chip |
 
 ## Permission posture (audited 2026-08-09)
 
