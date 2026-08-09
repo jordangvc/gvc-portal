@@ -83,7 +83,7 @@ def test_hub_inline_script_still_parses() -> None:
 
 
 def test_footer_bumped() -> None:
-    assert "Portal <b>r106</b>" in _hub()
+    assert "Portal <b>r107</b>" in _hub()
 
 
 if __name__ == "__main__":

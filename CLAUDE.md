@@ -11,6 +11,35 @@ in `~/Documents/GVC/CLAUDE.md` — a new agent should skim that first, then read
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
+## 🔧 Finalization pass 1: mobile baseline + ops home (r107) — BUILT 2026-08-09
+Phase 0/2/4 of Jordan's portal-finalization brief. Audit written to
+`docs/APP_MAP.md` (stack, 5 roles, 7 presets, 21 page routes → grant, daily
+task per role). Audit findings: permissions are **sound** — every page route
+has a server-side feature check bar `/` (hub) and `/ui/fonts`; 92 of 96
+`/ui/api/*` are feature-gated and the 4 that aren't are hub endpoints whose
+contents derive from the caller's own grants. Exactly **one** TODO in the repo.
+THREE REAL DEFECTS FIXED:
+  • 🐛 **`ops` preset landed on a page it couldn't open.** `resolve_role`
+    matched sales on `jobstart`, so Mark/Robert (morning_ops + jobcheck +
+    jobstart) were sent home to `/ui/estimate` — no `estimate` grant, so the
+    home screen 303'd to sign-in. Sales now requires `estimate` or `takeoff`;
+    ops falls through to `field` → `/ui/morning`. Locked by
+    `tests/test_role_home_reachable.py`, which asserts EVERY preset's home is a
+    page that preset can actually open — the invariant, not just this case.
+  • 🐛 **iOS input auto-zoom on every form.** `.input`/`input[type=…]` used
+    `--text-sm` (~14–15px) and `.gvc-input` on the money forms used 15px. iOS
+    Safari zooms the page whenever a focused input is under 16px — every tap
+    into a form on a job site yanked the layout. Pinned to 16px in a
+    `max-width: 768px` block in BOTH `gvc-ui.css` and `gvc-forms.css`; desktop
+    sizing deliberately unchanged.
+  • 🐛 **4 pages missing `viewport-fit=cover`** (change-order, estimate,
+    invoice, takeoff) — the CSS already uses `env(safe-area-inset-*)`, which
+    does nothing without the meta opt-in, so notched phones clipped sticky
+    bars on exactly the money forms.
+`tests/test_mobile_baseline.py` now holds the baseline for every page: viewport
+meta w/ safe-area, 16px inputs inside a phone media query, `--tap` ≥ 44px.
+Hub **r107**.
+
 ## ⚡ Hub replays last numbers on boot (r106) — BUILT 2026-08-08
 Jordan: the hub takes too long before it's usable. Measured the path first —
 `GET /` touches no Monday and no Cloud Logging (boot shell from
