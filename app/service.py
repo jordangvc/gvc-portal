@@ -5477,3 +5477,20 @@ def inv_labels(request: Request, payload: dict = _InvBody(...)) -> Response:
 def inv_reconcile(request: Request) -> dict:
     require_admin(request)
     return _inv(_inv_flow().reconcile)
+
+
+@app.get("/ui/gvc-inventory.js")
+def inv_shared_js() -> Response:
+    """Inventory shared module (outbox/cart/scan helpers). Ungated like
+    gvc-theme.js — no data, no secrets; short cache so deploys show up."""
+    path = WEB_DIR / "gvc-inventory.js"
+    if not path.exists():
+        raise HTTPException(
+            status_code=500,
+            detail={"ok": False, "code": "UI_MISSING",
+                    "detail": f"{path} not found in the deployed image.",
+                    "advice": "Ask an admin to confirm web/ was COPYed in "
+                              "the Dockerfile."})
+    return Response(content=path.read_text(encoding="utf-8"),
+                    media_type="application/javascript",
+                    headers={"Cache-Control": "public, max-age=300"})

@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="emerald">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>GVC · Inventory admin</title>
+<script>
+/* FOUC-safe theme boot — same key as /ui/gvc-theme.js (gvc-theme). */
+(function () {
+  try {
+    var k = "gvc-theme", v = localStorage.getItem(k);
+    var mode = (v === "light" || v === "dark" || v === "system") ? v : "system";
+    var dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
+    var theme = mode === "light" ? "light" : mode === "dark" ? "dark" : (dark ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", theme);
+    document.documentElement.setAttribute("data-theme-mode", mode);
+  } catch (e) {
+    document.documentElement.setAttribute("data-theme", "light");
+  }
+})();
+</script>
+<link rel="stylesheet" href="/ui/gvc-ui.css" />
+<style>
+  /* Inventory admin — layout/behavior only; tokens come from gvc-ui.css. */
+  [hidden] { display: none !important; }
+  .page { display: grid; gap: var(--space-5); align-content: start; }
+  section[data-section] { display: grid; gap: var(--space-4); align-content: start; }
+  .card h2 { margin: 0; }
+  .card-head h2 { font-size: var(--text-base); }
+  .card > .card-pad, .card-pad { padding: var(--space-4); }
+  .subhead {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); font-weight: 700; margin: 0 0 var(--space-2);
+  }
+  .field-label {
+    display: block; font-size: var(--text-xs); font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); margin: var(--space-3) 0 var(--space-2);
+  }
+  .thumb {
+    width: 40px; height: 40px; border-radius: var(--radius-md); flex: none;
+    background: var(--color-surface-2); border: 1px solid var(--color-border);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; color: var(--color-text-faint); overflow: hidden;
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .picker { position: relative; }
+  .picker__list {
+    position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 4px);
+    max-height: 260px; overflow-y: auto;
+    background: var(--color-surface); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); box-shadow: 0 8px 24px rgba(0,0,0,.14);
+  }
+  .picker__opt {
+    display: flex; gap: 8px; align-items: center; width: 100%;
+    padding: 10px 12px; min-height: var(--tap); border: 0; background: none;
+    text-align: left; cursor: pointer; font: inherit; color: var(--color-text);
+    border-bottom: 1px solid var(--color-divider);
+  }
+  .picker__opt:last-child { border-bottom: 0; }
+  .picker__opt:hover { background: var(--color-bg); }
+  .kvrow { display: flex; gap: var(--space-2); align-items: center; margin-bottom: var(--space-2); flex-wrap: wrap; }
+  .kvrow .input { flex: 1; min-width: 120px; }
+  .kvrow .input.narrow { flex: 0 1 110px; min-width: 90px; }
+  .tagbox {
+    display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
+    border: 1px solid var(--color-border); border-radius: var(--radius-md);
+    background: var(--color-surface-2); padding: 6px 8px;
+  }
+  .tagbox input {
+    border: 0; background: none; flex: 1; min-width: 120px; font: inherit;
+    color: var(--color-text); padding: 8px 4px; outline: none;
+  }
+  .tagbox .tag button {
+    border: 0; background: none; cursor: pointer; font: inherit;
+    color: inherit; padding: 0 0 0 4px; line-height: 1;
+  }
+  .tree-row { display: flex; gap: 8px; align-items: center; padding: 10px 12px; border-bottom: 1px solid var(--color-divider); }
+  .tree-row:last-child { border-bottom: 0; }
+  .tree-row .grow { flex: 1; min-width: 0; }
+  .tree-row .name { font-weight: 600; }
+  .tree-row.is-inactive .name { color: var(--color-text-faint); text-decoration: line-through; }
+  .minitable { width: 100%; border-collapse: collapse; font-size: var(--text-sm); }
+  .minitable th {
+    text-align: left; font-size: var(--text-xs); text-transform: uppercase;
+    letter-spacing: .06em; color: var(--color-text-muted); font-weight: 700;
+    padding: 6px 8px; border-bottom: 1px solid var(--color-border);
+  }
+  .minitable td { padding: 8px; border-bottom: 1px solid var(--color-divider); vertical-align: top; }
+  .minitable tr:last-child td { border-bottom: 0; }
+  .var-pos { color: var(--color-primary); font-weight: 700; }
+  .var-neg { color: var(--color-danger); font-weight: 700; }
+  .att-photo { max-width: 220px; max-height: 220px; border-radius: var(--radius-md); border: 1px solid var(--color-border); display: block; }
+  .overlay {
+    position: fixed; inset: 0; z-index: 60; display: flex;
+    align-items: center; justify-content: center; padding: var(--space-4);
+    background: rgba(10, 20, 14, .45);
+  }
+  .overlay__card { max-width: 460px; width: 100%; padding: var(--space-5); }
+  .overlay__card h3 { margin: 0 0 var(--space-3); }
+  #status { display: none; padding: 12px 14px; border-radius: var(--radius-md); font-size: var(--text-sm); }
+  #status.show { display: block; }
+  #status.err { background: var(--color-danger-soft); border: 1px solid var(--color-danger); }
+  #status.warn { background: var(--color-warn-soft); border: 1px solid var(--color-warn); }
+  #status.ok { background: var(--color-primary-soft); border: 1px solid var(--color-primary); }
+  .inline-form { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 8px; }
+  .inline-form .input { flex: 1; min-width: 140px; }
+  .csvbox { width: 100%; font-family: var(--font-mono); font-size: var(--text-sm); }
+  @media (max-width: 900px) {
+    .grid-split { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app" id="app">
+  <aside class="rail" id="rail" aria-label="Inventory sections">
+    <div class="rail__head">
+      <div class="cluster-split">
+        <a class="kicker" href="/" style="text-decoration:none;color:inherit">GVC Portal</a>
+        <button type="button" class="btn btn-icon btn-ghost phone-only" id="rail-close" aria-label="Close menu">&times;</button>
+      </div>
+      <div class="rail__job">Inventory admin</div>
+    </div>
+    <nav class="rail__nav" id="railnav" aria-label="Sections">
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Inventory</span>
+        <a class="nav-item" href="#overview" data-nav="overview"><span class="nav-item__name">Overview</span></a>
+        <a class="nav-item" href="#items" data-nav="items"><span class="nav-item__name">Items</span></a>
+        <a class="nav-item" href="#assets" data-nav="assets"><span class="nav-item__name">Assets</span></a>
+        <a class="nav-item" href="#locations" data-nav="locations"><span class="nav-item__name">Locations</span></a>
+        <a class="nav-item" href="#counts" data-nav="counts"><span class="nav-item__name">Counts</span></a>
+        <a class="nav-item" href="#attention" data-nav="attention"><span class="nav-item__name">Attention</span><span class="badge" id="nav-att-badge" hidden>0</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Office tools</span>
+        <a class="nav-item" href="#import" data-nav="import"><span class="nav-item__name">Import</span></a>
+        <a class="nav-item" href="#reports" data-nav="reports"><span class="nav-item__name">Reports</span></a>
+        <a class="nav-item" href="#labels" data-nav="labels"><span class="nav-item__name">Labels</span><span class="badge" id="nav-basket-badge" hidden>0</span></a>
+      </div>
+      <div class="rail__group">
+        <span class="kicker kicker-sm">Field app</span>
+        <a class="nav-item" href="/ui/inventory"><span class="nav-item__name">Open field inventory</span></a>
+      </div>
+    </nav>
+    <div class="rail__foot">
+      <span class="avatar" id="railavatar" aria-hidden="true">?</span>
+      <span class="row__main">
+        <b class="row__title" style="max-width:9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{EMAIL}}">{{EMAIL}}</b>
+        <span class="row__sub">Inventory manager</span>
+      </span>
+      <button type="button" class="btn btn-sm btn-ghost" id="theme-toggle" data-theme-label>Auto</button>
+      <a class="btn btn-sm btn-ghost" href="/auth/logout">Sign out</a>
+    </div>
+  </aside>
+
+  <main>
+    <header class="topbar">
+      <button type="button" class="btn btn-icon phone-only" id="menubtn" aria-label="Sections">&#8801;</button>
+      <div class="topbar__title">
+        <span class="kicker">Inventory admin</span>
+        <h1 id="page-title">Overview</h1>
+      </div>
+      <div class="topbar__actions">
+        <a class="btn btn-sm btn-ghost" href="/">Hub</a>
+      </div>
+    </header>
+
+    <div class="page">
+      <div id="status" role="status"></div>
+
+      <!-- =============================== OVERVIEW =============================== -->
+      <section id="sec-overview" data-section="overview">
+        <div class="grid-metrics" id="ov-totals"></div>
+        <div class="grid-split">
+          <div class="card card-flush">
+            <div class="card-head"><div class="row__main"><h2>Needs attention</h2></div><a href="#attention">Open Attention</a></div>
+            <div class="scroll-rows" id="ov-attention"><div class="empty">Loading…</div></div>
+          </div>
+          <div class="card card-flush">
+            <div class="card-head"><div class="row__main"><h2>Low stock</h2></div><a href="#reports">Reports</a></div>
+            <div class="scroll-rows" id="ov-low"><div class="empty">Loading…</div></div>
+          </div>
+        </div>
+        <div class="grid-split">
+          <div class="card card-flush">
+            <div class="card-head"><div class="row__main"><h2>Counts in flight</h2></div><a href="#counts">Open Counts</a></div>
+            <div class="scroll-rows" id="ov-counts"><div class="empty">Loading…</div></div>
+          </div>
+          <div class="card card-flush">
+            <div class="card-head"><div class="row__main"><h2>Recent transactions</h2></div><a href="#reports">Full history</a></div>
+            <div class="scroll-rows" id="ov-recent"><div class="empty">Loading…</div></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================ ITEMS ================================ -->
+      <section id="sec-items" data-section="items" hidden>
+        <div class="grid-split">
+          <div class="card">
+            <div class="card-head">
+              <div class="row__main"><h2>Items</h2></div>
+              <button type="button" class="btn btn-sm btn-primary" id="item-new">New item</button>
+            </div>
+            <input class="input" id="item-q" type="search" placeholder="Search by name, alias, or barcode…" autocomplete="off" />
+            <div class="cluster" style="margin-top:var(--space-2)">
+              <button type="button" class="chip" id="item-archived-chip" aria-pressed="false">Show archived</button>
+            </div>
+            <div class="scroll-rows" id="item-results" style="margin-top:var(--space-3)">
+              <div class="empty">Type to search the catalog. Nothing yet? <a href="#import">Import a CSV</a> or add your first item.</div>
+            </div>
+          </div>
+          <div class="card" id="item-editor">
+            <div class="empty">Pick an item on the left, or start a new one.</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ================================ ASSETS =============================== -->
+      <section id="sec-assets" data-section="assets" hidden>
+        <div class="card">
+          <div class="card-head"><div class="row__main"><h2>Assets</h2></div></div>
+          <p class="muted" style="margin:0 0 var(--space-3)">Serialized tools live under an asset-tracked item. Find the item to see and manage its units.</p>
+          <div id="asset-item-picker"></div>
+        </div>
+        <div id="asset-panel"></div>
+      </section>
+
+      <!-- ============================== LOCATIONS ============================== -->
+      <section id="sec-locations" data-section="locations" hidden>
+        <div class="grid-split">
+          <div class="card card-flush">
+            <div class="card-head">
+              <div class="row__main"><h2>Locations</h2></div>
+              <button type="button" class="btn btn-sm btn-primary" id="loc-new">New location</button>
+            </div>
+            <div class="scroll-rows" id="loc-tree"><div class="empty">Loading…</div></div>
+          </div>
+          <div class="stack" style="gap:var(--space-4)">
+            <div class="card" id="loc-editor"><div class="empty">Pick a location to edit, or add a new one.</div></div>
+            <div class="card" id="loc-contents" hidden></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =============================== COUNTS ================================ -->
+      <section id="sec-counts" data-section="counts" hidden>
+        <div class="grid-split">
+          <div class="card">
+            <div class="card-head"><div class="row__main"><h2>Start a count</h2></div></div>
+            <div id="count-kind-host"></div>
+            <p class="muted" id="count-kind-hint" style="margin:var(--space-2) 0 0;font-size:var(--text-xs)">Quick: the counter sees expected numbers. Blind: they count cold — better audit.</p>
+            <label class="field-label">Location</label>
+            <div id="count-loc-picker"></div>
+            <label class="field-label" for="count-assignee">Assignee email</label>
+            <input class="input" id="count-assignee" type="email" inputmode="email" autocomplete="off" />
+            <label class="field-label">Also count these items (optional)</label>
+            <div id="count-extra-picker"></div>
+            <div class="cluster" id="count-extra-chips" style="margin-top:var(--space-2)"></div>
+            <div class="btn-row" style="margin-top:var(--space-4)">
+              <button type="button" class="btn btn-primary" id="count-start">Start count</button>
+            </div>
+          </div>
+          <div class="card card-flush">
+            <div class="card-head"><div class="row__main"><h2>Sessions</h2></div><button type="button" class="btn btn-sm btn-ghost" id="count-refresh">Refresh</button></div>
+            <div class="scroll-rows" id="count-sessions"><div class="empty">Loading…</div></div>
+          </div>
+        </div>
+        <div class="card" id="count-review" hidden></div>
+      </section>
+
+      <!-- ============================== ATTENTION ============================== -->
+      <section id="sec-attention" data-section="attention" hidden>
+        <div id="att-groups"><div class="empty">Loading…</div></div>
+      </section>
+
+      <!-- =============================== IMPORT ================================ -->
+      <section id="sec-import" data-section="import" hidden>
+        <div class="card">
+          <div class="card-head"><div class="row__main"><h2>Import items from CSV</h2></div></div>
+          <p class="muted" style="margin:0 0 var(--space-3)">Three steps: download the template, fill it in, preview, then commit. <b>Commit is all-or-nothing</b> — if any row fails validation, nothing is imported.</p>
+          <a class="btn btn-sm" id="import-template" download="inventory-import-template.csv" href="#">Download the CSV template</a>
+          <label class="field-label" for="import-file">Upload the filled-in CSV</label>
+          <input class="input" id="import-file" type="file" accept=".csv,text/csv" />
+          <label class="field-label" for="import-csv">…or paste CSV here</label>
+          <textarea class="input csvbox" id="import-csv" rows="8" spellcheck="false" placeholder="name,tracking,base_unit,category,aliases,qty,location,serial"></textarea>
+          <div class="btn-row" style="margin-top:var(--space-3)">
+            <button type="button" class="btn" id="import-preview">Preview</button>
+            <button type="button" class="btn btn-primary" id="import-commit" disabled>Commit import</button>
+          </div>
+          <div id="import-result" style="margin-top:var(--space-3)"></div>
+        </div>
+      </section>
+
+      <!-- =============================== REPORTS =============================== -->
+      <section id="sec-reports" data-section="reports" hidden>
+        <div class="card">
+          <div class="card-head">
+            <div class="row__main"><h2>Balances by location</h2></div>
+            <a class="btn btn-sm btn-ghost" href="/ui/api/inventory/export.csv?kind=balances">Export CSV</a>
+          </div>
+          <div id="rep-loc-picker"></div>
+          <div id="rep-balances" style="margin-top:var(--space-3)"><div class="empty">Pick a location to see what it holds.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="row__main"><h2>History</h2></div>
+            <a class="btn btn-sm btn-ghost" href="/ui/api/inventory/export.csv?kind=history">Export CSV</a>
+          </div>
+          <div class="kvrow">
+            <div class="picker" id="hist-item-picker" style="flex:1;min-width:160px"></div>
+            <div class="picker" id="hist-loc-picker" style="flex:1;min-width:160px"></div>
+            <input class="input narrow" id="hist-actor" type="text" placeholder="Actor email" autocomplete="off" style="flex:1;min-width:140px" />
+          </div>
+          <div id="hist-type-host"></div>
+          <div class="btn-row" style="margin-top:var(--space-3)">
+            <button type="button" class="btn" id="hist-load">Load history</button>
+          </div>
+          <div id="hist-rows" style="margin-top:var(--space-3)"><div class="empty">Set filters (or none) and load.</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <div class="row__main"><h2>Low stock</h2></div>
+            <a class="btn btn-sm btn-ghost" href="/ui/api/inventory/export.csv?kind=low_stock">Export CSV</a>
+          </div>
+          <div id="rep-low"><div class="empty">Loading…</div></div>
+        </div>
+      </section>
+
+      <!-- =============================== LABELS ================================ -->
+      <section id="sec-labels" data-section="labels" hidden>
+        <div class="card">
+          <div class="card-head"><div class="row__main"><h2>Label basket</h2></div>
+            <button type="button" class="btn btn-sm btn-ghost" id="basket-clear">Clear</button>
+          </div>
+          <p class="muted" style="margin:0 0 var(--space-3)">Add locations, assets, and items from their sections, then print one sheet. Labels print 30 per page on Avery 5160-style sheets — 3 columns × 10 rows, 2⅝″ × 1″ each, QR plus a human-typeable code.</p>
+          <div class="btn-row">
+            <button type="button" class="btn btn-sm" id="basket-all-storage">Add all storage locations</button>
+          </div>
+          <div class="scroll-rows" id="basket-rows" style="margin-top:var(--space-3)"></div>
+          <div class="btn-row" style="margin-top:var(--space-4)">
+            <button type="button" class="btn btn-primary" id="basket-pdf">Generate PDF</button>
+          </div>
+          <div id="basket-status" style="margin-top:var(--space-2)"></div>
+        </div>
+      </section>
+    </div>
+
+    <nav class="tabbar" aria-label="Phone navigation">
+      <a href="#overview" data-dock="overview" class="is-active">Home</a>
+      <a href="#items" data-dock="items">Items</a>
+      <a href="#attention" data-dock="attention">Alerts<span class="badge" id="dock-att-badge" hidden>0</span></a>
+      <a href="#menu" id="dock-menu">Menu</a>
+    </nav>
+  </main>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+
+<div class="overlay" id="confirm-overlay" hidden>
+  <div class="card overlay__card">
+    <h3 id="confirm-title">Confirm</h3>
+    <div id="confirm-body" style="font-size:var(--text-sm)"></div>
+    <div class="btn-row" style="justify-content:flex-end;margin-top:var(--space-4)">
+      <button type="button" class="btn btn-ghost" id="confirm-cancel">Cancel</button>
+      <button type="button" class="btn btn-primary" id="confirm-yes">Confirm</button>
+    </div>
+  </div>
+</div>
+
+<script src="/ui/gvc-theme.js"></script>
+<script src="/ui/gvc-command.js"></script>
+<script>
+(function () {
+  "use strict";
+
+  var EMAIL = {{EMAIL_JSON}};
+
+  /* ------------------------------------------------------------ helpers */
+  function $(s) { return document.querySelector(s); }
+  function $id(i) { return document.getElementById(i); }
+  function esc(s) {
+    return String(s == null ? "" : s)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+  function uuid() {
+    try { if (crypto.randomUUID) return crypto.randomUUID(); } catch (e) {}
+    return "u-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+  }
+  function debounce(fn, ms) {
+    var t = null;
+    return function () {
+      var args = arguments, self = this;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(self, args); }, ms);
+    };
+  }
+  function toast(msg) {
+    var el = $id("toast");
+    el.textContent = msg;
+    el.classList.add("show");
+    clearTimeout(toast._t);
+    toast._t = setTimeout(function () { el.classList.remove("show"); }, 2600);
+  }
+  function envErr(body) {
+    var d = body && body.detail;
+    if (d && typeof d === "object") {
+      return { code: d.code || "ERROR", detail: d.detail || "Request failed.", advice: d.advice || "" };
+    }
+    if (body && typeof body === "object" && (body.code || body.advice)) {
+      return { code: body.code || "ERROR", detail: body.detail || "Request failed.", advice: body.advice || "" };
+    }
+    return { code: "ERROR", detail: (typeof d === "string" && d) || "Request failed.", advice: "" };
+  }
+  /* Every server error renders its {code, detail, advice} envelope inline. */
+  function errHtml(err) {
+    var advice = err.advice ? "<br><span class=\"muted\">" + esc(err.advice) + "</span>" : "";
+    return "<b>" + esc(err.code) + "</b> — " + esc(err.detail) + advice;
+  }
+  async function api(path, opts) {
+    opts = opts || {};
+    var init = {
+      method: opts.method || (opts.body !== undefined ? "POST" : "GET"),
+      credentials: "same-origin",
+      headers: {},
+    };
+    if (opts.body !== undefined) {
+      init.headers["Content-Type"] = "application/json";
+      init.body = JSON.stringify(opts.body);
+    }
+    var r;
+    try {
+      r = await fetch(path, init);
+    } catch (e) {
+      return { ok: false, status: 0, err: { code: "NETWORK", detail: e.message || "Network error.", advice: "Check your connection and try again." } };
+    }
+    if (opts.blob) {
+      if (!r.ok) {
+        var eb = null;
+        try { eb = await r.json(); } catch (e2) {}
+        return { ok: false, status: r.status, err: envErr(eb) };
+      }
+      return { ok: true, status: r.status, blob: await r.blob() };
+    }
+    var body = null;
+    try { body = await r.json(); } catch (e3) {}
+    if (!r.ok || (body && body.ok === false)) {
+      return { ok: false, status: r.status, err: envErr(body), body: body };
+    }
+    return { ok: true, status: r.status, body: body || {} };
+  }
+  function showStatus(kind, html) {
+    var el = $id("status");
+    el.className = "show " + kind;
+    el.innerHTML = html;
+  }
+  function clearStatus() {
+    var el = $id("status");
+    el.className = "";
+    el.innerHTML = "";
+  }
+  function fmtWhen(raw) {
+    if (!raw) return "";
+    try {
+      var d = new Date(raw);
+      if (isNaN(d.getTime())) return String(raw);
+      return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch (e) { return String(raw); }
+  }
+  function chips(host, cfg) {
+    /* GvcChips (gvc-command.js) — chips carry every finite choice; this
+       page ships zero select elements. */
+    host.innerHTML = "";
+    var el = window.GvcChips.mount(cfg);
+    host.appendChild(el);
+    return el;
+  }
+  function linesSummary(lines) {
+    return (lines || []).map(function (ln) {
+      if (ln.kind === "asset") return (ln.asset_id || "asset") + (ln.condition_to ? " → " + ln.condition_to : "");
+      if (ln.kind === "kit") return ln.kit_id || "kit";
+      return (ln.qty || "") + " " + (ln.unit || "") + " " + (ln.item_name || ln.item_id || "");
+    }).join(" · ");
+  }
+
+  var UNITS = ["each", "box", "open_box", "case", "bucket", "roll", "bundle",
+               "set", "pair", "foot", "sheet", "bag", "tube", "gallon"];
+  var LOCATION_KINDS = ["storage", "zone", "shelf", "office", "shop", "truck",
+                        "job_site", "employee", "repair", "disposal"];
+  var CONDITIONS = ["available", "in_use", "damaged", "needs_repair",
+                    "missing_components", "quarantined", "retired", "lost"];
+  var TXN_TYPES = ["RECEIVE", "ISSUE", "TRANSFER", "COUNT_ADJUSTMENT",
+                   "MANUAL_ADJUSTMENT", "ASSET_ASSIGNMENT", "CONDITION_CHANGE",
+                   "KIT_ASSEMBLY", "KIT_DISASSEMBLY", "REVERSAL", "INITIAL_LOAD"];
+  var KIND_TAGS = {
+    unknown_item: "tag-gold", damage: "tag-alert", negative_override: "tag-alert",
+    low_stock: "tag-gold", count_discrepancy: "tag-gold", incomplete_kit: "tag-gold",
+    sync_failure: "tag-alert", asset_lost: "tag-alert",
+  };
+
+  /* ------------------------------------------------------------ confirm */
+  var confirmState = null;
+  function confirmCard(opts) {
+    confirmState = opts;
+    $id("confirm-title").textContent = opts.title || "Confirm";
+    $id("confirm-body").innerHTML = opts.body || "";
+    var yes = $id("confirm-yes");
+    yes.textContent = opts.label || "Confirm";
+    yes.className = "btn " + (opts.danger ? "btn-danger" : "btn-primary");
+    $id("confirm-overlay").hidden = false;
+  }
+  function closeConfirm() {
+    $id("confirm-overlay").hidden = true;
+    confirmState = null;
+  }
+  $id("confirm-cancel").addEventListener("click", closeConfirm);
+  $id("confirm-overlay").addEventListener("click", function (ev) {
+    if (ev.target === $id("confirm-overlay")) closeConfirm();
+  });
+  $id("confirm-yes").addEventListener("click", function () {
+    var st = confirmState;
+    closeConfirm();
+    if (st && typeof st.onConfirm === "function") st.onConfirm();
+  });
+
+  /* ------------------------------------------------------------ pickers */
+  var LOCS = [];           // cached location list (all=1, includes inactive)
+  function locById(id) {
+    for (var i = 0; i < LOCS.length; i++) if (LOCS[i].id === id) return LOCS[i];
+    return null;
+  }
+  function locPath(id) {
+    var l = locById(id);
+    return l ? (l.path || l.name) : (id || "");
+  }
+  async function refreshLocations() {
+    var r = await api("/ui/api/inventory/locations?all=1");
+    if (r.ok) LOCS = r.body.locations || [];
+    return r;
+  }
+  function mountLocPicker(host, opts) {
+    opts = opts || {};
+    host.classList.add("picker");
+    host.innerHTML = "<input class=\"input\" type=\"text\" placeholder=\"" +
+      esc(opts.placeholder || "Search locations…") +
+      "\" autocomplete=\"off\"><div class=\"picker__list\" hidden></div>";
+    var input = host.querySelector("input");
+    var list = host.querySelector(".picker__list");
+    var chosen = "";
+    function options() {
+      return LOCS.filter(function (l) {
+        if (!opts.includeInactive && l.active === false) return false;
+        return opts.filter ? opts.filter(l) : true;
+      });
+    }
+    function renderList() {
+      var q = input.value.trim().toLowerCase();
+      var rows = options().filter(function (l) {
+        return !q || (l.path || l.name).toLowerCase().indexOf(q) !== -1;
+      }).slice(0, 50);
+      list.hidden = false;
+      list.innerHTML = rows.length
+        ? rows.map(function (l) {
+            return "<button type=\"button\" class=\"picker__opt\" data-id=\"" + esc(l.id) + "\">" +
+              esc(l.path || l.name) + " <span class=\"tag\">" + esc(l.kind) + "</span>" +
+              (l.active === false ? " <span class=\"tag tag-alert\">inactive</span>" : "") +
+              "</button>";
+          }).join("")
+        : "<div class=\"muted\" style=\"padding:10px\">No locations match. Add one in the Locations section.</div>";
+    }
+    input.addEventListener("focus", renderList);
+    input.addEventListener("input", function () { chosen = ""; renderList(); });
+    list.addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-id]");
+      if (!b) return;
+      chosen = b.getAttribute("data-id");
+      input.value = locPath(chosen);
+      list.hidden = true;
+      if (opts.onPick) opts.onPick(chosen);
+    });
+    document.addEventListener("click", function (ev) {
+      if (!host.contains(ev.target)) list.hidden = true;
+    });
+    return {
+      get value() { return chosen; },
+      set value(v) { chosen = v || ""; input.value = chosen ? locPath(chosen) : ""; },
+      clear: function () { chosen = ""; input.value = ""; },
+    };
+  }
+  function mountItemPicker(host, opts) {
+    opts = opts || {};
+    host.classList.add("picker");
+    host.innerHTML = "<input class=\"input\" type=\"text\" placeholder=\"" +
+      esc(opts.placeholder || "Search items…") +
+      "\" autocomplete=\"off\"><div class=\"picker__list\" hidden></div>";
+    var input = host.querySelector("input");
+    var list = host.querySelector(".picker__list");
+    var chosen = null;
+    var run = debounce(async function () {
+      var q = input.value.trim();
+      if (q.length < 2) { list.hidden = true; return; }
+      var url = "/ui/api/inventory/search?q=" + encodeURIComponent(q) +
+                (opts.includeArchived ? "&include_archived=1" : "");
+      var r = await api(url);
+      if (!r.ok) { list.hidden = false; list.innerHTML = "<div class=\"muted\" style=\"padding:10px\">" + errHtml(r.err) + "</div>"; return; }
+      var rows = (r.body.results || []).map(function (h) { return h.item; });
+      if (opts.filter) rows = rows.filter(opts.filter);
+      list.hidden = false;
+      list.innerHTML = rows.length
+        ? rows.map(function (it) {
+            return "<button type=\"button\" class=\"picker__opt\" data-id=\"" + esc(it.id) + "\">" +
+              esc(it.name) + " <span class=\"tag\">" + esc(it.tracking) + "</span></button>";
+          }).join("")
+        : "<div class=\"muted\" style=\"padding:10px\">No items match" + (opts.filterNote ? " (" + esc(opts.filterNote) + ")" : "") + ".</div>";
+      list._rows = rows;
+    }, 300);
+    input.addEventListener("input", function () { chosen = null; run(); });
+    list.addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-id]");
+      if (!b) return;
+      var id = b.getAttribute("data-id");
+      var rows = list._rows || [];
+      for (var i = 0; i < rows.length; i++) if (rows[i].id === id) chosen = rows[i];
+      input.value = chosen ? chosen.name : id;
+      list.hidden = true;
+      if (opts.onPick) opts.onPick(chosen);
+    });
+    document.addEventListener("click", function (ev) {
+      if (!host.contains(ev.target)) list.hidden = true;
+    });
+    return {
+      get item() { return chosen; },
+      clear: function () { chosen = null; input.value = ""; },
+    };
+  }
+  function mountTagInput(host, opts) {
+    opts = opts || {};
+    var values = (opts.values || []).slice();
+    host.classList.add("tagbox");
+    function render() {
+      host.innerHTML = values.map(function (v, i) {
+        return "<span class=\"tag tag-green\">" + esc(v) +
+          "<button type=\"button\" data-rm=\"" + i + "\" aria-label=\"Remove\">&times;</button></span>";
+      }).join("") + "<input type=\"text\" placeholder=\"" + esc(opts.placeholder || "Add + Enter") + "\" autocomplete=\"off\">";
+      host.querySelector("input").addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === ",") {
+          ev.preventDefault();
+          var v = ev.target.value.replace(/,/g, "").trim();
+          if (v && values.indexOf(v) === -1) { values.push(v); render(); host.querySelector("input").focus(); }
+          else ev.target.value = "";
+        }
+      });
+      host.querySelector("input").addEventListener("blur", function (ev) {
+        var v = ev.target.value.trim();
+        if (v && values.indexOf(v) === -1) { values.push(v); render(); }
+      });
+    }
+    host.addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-rm]");
+      if (b) { values.splice(Number(b.getAttribute("data-rm")), 1); render(); }
+      else if (ev.target === host) host.querySelector("input").focus();
+    });
+    render();
+    return { get values() { return values.slice(); } };
+  }
+
+  /* ------------------------------------------------------------- router */
+  var SECTIONS = ["overview", "items", "assets", "locations", "counts",
+                  "attention", "import", "reports", "labels"];
+  var TITLES = {
+    overview: "Overview", items: "Items", assets: "Assets",
+    locations: "Locations", counts: "Counts", attention: "Attention",
+    "import": "Import", reports: "Reports", labels: "Labels",
+  };
+  var loadedOnce = {};
+  function currentSection() {
+    var h = (location.hash || "#overview").replace(/^#/, "").split("?")[0];
+    return SECTIONS.indexOf(h) !== -1 ? h : "overview";
+  }
+  function route() {
+    var sec = currentSection();
+    SECTIONS.forEach(function (s) {
+      var el = $id("sec-" + s);
+      if (el) el.hidden = (s !== sec);
+    });
+    $id("page-title").textContent = TITLES[sec];
+    document.querySelectorAll("#railnav [data-nav]").forEach(function (a) {
+      a.classList.toggle("is-active", a.getAttribute("data-nav") === sec);
+    });
+    document.querySelectorAll(".tabbar [data-dock]").forEach(function (a) {
+      a.classList.toggle("is-active", a.getAttribute("data-dock") === sec);
+    });
+    railOpen(false);
+    var loaders = {
+      overview: loadOverview, locations: loadLocationsSection,
+      counts: loadCounts, attention: loadAttention,
+      reports: loadReportsSection, labels: renderBasket,
+    };
+    if (loaders[sec]) loaders[sec]();
+    loadedOnce[sec] = true;
+  }
+  function railOpen(open) {
+    $id("rail").classList.toggle("is-open", !!open);
+  }
+  $id("menubtn").addEventListener("click", function () { railOpen(true); });
+  $id("rail-close").addEventListener("click", function () { railOpen(false); });
+  $id("dock-menu").addEventListener("click", function (ev) {
+    ev.preventDefault();
+    railOpen(true);
+  });
+  window.addEventListener("hashchange", route);
+
+  /* ----------------------------------------------------------- overview */
+  var OVERVIEW = null;
+  async function loadOverview() {
+    var r = await api("/ui/api/inventory/overview");
+    if (!r.ok) {
+      showStatus("err", errHtml(r.err));
+      ["ov-attention", "ov-low", "ov-counts", "ov-recent"].forEach(function (id) {
+        $id(id).innerHTML = "<div class=\"empty\">Unavailable — see the error above.</div>";
+      });
+      return;
+    }
+    clearStatus();
+    OVERVIEW = r.body;
+    var t = OVERVIEW.totals || {};
+    $id("ov-totals").innerHTML = [
+      ["Items", t.items, "#items"], ["Assets", t.assets, "#assets"],
+      ["Kits", t.kits, "#items"], ["Locations", t.locations, "#locations"],
+    ].map(function (m) {
+      return "<a class=\"stat\" href=\"" + m[2] + "\" style=\"text-decoration:none\">" +
+        "<span class=\"stat__value num-lg\">" + esc(m[1] == null ? "0" : m[1]) + "</span>" +
+        "<span class=\"stat__label\">" + m[0] + "</span></a>";
+    }).join("");
+
+    var att = OVERVIEW.attention || [];
+    $id("ov-attention").innerHTML = att.length
+      ? att.map(function (a) {
+          return "<a class=\"row\" href=\"#attention\"><span class=\"row__main\">" +
+            "<b class=\"row__title\">" + esc(a.title) + "</b>" +
+            "<span class=\"row__sub\">" + esc(a.detail || "") + "</span></span>" +
+            "<span class=\"tag " + (KIND_TAGS[a.kind] || "") + "\">" + esc(a.kind) + "</span></a>";
+        }).join("")
+      : "<div class=\"empty\">Nothing needs you. New damage reports, unknown items, and overrides land here.</div>";
+    setAttBadge(OVERVIEW.attention_open || 0);
+
+    var low = OVERVIEW.low_stock || [];
+    $id("ov-low").innerHTML = low.length
+      ? low.map(function (h) {
+          return "<a class=\"row\" href=\"#items\"><span class=\"row__main\">" +
+            "<b class=\"row__title\">" + esc(h.name) + "</b>" +
+            "<span class=\"row__sub\">" + esc(locPath(h.location_id)) + "</span></span>" +
+            "<span class=\"num\">" + esc(h.on_hand) + " / min " + esc(h.min_qty) + "</span></a>";
+        }).join("")
+      : "<div class=\"empty\">Nothing under its minimum. Set min quantities on items to watch stock here.</div>";
+
+    var oc = OVERVIEW.open_counts || [];
+    $id("ov-counts").innerHTML = oc.length
+      ? oc.map(function (s) {
+          return "<a class=\"row\" href=\"#counts\"><span class=\"row__main\">" +
+            "<b class=\"row__title\">" + esc(s.location) + "</b>" +
+            "<span class=\"row__sub\">" + esc(s.kind) + " · " + esc(s.assignee || "") + "</span></span>" +
+            "<span class=\"tag " + (s.status === "submitted" ? "tag-gold" : "") + "\">" + esc(s.status) + "</span></a>";
+        }).join("")
+      : "<div class=\"empty\">No counts running. Start one from the Counts section.</div>";
+
+    var rec = OVERVIEW.recent || [];
+    $id("ov-recent").innerHTML = rec.length
+      ? rec.map(function (e) {
+          var route2 = [e.src, e.dst].filter(Boolean).join(" → ");
+          return "<a class=\"row\" href=\"#reports\"><span class=\"row__main\">" +
+            "<b class=\"row__title\">" + esc(e.type) + " · " + esc(e.txn_no) + "</b>" +
+            "<span class=\"row__sub\">" + esc(e.actor) + " · " + esc(fmtWhen(e.ts)) +
+            (route2 ? " · " + esc(route2) : "") + "</span>" +
+            "<span class=\"row__sub\">" + esc(linesSummary(e.lines)) + "</span></span>" +
+            (e.status === "reversed" ? "<span class=\"tag tag-alert\">reversed</span>" : "") + "</a>";
+        }).join("")
+      : "<div class=\"empty\">No transactions yet. Nothing moves until the first load — <a href=\"#import\">import a CSV</a> or add your first item.</div>";
+  }
+  function setAttBadge(n) {
+    ["nav-att-badge", "dock-att-badge"].forEach(function (id) {
+      var b = $id(id);
+      b.textContent = String(n);
+      b.hidden = !n;
+    });
+  }
+
+  /* -------------------------------------------------------------- items */
+  var showArchived = false;
+  var itemEditorState = null;   // live editor sub-state
+  var pendingLoad = null;       // set by Attention → "Create item from this…"
+
+  $id("item-archived-chip").addEventListener("click", function () {
+    showArchived = !showArchived;
+    this.classList.toggle("is-active", showArchived);
+    this.setAttribute("aria-pressed", showArchived ? "true" : "false");
+    runItemSearch();
+  });
+  var runItemSearch = debounce(async function () {
+    var q = $id("item-q").value.trim();
+    var box = $id("item-results");
+    if (q.length < 2) {
+      box.innerHTML = "<div class=\"empty\">Type to search the catalog. Nothing yet? <a href=\"#import\">Import a CSV</a> or add your first item.</div>";
+      return;
+    }
+    box.innerHTML = "<div class=\"empty\">Searching…</div>";
+    var r = await api("/ui/api/inventory/search?q=" + encodeURIComponent(q) +
+                      (showArchived ? "&include_archived=1" : ""));
+    if (!r.ok) { box.innerHTML = "<div class=\"empty\">" + errHtml(r.err) + "</div>"; return; }
+    var hits = r.body.results || [];
+    box.innerHTML = hits.length
+      ? hits.map(function (h) {
+          var it = h.item;
+          var thumb = it.image_url
+            ? "<span class=\"thumb\"><img src=\"" + esc(it.image_url) + "\" alt=\"\"></span>"
+            : "<span class=\"thumb\">" + esc((it.name || "?").slice(0, 1).toUpperCase()) + "</span>";
+          return "<button type=\"button\" class=\"row\" data-item=\"" + esc(it.id) + "\" style=\"width:100%;text-align:left;border:0;background:none;cursor:pointer\">" +
+            thumb +
+            "<span class=\"row__main\"><b class=\"row__title\">" + esc(it.name) + "</b>" +
+            "<span class=\"row__sub\">" + esc(it.tracking) + " · " + esc(it.base_unit) +
+            (it.category ? " · " + esc(it.category) : "") + "</span></span>" +
+            "<span class=\"num\">" + esc(h.on_hand_total || "0") + "</span>" +
+            (it.archived ? "<span class=\"tag tag-alert\">archived</span>" : "") +
+            "</button>";
+        }).join("")
+      : "<div class=\"empty\">No items match “" + esc(q) + "”. Check spelling, or add it as a new item.</div>";
+  }, 300);
+  $id("item-q").addEventListener("input", runItemSearch);
+  $id("item-results").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-item]");
+    if (b) openItem(b.getAttribute("data-item"));
+  });
+  $id("item-new").addEventListener("click", function () { renderItemEditor(null); });
+
+  async function openItem(id) {
+    var r = await api("/ui/api/inventory/item/" + encodeURIComponent(id));
+    if (!r.ok) { $id("item-editor").innerHTML = "<div class=\"empty\">" + errHtml(r.err) + "</div>"; return; }
+    renderItemEditor(r.body.item);
+  }
+
+  function renderItemEditor(item, prefill) {
+    var ed = $id("item-editor");
+    var isNew = !item;
+    var st = {
+      id: item ? item.id : "",
+      tracking: item ? item.tracking : (prefill && prefill.tracking) || "quantity",
+      base_unit: item ? item.base_unit : "each",
+      conversions: item ? Object.keys(item.conversions || {}).map(function (u) {
+        return { unit: u, factor: item.conversions[u] };
+      }) : [],
+      min_qty: item ? Object.keys(item.min_qty || {}).map(function (lid) {
+        return { location_id: lid, qty: item.min_qty[lid] };
+      }) : [],
+      kit_components: item ? (item.kit_components || []).slice() : [],
+      archived: item ? !!item.archived : false,
+    };
+    itemEditorState = st;
+
+    var trackingBlock = isNew
+      ? "<label class=\"field-label\">Tracking</label><div id=\"ed-tracking-host\"></div>" +
+        "<p class=\"muted\" style=\"font-size:var(--text-xs);margin:var(--space-1) 0 0\">Quantity = counted stock · Asset = serialized tools · Kit = a template of quantity items.</p>"
+      : "<label class=\"field-label\">Tracking</label>" +
+        "<p style=\"margin:0\"><span class=\"tag tag-green\">" + esc(st.tracking) + "</span> " +
+        "<span class=\"muted\" style=\"font-size:var(--text-xs)\">Locked after creation — history depends on it. To change, archive this item and create a new one.</span></p>";
+
+    ed.innerHTML =
+      "<div class=\"card-head\"><div class=\"row__main\"><h2>" + (isNew ? "New item" : "Edit item") + "</h2></div>" +
+      (isNew ? "" :
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"ed-label\">Add label</button>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"ed-merge\">Merge into…</button>" +
+        "<button type=\"button\" class=\"btn btn-sm " + (st.archived ? "" : "btn-ghost") + "\" id=\"ed-archive\">" +
+        (st.archived ? "Restore" : "Archive") + "</button>") +
+      "</div>" +
+      "<div id=\"ed-err\"></div>" +
+      "<label class=\"field-label\" for=\"ed-name\">Name</label>" +
+      "<input class=\"input\" id=\"ed-name\" type=\"text\" value=\"" + esc(item ? item.name : (prefill && prefill.name) || "") + "\" autocomplete=\"off\" />" +
+      "<label class=\"field-label\" for=\"ed-category\">Category</label>" +
+      "<input class=\"input\" id=\"ed-category\" type=\"text\" value=\"" + esc(item ? item.category : "") + "\" autocomplete=\"off\" />" +
+      trackingBlock +
+      "<label class=\"field-label\">Base unit</label><div id=\"ed-unit-host\"></div>" +
+      "<label class=\"field-label\">Unit conversions <span class=\"muted\">(1 unit = N base units)</span></label>" +
+      "<div id=\"ed-conversions\"></div>" +
+      "<button type=\"button\" class=\"btn btn-sm btn-dashed\" id=\"ed-conv-add\">Add conversion</button>" +
+      "<label class=\"field-label\">Aliases <span class=\"muted\">(what the crew calls it)</span></label>" +
+      "<div id=\"ed-aliases\"></div>" +
+      "<label class=\"field-label\">Barcodes</label>" +
+      "<div id=\"ed-barcodes\"></div>" +
+      "<div id=\"ed-kit-wrap\" hidden>" +
+      "<label class=\"field-label\">Kit components <span class=\"muted\">(quantity-tracked items only)</span></label>" +
+      "<div id=\"ed-kit-rows\"></div>" +
+      "<div class=\"picker\" id=\"ed-kit-picker\"></div>" +
+      "</div>" +
+      "<label class=\"field-label\">Minimum stock per location</label>" +
+      "<div id=\"ed-min-rows\"></div>" +
+      "<button type=\"button\" class=\"btn btn-sm btn-dashed\" id=\"ed-min-add\">Add minimum</button>" +
+      "<label class=\"field-label\" for=\"ed-image\">Image URL <span class=\"muted\">(optional)</span></label>" +
+      "<input class=\"input\" id=\"ed-image\" type=\"url\" value=\"" + esc(item ? item.image_url : "") + "\" autocomplete=\"off\" />" +
+      "<label class=\"field-label\" for=\"ed-notes\">Notes</label>" +
+      "<textarea class=\"input\" id=\"ed-notes\" rows=\"3\">" + esc(item ? item.notes : (prefill && prefill.notes) || "") + "</textarea>" +
+      "<div class=\"btn-row\" style=\"margin-top:var(--space-4)\">" +
+      "<button type=\"button\" class=\"btn btn-primary\" id=\"ed-save\">" + (isNew ? "Create item" : "Save changes") + "</button>" +
+      "</div>" +
+      "<div id=\"ed-merge-panel\"></div>";
+
+    if (isNew) {
+      chips($id("ed-tracking-host"), {
+        name: "ed_tracking",
+        options: [{ value: "quantity", label: "Quantity" }, { value: "asset", label: "Asset" }, { value: "kit", label: "Kit" }],
+        value: st.tracking,
+        onChange: function (v) { st.tracking = v; syncKitVisibility(); },
+      });
+    }
+    chips($id("ed-unit-host"), {
+      name: "ed_base_unit",
+      options: UNITS.map(function (u) { return { value: u, label: u.replace("_", " ") }; }),
+      value: st.base_unit,
+      onChange: function (v) { st.base_unit = v; },
+    });
+
+    var aliasBox = mountTagInput($id("ed-aliases"), { values: item ? item.aliases : [], placeholder: "e.g. rock screws — Enter to add" });
+    var barcodeBox = mountTagInput($id("ed-barcodes"), { values: item ? item.barcodes : [], placeholder: "Scan or type, Enter to add" });
+
+    function renderConversions() {
+      $id("ed-conversions").innerHTML = st.conversions.map(function (c, i) {
+        return "<div class=\"kvrow\">" +
+          "<input class=\"input narrow\" data-conv-unit=\"" + i + "\" placeholder=\"unit (e.g. box)\" value=\"" + esc(c.unit) + "\" autocomplete=\"off\" />" +
+          "<span class=\"muted\">=</span>" +
+          "<input class=\"input narrow\" data-conv-factor=\"" + i + "\" type=\"number\" step=\"any\" min=\"0\" inputmode=\"decimal\" placeholder=\"factor\" value=\"" + esc(c.factor) + "\" />" +
+          "<span class=\"muted\">base units</span>" +
+          "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-conv-rm=\"" + i + "\">Remove</button></div>";
+      }).join("") || "<p class=\"muted\" style=\"font-size:var(--text-xs);margin:0\">None — the crew enters everything in the base unit.</p>";
+    }
+    renderConversions();
+    $id("ed-conv-add").addEventListener("click", function () {
+      st.conversions.push({ unit: "", factor: "" });
+      renderConversions();
+    });
+    $id("ed-conversions").addEventListener("input", function (ev) {
+      var u = ev.target.getAttribute("data-conv-unit");
+      var f = ev.target.getAttribute("data-conv-factor");
+      if (u != null) st.conversions[Number(u)].unit = ev.target.value.trim();
+      if (f != null) st.conversions[Number(f)].factor = ev.target.value;
+    });
+    $id("ed-conversions").addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-conv-rm]");
+      if (b) { st.conversions.splice(Number(b.getAttribute("data-conv-rm")), 1); renderConversions(); }
+    });
+
+    var minPickers = [];
+    function renderMinRows() {
+      minPickers = [];
+      $id("ed-min-rows").innerHTML = st.min_qty.map(function (m, i) {
+        return "<div class=\"kvrow\">" +
+          "<div class=\"picker\" data-min-loc=\"" + i + "\" style=\"flex:1;min-width:160px\"></div>" +
+          "<input class=\"input narrow\" data-min-qty=\"" + i + "\" type=\"number\" step=\"any\" min=\"0\" inputmode=\"decimal\" value=\"" + esc(m.qty) + "\" placeholder=\"min qty\" />" +
+          "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-min-rm=\"" + i + "\">Remove</button></div>";
+      }).join("");
+      st.min_qty.forEach(function (m, i) {
+        var p = mountLocPicker(ed.querySelector("[data-min-loc=\"" + i + "\"]"), {
+          placeholder: "Location…",
+          onPick: function (id) { st.min_qty[i].location_id = id; },
+        });
+        if (m.location_id) p.value = m.location_id;
+        minPickers.push(p);
+      });
+    }
+    renderMinRows();
+    $id("ed-min-add").addEventListener("click", function () {
+      st.min_qty.push({ location_id: "", qty: "" });
+      renderMinRows();
+    });
+    $id("ed-min-rows").addEventListener("input", function (ev) {
+      var q = ev.target.getAttribute("data-min-qty");
+      if (q != null) st.min_qty[Number(q)].qty = ev.target.value;
+    });
+    $id("ed-min-rows").addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-min-rm]");
+      if (b) { st.min_qty.splice(Number(b.getAttribute("data-min-rm")), 1); renderMinRows(); }
+    });
+
+    function renderKitRows() {
+      $id("ed-kit-rows").innerHTML = st.kit_components.map(function (c, i) {
+        return "<div class=\"kvrow\">" +
+          "<span style=\"flex:1\">" + esc(c.item_name || c.item_id) + "</span>" +
+          "<input class=\"input narrow\" data-kit-qty=\"" + i + "\" type=\"number\" step=\"any\" min=\"0\" inputmode=\"decimal\" value=\"" + esc(c.qty) + "\" />" +
+          "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-kit-rm=\"" + i + "\">Remove</button></div>";
+      }).join("") || "<p class=\"muted\" style=\"font-size:var(--text-xs);margin:0 0 var(--space-2)\">No components yet — search below to add.</p>";
+    }
+    function syncKitVisibility() {
+      $id("ed-kit-wrap").hidden = st.tracking !== "kit";
+    }
+    syncKitVisibility();
+    renderKitRows();
+    mountItemPicker($id("ed-kit-picker"), {
+      placeholder: "Search quantity items to add…",
+      filter: function (it) { return it.tracking === "quantity"; },
+      filterNote: "kits hold quantity-tracked items only",
+      onPick: function (it) {
+        if (!it) return;
+        if (st.kit_components.some(function (c) { return c.item_id === it.id; })) { toast("Already a component"); return; }
+        st.kit_components.push({ item_id: it.id, item_name: it.name, qty: 1 });
+        renderKitRows();
+      },
+    });
+    $id("ed-kit-rows").addEventListener("input", function (ev) {
+      var q = ev.target.getAttribute("data-kit-qty");
+      if (q != null) st.kit_components[Number(q)].qty = ev.target.value;
+    });
+    $id("ed-kit-rows").addEventListener("click", function (ev) {
+      var b = ev.target.closest("[data-kit-rm]");
+      if (b) { st.kit_components.splice(Number(b.getAttribute("data-kit-rm")), 1); renderKitRows(); }
+    });
+
+    $id("ed-save").addEventListener("click", async function () {
+      var payload = {
+        name: $id("ed-name").value.trim(),
+        category: $id("ed-category").value.trim(),
+        tracking: st.tracking,
+        base_unit: st.base_unit,
+        conversions: {},
+        aliases: aliasBox.values,
+        barcodes: barcodeBox.values,
+        image_url: $id("ed-image").value.trim(),
+        notes: $id("ed-notes").value,
+        min_qty: {},
+      };
+      st.conversions.forEach(function (c) {
+        if (c.unit && c.factor) payload.conversions[c.unit] = Number(c.factor);
+      });
+      st.min_qty.forEach(function (m) {
+        if (m.location_id && m.qty !== "" && m.qty != null) payload.min_qty[m.location_id] = Number(m.qty);
+      });
+      if (st.tracking === "kit") {
+        payload.kit_components = st.kit_components.map(function (c) {
+          return { item_id: c.item_id, qty: Number(c.qty) };
+        });
+      }
+      var path = "/ui/api/inventory/item" + (st.id ? "/" + encodeURIComponent(st.id) : "");
+      var r = await api(path, { body: payload });
+      if (!r.ok) { $id("ed-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+      $id("ed-err").innerHTML = "";
+      var saved = r.body.item;
+      toast(st.id ? "Item saved" : "Item created");
+      if (!st.id && pendingLoad && Number(pendingLoad.qty) > 0) {
+        offerInitialLoad(saved);
+      } else {
+        openItem(saved.id);
+      }
+    });
+
+    if (!isNew) {
+      $id("ed-label").addEventListener("click", function () {
+        basketAdd("item", st.id, item.name);
+      });
+      $id("ed-archive").addEventListener("click", async function () {
+        var r = await api("/ui/api/inventory/item/" + encodeURIComponent(st.id) + "/archive",
+                          { body: { archived: !st.archived } });
+        if (!r.ok) { $id("ed-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+        toast(st.archived ? "Item restored" : "Item archived — it stays in history and can be restored anytime");
+        openItem(st.id);
+      });
+      $id("ed-merge").addEventListener("click", function () {
+        var panel = $id("ed-merge-panel");
+        panel.innerHTML = "<label class=\"field-label\">Merge “" + esc(item.name) + "” into…</label>" +
+          "<div class=\"picker\" id=\"ed-merge-picker\"></div>";
+        mountItemPicker($id("ed-merge-picker"), {
+          placeholder: "Search the item that stays…",
+          filter: function (it) { return it.id !== st.id; },
+          onPick: function (target) {
+            if (!target) return;
+            confirmCard({
+              title: "Merge duplicate item",
+              danger: true,
+              label: "Merge",
+              body: "<p><b>" + esc(item.name) + "</b> will be folded into <b>" + esc(target.name) + "</b>:</p>" +
+                "<ul style=\"margin:8px 0 0;padding-left:18px\">" +
+                "<li>Aliases and barcodes move to <b>" + esc(target.name) + "</b> — old labels keep scanning.</li>" +
+                "<li>Any remaining balances transfer as audited adjustments (visible in History).</li>" +
+                "<li><b>" + esc(item.name) + "</b> is archived. History stays put; this can't be un-merged.</li></ul>",
+              onConfirm: async function () {
+                var r = await api("/ui/api/inventory/item-merge",
+                                  { body: { source_id: st.id, target_id: target.id } });
+                if (!r.ok) { $id("ed-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+                toast("Merged — " + (r.body.moved_locations || 0) + " location balance(s) transferred");
+                openItem(target.id);
+              },
+            });
+          },
+        });
+      });
+    }
+
+    if (st.id && item && item.tracking === "asset") {
+      var note = document.createElement("p");
+      note.className = "muted";
+      note.style.fontSize = "var(--text-xs)";
+      note.innerHTML = "This item is asset-tracked — manage its serialized units in the <a href=\"#assets\">Assets</a> section.";
+      ed.appendChild(note);
+    }
+  }
+
+  function offerInitialLoad(savedItem) {
+    var p = pendingLoad;
+    confirmCard({
+      title: "Load the reported stock?",
+      label: "Post initial load",
+      body: "<p>The crew reported <b>" + esc(p.qty) + " " + esc(p.unit || savedItem.base_unit) +
+        "</b> at <b>" + esc(locPath(p.location_id) || "an unknown location") + "</b>.</p>" +
+        "<p>Post an INITIAL_LOAD so the ledger matches the shelf? Quantity posts in the item's base unit (" +
+        esc(savedItem.base_unit) + ").</p>",
+      onConfirm: async function () {
+        var r = await api("/ui/api/inventory/txn", { body: {
+          client_uuid: uuid(),
+          type: "INITIAL_LOAD",
+          dst: p.location_id,
+          note: "From unknown-item report " + (p.aid || ""),
+          lines: [{ item_id: savedItem.id, qty: String(p.qty), unit: savedItem.base_unit }],
+        } });
+        if (!r.ok) { showStatus("err", errHtml(r.err)); return; }
+        toast("Initial load posted — " + (r.body.txn ? r.body.txn.txn_no : ""));
+        pendingLoad = null;
+        openItem(savedItem.id);
+      },
+    });
+    pendingLoad = null;
+  }
+
+  /* ------------------------------------------------------------- assets */
+  var assetItem = null;
+  mountItemPicker($id("asset-item-picker"), {
+    placeholder: "Search asset-tracked items (drills, lifts, lasers…)",
+    filter: function (it) { return it.tracking === "asset"; },
+    filterNote: "only asset-tracked items have serialized units",
+    includeArchived: false,
+    onPick: function (it) { if (it) loadAssetPanel(it.id); },
+  });
+  async function loadAssetPanel(itemId) {
+    var panel = $id("asset-panel");
+    panel.innerHTML = "<div class=\"card\"><div class=\"empty\">Loading…</div></div>";
+    var r = await api("/ui/api/inventory/item/" + encodeURIComponent(itemId));
+    if (!r.ok) { panel.innerHTML = "<div class=\"card\"><div class=\"empty\">" + errHtml(r.err) + "</div></div>"; return; }
+    var it = r.body.item;
+    assetItem = it;
+    var assets = it.assets || [];
+    var rows = assets.length
+      ? assets.map(function (a) {
+          var condTag = (a.condition === "available") ? "tag-green"
+            : (a.condition === "in_use") ? "tag-gold" : "tag-alert";
+          return "<div class=\"tree-row\"><span class=\"grow\">" +
+            "<span class=\"name\">" + esc(a.id) + "</span>" +
+            (a.serial ? " <span class=\"muted\">SN " + esc(a.serial) + "</span>" : "") +
+            "<br><span class=\"muted\" style=\"font-size:var(--text-xs)\">" + esc(a.location || "") + "</span></span>" +
+            "<span class=\"tag " + condTag + "\">" + esc(a.condition) + "</span>" +
+            "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-asset-label=\"" + esc(a.id) + "\">Print label</button>" +
+            "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-asset-cond=\"" + esc(a.id) + "\">Report condition</button>" +
+            "</div>";
+        }).join("")
+      : "<div class=\"empty\">No units registered yet — add the first one below.</div>";
+    panel.innerHTML =
+      "<div class=\"card card-flush\">" +
+      "<div class=\"card-head\"><div class=\"row__main\"><h2>" + esc(it.name) + " — " + assets.length + " unit(s)</h2></div></div>" +
+      "<div class=\"scroll-rows\" id=\"asset-rows\">" + rows + "</div>" +
+      "<div class=\"card-pad\" id=\"asset-cond-form\"></div>" +
+      "</div>" +
+      "<div class=\"card\">" +
+      "<div class=\"card-head\"><div class=\"row__main\"><h2>Add asset(s)</h2></div></div>" +
+      "<div id=\"asset-add-err\"></div>" +
+      "<div class=\"kvrow\">" +
+      "<input class=\"input\" id=\"as-serial\" placeholder=\"Serial (base)\" autocomplete=\"off\" />" +
+      "<input class=\"input\" id=\"as-make\" placeholder=\"Make\" autocomplete=\"off\" />" +
+      "<input class=\"input\" id=\"as-model\" placeholder=\"Model\" autocomplete=\"off\" />" +
+      "</div>" +
+      "<label class=\"field-label\">Starting location</label>" +
+      "<div id=\"as-loc\"></div>" +
+      "<label class=\"field-label\" for=\"as-notes\">Notes</label>" +
+      "<input class=\"input\" id=\"as-notes\" autocomplete=\"off\" />" +
+      "<label class=\"field-label\" for=\"as-count\">How many? <span class=\"muted\">(more than 1 = serial gets -1, -2, … suffixes)</span></label>" +
+      "<input class=\"input\" id=\"as-count\" type=\"number\" min=\"1\" max=\"50\" step=\"1\" value=\"1\" inputmode=\"numeric\" style=\"max-width:120px\" />" +
+      "<div class=\"btn-row\" style=\"margin-top:var(--space-4)\">" +
+      "<button type=\"button\" class=\"btn btn-primary\" id=\"as-add\">Add</button></div>" +
+      "</div>";
+    var locPick = mountLocPicker($id("as-loc"), { placeholder: "Where does it start?" });
+    $id("as-add").addEventListener("click", async function () {
+      var n = Math.max(1, Math.min(50, Number($id("as-count").value) || 1));
+      var serial = $id("as-serial").value.trim();
+      if (!locPick.value) {
+        $id("asset-add-err").innerHTML = "<div class=\"card-note\">Pick a starting location first.</div>";
+        return;
+      }
+      $id("asset-add-err").innerHTML = "";
+      var okCount = 0, firstErr = null;
+      for (var i = 1; i <= n; i++) {
+        var body = {
+          item_id: it.id,
+          location: locPick.value,
+          serial: n === 1 ? serial : (serial ? serial + "-" + i : ""),
+          make: $id("as-make").value.trim(),
+          model: $id("as-model").value.trim(),
+          notes: $id("as-notes").value.trim(),
+        };
+        var rr = await api("/ui/api/inventory/asset", { body: body });
+        if (rr.ok) okCount++;
+        else if (!firstErr) firstErr = rr.err;
+      }
+      if (firstErr) {
+        $id("asset-add-err").innerHTML = "<div class=\"card-note\">" + okCount + " of " + n +
+          " created, then: " + errHtml(firstErr) + "</div>";
+      } else {
+        toast(okCount + " asset(s) added");
+      }
+      loadAssetPanel(it.id);
+    });
+    $id("asset-rows").addEventListener("click", function (ev) {
+      var lb = ev.target.closest("[data-asset-label]");
+      if (lb) { basketAdd("asset", lb.getAttribute("data-asset-label"), lb.getAttribute("data-asset-label")); return; }
+      var cb = ev.target.closest("[data-asset-cond]");
+      if (cb) renderCondForm(cb.getAttribute("data-asset-cond"));
+    });
+  }
+  function renderCondForm(assetId) {
+    var host = $id("asset-cond-form");
+    host.innerHTML = "<div class=\"subhead\">Report condition — " + esc(assetId) + "</div>" +
+      "<div id=\"cond-chips\"></div>" +
+      "<div class=\"inline-form\">" +
+      "<input class=\"input\" id=\"cond-note\" placeholder=\"What happened? (note)\" autocomplete=\"off\" />" +
+      "<button type=\"button\" class=\"btn btn-primary btn-sm\" id=\"cond-save\">Post</button>" +
+      "<button type=\"button\" class=\"btn btn-ghost btn-sm\" id=\"cond-cancel\">Cancel</button>" +
+      "</div><div id=\"cond-err\"></div>";
+    var cond = { value: "damaged" };
+    chips($id("cond-chips"), {
+      name: "cond_to",
+      options: CONDITIONS.map(function (c) { return { value: c, label: c.replace(/_/g, " ") }; }),
+      value: cond.value,
+      onChange: function (v) { cond.value = v; },
+    });
+    $id("cond-cancel").addEventListener("click", function () { host.innerHTML = ""; });
+    $id("cond-save").addEventListener("click", async function () {
+      var r = await api("/ui/api/inventory/txn", { body: {
+        client_uuid: uuid(),
+        type: "CONDITION_CHANGE",
+        lines: [{ asset_id: assetId, condition_to: cond.value, note: $id("cond-note").value.trim() }],
+      } });
+      if (!r.ok) { $id("cond-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+      toast("Condition posted — " + (r.body.txn ? r.body.txn.txn_no : ""));
+      if (assetItem) loadAssetPanel(assetItem.id);
+    });
+  }
+
+  /* ---------------------------------------------------------- locations */
+  async function loadLocationsSection() {
+    var box = $id("loc-tree");
+    var r = await refreshLocations();
+    if (!r.ok) { box.innerHTML = "<div class=\"empty\">" + errHtml(r.err) + "</div>"; return; }
+    if (!LOCS.length) {
+      box.innerHTML = "<div class=\"empty\">No locations yet — add the shop first, then trucks and job sites.</div>";
+      return;
+    }
+    // Tree order: parents first, children indented under them.
+    var byParent = {};
+    LOCS.forEach(function (l) {
+      var p = l.parent || "";
+      (byParent[p] = byParent[p] || []).push(l);
+    });
+    Object.keys(byParent).forEach(function (k) {
+      byParent[k].sort(function (a, b) { return a.name.localeCompare(b.name); });
+    });
+    var out = [];
+    function walk(parentId, depth) {
+      (byParent[parentId] || []).forEach(function (l) {
+        out.push({ loc: l, depth: depth });
+        walk(l.id, depth + 1);
+      });
+    }
+    walk("", 0);
+    // Orphans (parent inactive/missing from map) — show flat so nothing hides.
+    var seen = {};
+    out.forEach(function (row) { seen[row.loc.id] = true; });
+    LOCS.forEach(function (l) { if (!seen[l.id]) out.push({ loc: l, depth: 0 }); });
+
+    box.innerHTML = out.map(function (row) {
+      var l = row.loc;
+      return "<div class=\"tree-row" + (l.active === false ? " is-inactive" : "") + "\" style=\"padding-left:" + (12 + row.depth * 18) + "px\">" +
+        "<span class=\"grow\"><span class=\"name\">" + esc(l.name) + "</span> " +
+        "<span class=\"tag\">" + esc(l.kind) + "</span>" +
+        (l.active === false ? " <span class=\"tag tag-alert\">inactive</span>" : "") +
+        "<br><span class=\"muted mono\" style=\"font-size:var(--text-xs)\">" + esc(l.scan_token || "") + "</span></span>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-loc-edit=\"" + esc(l.id) + "\">Edit</button>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-loc-open=\"" + esc(l.id) + "\">Contents</button>" +
+        "</div>";
+    }).join("");
+  }
+  $id("loc-tree").addEventListener("click", function (ev) {
+    var e = ev.target.closest("[data-loc-edit]");
+    if (e) { renderLocEditor(locById(e.getAttribute("data-loc-edit"))); return; }
+    var o = ev.target.closest("[data-loc-open]");
+    if (o) showLocContents(o.getAttribute("data-loc-open"));
+  });
+  $id("loc-new").addEventListener("click", function () { renderLocEditor(null); });
+
+  function renderLocEditor(loc) {
+    var ed = $id("loc-editor");
+    var isNew = !loc;
+    var st = { kind: loc ? loc.kind : "storage" };
+    ed.innerHTML =
+      "<div class=\"card-head\"><div class=\"row__main\"><h2>" + (isNew ? "New location" : "Edit location") + "</h2></div>" +
+      (isNew ? "" :
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"loc-label\">Add label</button>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"loc-rotate\">Rotate token</button>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"loc-active\">" + (loc.active === false ? "Reactivate" : "Deactivate") + "</button>") +
+      "</div>" +
+      "<div id=\"loc-err\"></div>" +
+      "<label class=\"field-label\" for=\"lc-name\">Name</label>" +
+      "<input class=\"input\" id=\"lc-name\" value=\"" + esc(loc ? loc.name : "") + "\" autocomplete=\"off\" />" +
+      "<label class=\"field-label\">Kind</label><div id=\"lc-kind-host\"></div>" +
+      "<div id=\"lc-email-wrap\" hidden>" +
+      "<label class=\"field-label\" for=\"lc-email\">Employee email <span class=\"muted\">(required for employee custody)</span></label>" +
+      "<input class=\"input\" id=\"lc-email\" type=\"email\" inputmode=\"email\" value=\"" + esc(loc ? loc.employee_email || "" : "") + "\" autocomplete=\"off\" /></div>" +
+      "<label class=\"field-label\">Parent <span class=\"muted\">(optional)</span></label>" +
+      "<div id=\"lc-parent\"></div>" +
+      "<label class=\"field-label\" for=\"lc-address\">Address</label>" +
+      "<input class=\"input\" id=\"lc-address\" value=\"" + esc(loc ? loc.address || "" : "") + "\" autocomplete=\"off\" />" +
+      "<label class=\"field-label\" for=\"lc-notes\">Notes</label>" +
+      "<textarea class=\"input\" id=\"lc-notes\" rows=\"2\">" + esc(loc ? loc.notes || "" : "") + "</textarea>" +
+      "<div class=\"btn-row\" style=\"margin-top:var(--space-4)\">" +
+      "<button type=\"button\" class=\"btn btn-primary\" id=\"lc-save\">" + (isNew ? "Create location" : "Save changes") + "</button></div>";
+
+    function syncEmail() { $id("lc-email-wrap").hidden = st.kind !== "employee"; }
+    chips($id("lc-kind-host"), {
+      name: "lc_kind",
+      options: LOCATION_KINDS.map(function (k) { return { value: k, label: k.replace(/_/g, " ") }; }),
+      value: st.kind,
+      onChange: function (v) { st.kind = v; syncEmail(); },
+    });
+    syncEmail();
+    var parentPick = mountLocPicker($id("lc-parent"), {
+      placeholder: "No parent (top level)",
+      filter: function (l) {
+        if (loc && l.id === loc.id) return false;
+        return ["truck", "employee", "repair", "disposal"].indexOf(l.kind) === -1;
+      },
+    });
+    if (loc && loc.parent) parentPick.value = loc.parent;
+
+    $id("lc-save").addEventListener("click", async function () {
+      var body = {
+        name: $id("lc-name").value.trim(),
+        kind: st.kind,
+        parent: parentPick.value || "",
+        address: $id("lc-address").value.trim(),
+        notes: $id("lc-notes").value,
+        employee_email: $id("lc-email").value.trim(),
+      };
+      var path = "/ui/api/inventory/location" + (loc ? "/" + encodeURIComponent(loc.id) : "");
+      var r = await api(path, { body: body });
+      if (!r.ok) { $id("loc-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+      toast(isNew ? "Location created" : "Location saved");
+      await loadLocationsSection();
+      renderLocEditor(locById(r.body.location.id));
+    });
+
+    if (!isNew) {
+      $id("loc-label").addEventListener("click", function () { basketAdd("location", loc.id, loc.name); });
+      $id("loc-rotate").addEventListener("click", function () {
+        confirmCard({
+          title: "Rotate this location's QR token?",
+          danger: true,
+          label: "Rotate token",
+          body: "<p>A new scan code is issued for <b>" + esc(loc.name) + "</b>. " +
+            "<b>Every label already printed for it stops working immediately</b> — scans of the old code will come back unknown.</p>" +
+            "<p>Do this if a label wandered or the code leaked. Print and hang a fresh label right after.</p>",
+          onConfirm: async function () {
+            var r = await api("/ui/api/inventory/location/" + encodeURIComponent(loc.id) + "/rotate-token", { body: {} });
+            if (!r.ok) { $id("loc-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+            toast("Token rotated — print a new label");
+            basketAdd("location", loc.id, loc.name);
+            await loadLocationsSection();
+            renderLocEditor(locById(loc.id));
+          },
+        });
+      });
+      $id("loc-active").addEventListener("click", function () {
+        if (loc.active === false) {
+          setLocActive(loc, true);
+          return;
+        }
+        confirmCard({
+          title: "Deactivate " + esc(loc.name) + "?",
+          danger: true,
+          label: "Deactivate",
+          body: "<p>Deactivated locations can't receive or send stock. History stays. " +
+            "It must be <b>empty</b> first — if anything is still there, you'll get a move-out helper.</p>",
+          onConfirm: function () { setLocActive(loc, false); },
+        });
+      });
+    }
+  }
+  async function setLocActive(loc, active) {
+    var r = await api("/ui/api/inventory/location/" + encodeURIComponent(loc.id) + "/active",
+                      { body: { active: active } });
+    if (r.ok) {
+      toast(active ? "Location reactivated" : "Location deactivated");
+      await loadLocationsSection();
+      renderLocEditor(locById(loc.id));
+      return;
+    }
+    if (r.err.code === "LOCATION_NOT_EMPTY") {
+      $id("loc-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) +
+        "<div class=\"btn-row\" style=\"margin-top:8px\">" +
+        "<button type=\"button\" class=\"btn btn-sm\" id=\"loc-view-contents\">View contents</button></div></div>";
+      $id("loc-view-contents").addEventListener("click", function () { showLocContents(loc.id, true); });
+      return;
+    }
+    $id("loc-err").innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>";
+  }
+  async function showLocContents(locId, offerMove) {
+    var card = $id("loc-contents");
+    card.hidden = false;
+    card.innerHTML = "<div class=\"empty\">Loading contents…</div>";
+    var r = await api("/ui/api/inventory/location/" + encodeURIComponent(locId));
+    if (!r.ok) { card.innerHTML = "<div class=\"empty\">" + errHtml(r.err) + "</div>"; return; }
+    var b = r.body;
+    var items = b.items || [], assets = b.assets || [], kits = b.kits || [];
+    var movableAssets = assets.filter(function (a) {
+      return ["retired", "lost"].indexOf(a.condition) === -1;
+    });
+    var rows = [];
+    items.forEach(function (it) {
+      if (Number(it.qty) > 0) rows.push("<div class=\"tree-row\"><span class=\"grow\">" + esc(it.name) + "</span><span class=\"num\">" + esc(it.qty) + " " + esc(it.unit) + "</span></div>");
+    });
+    assets.forEach(function (a) {
+      rows.push("<div class=\"tree-row\"><span class=\"grow\">" + esc(a.name) + " · " + esc(a.id) + "</span><span class=\"tag\">" + esc(a.condition) + "</span></div>");
+    });
+    kits.forEach(function (k) {
+      rows.push("<div class=\"tree-row\"><span class=\"grow\">Kit: " + esc(k.name || k.id) + "</span><span class=\"tag\">" + esc(k.condition || "") + "</span></div>");
+    });
+    card.innerHTML =
+      "<div class=\"card-head\"><div class=\"row__main\"><h2>Contents — " + esc(b.location && b.location.path || locId) + "</h2></div>" +
+      "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"loc-contents-close\">Close</button></div>" +
+      (rows.length ? rows.join("") : "<div class=\"empty\">Empty — nothing is held here.</div>") +
+      (rows.length ? "<label class=\"field-label\" style=\"margin-top:var(--space-3)\">Move everything to…</label><div id=\"move-dst\"></div><div id=\"move-preview\"></div>" : "");
+    $id("loc-contents-close").addEventListener("click", function () { card.hidden = true; });
+    if (!rows.length) return;
+    var dstPick = mountLocPicker($id("move-dst"), {
+      placeholder: "Destination location…",
+      filter: function (l) { return l.id !== locId; },
+      onPick: function (dst) {
+        // ONE TRANSFER txn carrying every quantity line + asset/kit lines.
+        var lines = [];
+        items.forEach(function (it) {
+          if (Number(it.qty) > 0) lines.push({ item_id: it.item_id, qty: String(it.qty), unit: it.unit });
+        });
+        movableAssets.forEach(function (a) { lines.push({ asset_id: a.id }); });
+        kits.forEach(function (k) { lines.push({ kit_id: k.id }); });
+        var stuck = assets.length - movableAssets.length;
+        var previewRows = lines.map(function (ln) {
+          if (ln.asset_id) return "<li>Asset " + esc(ln.asset_id) + "</li>";
+          if (ln.kit_id) return "<li>Kit " + esc(ln.kit_id) + "</li>";
+          return "<li>" + esc(ln.qty) + " " + esc(ln.unit) + " " + esc((items.find(function (x) { return x.item_id === ln.item_id; }) || {}).name || ln.item_id) + "</li>";
+        }).join("");
+        $id("move-preview").innerHTML =
+          "<div class=\"card-note\" style=\"margin-top:var(--space-3)\"><b>One TRANSFER</b> — " +
+          esc(locPath(locId)) + " → " + esc(locPath(dst)) + ":" +
+          "<ul style=\"margin:6px 0 0;padding-left:18px\">" + previewRows + "</ul>" +
+          (stuck ? "<p class=\"muted\" style=\"font-size:var(--text-xs)\">" + stuck + " retired/lost asset(s) stay put — they can't move.</p>" : "") +
+          "<div class=\"btn-row\" style=\"margin-top:8px\">" +
+          "<button type=\"button\" class=\"btn btn-primary btn-sm\" id=\"move-go\">Post transfer</button></div></div>";
+        $id("move-go").addEventListener("click", async function () {
+          var r2 = await api("/ui/api/inventory/txn", { body: {
+            client_uuid: uuid(), type: "TRANSFER", src: locId, dst: dst,
+            note: "Emptying " + locPath(locId), lines: lines,
+          } });
+          if (!r2.ok) { $id("move-preview").innerHTML += "<div class=\"card-note\">" + errHtml(r2.err) + "</div>"; return; }
+          toast("Transferred — " + (r2.body.txn ? r2.body.txn.txn_no : ""));
+          showLocContents(locId, offerMove);
+        });
+      },
+    });
+    if (offerMove) dstPick.clear();
+  }
+
+  /* -------------------------------------------------------------- counts */
+  var countKind = "quick";
+  var countExtra = [];
+  var countLocPicker = null;
+  var countsBuilt = false;
+  function buildCountsUI() {
+    if (countsBuilt) return;
+    countsBuilt = true;
+    chips($id("count-kind-host"), {
+      name: "count_kind", segmented: true,
+      options: [{ value: "quick", label: "Quick" }, { value: "blind", label: "Blind audit" }],
+      value: countKind,
+      onChange: function (v) { countKind = v; },
+    });
+    countLocPicker = mountLocPicker($id("count-loc-picker"), { placeholder: "Which location gets counted?" });
+    $id("count-assignee").value = EMAIL;
+    mountItemPicker($id("count-extra-picker"), {
+      placeholder: "Add items the location *should* have…",
+      filter: function (it) { return it.tracking === "quantity"; },
+      onPick: function (it) {
+        if (it && !countExtra.some(function (x) { return x.id === it.id; })) {
+          countExtra.push({ id: it.id, name: it.name });
+          renderCountExtra();
+        }
+      },
+    });
+  }
+  function renderCountExtra() {
+    $id("count-extra-chips").innerHTML = countExtra.map(function (x, i) {
+      return "<span class=\"tag tag-green\">" + esc(x.name) +
+        " <button type=\"button\" data-cx=\"" + i + "\" style=\"border:0;background:none;cursor:pointer\">&times;</button></span>";
+    }).join("");
+  }
+  $id("count-extra-chips").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-cx]");
+    if (b) { countExtra.splice(Number(b.getAttribute("data-cx")), 1); renderCountExtra(); }
+  });
+  $id("count-start").addEventListener("click", async function () {
+    if (!countLocPicker || !countLocPicker.value) { showStatus("warn", "Pick a location to count first."); return; }
+    var r = await api("/ui/api/inventory/count/start", { body: {
+      kind: countKind,
+      location_id: countLocPicker.value,
+      assignee: $id("count-assignee").value.trim() || EMAIL,
+      extra_item_ids: countExtra.map(function (x) { return x.id; }),
+    } });
+    if (!r.ok) { showStatus("err", errHtml(r.err)); return; }
+    clearStatus();
+    toast("Count started — " + r.body.session.id);
+    countExtra = [];
+    renderCountExtra();
+    loadCounts();
+  });
+  $id("count-refresh").addEventListener("click", loadCounts);
+  async function loadCounts() {
+    buildCountsUI();
+    var box = $id("count-sessions");
+    var r = await api("/ui/api/inventory/overview");
+    if (!r.ok) { box.innerHTML = "<div class=\"empty\">" + errHtml(r.err) + "</div>"; return; }
+    var sessions = r.body.open_counts || [];
+    if (!sessions.length) {
+      box.innerHTML = "<div class=\"empty\">No open or submitted counts. Start one on the left — the assignee counts on their phone, you approve here.</div>";
+      return;
+    }
+    var order = { submitted: 0, open: 1 };
+    sessions.sort(function (a, b) { return (order[a.status] || 9) - (order[b.status] || 9); });
+    box.innerHTML = sessions.map(function (s) {
+      return "<button type=\"button\" class=\"row\" data-count=\"" + esc(s.id) + "\" style=\"width:100%;text-align:left;border:0;background:none;cursor:pointer\">" +
+        "<span class=\"row__main\"><b class=\"row__title\">" + esc(s.location) + "</b>" +
+        "<span class=\"row__sub\">" + esc(s.kind) + " · " + esc(s.assignee || "") + " · " + esc(s.id) + "</span></span>" +
+        "<span class=\"tag " + (s.status === "submitted" ? "tag-gold" : "") + "\">" +
+        esc(s.status === "submitted" ? "review me" : s.status) + "</span></button>";
+    }).join("");
+  }
+  $id("count-sessions").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-count]");
+    if (b) reviewCount(b.getAttribute("data-count"));
+  });
+  async function reviewCount(sid) {
+    var card = $id("count-review");
+    card.hidden = false;
+    card.innerHTML = "<div class=\"empty\">Loading session…</div>";
+    var r = await api("/ui/api/inventory/count/" + encodeURIComponent(sid));
+    if (!r.ok) { card.innerHTML = "<div class=\"empty\">" + errHtml(r.err) + "</div>"; return; }
+    var s = r.body.session;
+    var lines = s.lines || [];
+    var rows = lines.map(function (ln) {
+      var exp = ln.expected === "" ? null : Number(ln.expected || 0);
+      var got = ln.counted == null ? null : Number(ln.counted);
+      var varc = "";
+      if (ln.skipped) varc = "<span class=\"muted\">skipped" + (ln.skip_reason ? " — " + esc(ln.skip_reason) : "") + "</span>";
+      else if (got == null) varc = "<span class=\"muted\">not counted yet</span>";
+      else if (exp == null) varc = "<span class=\"muted\">hidden (blind)</span>";
+      else {
+        var d = got - exp;
+        varc = d === 0 ? "<span class=\"muted\">0</span>"
+          : "<span class=\"" + (d > 0 ? "var-pos" : "var-neg") + "\">" + (d > 0 ? "+" : "") + d + "</span>";
+      }
+      return "<tr><td>" + esc(ln.item_name || ln.item_id) + "</td>" +
+        "<td class=\"num\">" + (ln.expected === "" ? "—" : esc(ln.expected)) + "</td>" +
+        "<td class=\"num\">" + (ln.counted == null ? "—" : esc(ln.counted)) + "</td>" +
+        "<td>" + varc + "</td></tr>";
+    }).join("");
+    var actions = s.status === "submitted"
+      ? "<div class=\"btn-row\" style=\"margin-top:var(--space-4)\">" +
+        "<button type=\"button\" class=\"btn btn-primary\" id=\"count-approve\">Approve — post adjustments</button>" +
+        "<button type=\"button\" class=\"btn btn-ghost\" id=\"count-reject\">Reject</button></div>"
+      : "<p class=\"muted\" style=\"margin-top:var(--space-3)\">Status: " + esc(s.status) +
+        (s.status === "open" ? " — waiting on " + esc(s.assignee || "the assignee") + " to count and submit." : "") + "</p>";
+    card.innerHTML =
+      "<div class=\"card-head\"><div class=\"row__main\"><h2>Review " + esc(sid) + " — " + esc(locPath(s.location_id)) + "</h2></div>" +
+      "<span class=\"tag\">" + esc(s.kind) + "</span>" +
+      "<button type=\"button\" class=\"btn btn-sm btn-ghost\" id=\"count-review-close\">Close</button></div>" +
+      "<div id=\"count-review-err\"></div>" +
+      "<div class=\"tablewrap\"><table class=\"minitable\"><thead><tr><th>Item</th><th>Expected</th><th>Counted</th><th>Variance</th></tr></thead>" +
+      "<tbody>" + rows + "</tbody></table></div>" + actions +
+      "<div id=\"count-review-result\"></div>";
+    $id("count-review-close").addEventListener("click", function () { card.hidden = true; });
+    if (s.status !== "submitted") return;
+    async function decide(reject) {
+      var r2 = await api("/ui/api/inventory/count/" + encodeURIComponent(sid) + "/approve",
+                         { body: { reject: reject } });
+      if (!r2.ok) { $id("count-review-err").innerHTML = "<div class=\"card-note\">" + errHtml(r2.err) + "</div>"; return; }
+      var txns = r2.body.adjustment_txns || [];
+      $id("count-review-result").innerHTML = "<div class=\"card-note\" style=\"margin-top:var(--space-3)\">" +
+        (reject
+          ? "Rejected — no adjustments posted. Start a fresh count when the shelf is sorted."
+          : (txns.length
+              ? "Approved. Adjustment transaction(s): <b class=\"mono\">" + txns.map(esc).join(", ") + "</b> — see History."
+              : "Approved — counts matched, no adjustments needed.")) + "</div>";
+      toast(reject ? "Count rejected" : "Count approved");
+      loadCounts();
+    }
+    $id("count-approve").addEventListener("click", function () { decide(false); });
+    $id("count-reject").addEventListener("click", function () { decide(true); });
+  }
+
+  /* ----------------------------------------------------------- attention */
+  var ATT = [];
+  var attActive = null; // {aid, mode}
+  async function loadAttention() {
+    var host = $id("att-groups");
+    var r = await api("/ui/api/inventory/attention");
+    if (!r.ok) { host.innerHTML = "<div class=\"card\"><div class=\"empty\">" + errHtml(r.err) + "</div></div>"; return; }
+    ATT = r.body.items || [];
+    setAttBadge(ATT.length);
+    renderAttention();
+  }
+  function renderAttention() {
+    var host = $id("att-groups");
+    if (!ATT.length) {
+      host.innerHTML = "<div class=\"card\"><div class=\"empty\">All clear — nothing needs a manager. Damage reports, unknown items, low stock, and overrides land here.</div></div>";
+      return;
+    }
+    var groups = {};
+    ATT.forEach(function (a) { (groups[a.kind] = groups[a.kind] || []).push(a); });
+    host.innerHTML = Object.keys(groups).map(function (kind) {
+      var rows = groups[kind].map(function (a) { return attRow(a); }).join("");
+      return "<div class=\"card card-flush\" style=\"margin-bottom:var(--space-4)\">" +
+        "<div class=\"card-head\"><div class=\"row__main\"><h2>" + esc(kind.replace(/_/g, " ")) + "</h2></div>" +
+        "<span class=\"tag " + (KIND_TAGS[kind] || "") + "\">" + groups[kind].length + "</span></div>" +
+        rows + "</div>";
+    }).join("");
+  }
+  function attRow(a) {
+    var p = a.payload || {};
+    var body = "<b class=\"row__title\">" + esc(a.title) + "</b>" +
+      "<span class=\"row__sub\">" + esc(a.detail || "") + " · " + esc(a.raised_by || "") + " · " + esc(fmtWhen(a.raised_at)) +
+      (a.assigned_to ? " · assigned to " + esc(a.assigned_to) : "") +
+      (a.txn_no ? " · " + esc(a.txn_no) : "") + "</span>";
+    var extra = "";
+    if (a.kind === "unknown_item") {
+      extra = "<div class=\"card-pad\" style=\"padding-top:0\">" +
+        (p.photo_data ? "<img class=\"att-photo\" src=\"" + esc(p.photo_data) + "\" alt=\"Crew photo\" />" : "") +
+        "<p class=\"muted\" style=\"font-size:var(--text-sm);margin:8px 0\">Crew name: <b>" + esc(p.name || "") + "</b>" +
+        (p.qty ? " · " + esc(p.qty) + " " + esc(p.unit || "") : "") +
+        (p.location_id ? " · at " + esc(locPath(p.location_id)) : "") + "</p>" +
+        "<button type=\"button\" class=\"btn btn-sm btn-primary\" data-att-create=\"" + esc(a.id) + "\">Create item from this…</button>" +
+        "</div>";
+    }
+    var form = "";
+    if (attActive && attActive.aid === a.id) {
+      if (attActive.mode === "assign") {
+        form = "<div class=\"inline-form card-pad\" style=\"padding-top:0\">" +
+          "<input class=\"input\" id=\"att-assign-email\" type=\"email\" inputmode=\"email\" placeholder=\"who@greenvalleycontractors.com\" autocomplete=\"off\" />" +
+          "<button type=\"button\" class=\"btn btn-sm btn-primary\" data-att-assign-go=\"" + esc(a.id) + "\">Assign</button>" +
+          "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-att-cancel=\"1\">Cancel</button></div>";
+      } else if (attActive.mode === "resolve") {
+        form = "<div class=\"inline-form card-pad\" style=\"padding-top:0\">" +
+          "<input class=\"input\" id=\"att-resolve-note\" placeholder=\"How was it settled? (required)\" autocomplete=\"off\" />" +
+          "<button type=\"button\" class=\"btn btn-sm btn-primary\" data-att-resolve-go=\"" + esc(a.id) + "\">Resolve</button>" +
+          "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-att-cancel=\"1\">Cancel</button></div>" +
+          "<div class=\"card-pad\" id=\"att-resolve-err\" style=\"padding-top:0\"></div>";
+      }
+    }
+    return "<div class=\"tree-row\" style=\"flex-wrap:wrap\"><span class=\"grow row__main\">" + body + "</span>" +
+      "<span class=\"tag\">" + esc(a.status) + "</span>" +
+      (a.status === "open" ? "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-att-ack=\"" + esc(a.id) + "\">Acknowledge</button>" : "") +
+      "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-att-assign=\"" + esc(a.id) + "\">Assign…</button>" +
+      "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-att-resolve=\"" + esc(a.id) + "\">Resolve…</button>" +
+      "</div>" + extra + form;
+  }
+  $id("att-groups").addEventListener("click", async function (ev) {
+    var t = ev.target;
+    var b;
+    if ((b = t.closest("[data-att-ack]"))) {
+      var r = await api("/ui/api/inventory/attention/" + encodeURIComponent(b.getAttribute("data-att-ack")),
+                        { body: { status: "acknowledged" } });
+      if (!r.ok) { showStatus("err", errHtml(r.err)); return; }
+      toast("Acknowledged");
+      loadAttention();
+    } else if ((b = t.closest("[data-att-assign]"))) {
+      attActive = { aid: b.getAttribute("data-att-assign"), mode: "assign" };
+      renderAttention();
+    } else if ((b = t.closest("[data-att-resolve]"))) {
+      attActive = { aid: b.getAttribute("data-att-resolve"), mode: "resolve" };
+      renderAttention();
+    } else if ((b = t.closest("[data-att-cancel]"))) {
+      attActive = null;
+      renderAttention();
+    } else if ((b = t.closest("[data-att-assign-go]"))) {
+      var email = ($id("att-assign-email").value || "").trim();
+      if (!email) return;
+      var r2 = await api("/ui/api/inventory/attention/" + encodeURIComponent(b.getAttribute("data-att-assign-go")),
+                         { body: { status: "acknowledged", assigned_to: email } });
+      if (!r2.ok) { showStatus("err", errHtml(r2.err)); return; }
+      attActive = null;
+      toast("Assigned to " + email);
+      loadAttention();
+    } else if ((b = t.closest("[data-att-resolve-go]"))) {
+      var note = ($id("att-resolve-note").value || "").trim();
+      if (!note) {
+        $id("att-resolve-err").innerHTML = "<div class=\"card-note\">A resolution note is required — say what was done.</div>";
+        return;
+      }
+      var r3 = await api("/ui/api/inventory/attention/" + encodeURIComponent(b.getAttribute("data-att-resolve-go")),
+                         { body: { status: "resolved", note: note } });
+      if (!r3.ok) { showStatus("err", errHtml(r3.err)); return; }
+      attActive = null;
+      toast("Resolved");
+      loadAttention();
+    } else if ((b = t.closest("[data-att-create]"))) {
+      var aid = b.getAttribute("data-att-create");
+      var rec = null;
+      for (var i = 0; i < ATT.length; i++) if (ATT[i].id === aid) rec = ATT[i];
+      if (!rec) return;
+      var p = rec.payload || {};
+      pendingLoad = { aid: aid, qty: p.qty, unit: p.unit, location_id: p.location_id };
+      location.hash = "#items";
+      renderItemEditor(null, {
+        name: p.name || "",
+        notes: (rec.detail ? rec.detail + " " : "") + "(from crew unknown-item report)",
+      });
+      toast("Editor pre-filled — save to create, then load the reported stock");
+    }
+  });
+
+  /* -------------------------------------------------------------- import */
+  var IMPORT_HEADER = "name,tracking,base_unit,category,aliases,qty,location,serial";
+  var importCleanFor = null; // csv text a clean preview ran against
+  (function initImport() {
+    var sample = IMPORT_HEADER + "\n" +
+      "Drywall screws 1-5/8 in,quantity,box,Fasteners,rock screws|158s,12,Main Shop,\n" +
+      "DeWalt 20V drill,asset,each,Power tools,,,Main Shop,DCD791-0042\n";
+    $id("import-template").href = "data:text/csv;charset=utf-8," + encodeURIComponent(sample);
+  })();
+  $id("import-file").addEventListener("change", function (ev) {
+    var f = ev.target.files && ev.target.files[0];
+    if (!f) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      $id("import-csv").value = String(reader.result || "");
+      importCleanFor = null;
+      $id("import-commit").disabled = true;
+    };
+    reader.readAsText(f);
+  });
+  $id("import-csv").addEventListener("input", function () {
+    importCleanFor = null;
+    $id("import-commit").disabled = true;
+  });
+  $id("import-preview").addEventListener("click", async function () {
+    var csv = $id("import-csv").value;
+    var out = $id("import-result");
+    out.innerHTML = "<div class=\"empty\">Checking…</div>";
+    var r = await api("/ui/api/inventory/import/preview", { body: { csv: csv } });
+    if (!r.ok) { out.innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+    var b = r.body;
+    var errors = b.errors || [];
+    var planRows = (b.plan || []).map(function (p) { return "<li>" + esc(p) + "</li>"; }).join("");
+    var errRows = errors.map(function (e) {
+      return "<tr><td class=\"num\">" + esc(e.row) + "</td><td>" + esc(e.error) + "</td></tr>";
+    }).join("");
+    var errCsv = "row,reason\n" + errors.map(function (e) {
+      return e.row + ",\"" + String(e.error).replace(/"/g, "\"\"") + "\"";
+    }).join("\n");
+    out.innerHTML =
+      "<div class=\"card-note\"><b>" + esc(b.rows) + "</b> row(s) · <b>" + esc(b.valid) + "</b> valid · <b>" +
+      errors.length + "</b> error(s)</div>" +
+      (planRows ? "<details style=\"margin-top:8px\"><summary>What would happen (" + esc(b.valid) + ")</summary><ul style=\"margin:8px 0 0;padding-left:18px\">" + planRows + "</ul></details>" : "") +
+      (errors.length
+        ? "<div class=\"tablewrap\" style=\"margin-top:8px\"><table class=\"minitable\"><thead><tr><th>Row</th><th>Reason</th></tr></thead><tbody>" +
+          errRows + "</tbody></table></div>" +
+          "<a class=\"btn btn-sm\" style=\"margin-top:8px\" download=\"import-errors.csv\" href=\"data:text/csv;charset=utf-8," + encodeURIComponent(errCsv) + "\">Download errors CSV</a>" +
+          "<p class=\"muted\" style=\"font-size:var(--text-xs)\">Fix every row, re-upload, and preview again — commit only unlocks on a clean preview.</p>"
+        : "<p class=\"muted\" style=\"font-size:var(--text-xs);margin-top:8px\">Clean — you can commit. Commit is all-or-nothing.</p>");
+    if (!errors.length && b.valid > 0) {
+      importCleanFor = csv;
+      $id("import-commit").disabled = false;
+    } else {
+      importCleanFor = null;
+      $id("import-commit").disabled = true;
+    }
+  });
+  $id("import-commit").addEventListener("click", function () {
+    var csv = $id("import-csv").value;
+    if (importCleanFor !== csv) {
+      showStatus("warn", "The CSV changed since the last clean preview — preview again first.");
+      return;
+    }
+    confirmCard({
+      title: "Commit this import?",
+      label: "Commit import",
+      body: "<p>Creates the new items/assets and posts the opening INITIAL_LOAD transactions in one go. " +
+        "<b>All-or-nothing:</b> if the data changed and any row now fails, nothing lands.</p>",
+      onConfirm: async function () {
+        var out = $id("import-result");
+        var r = await api("/ui/api/inventory/import/commit", { body: { csv: csv } });
+        if (!r.ok) { out.innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+        var b = r.body;
+        out.innerHTML = "<div class=\"card-note\"><b>Imported.</b> " +
+          esc(b.items_created) + " item(s) created · " + esc(b.assets_created) + " asset(s) created · load txns: " +
+          ((b.load_txns || []).length ? "<span class=\"mono\">" + (b.load_txns || []).map(esc).join(", ") + "</span>" : "none") +
+          "<br><a href=\"#items\">Go to Items</a> · <a href=\"#reports\">See History</a></div>";
+        $id("import-commit").disabled = true;
+        importCleanFor = null;
+        toast("Import committed");
+      },
+    });
+  });
+
+  /* ------------------------------------------------------------- reports */
+  var reportsBuilt = false;
+  var histItemPick = null, histLocPick = null, histType = "";
+  function loadReportsSection() {
+    renderLowStock();
+    if (reportsBuilt) return;
+    reportsBuilt = true;
+    var repLoc = mountLocPicker($id("rep-loc-picker"), {
+      placeholder: "Pick a location…",
+      includeInactive: true,
+      onPick: async function (locId) {
+        var out = $id("rep-balances");
+        out.innerHTML = "<div class=\"empty\">Loading…</div>";
+        var r = await api("/ui/api/inventory/location/" + encodeURIComponent(locId));
+        if (!r.ok) { out.innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+        var b = r.body;
+        var rows = [];
+        (b.items || []).forEach(function (it) {
+          rows.push("<tr><td>" + esc(it.name) + "</td><td>quantity</td><td class=\"num\">" + esc(it.qty) + " " + esc(it.unit) + "</td></tr>");
+        });
+        (b.assets || []).forEach(function (a) {
+          rows.push("<tr><td>" + esc(a.name) + " · " + esc(a.id) + "</td><td>asset</td><td>" + esc(a.condition) + "</td></tr>");
+        });
+        (b.kits || []).forEach(function (k) {
+          rows.push("<tr><td>Kit: " + esc(k.name || k.id) + "</td><td>kit</td><td>" + esc(k.condition || "") + "</td></tr>");
+        });
+        out.innerHTML = rows.length
+          ? "<div class=\"tablewrap\"><table class=\"minitable\"><thead><tr><th>What</th><th>Type</th><th>Held</th></tr></thead><tbody>" + rows.join("") + "</tbody></table></div>"
+          : "<div class=\"empty\">Nothing held at " + esc(locPath(locId)) + ".</div>";
+      },
+    });
+    histItemPick = mountItemPicker($id("hist-item-picker"), { placeholder: "Filter: item…", includeArchived: true });
+    histLocPick = mountLocPicker($id("hist-loc-picker"), { placeholder: "Filter: location…", includeInactive: true });
+    chips($id("hist-type-host"), {
+      name: "hist_type",
+      options: [{ value: "", label: "All types" }].concat(TXN_TYPES.map(function (t) { return { value: t, label: t.replace(/_/g, " ") }; })),
+      value: "",
+      onChange: function (v) { histType = v; },
+    });
+    $id("hist-load").addEventListener("click", loadHistory);
+  }
+  async function loadHistory() {
+    var out = $id("hist-rows");
+    out.innerHTML = "<div class=\"empty\">Loading…</div>";
+    var qs = ["limit=100"];
+    if (histItemPick && histItemPick.item) qs.push("item_id=" + encodeURIComponent(histItemPick.item.id));
+    if (histLocPick && histLocPick.value) qs.push("location_id=" + encodeURIComponent(histLocPick.value));
+    var actor = $id("hist-actor").value.trim();
+    if (actor) qs.push("actor=" + encodeURIComponent(actor));
+    if (histType) qs.push("txn_type=" + encodeURIComponent(histType));
+    var r = await api("/ui/api/inventory/history?" + qs.join("&"));
+    if (!r.ok) { out.innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+    var events = r.body.events || [];
+    if (!events.length) {
+      out.innerHTML = "<div class=\"empty\">No transactions match. Loosen the filters, or post the first movement.</div>";
+      return;
+    }
+    out.innerHTML = "<div class=\"scroll-rows\">" + events.map(function (e) {
+      var route2 = [e.src, e.dst].filter(Boolean).join(" → ");
+      var flags = "";
+      if (e.status === "reversed") flags += "<span class=\"tag tag-alert\">reversed by " + esc(e.reversed_by || "?") + "</span>";
+      if (e.type === "REVERSAL") flags += "<span class=\"tag tag-gold\">reverses " + esc(e.reverses || "?") + "</span>";
+      var canReverse = e.status === "posted" && e.type !== "REVERSAL";
+      return "<div class=\"tree-row\" style=\"flex-wrap:wrap\" id=\"txn-" + esc(e.txn_no) + "\">" +
+        "<span class=\"grow row__main\"><b class=\"row__title mono\">" + esc(e.txn_no) + "</b> " +
+        "<span class=\"tag\">" + esc(e.type) + "</span> " + flags +
+        "<span class=\"row__sub\">" + esc(e.actor) + " · " + esc(fmtWhen(e.ts)) +
+        (route2 ? " · " + esc(route2) : "") + (e.reason ? " · " + esc(e.reason) : "") + "</span>" +
+        "<span class=\"row__sub\">" + esc(linesSummary(e.lines)) + "</span></span>" +
+        (canReverse ? "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-rev=\"" + esc(e.txn_no) + "\">Reverse…</button>" : "") +
+        "<div class=\"inline-form\" data-rev-form=\"" + esc(e.txn_no) + "\" hidden style=\"width:100%\">" +
+        "<input class=\"input\" data-rev-reason=\"" + esc(e.txn_no) + "\" placeholder=\"Why is this being reversed? (required)\" autocomplete=\"off\" />" +
+        "<button type=\"button\" class=\"btn btn-sm btn-danger\" data-rev-go=\"" + esc(e.txn_no) + "\">Reverse</button></div>" +
+        "</div>";
+    }).join("") + "</div>";
+  }
+  $id("hist-rows").addEventListener("click", function (ev) {
+    var b;
+    if ((b = ev.target.closest("[data-rev]"))) {
+      var no = b.getAttribute("data-rev");
+      var f = document.querySelector("[data-rev-form=\"" + no + "\"]");
+      if (f) f.hidden = !f.hidden;
+    } else if ((b = ev.target.closest("[data-rev-go]"))) {
+      var txnNo = b.getAttribute("data-rev-go");
+      var reasonEl = document.querySelector("[data-rev-reason=\"" + txnNo + "\"]");
+      var reason = (reasonEl && reasonEl.value || "").trim();
+      if (!reason) { showStatus("warn", "A reason is required to reverse a transaction."); return; }
+      confirmCard({
+        title: "Reverse " + esc(txnNo) + "?",
+        danger: true,
+        label: "Post reversal",
+        body: "<p>Posts a compensating entry that undoes every line of <b>" + esc(txnNo) +
+          "</b>. The original stays in history, marked reversed, and both entries link to each other.</p>" +
+          "<p>Reason: <i>" + esc(reason) + "</i></p>",
+        onConfirm: async function () {
+          var r = await api("/ui/api/inventory/reverse", { body: {
+            txn_no: txnNo, reason: reason, client_uuid: uuid(),
+          } });
+          if (!r.ok) { showStatus("err", errHtml(r.err)); return; }
+          clearStatus();
+          toast("Reversed — " + (r.body.txn ? r.body.txn.txn_no : ""));
+          loadHistory();
+        },
+      });
+    }
+  });
+  async function renderLowStock() {
+    var out = $id("rep-low");
+    var r = await api("/ui/api/inventory/overview");
+    if (!r.ok) { out.innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+    var low = r.body.low_stock || [];
+    out.innerHTML = low.length
+      ? "<div class=\"tablewrap\"><table class=\"minitable\"><thead><tr><th>Item</th><th>Location</th><th>On hand</th><th>Min</th></tr></thead><tbody>" +
+        low.map(function (h) {
+          return "<tr><td>" + esc(h.name) + "</td><td>" + esc(locPath(h.location_id)) + "</td>" +
+            "<td class=\"num var-neg\">" + esc(h.on_hand) + "</td><td class=\"num\">" + esc(h.min_qty) + "</td></tr>";
+        }).join("") + "</tbody></table></div>"
+      : "<div class=\"empty\">Nothing under its minimum right now.</div>";
+  }
+
+  /* -------------------------------------------------------------- labels */
+  var BASKET = [];
+  try { BASKET = JSON.parse(localStorage.getItem("gvc_inv_labels_v1") || "[]") || []; } catch (e) {}
+  function saveBasket() {
+    try { localStorage.setItem("gvc_inv_labels_v1", JSON.stringify(BASKET)); } catch (e) {}
+    var b = $id("nav-basket-badge");
+    b.textContent = String(BASKET.length);
+    b.hidden = !BASKET.length;
+  }
+  function basketAdd(type, id, title) {
+    if (BASKET.some(function (x) { return x.type === type && x.id === id; })) {
+      toast("Already in the label basket");
+      return;
+    }
+    BASKET.push({ type: type, id: id, title: title || id });
+    saveBasket();
+    toast("Added to label basket (" + BASKET.length + ")");
+    if (currentSection() === "labels") renderBasket();
+  }
+  function renderBasket() {
+    var box = $id("basket-rows");
+    box.innerHTML = BASKET.length
+      ? BASKET.map(function (x, i) {
+          return "<div class=\"tree-row\"><span class=\"grow\">" + esc(x.title) +
+            " <span class=\"tag\">" + esc(x.type) + "</span></span>" +
+            "<button type=\"button\" class=\"btn btn-sm btn-ghost\" data-bk-rm=\"" + i + "\">Remove</button></div>";
+        }).join("")
+      : "<div class=\"empty\">Basket is empty. Add labels from Items (Add label), Assets (Print label), and Locations — or use the shortcut above.</div>";
+    saveBasket();
+  }
+  $id("basket-rows").addEventListener("click", function (ev) {
+    var b = ev.target.closest("[data-bk-rm]");
+    if (b) { BASKET.splice(Number(b.getAttribute("data-bk-rm")), 1); renderBasket(); }
+  });
+  $id("basket-clear").addEventListener("click", function () {
+    BASKET = [];
+    renderBasket();
+  });
+  $id("basket-all-storage").addEventListener("click", async function () {
+    if (!LOCS.length) await refreshLocations();
+    var added = 0;
+    LOCS.forEach(function (l) {
+      if (l.active === false) return;
+      if (["storage", "zone", "shelf", "shop", "office"].indexOf(l.kind) === -1) return;
+      if (BASKET.some(function (x) { return x.type === "location" && x.id === l.id; })) return;
+      BASKET.push({ type: "location", id: l.id, title: l.path || l.name });
+      added++;
+    });
+    renderBasket();
+    toast(added ? added + " storage location(s) added" : "All storage locations were already in the basket");
+  });
+  $id("basket-pdf").addEventListener("click", async function () {
+    var stat = $id("basket-status");
+    if (!BASKET.length) {
+      stat.innerHTML = "<div class=\"card-note\">Nothing in the basket yet — add at least one label first.</div>";
+      return;
+    }
+    stat.innerHTML = "<div class=\"muted\">Rendering the label sheet…</div>";
+    var payload = {
+      location_ids: BASKET.filter(function (x) { return x.type === "location"; }).map(function (x) { return x.id; }),
+      asset_ids: BASKET.filter(function (x) { return x.type === "asset"; }).map(function (x) { return x.id; }),
+      item_ids: BASKET.filter(function (x) { return x.type === "item"; }).map(function (x) { return x.id; }),
+    };
+    var r = await api("/ui/api/inventory/labels.pdf", { body: payload, blob: true });
+    if (!r.ok) { stat.innerHTML = "<div class=\"card-note\">" + errHtml(r.err) + "</div>"; return; }
+    var url = URL.createObjectURL(r.blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = "gvc-inventory-labels.pdf";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function () { URL.revokeObjectURL(url); }, 10000);
+    stat.innerHTML = "<div class=\"card-note\">Downloaded <b>gvc-inventory-labels.pdf</b> — " + BASKET.length +
+      " label(s), 30 per sheet. Print at 100% scale (no “fit to page”) on Avery 5160 stock.</div>";
+  });
+
+  /* ---------------------------------------------------------------- init */
+  if (window.GvcTheme) {
+    window.GvcTheme.mount(document.getElementById("theme-toggle"));
+  }
+  (function initAvatar() {
+    var initials = (EMAIL || "?").split("@")[0].split(/[._-]/).map(function (p) {
+      return p.slice(0, 1).toUpperCase();
+    }).join("").slice(0, 2) || "?";
+    $id("railavatar").textContent = initials;
+  })();
+  saveBasket();
+  refreshLocations().then(route);
+})();
+</script>
+</body>
+</html>

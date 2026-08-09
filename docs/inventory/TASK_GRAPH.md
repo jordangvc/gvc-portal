@@ -19,7 +19,7 @@ Shared-file rule: `app/service.py`, `shared/access.py`, `shared/hub_nav.py`,
 Status log (updated as slices land — a slice is DONE only with test evidence)
 - S1: DONE — 21 tests green (domain + ledger invariants)
 - S2: DONE — 9 HTTP tests green (authz tiers, idempotency, counts, import, attention)
-- S3: in progress (field agent)
-- S4: in progress (office agent)
-- S5: pending
-- S6: pending
+- S3: DONE — 8 tests green; outbox vm-tested (uuid stable, 409 parks, 200 drains)
+- S4: DONE — 12 tests green; labels render 35 QRs across 2 sheets
+- S5: DONE — nav, APP_MAP, health probe, seed, verify cmd, shared-JS route, r110
+- S6: in progress (fresh-context review)
