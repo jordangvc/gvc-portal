@@ -64,6 +64,15 @@
   background: var(--color-primary-hover);   /* #0d2e21 */
   color: var(--color-text-inverse);
 }
+/* Back-to-hub pill on the dark form chrome (base sizing from .btn-hub). */
+.gvc-hub-btn {
+  padding: 0 14px; border-radius: var(--radius-full);
+  border-color: rgba(255, 255, 255, .3);
+  color: var(--color-text-inverse); text-decoration: none;
+  font-size: 12.5px; white-space: nowrap;
+}
+.gvc-hub-btn:hover { background: rgba(255, 255, 255, .12); border-color: rgba(255, 255, 255, .55); }
+
 .gvc-topbar-row {
   display: flex; align-items: center; gap: 14px;
   height: 56px;
@@ -334,6 +343,29 @@
   -webkit-overflow-scrolling: touch;
 }
 
+/* Draft / bid-search rows. Their styling used to live in legacy gvc.css
+   under `.gvc-moneyform` — the r103 conversion dropped both, leaving the
+   rows as bare stacked text with nothing separating one job from the next.
+   Thin dividers, not nested cards: the list already sits inside a card. */
+.gvc-results .draft-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 6px;
+  /* --color-border, not --color-divider: the line must read at arm's length
+     on a cream surface — "hard to differentiate what's what" (Jordan). */
+  border-bottom: 1px solid var(--color-border);
+}
+.gvc-results .draft-row:last-child { border-bottom: 0; }
+.gvc-results .draft-row:hover { background: var(--color-surface-2); }
+.gvc-results .draft-row.active { background: var(--color-accent-soft); }
+.gvc-results .d-main { flex: 1; min-width: 0; }
+.gvc-results .d-label {
+  font-weight: 700; font-size: 13.5px; letter-spacing: -.01em; line-height: 1.35;
+}
+.gvc-results .d-label .badge { margin-left: 7px; vertical-align: 1px; }
+.gvc-results .d-meta {
+  font-size: 11.5px; color: var(--color-text-faint); margin-top: 2px;
+}
+
 /* email chips */
 .gvc-chipfield {
   display: flex; flex-wrap: wrap; gap: 7px; align-items: center;
@@ -579,6 +611,14 @@
 .gvc-doc-total-amt { font-family: var(--font-mono); font-size: 17px; font-weight: 700; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .gvc-doc-notes { margin-top: 15px; padding-top: 11px; border-top: 1px solid var(--color-divider); font-size: 10px; color: var(--color-text-faint); line-height: 1.5; }
 .gvc-doc-placeholder { padding: 22px 0; text-align: center; color: #8b9089; font-size: 11px; font-style: italic; }
+
+/* The preview iframe is EMPTY until the first Preview run. Without these
+   rules it rendered as a bare default 300×150 iframe box on page load.
+   `.show` is toggled by each page's preview/reset JS — it previously had
+   no CSS behind it at all. */
+.gvc-doc iframe { display: none; width: 100%; aspect-ratio: 8.5 / 11; border: 0; background: #fff; }
+.gvc-doc.show iframe { display: block; }
+.gvc-doc.show > .gvc-doc-placeholder { display: none; }
 
 /* --------------------------------------------------------------------------
    10. MOTION

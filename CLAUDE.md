@@ -17,7 +17,7 @@ routes/roles/grants.
 See also: `AGENTS.md` (agent quickstart + how to add a module) and
 `docs/portal-modularization-2026-06.md` (structure rationale + deploy runbook).
 
-## ✨ INVENTORY (r110) — BUILT 2026-08-09
+## ✨ INVENTORY (r112) — BUILT 2026-08-09
 Full inventory app per Jordan's master build prompt — docs/inventory/ is the
 canonical reference (README → everything). Field tool /ui/inventory (grant
 `inventory`), admin console /ui/inventory/admin (`inventory_manage`),
@@ -39,7 +39,38 @@ python scripts/inventory_verify.py. /health += inventory_store_ok (real
 read) + inventory_events. ⚠ RULES: ledger append-only — never edit posted
 events or write balances outside ledger.post/reverse
 (.claude/rules/inventory.md); tracking mode frozen after item creation;
-counts adjust, never overwrite. Hub **r110**.
+counts adjust, never overwrite. Adversarial review: 18 findings fixed + locked
+(tests/test_inventory_review_fixes.py); evidence in RELEASE_EVIDENCE.md. Hub **r112**.
+## ✨ Morning stops: Route selection + explicit Done + asset cache fix (r111) — 2026-08-09
+Jordan, live on /ui/morning: "can't move stops up/down, can't check which ones
+to optimize." Repro'd with seeded stops: the ↑/↓ buttons existed and worked —
+but the BARE checkbox beside each stop didn't select anything: it **marked the
+stop COMPLETE and posted an update to Monday**. It read exactly like a pick-
+for-optimize box. (Check his Ops items for stray "Stop completed via Morning
+Brief (jordan)" updates from misreads.)
+REBUILT the stop row (`web/morning.html`):
+  • Labelled **Route** checkbox = include in Optimize / Maps (default on;
+    completed stops auto-excluded + disabled).
+  • Completing = explicit **Done** button (title warns it posts to Monday);
+    completed rows show "✓ Done". A bare checkbox never completes again.
+  • **Optimize sends ONLY checked stops**; excluded stops are reattached after
+    the optimized ones via a follow-up saveRoute (the server saves whatever
+    list it optimizes — dropping them was the naive-path bug). Maps URL kept
+    from the optimize response = included stops only, i.e. the actual drive.
+  • Empty selection → clear message, no API call.
+🐛 SECOND COMPLAINT ROOT CAUSE — **stale CSS, not a missing fix**: the r110
+draft-row separators WERE live but every portal CSS/JS asset shipped
+`max-age=3600` while HTML is 300s, so his browser held the hour-old
+stylesheet. ALL 11 asset routes now `max-age=300`; separator upgraded to
+`--color-border` so it reads at arm's length. Guard:
+`test_no_portal_asset_cached_longer_than_html` (greps service.py for 3600).
+TESTS: `tests/test_morning_stops_ui.py` (5 — labelled include, done-is-a-
+button-never-an-input, optimize include-only + reattach + empty message,
+reorder present, cache rule). Verified interactively via the local harness:
+exclude→EXCLUDED=[2], done stop auto-excluded, 2 Done buttons + 1 ✓ flag,
+zero pageerrors, phone + desktop screenshots reviewed. Hub **r111**.
+NOTE: built in worktree `wt-morning-stops` (multi-writer isolation — the
+nonneg-coach session was mid-flight in portal-current).
 
 ## ✨ 5 Daily Non-Negotiables — Jordan's personal tracker (r109) — BUILT 2026-08-09
 Jordan's ask: track his Dan Martell 5-daily-non-negotiables (source doc
@@ -76,6 +107,28 @@ NOT BUILT (deliberate v1 cuts): morning-brief status line, reminders/nudges,
 offline queue for taps (jobsite offline matters less for a home/gym habit
 page; revisit if he asks). NOTE the tracker's own xlsx/brief claims in the
 source doc describe another system, not this portal.
+
+## ✨ Field-requested polish: hub button, doc placeholder, draft rows (r110) — 2026-08-09
+Three asks from Jordan using the live estimate page:
+  • 🐛 **Draft/search rows were bare unstyled text** — same fossil class as the
+    r108 #health bug: `.draft-row` styling lived in legacy `gvc.css` under
+    `.gvc-moneyform`, and the r103 conversion dropped both. Ported into
+    `gvc-forms.css` on current tokens with thin `--color-divider` separators
+    between jobs (r109 was taken by #177 mid-flight; his exact ask: "a thin line separating projects").
+  • 🐛 **Live Document panel showed a bare empty iframe** on load — no CSS ever
+    backed the `.show` class the preview JS toggles. `gvc-forms.css` now hides
+    the iframe until `.show`, sizes it 8.5/11 when shown, and the three forms
+    carry a styled `.gvc-doc-placeholder` ("tap Preview to see the exact PDF").
+  • ✨ **Visible ← Hub button, top-left, every page** — the old way home was a
+    tiny kicker text link or the brand mark. NEW `.btn-hub` (gvc-ui.css,
+    full --tap target) on all 16 tool pages + emitted by `gvc-form-chrome.js`
+    on the money forms (`.gvc-hub-btn` dark-chrome variant in gvc-forms.css).
+    Phone: `.topbar__actions > .muted` (email/health display text) hidden
+    <620px — it collided with the title once the button landed.
+Guards: `test_forms_pack_owns_legacy_dialect_classes` (draft rows + doc
+placeholder — the "page emits a class only legacy CSS styled" trap, second
+occurrence) + `test_every_tool_page_has_a_visible_hub_button`. Evidence
+re-run: 0 console errors, topbars verified at 390px and 1280px. Hub **r109**.
 
 ## ✅ Finalization CLOSED: harness + 4G evidence + invoice fix (r108) — 2026-08-09
 Items 2–4 of the close-out (item 1 = canonical docs, PR #175). NEW

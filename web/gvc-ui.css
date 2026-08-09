@@ -444,6 +444,16 @@ button { font: inherit; color: inherit; }
 .tag-alert  { background: var(--color-danger-soft); border-color: var(--color-danger); color: var(--color-danger); }
 
 /* Count badge on a nav item */
+/* Back-to-hub — the one nav affordance every tool page carries, top-left.
+   A visible pill with a full tap target, not a text link: the old kicker
+   link was too small to find or hit in the field (Jordan, 2026-08-09). */
+.btn-hub {
+  min-height: var(--tap);
+  display: inline-flex; align-items: center; gap: 6px;
+  font-weight: 700; flex-shrink: 0;
+  border: 1px solid var(--color-border);
+}
+
 .badge {
   min-width: 20px;
   padding: 1px 6px;
@@ -1143,6 +1153,13 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
 .topbar__title { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .topbar__actions { display: flex; align-items: center; gap: var(--space-2); min-width: 0; }
 .topbar__actions .btn, .topbar__actions .btn-icon { flex: 0 0 auto; }
+
+/* Phone: the signed-in email / health text in the actions cluster is
+   display-only and collides with the title once the hub button is present.
+   Identity lives on the hub; health lives on /health. */
+@media (max-width: 619px) {
+  .topbar__actions > .muted { display: none; }
+}
 
 .page { padding: var(--space-6) var(--space-8) var(--space-16); display: flex; flex-direction: column; gap: var(--space-6); }
 
