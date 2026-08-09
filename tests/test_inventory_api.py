@@ -38,9 +38,29 @@ _GRANTS = {
     "aud@localhost": {"inventory_view"},
     "none@localhost": {"morning", "fieldguide"},
 }
-access.is_provisioned = lambda email: (email or "").lower() in _GRANTS
-access.effective_features = lambda email: set(
-    _GRANTS.get((email or "").lower(), set()))
+# Patches FALL THROUGH to the real implementation for any email not in
+# _GRANTS: pytest imports every test module at collection time, so a
+# blanket lambda here would poison unrelated suites (test_hub_home's
+# superadmin checks) that run in the same process. Test users are
+# @localhost, which can never collide with real grants.
+_real_is_provisioned = access.is_provisioned
+_real_effective_features = access.effective_features
+
+
+def _fake_is_provisioned(email):
+    e = (email or "").lower()
+    return True if e in _GRANTS else _real_is_provisioned(email)
+
+
+def _fake_effective_features(email):
+    e = (email or "").lower()
+    if e in _GRANTS:
+        return set(_GRANTS[e])
+    return _real_effective_features(email)
+
+
+access.is_provisioned = _fake_is_provisioned
+access.effective_features = _fake_effective_features
 
 # --- in-memory inventory store ----------------------------------------------
 from subsystems.inventory import store as inv_store  # noqa: E402
