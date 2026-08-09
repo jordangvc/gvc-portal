@@ -502,6 +502,12 @@ def healthz() -> dict:
     # (slack_notify.probe_token, TTL GVC_SLACK_AUTH_PROBE_TTL, default 5 min).
     # slack_auth_error carries the exact Slack error when it doesn't.
     slack_probe = slack_notify.probe_token()
+    try:
+        from adapters import llm as _llm
+        _llm_probe = _llm.probe()
+    except Exception as _e:  # noqa: BLE001 — health must never 500
+        _llm_probe = {"transport": "", "ok": False,
+                      "error": f"{type(_e).__name__}: {_e}"}
     slack_configured = bool(slack_probe["configured"] and slack_probe["ok"])
 
     # Monday readiness — same "present vs works" correction (2026-07-27).
@@ -563,6 +569,11 @@ def healthz() -> dict:
         "slack_ops_alerts_channel": os.environ.get("GVC_OPS_ALERTS_CHANNEL") or "#gvc-ops-alerts (default)",
         "slack_billing_channel": os.environ.get("GVC_BILLING_SLACK_CHANNEL") or "#billing (default)",
         "slack_coi_channel": os.environ.get("GVC_COI_SLACK_CHANNEL") or "(not set — COI notices skipped)",
+        # LLM (nonneg coach) — LIVE probe, cached 1h: proxy __healthcheck /
+        # direct models-endpoint auth check, never env presence alone.
+        "llm_transport": _llm_probe["transport"],
+        "llm_ok": _llm_probe["ok"],
+        "llm_error": _llm_probe["error"],
         "grants_backend": grants_backend,
         "grants_store_ok": grants_store_ok,
         "grants_users": grants_users,
@@ -2715,14 +2726,18 @@ def _nonneg_today():
 
 def _nonneg_payload(doc: dict) -> dict:
     from subsystems.nonneg import tracker
+    from adapters import llm
     doc = doc or tracker.blank_doc()
     return {
         "ok": True,
         "goals": list(doc.get("goals") or ["", "", "", "", ""]),
+        "goal_notes": list(doc.get("goal_notes") or ["", "", "", "", ""]),
         "goals_last_review": doc.get("goals_last_review") or "",
         "days": dict(doc.get("days") or {}),
         "habits": [{"key": k, "label": l, "sub": s} for k, l, s in tracker.HABITS],
         "stats": tracker.compute_stats(doc, today=_nonneg_today()),
+        "coach": dict(doc.get("coach") or {}),
+        "coach_available": bool(llm.transport()),
     }
 
 
@@ -2795,16 +2810,18 @@ def ui_nonneg_day(req: NonnegDayRequest, request: Request) -> dict:
 
 class NonnegGoalsRequest(BaseModel):
     goals: list[str] = []
+    goal_notes: list[str] = []
 
 
 @app.put("/ui/api/nonneg/goals")
 def ui_nonneg_goals(req: NonnegGoalsRequest, request: Request) -> dict:
     email = _nonneg_owner(request)
-    from subsystems.nonneg import store, tracker
+    from subsystems.nonneg import coach, store, tracker
 
     def _mut(doc: dict):
         base = doc if doc else tracker.blank_doc()
         new = tracker.set_goals(base, req.goals)
+        new = coach.set_goal_notes(new, req.goal_notes)
         return new, new
 
     try:
@@ -2819,6 +2836,144 @@ def ui_nonneg_goals(req: NonnegGoalsRequest, request: Request) -> dict:
     # Log the act, never the goal text — goals are personal.
     activity.log_event("nonneg.goals", actor=email, target="goals")
     return _nonneg_payload(new_doc)
+
+
+class NonnegNoteRequest(BaseModel):
+    date: str
+    note: str = ""
+
+
+@app.put("/ui/api/nonneg/note")
+def ui_nonneg_note(req: NonnegNoteRequest, request: Request) -> dict:
+    """Daily journal line — the raw material the coach feeds on."""
+    email = _nonneg_owner(request)
+    from subsystems.nonneg import coach, store
+    today = _nonneg_today()
+
+    def _mut(doc: dict):
+        from subsystems.nonneg import tracker
+        base = doc if doc else tracker.blank_doc()
+        new = coach.set_day_note(base, req.date, req.note, today=today)
+        return new, new
+
+    try:
+        new_doc = store.mutate(store.object_for(email), _mut)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=422,
+            detail={"ok": False, "code": "INVALID_INPUT", "detail": str(e)},
+        )
+    except store.PortalStoreNotConfigured:
+        raise HTTPException(status_code=503, detail=_NONNEG_STORE_503)
+    # Log the act only — note text is personal.
+    activity.log_event("nonneg.note", actor=email, target=req.date)
+    return _nonneg_payload(new_doc)
+
+
+def _nonneg_run_coach(email: str, *, force: bool) -> dict:
+    """Generate fresh tips from the doc; store them; return the payload.
+    Raises HTTPException with honest envelopes on every failure mode."""
+    import time as _time
+    from datetime import datetime
+    from zoneinfo import ZoneInfo
+    from adapters import llm
+    from subsystems.nonneg import coach, store, tracker
+
+    obj = store.object_for(email)
+    try:
+        doc, _ = store.read_doc(obj)
+    except store.PortalStoreNotConfigured:
+        raise HTTPException(status_code=503, detail=_NONNEG_STORE_503)
+    doc = doc or tracker.blank_doc()
+
+    prior = (doc.get("coach") or {}).get("generated_at")
+    if not force and coach.seconds_since(
+            prior, now_ts=_time.time()) < coach.MIN_REFRESH_INTERVAL_S:
+        return _nonneg_payload(doc)  # fresh enough — no double-spend
+
+    today = _nonneg_today()
+    stats = tracker.compute_stats(doc, today=today)
+    prompt = coach.build_prompt(doc, stats, today=today)
+    try:
+        raw = llm.complete_json(coach.TASK, prompt)
+    except llm.LLMNotConfigured as e:
+        raise HTTPException(
+            status_code=503,
+            detail={"ok": False, "code": "COACH_NOT_CONFIGURED",
+                    "detail": str(e),
+                    "advice": "Set ANTHROPIC_API_KEY, or leave "
+                              "GVC_CLAUDE_PROXY_URL at its default and put a "
+                              "key on the Netlify proxy."},
+        )
+    except llm.LLMError as e:
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "COACH_UPSTREAM",
+                    "detail": str(e),
+                    "advice": "Try again in a minute — your notes and "
+                              "checkmarks are unaffected."},
+        )
+
+    now_et = datetime.now(ZoneInfo("America/New_York"))
+    notes = coach.recent_notes(doc, today=today)
+    try:
+        tips = coach.parse_tips(
+            raw, generated_at=now_et.isoformat(timespec="seconds"),
+            through=notes[0][0] if notes else today.isoformat(),
+        )
+    except ValueError as e:
+        raise HTTPException(
+            status_code=502,
+            detail={"ok": False, "code": "COACH_BAD_RESPONSE",
+                    "detail": str(e), "advice": "Hit refresh to retry."},
+        )
+
+    def _mut(cur: dict):
+        base = cur if cur else tracker.blank_doc()
+        return coach.apply_tips(base, tips), None
+
+    try:
+        store.mutate(obj, _mut)
+        doc, _ = store.read_doc(obj)
+    except store.PortalStoreNotConfigured:
+        raise HTTPException(status_code=503, detail=_NONNEG_STORE_503)
+    activity.log_event("nonneg.coach", actor=email,
+                       target=tips.get("source") or "llm")
+    return _nonneg_payload(doc)
+
+
+@app.post("/ui/api/nonneg/coach")
+def ui_nonneg_coach(request: Request) -> dict:
+    """Refresh-now button. Same generation path the nightly task uses."""
+    email = _nonneg_owner(request)
+    return _nonneg_run_coach(email, force=False)
+
+
+class NonnegCoachTaskRequest(BaseModel):
+    dry_run: bool = False
+
+
+@app.post("/v1/tasks/nonneg-coach")
+def tasks_nonneg_coach(
+    req: NonnegCoachTaskRequest,
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """Nightly coach refresh (Cloud Scheduler) — tips are waiting with the
+    4:30am coffee, built from yesterday's notes. Owner emails only; skips
+    quietly when the LLM or store is down (Scheduler retries are safe)."""
+    require_api_key(x_api_key)
+    results = {}
+    for email in sorted(access.superadmin_emails()):
+        if req.dry_run:
+            results[email] = "dry_run"
+            continue
+        try:
+            _nonneg_run_coach(email, force=True)
+            results[email] = "ok"
+        except HTTPException as e:
+            detail = e.detail if isinstance(e.detail, dict) else {}
+            results[email] = f"skipped: {detail.get('code') or e.status_code}"
+    return {"ok": True, "results": results}
 
 
 @app.get("/ui/takeoff", response_class=HTMLResponse)

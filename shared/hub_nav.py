@@ -205,7 +205,9 @@ def groups_for_client(features: set[str], *, email: str = "") -> list[dict[str, 
         groups.append({"name": group, "tools": rows})
     personal = personal_tools_for(email)
     if personal:
-        groups.append({"name": "Personal", "tools": personal})
+        # Jordan's call (2026-08-09): personal tools live at the TOP of the
+        # rail — front and center, not scrolled below the company groups.
+        groups.insert(0, {"name": "Personal", "tools": personal})
     return groups
 
 
@@ -276,6 +278,11 @@ def boot_shell(email: str, features: set[str], *,
     ]
     seen: set[str] = set()
     quick: list[dict[str, Any]] = []
+    # Owner's personal tools lead the DO-NEXT chips — top of the screen,
+    # first thing on the hub (Jordan, 2026-08-09).
+    for tool in personal_tools_for(email):
+        quick.append({"name": tool["name"], "feature": tool["feature"],
+                      "href": tool["href"]})
     for feat in quick_feats:
         if feat in seen or feat not in feats:
             continue

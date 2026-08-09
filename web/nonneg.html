@@ -82,13 +82,51 @@
   .week .d.is-out { opacity: .4; }
 
   .goal { display: block; width: 100%; }
-  .goal + .goal { margin-top: var(--space-2); }
+  .goal + .goal { margin-top: var(--space-3); }
   .goal textarea {
     width: 100%; box-sizing: border-box; min-height: 44px; resize: vertical;
     padding: var(--space-3); border: 1px solid var(--color-border);
     border-radius: var(--radius-md); background: var(--color-surface);
     color: inherit; font: inherit; font-size: 16px;
   }
+  .goal textarea.goal-note {
+    min-height: 34px; margin-top: var(--space-1);
+    font-size: 16px; color: var(--color-text-muted);
+    border-style: dashed;
+  }
+
+  .daynote textarea {
+    width: 100%; box-sizing: border-box; min-height: 64px; resize: vertical;
+    padding: var(--space-3); border: 1px solid var(--color-border);
+    border-radius: var(--radius-md); background: var(--color-surface);
+    color: inherit; font: inherit; font-size: 16px;
+  }
+
+  .tip {
+    border: 1px solid var(--color-border); border-radius: var(--radius-lg);
+    background: var(--color-surface); padding: var(--space-3) var(--space-4);
+    font-size: var(--text-sm); line-height: 1.45;
+  }
+  .tip + .tip { margin-top: var(--space-2); }
+  .tip b { display: block; }
+  .tip .why { color: var(--color-text-muted); font-size: var(--text-xs); margin-top: 2px; }
+  .tip .opener {
+    margin-top: var(--space-2); padding: var(--space-2) var(--space-3);
+    border-left: 3px solid var(--color-accent); background: var(--color-bg);
+    border-radius: var(--radius-sm); font-size: var(--text-sm);
+  }
+  .coach-kicker {
+    font-size: var(--text-xs); text-transform: uppercase; letter-spacing: .08em;
+    color: var(--color-text-muted); font-weight: 700;
+    margin: var(--space-4) 0 var(--space-2);
+  }
+  .coach-focus {
+    border-left: 3px solid var(--color-primary); padding: var(--space-2) var(--space-3);
+    background: var(--color-surface); border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+  }
+  .coach-foot { display: flex; align-items: center; gap: var(--space-3);
+    margin-top: var(--space-4); flex-wrap: wrap; }
   .goals-foot { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); flex-wrap: wrap; }
   .savestate { font-size: var(--text-xs); color: var(--color-text-muted); }
 
@@ -129,6 +167,26 @@
     <p class="dateline" id="dateline">Loading…</p>
     <div id="prestart" class="banner" hidden></div>
     <div id="habits" style="margin-top:var(--space-3)"></div>
+    <div class="daynote" style="margin-top:var(--space-3)">
+      <textarea id="day-note" placeholder="Today's notes — wins, conversations, ideas. The coach reads these."></textarea>
+      <span class="savestate" id="note-state"></span>
+    </div>
+  </div>
+
+  <div class="card" id="coach-card">
+    <h2>Coach — from your notes</h2>
+    <div id="coach-empty" class="dateline">Loading…</div>
+    <div id="coach-body" hidden>
+      <div class="coach-focus" id="coach-focus" hidden></div>
+      <div class="coach-kicker" id="coach-posts-head" hidden>Things to post</div>
+      <div id="coach-posts"></div>
+      <div class="coach-kicker" id="coach-reach-head" hidden>People to reach out to</div>
+      <div id="coach-reach"></div>
+    </div>
+    <div class="coach-foot">
+      <button type="button" class="btn btn-sm" id="coach-refresh">Refresh tips</button>
+      <span class="savestate" id="coach-state"></span>
+    </div>
   </div>
 
   <div class="card">
@@ -257,11 +315,81 @@
         ta.value = text || "";
         ta.addEventListener("input", function () { $("goals-state").textContent = "unsaved edits"; });
         lab.appendChild(ta);
+        var tn = document.createElement("textarea");
+        tn.className = "goal-note";
+        tn.placeholder = "Notes on goal " + (i + 1) + " — progress, blockers, next move.";
+        tn.value = (payload.goal_notes && payload.goal_notes[i]) || "";
+        tn.addEventListener("input", function () { $("goals-state").textContent = "unsaved edits"; });
+        lab.appendChild(tn);
         g.appendChild(lab);
       });
     }
     $("goals-state").textContent = payload.goals_last_review
       ? "Last reviewed " + payload.goals_last_review : "";
+
+    // Day note — never clobber mid-typing; only fill when untouched.
+    var dn = $("day-note");
+    if (document.activeElement !== dn && !dn.dataset.dirty) {
+      dn.value = entry.note || "";
+    }
+
+    renderCoach();
+  }
+
+  function fmtStamp(iso) {
+    if (!iso) return "";
+    try {
+      return new Date(iso).toLocaleString("en-US",
+        { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    } catch (e) { return iso; }
+  }
+
+  function renderCoach() {
+    var c = payload.coach || {};
+    var empty = $("coach-empty");
+    var body = $("coach-body");
+    var has = (c.post_ideas || []).length || (c.outreach || []).length || c.focus;
+    if (!payload.coach_available && !has) {
+      empty.hidden = false; body.hidden = true;
+      empty.textContent = "Coach isn't configured yet — ask Claude to wire the LLM key.";
+      $("coach-refresh").disabled = true;
+      return;
+    }
+    $("coach-refresh").disabled = false;
+    if (!has) {
+      empty.hidden = false; body.hidden = true;
+      empty.textContent = "No tips yet. Write a note or two above, then hit " +
+        "Refresh — the coach turns your notes into post ideas and outreach targets.";
+      return;
+    }
+    empty.hidden = true; body.hidden = false;
+    var f = $("coach-focus");
+    f.hidden = !c.focus;
+    f.textContent = c.focus || "";
+    var posts = $("coach-posts");
+    posts.innerHTML = "";
+    (c.post_ideas || []).forEach(function (p) {
+      var el = document.createElement("div");
+      el.className = "tip";
+      el.innerHTML = "<b>" + esc(p.idea) + "</b>" +
+        (p.why ? '<div class="why">' + esc(p.why) + "</div>" : "");
+      posts.appendChild(el);
+    });
+    $("coach-posts-head").hidden = !(c.post_ideas || []).length;
+    var reach = $("coach-reach");
+    reach.innerHTML = "";
+    (c.outreach || []).forEach(function (p) {
+      var el = document.createElement("div");
+      el.className = "tip";
+      el.innerHTML = "<b>" + esc(p.who) + "</b>" +
+        (p.why ? '<div class="why">' + esc(p.why) + "</div>" : "") +
+        (p.opener ? '<div class="opener">' + esc(p.opener) + "</div>" : "");
+      reach.appendChild(el);
+    });
+    $("coach-reach-head").hidden = !(c.outreach || []).length;
+    $("coach-state").textContent = c.generated_at
+      ? ("Generated " + fmtStamp(c.generated_at) +
+         (c.through ? " · from notes through " + c.through : "")) : "";
   }
 
   function tap(key, done, btn) {
@@ -285,15 +413,67 @@
     });
   }
 
+  // Day note — debounced autosave, honest savestate, value survives failure.
+  (function () {
+    var dn = $("day-note");
+    var t = null;
+    dn.addEventListener("input", function () {
+      dn.dataset.dirty = "1";
+      $("note-state").textContent = "typing…";
+      clearTimeout(t);
+      t = setTimeout(function () {
+        $("note-state").textContent = "saving…";
+        fetch("/ui/api/nonneg/note", {
+          method: "PUT", credentials: "same-origin",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ date: payload.stats.today, note: dn.value }),
+        }).then(function (r) {
+          if (!r.ok) throw new Error("save failed (" + r.status + ")");
+          return r.json();
+        }).then(function (next) {
+          delete dn.dataset.dirty;
+          payload.days = next.days;
+          $("note-state").textContent = "saved";
+        }).catch(function (e) {
+          $("note-state").textContent = "not saved — your text is still here; edit to retry";
+        });
+      }, 900);
+    });
+  })();
+
+  $("coach-refresh").addEventListener("click", function () {
+    var btn = $("coach-refresh");
+    btn.disabled = true;
+    $("coach-state").textContent = "thinking…";
+    fetch("/ui/api/nonneg/coach", {
+      method: "POST", credentials: "same-origin",
+    }).then(function (r) {
+      if (!r.ok) return r.json().then(function (b) {
+        throw new Error((b.detail && b.detail.detail) || ("refresh failed (" + r.status + ")"));
+      });
+      return r.json();
+    }).then(function (next) {
+      payload = next;
+      btn.disabled = false;
+      renderCoach();
+    }).catch(function (e) {
+      btn.disabled = false;
+      $("coach-state").textContent = String(e.message || e);
+    });
+  });
+
   $("save-goals").addEventListener("click", function () {
     var goals = Array.prototype.map.call(
-      document.querySelectorAll("#goals textarea"),
+      document.querySelectorAll("#goals textarea:not(.goal-note)"),
+      function (t) { return t.value; });
+    var goalNotes = Array.prototype.map.call(
+      document.querySelectorAll("#goals textarea.goal-note"),
       function (t) { return t.value; });
     $("goals-state").textContent = "saving…";
     fetch("/ui/api/nonneg/goals", {
       method: "PUT", credentials: "same-origin",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ goals: goals }),
+      body: JSON.stringify({ goals: goals, goal_notes: goalNotes }),
     }).then(function (r) {
       if (!r.ok) throw new Error("save failed (" + r.status + ")");
       return r.json();

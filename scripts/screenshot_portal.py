@@ -64,9 +64,18 @@ THROTTLE_BUDGET_S = 3.0
 
 
 def _free_port_check() -> None:
+    """Pick a fresh ephemeral port every run.
+
+    A crashed run can leave a zombie uvicorn on the old port serving STALE
+    code with a STALE session secret — requests then auth-bounce or render
+    phantom old pages (cost ~40 min of ghost-chasing, 2026-08-09). Never
+    reuse a fixed port; rebind globals to a kernel-assigned free one.
+    """
+    global PORT, BASE
     with contextlib.closing(socket.socket()) as s:
-        if s.connect_ex((HOST, PORT)) == 0:
-            raise SystemExit(f"port {PORT} already in use — stop the other server first")
+        s.bind((HOST, 0))
+        PORT = s.getsockname()[1]
+    BASE = f"http://{HOST}:{PORT}"
 
 
 def _boot_app():
