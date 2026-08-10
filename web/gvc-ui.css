@@ -973,8 +973,12 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
   transform: translateX(-50%) translateY(140%);
   transition: transform var(--transition-interactive);
   pointer-events: none;
+  /* Sliding down 140% of its own height is NOT off-screen on phones — the
+     tabbar raises `bottom` to 4.5rem, so ~16px of empty black pill peeked
+     above the edge on every page (the mystery blob). Hide it outright. */
+  visibility: hidden;
 }
-.toast.is-on { transform: translateX(-50%) translateY(0); }
+.toast.is-on { transform: translateX(-50%) translateY(0); visibility: visible; }
 @media (max-width: 900px) {
   .toast { bottom: calc(4.5rem + env(safe-area-inset-bottom, 0px)); }
 }

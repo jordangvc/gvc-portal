@@ -91,6 +91,23 @@ def test_fonts_are_embedded_never_cdn() -> None:
         )
 
 
+def test_hidden_attribute_always_wins_on_inventory() -> None:
+    """`.screen { display:grid }` beat the `hidden` attribute — every screen
+    rendered stacked on one page and the tabbar just scrolled the pile
+    (2026-08-09). The router drives visibility via `hidden`; it must win."""
+    html = (WEB / "inventory.html").read_text(encoding="utf-8")
+    assert "[hidden] { display: none !important; }" in html
+
+
+def test_toast_hides_fully_on_phones() -> None:
+    """translateY(140%) is not off-screen when the tabbar raises `bottom` —
+    an empty black pill peeked above the edge on every page."""
+    css = (WEB / "gvc-ui.css").read_text(encoding="utf-8")
+    toast = css.split(".toast {", 1)[1]
+    assert "visibility: hidden" in toast.split("}", 1)[0]
+    assert "visibility: visible" in toast.split(".toast.is-on", 1)[1][:120]
+
+
 def test_every_tool_page_has_a_visible_hub_button() -> None:
     """Every page needs an obvious, tappable way back to the hub, top-left.
 
