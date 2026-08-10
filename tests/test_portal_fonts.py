@@ -40,6 +40,25 @@ def test_gvc_css_references_font_urls() -> None:
         check(f"css links /ui/fonts/{name}", f"/ui/fonts/{name}" in css)
 
 
+def test_live_stylesheet_embeds_fonts_and_no_cdn() -> None:
+    """Fonts live in gvc-ui.css — the stylesheet every page actually links.
+
+    They were stranded in legacy gvc.css when r104 unlinked it: every page
+    fell back to system fonts while the money forms pulled different faces
+    from a fontshare CDN — the portal rendered different typefaces page to
+    page, and CDN fonts block text on weak job-site signal (2026-08-09).
+    """
+    ui = (ROOT / "web" / "gvc-ui.css").read_text(encoding="utf-8")
+    for name in FONTS:
+        check(f"gvc-ui.css embeds {name}", f"/ui/fonts/{name}" in ui)
+    check("display stack has embedded fallback", "'Montserrat'" in ui)
+    check("body stack has embedded fallback", "'Lato'" in ui)
+    for sheet in ("gvc-ui.css", "gvc-forms.css"):
+        css = (ROOT / "web" / sheet).read_text(encoding="utf-8")
+        check(f"{sheet} has no remote @import",
+              "@import url('http" not in css and '@import url("http' not in css)
+
+
 def test_font_route_allowlist() -> None:
     src = (ROOT / "app" / "service.py").read_text(encoding="utf-8")
     check("font route registered", '@app.get("/ui/fonts/{name}")' in src)

@@ -134,6 +134,12 @@
       }
     }
     el.innerHTML = '<div class="gvc-path-row">' + parts.join("") + "</div>";
+    // Phone: the row is wider than the screen and the scrollbar is hidden —
+    // without this the strip just looks cut off mid-crumb. Center where you are.
+    var here_ = el.querySelector(".is-here");
+    if (here_ && el.scrollWidth > el.clientWidth) {
+      here_.scrollIntoView({ inline: "center", block: "nearest" });
+    }
   }
 
   function mount(el, currentId) {

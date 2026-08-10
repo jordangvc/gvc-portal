@@ -67,6 +67,30 @@ def test_inputs_are_16px_on_phones() -> None:
         )
 
 
+def test_phone_topbar_is_one_clean_line() -> None:
+    """Phone topbars: no kicker, no wrapping h1 squeezed between pills.
+
+    The wrapping two-line title next to the Hub/Auto/Sign-out pills was the
+    single biggest "none of the font lines up" offender (Jordan, 2026-08-09).
+    """
+    css = (WEB / "gvc-ui.css").read_text(encoding="utf-8")
+    mobile = _mobile_blocks(css)
+    assert ".topbar__title .kicker" in mobile and "display: none" in mobile
+    assert "text-overflow: ellipsis" in mobile.split(".topbar h1", 1)[1][:220]
+
+
+def test_fonts_are_embedded_never_cdn() -> None:
+    """One typeface set on every page, served locally (weak-signal rule)."""
+    ui = (WEB / "gvc-ui.css").read_text(encoding="utf-8")
+    assert "@font-face" in ui and "/ui/fonts/" in ui
+    for sheet in ("gvc-ui.css", "gvc-forms.css"):
+        css = (WEB / sheet).read_text(encoding="utf-8")
+        assert "fontshare" not in css and "@import url('http" not in css, (
+            f"{sheet}: remote font CDN — forms rendered different typefaces "
+            "from the rest of the portal and blocked text on job-site signal"
+        )
+
+
 def test_every_tool_page_has_a_visible_hub_button() -> None:
     """Every page needs an obvious, tappable way back to the hub, top-left.
 

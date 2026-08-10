@@ -41,6 +41,38 @@ events or write balances outside ledger.post/reverse
 (.claude/rules/inventory.md); tracking mode frozen after item creation;
 counts adjust, never overwrite. Adversarial review: 18 findings fixed + locked
 (tests/test_inventory_review_fixes.py); evidence in RELEASE_EVIDENCE.md. Hub **r112**.
+## 📱 MOBILE CLEANUP (r114) — 2026-08-09, Jordan: "mobile fucking sucks, fonts don't line up"
+Systematic pass, not spot fixes: NEW `scripts/mobile_audit.py` (drives every
+page at 390/375 via the harness auth pattern; measures horizontal overflow +
+offending elements, <11px text, and a per-page type census; screenshots to
+git-ignored `_mobile-audit/`). Audit found, fixes shipped:
+  • 🔥 **The portal rendered DIFFERENT TYPEFACES page to page.** The
+    Montserrat/Lato @font-face lived only in legacy `gvc.css` — unlinked by
+    r104, so every gvc-ui page silently fell back to SYSTEM fonts — while
+    `gvc-forms.css` pulled Cabinet/Satoshi from a **fontshare CDN** (banned by
+    the design system's own no-CDN rule, and it blocks text on weak job-site
+    signal). Fonts now embedded in `gvc-ui.css` (`'Cabinet
+    Grotesk','Montserrat'…` / `'Satoshi','Lato'…`), CDN @import DELETED.
+  • **Phone topbar was two squeezed wrapping lines** between the pills, with a
+    redundant "GVC PORTAL" kicker, and Morning repeated its own title again
+    below. Phone: kicker hidden, h1 one line + ellipsis (--text-lg), morning's
+    duplicate #eyebrow hidden. (Print-only `a[href]::after` rule nearly got
+    dragged into the phone block mid-edit — caught.)
+  • **Money-form inputs rendered in ARIAL** (inputs don't inherit font) —
+    `.gvc-input/.gvc-textarea` now `font-family: inherit`.
+  • **Money-form h1 28px vs portal 24.3** → `.gvc-h1` clamp floor 1.5rem.
+  • **Sub-11px text floored to 11px+**: `.kicker-sm` (hub eyebrows),
+    `.gvc-kicker/.gvc-label` (11.5), `.gvc-actionbar-label` (11 — the phone
+    media block must sit AFTER the base rule or the cascade eats it),
+    `.handoff__kicker`, fieldguide `.tag/.cb-label/.stage`.
+  • **Path strip looked cut off mid-crumb** (scrollbar hidden) — gvc-flow.js
+    now auto-centers the `.is-here` crumb when the row overflows.
+GUARDS: `test_phone_topbar_is_one_clean_line`, `test_fonts_are_embedded_never_cdn`,
+`test_live_stylesheet_embeds_fonts_and_no_cdn` (test_portal_fonts.py).
+VERIFIED: audit re-run — 0 overflow pages, 0 sub-11px interactive text, inputs
+16px/Satoshi everywhere, type census aligned; morning + estimate @390
+eyeballed. Remaining acceptable: tables scroll inside `.tablewrap`. Hub **r114**.
+
 ## ✨ Morning stops: Route selection + explicit Done + asset cache fix (r111) — 2026-08-09
 Jordan, live on /ui/morning: "can't move stops up/down, can't check which ones
 to optimize." Repro'd with seeded stops: the ↑/↓ buttons existed and worked —
