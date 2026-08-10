@@ -41,6 +41,26 @@ events or write balances outside ledger.post/reverse
 (.claude/rules/inventory.md); tracking mode frozen after item creation;
 counts adjust, never overwrite. Adversarial review: 18 findings fixed + locked
 (tests/test_inventory_review_fixes.py); evidence in RELEASE_EVIDENCE.md. Hub **r112**.
+## 📱 Mobile cleanup part 2: the new pages (r115) — 2026-08-09
+Jordan: "just go ahead and fix them" — the concurrent sessions' pages
+(nonneg r109/r111, inventory r112) run through the same audit + eyeball pass.
+Nonneg: clean, nothing to fix. Inventory: TWO real bugs, one shared:
+  • 🔥 **Every inventory screen rendered STACKED on one page — live, for
+    everyone, always.** The page's `.screen { display:grid }` beat the UA
+    style behind the `hidden` attribute, so the router's `hidden` toggles did
+    nothing and the tabbar just scrolled the pile. Also hit the cart bar
+    ("0 items / Submit" floating over non-move screens). Fix:
+    `[hidden] { display:none !important }` page-level. Verified interactively:
+    home shows only scr-home, Scan tab shows only scr-scan, cartbar gone.
+  • 🔥 **The mystery black blob on every portal page** (visible in Jordan's
+    screenshots) = the shared `.toast` — it "hides" by sliding down 140% of
+    its own height, but phones raise `bottom` to 4.5rem for the tabbar, so
+    ~16px of empty black pill peeked above the edge PORTAL-WIDE. gvc-ui.css
+    toast now also toggles `visibility`. Verified on inventory + hub.
+Guards: `test_hidden_attribute_always_wins_on_inventory`,
+`test_toast_hides_fully_on_phones`. Their inventory suites still green.
+Hub **r115**.
+
 ## 📱 MOBILE CLEANUP (r114) — 2026-08-09, Jordan: "mobile fucking sucks, fonts don't line up"
 Systematic pass, not spot fixes: NEW `scripts/mobile_audit.py` (drives every
 page at 390/375 via the harness auth pattern; measures horizontal overflow +
