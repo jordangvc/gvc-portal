@@ -14,3 +14,4 @@ __pycache__/
 
 # Local Python virtualenv (Cursor Cloud VM uses /workspace/.venv)
 .venv/
+_mobile-audit/

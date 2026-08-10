@@ -14,9 +14,12 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   0. FONTS
+   0. FONTS — none here. Fonts are embedded in gvc-ui.css (/ui/fonts/), which
+   every page links first. The fontshare CDN @import that used to live here
+   made the money forms render DIFFERENT typefaces from the rest of the portal
+   and blocked text rendering on weak job-site signal. No remote font CDN —
+   design-system rule, now actually enforced (tests/test_portal_fonts.py).
    -------------------------------------------------------------------------- */
-@import url('https://api.fontshare.com/v2/css?f[]=cabinet-grotesk@800,700,500&f[]=satoshi@400,500,700,900&display=swap');
 
 /* --------------------------------------------------------------------------
    1. PAGE SHELL
@@ -145,7 +148,9 @@
 .gvc-rule { height: 1px; flex: 1; background: var(--color-divider); }
 .gvc-h1 {
   font-family: var(--font-display); font-weight: 800;
-  font-size: clamp(28px, 4.2vw, 40px); line-height: 1.03; letter-spacing: -.03em;
+  /* min 1.5rem = the portal-wide h1 size at phone width (--text-xl floor) —
+     the forms' old 28px floor made the money pages the odd ones out. */
+  font-size: clamp(1.5rem, 4.2vw, 2.5rem); line-height: 1.03; letter-spacing: -.03em;
   margin: 0 0 7px;
 }
 .gvc-blurb { margin: 0; font-size: 14.5px; line-height: 1.5; color: var(--color-text-muted); max-width: 54ch; }
@@ -213,6 +218,9 @@
   border-radius: 13px; border: 1px solid var(--color-border);
   background: var(--color-surface-2);
   padding: 0 15px;
+  /* inputs do NOT inherit font by default — without this every field the
+     office types in rendered in Arial while its label was Satoshi. */
+  font-family: inherit;
   font-size: 15px; font-weight: 500; color: var(--color-text);
   outline: none;
   transition: border-color var(--transition-interactive), box-shadow var(--transition-interactive);
@@ -220,11 +228,15 @@
 .gvc-input:focus { border-color: var(--color-primary); box-shadow: 0 0 0 3px var(--color-primary-ring); }
 
 /* See gvc-ui.css: anything under 16px makes iOS Safari zoom the page on focus.
-   The money forms are filled on phones in the field — pin to 16px there. */
+   The money forms are filled on phones in the field — pin to 16px there.
+   Labels/eyebrows get an 11px+ floor: 9.5–10.5px uppercase was unreadable at
+   arm's length ("difficult to use and see" — Jordan, 2026-08-09). */
 @media (max-width: 768px) {
   .gvc-input, .gvc-textarea, .gvc-search input { font-size: 16px; }
+  .gvc-kicker, .gvc-label { font-size: 11.5px; }
 }
 .gvc-textarea {
+  font-family: inherit;
   width: 100%; border-radius: 14px; border: 1px solid var(--color-border);
   background: var(--color-surface-2); padding: 12px 14px;
   font-size: 14px; line-height: 1.5; color: var(--color-text);
@@ -546,6 +558,10 @@
 .gvc-actionbar-label {
   font-size: 9.5px; font-weight: 700; letter-spacing: .15em;
   text-transform: uppercase; color: var(--color-accent);
+}
+/* phone floor — must sit AFTER the base rule to win the cascade */
+@media (max-width: 768px) {
+  .gvc-actionbar-label { font-size: 11px; }
 }
 .gvc-actionbar-total {
   font-family: var(--font-mono); font-size: clamp(20px, 3.4vw, 27px); font-weight: 700;

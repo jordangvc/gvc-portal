@@ -13,6 +13,16 @@
    1. TOKENS
    -------------------------------------------------------------------------- */
 
+/* Embedded fonts — served from this app (/ui/fonts/), NEVER a CDN. These were
+   stranded in legacy gvc.css when r104 unlinked it, so every page fell back to
+   system fonts while the money forms pulled different faces from a CDN — the
+   portal literally rendered different typefaces page to page ("none of the
+   font lines up" — Jordan, 2026-08-09). One set, every page, offline-safe. */
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:600;font-display:swap;src:url(/ui/fonts/montserrat-600.woff2) format('woff2')}
+@font-face{font-family:'Montserrat';font-style:normal;font-weight:700;font-display:swap;src:url(/ui/fonts/montserrat-700.woff2) format('woff2')}
+@font-face{font-family:'Lato';font-style:normal;font-weight:400;font-display:swap;src:url(/ui/fonts/lato-400.woff2) format('woff2')}
+@font-face{font-family:'Lato';font-style:normal;font-weight:700;font-display:swap;src:url(/ui/fonts/lato-700.woff2) format('woff2')}
+
 :root {
   /* Type scale — fluid, clamps at both ends */
   --text-xs:      clamp(0.75rem, 0.72rem + 0.12vw, 0.8125rem);
@@ -34,8 +44,8 @@
 
   --transition-interactive: 160ms cubic-bezier(0.16, 1, 0.3, 1);
 
-  --font-display: 'Cabinet Grotesk', 'Satoshi', system-ui, -apple-system, 'Segoe UI', sans-serif;
-  --font-body:    'Satoshi', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Cabinet Grotesk', 'Montserrat', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-body:    'Satoshi', 'Lato', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
 
   /* Chrome */
@@ -1159,6 +1169,16 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
    Identity lives on the hub; health lives on /health. */
 @media (max-width: 619px) {
   .topbar__actions > .muted { display: none; }
+  /* One-line titles. The "GVC PORTAL" kicker is redundant next to the ← Hub
+     button, and a wrapping h1 squeezed between pills is the single biggest
+     "nothing lines up" offender on phones (Jordan, 2026-08-09). */
+  .topbar__title .kicker { display: none; }
+  .topbar h1 {
+    font-size: var(--text-lg);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  /* 10px section eyebrows are below the field-readability floor. */
+  .kicker-sm { font-size: 11px; }
 }
 
 .page { padding: var(--space-6) var(--space-8) var(--space-16); display: flex; flex-direction: column; gap: var(--space-6); }
@@ -1356,7 +1376,7 @@ textarea { border-radius: var(--radius-lg); resize: vertical; min-height: 88px; 
 
 .handoff__kicker {
   font-family: var(--font-mono);
-  font-size: 10px;
+  font-size: 11px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   color: var(--color-text-faint);
