@@ -85,8 +85,8 @@ def test_fonts_are_embedded_never_cdn() -> None:
     assert "@font-face" in ui and "/ui/fonts/" in ui
     for sheet in ("gvc-ui.css", "gvc-forms.css"):
         css = (WEB / sheet).read_text(encoding="utf-8")
-        assert "fontshare" not in css and "@import url('http" not in css, (
-            f"{sheet}: remote font CDN — forms rendered different typefaces "
+        assert "@import url('http" not in css and '@import url("http' not in css, (
+            f"{sheet}: remote @import — forms rendered different typefaces "
             "from the rest of the portal and blocked text on job-site signal"
         )
 
