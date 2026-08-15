@@ -51,6 +51,59 @@ PREFLIGHT_PLACEHOLDER_URL = "https://invoice.stripe.com/PREFLIGHT/{}"
 DRYRUN_PLACEHOLDER_URL = "https://invoice.stripe.com/PLACEHOLDER/{}"
 
 
+def _coerce_float(value: object, default: float) -> float:
+    if value in (None, ""):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _prepare_dry_run_payload(data: dict) -> dict:
+    payload = json.loads(json.dumps(data or {}))
+    if not isinstance(payload, dict):
+        payload = {}
+    payload.setdefault("client", {})
+    payload.setdefault("job", {})
+    inv = payload.setdefault("invoice", {})
+
+    inv["identifier"] = inv.get("identifier") or f"INV-PREVIEW-{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+    inv["issue_date"] = inv.get("issue_date") or datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    inv["payment_terms"] = inv.get("payment_terms") or "Net 30"
+
+    if not isinstance(inv.get("line_items"), list):
+        inv["line_items"] = []
+
+    normalized = []
+    for li in inv.get("line_items") or []:
+        if not isinstance(li, dict):
+            continue
+        item = dict(li)
+        amount = item.get("amount")
+        if amount is None or amount == "":
+            item["amount"] = None
+            item["quantity"] = _coerce_float(item.get("quantity"), 1.0)
+            item["unit_price"] = _coerce_float(item.get("unit_price"), 0.0)
+        else:
+            item["amount"] = _coerce_float(amount, 0.0)
+            item["quantity"] = _coerce_float(item.get("quantity"), None)
+            item["unit_price"] = _coerce_float(item.get("unit_price"), None)
+            if item["quantity"] is None and item["unit_price"] is not None:
+                item["quantity"] = 1
+            if item["unit_price"] is None and item["quantity"] is not None:
+                item["unit_price"] = _coerce_float(item["quantity"], 0.0)
+            if item["amount"] is None:
+                item["amount"] = None
+        if item.get("amount") is not None:
+            item["amount"] = _coerce_float(item["amount"], 0.0)
+        if item.get("description") is None:
+            item["description"] = ""
+        normalized.append(item)
+    inv["line_items"] = normalized
+    return payload
+
+
 def process_one(
     data: dict,
     output_dir: Path,
@@ -73,7 +126,10 @@ def process_one(
     Returns a writeback dict. Raises on validation/Stripe errors so the
     caller can decide whether to continue (batch) or exit (single).
     """
-    validate(data)
+    if mode == "dry-run":
+        data = _prepare_dry_run_payload(data)
+    else:
+        validate(data)
     enriched = enrich(data)
     identifier = enriched["invoice"]["identifier"]
     output_path = output_dir / f"{identifier}.pdf"

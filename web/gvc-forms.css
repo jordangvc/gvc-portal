@@ -53,6 +53,29 @@
 }
 .gvc-doc-col > .gvc-doc-sticky { position: sticky; top: 104px; padding: clamp(16px,2vw,26px) clamp(14px,1.6vw,22px) 40px; }
 
+body[data-form-app="estimate"] .gvc-shell,
+body.is-form-estimate .gvc-shell,
+body[data-form-app="invoice"] .gvc-shell,
+body.is-form-invoice .gvc-shell {
+  grid-template-columns: minmax(0, 1fr) !important;
+  max-width: 100%;
+  width: 100%;
+}
+
+body[data-form-app="estimate"] .gvc-doc-col,
+body.is-form-estimate .gvc-doc-col,
+body[data-form-app="invoice"] .gvc-doc-col,
+body.is-form-invoice .gvc-doc-col {
+  display: none !important;
+  width: 0 !important;
+  min-width: 0 !important;
+  max-width: 0 !important;
+  overflow: hidden !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: 0 !important;
+}
+
 @media (max-width: 1079px) {
   .gvc-shell { grid-template-columns: minmax(0, 1fr); }
   .gvc-doc-col { display: none; }

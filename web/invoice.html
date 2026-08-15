@@ -39,7 +39,7 @@
 .spinner { display:none; color:#9db3a6; font-size:12.5px; }
 </style>
 </head>
-<body>
+<body data-form-app="invoice" class="is-form-invoice">
 <div class="gvc-page">
   <div id="gvc-form-chrome"></div>
   <div class="gvc-shell">
@@ -50,7 +50,7 @@
           <span class="gvc-rule"></span>
         </div>
         <h1 class="gvc-h1">Invoice Generator</h1>
-        <p class="gvc-blurb">Bill a project. Preview the PDF, then Accept to open it in Stripe and draft the email in billing@.</p>
+      <p class="gvc-blurb">Bill a project. Fill everything, then Accept to open it in Stripe and draft the email in billing@.</p>
       </div>
       <div class="gvc-stages" id="stages"></div>
       <div id="status" class="gvc-pop" style="display:none;margin-bottom:16px;padding:12px 14px;border-radius:14px;background:var(--color-accent-soft);border:1px solid var(--color-accent);color:var(--color-accent-ink);font-size:13.5px"></div>
@@ -291,13 +291,12 @@
     </div>
   </div>
     </main>
-    <aside class="gvc-doc-col">
+    <aside class="gvc-doc-col" style="display:none!important;width:0!important;min-width:0!important;max-width:0!important;overflow:hidden!important;padding:0!important;margin:0!important;border:0!important;" aria-hidden="true">
       <div class="gvc-doc-sticky">
-        <div class="gvc-doc-cap">Live document</div>
+        <div class="gvc-doc-cap">Document output</div>
         <div id="preview-card" class="gvc-doc">
-    <div class="gvc-doc-placeholder">The customer's invoice builds here — tap Preview to see the exact PDF they'll receive.</div>
+    <div class="gvc-doc-placeholder">Generated documents appear after you click Preview draft.</div>
     <iframe id="preview-frame" title="Invoice PDF preview"></iframe>
-    <div id="co-previews" style="margin-top:10px;"></div>
   </div>
 
   <!-- Corrections flow (lives inside the generator; not a separate tool) -->
@@ -318,11 +317,11 @@
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
         <button type="button" class="gvc-btn gvc-btn-ghost-dark" id="btn-back" hidden>Back</button>
-        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate" hidden>Preview</button>
         <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-new-invoice">Start new</button>
         <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-correct">Correct / reissue</button>
         <button type="button" class="gvc-btn gvc-btn-primary" id="btn-next">Continue</button>
         <button type="button" class="gvc-btn gvc-btn-primary" id="btn-accept" hidden>Accept</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate">Preview draft</button>
         <span class="spinner" id="spinner">Working…</span>
       </div>
     </div>
@@ -766,7 +765,7 @@ function collectData() {
   return { client, job, invoice };
 }
 
-function validateData(d) {
+function validateData(d, mode = "dry-run") {
   const e = [];
   if (!d.client.name) e.push("Client name is required.");
   if (d.client.no_email) {
@@ -799,12 +798,18 @@ function setStatus(kind, html) {
 function clearStatus() { const el = $("#status"); el.className = "gvc-banner"; el.style.display = "none"; el.innerHTML = ""; }
 
 let lastPreviewOk = false;
-function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = false; void (on || !lastPreviewOk); }
+function showSpinner(on) {
+  $("#spinner").classList.toggle("show", on);
+  const btn = $("#btn-generate");
+  if (btn) btn.disabled = on;
+  $("#btn-accept").disabled = on;
+}
 
 async function run(mode) {
   const data = collectData();
-  const errs = validateData(data);
-  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  const errs = validateData(data, mode);
+  if (errs.length && mode !== "dry-run") { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  if (errs.length && mode === "dry-run") { setStatus("warn", "<strong>Preview mode:</strong> required fields are missing. The document will still generate with placeholders.<ul><li>" + errs.join("</li><li>") + "</li></ul>"); }
   window._lastInvoiceData = data;
   showSpinner(true); clearStatus();
   try {
@@ -826,29 +831,24 @@ async function run(mode) {
     }
     const wb = body.writeback || {};
     if (mode === "dry-run") {
-      // Surface the service-assigned INV-… (from Project # / soft-fill) in the
-      // field — same parity as estimate Preview filling EST-… (r52).
+      const ident = wb.identifier || (data.invoice && data.invoice.identifier) || "";
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(ident)}`;
+      $("#preview-frame").src = url;
+      $("#preview-card").classList.add("show");
+      lastPreviewOk = true; $("#btn-accept").disabled = false;
+      document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-total") || {}).textContent || document.getElementById("barTotal").textContent);
       if (wb.identifier) {
         setVal("identifier", wb.identifier);
         if (data.invoice) data.invoice.identifier = wb.identifier;
       }
-      const ident = wb.identifier || (data.invoice && data.invoice.identifier) || "";
-      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(ident)}`;
-      $("#preview-frame").src = url;
-      const coWrap = $("#co-previews");
-      coWrap.innerHTML = "";
-      (wb.co_preview_pdf_urls || []).forEach((u, i) => {
-        coWrap.innerHTML += `<div class="result-line">📎 <a href="${u}" target="_blank" rel="noopener">Change Order Template ${i + 1} (preview)</a></div>`;
-      });
-      $("#preview-card").classList.add("show");
-      lastPreviewOk = true; $("#btn-accept").disabled = false; document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-total")||{}).textContent || document.getElementById("barTotal").textContent);
-      const idBit = ident
-        ? ` (invoice <strong>${ident}</strong>)`
-        : "";
+      const idBit = ident ? ` (invoice <strong>${ident}</strong>)` : "";
       setStatus("info", `✅ Preview ready below${idBit}. Review, then click <strong>Accept &amp; Create Invoice</strong>.`);
       $("#preview-card").scrollIntoView({ behavior: "smooth" });
     } else {
-      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      if (wb.identifier) {
+        setVal("identifier", wb.identifier);
+        if (data.invoice) data.invoice.identifier = wb.identifier;
+      }
       let html = "<strong>✅ Invoice created.</strong><br />";
       if (wb.mode_warning) html += `<div class="result-line">${wb.mode_warning}</div>`;
       if (wb.stripe_invoice_id) html += `<div class="result-line">Stripe invoice: <code>${wb.stripe_invoice_id}</code>${wb.already_existed ? " (already existed — not duplicated)" : ""}</div>`;
@@ -887,6 +887,7 @@ async function run(mode) {
         }
         document.dispatchEvent(new CustomEvent("gvc:invoice-accepted", { detail: body }));
       } catch (_) {}
+      deleteCurrentDraftAfterFinalize();  // invoice is now real (Stripe + ledger) — drop the draft
     }
   } catch (e) {
     setStatus("err", "Network/error: " + e.message);
@@ -1549,7 +1550,6 @@ function clearForm() {
   const note = $("#prefill-note"); if (note) note.textContent = "";
   $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
   lastPreviewOk = false; $("#btn-accept").disabled = true;
-  $("#preview-card").classList.remove("show");
   recalcTotals();
 }
 
@@ -1634,7 +1634,6 @@ function resumeDraft(id) {
   applyData(rec.payload);
   currentDraftId = id;
   lastPreviewOk = false; $("#btn-accept").disabled = true;
-  $("#preview-card").classList.remove("show");
   setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
   renderDrafts();
   $("#invoice-form").scrollIntoView({ behavior: "smooth" });
@@ -1661,7 +1660,10 @@ $("#commercial-toggle").addEventListener("change", (e) => $("#commercial-body").
 $("#retainage-toggle").addEventListener("change", (e) => { $("#retainage-body").style.display = e.target.checked ? "grid" : "none"; });
 $("#add-extra-pdf").addEventListener("click", () => extraPdfsEl.appendChild(extraPdfRow()));
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
-$("#btn-accept").addEventListener("click", () => { if (confirm("Create a REAL Stripe invoice and a billing@ Gmail draft? This is the live step.")) run("live"); });
+$("#btn-accept").addEventListener("click", () => {
+  if (!lastPreviewOk && !confirm("No draft preview was generated yet. Continue to accept anyway?")) return;
+  if (confirm("Create a REAL Stripe invoice and a billing@ Gmail draft? This is the live step.")) run("live");
+});
 $("#btn-new-invoice").addEventListener("click", () => {
   const p = collectData();
   if (!isEmptyPayload(p) && !confirm("Start a new invoice? Your current entry is saved as a draft you can resume.")) return;
@@ -1759,7 +1761,7 @@ fetch("/ui/api/monday/warm", {
     }
     return null;
   }
-  var api = window.GvcFormStages && window.GvcFormStages.mount({
+var api = window.GvcFormStages && window.GvcFormStages.mount({
     stages: ["Find", "Who", "Job & terms", "Lines", "Review"],
     panels: ["stage-find", "stage-who", "stage-terms", "stage-lines", "stage-send"],
     acceptedEl: "stage-accepted",
@@ -1776,8 +1778,6 @@ fetch("/ui/api/monday/warm", {
     validateStep: validateStep,
     onEnterReview: function () {
       paintReview();
-      var gen = document.getElementById("btn-generate");
-      if (gen) gen.click();
     },
     onAccept: function () {
       return new Promise(function (resolve, reject) {

@@ -46,6 +46,14 @@
     var app = String(opts.app || "estimate");
     var host = opts.el || document.getElementById("gvc-form-chrome");
     if (!host) return null;
+    var b = global.document && global.document.body;
+    if (b && b.dataset) {
+      b.dataset.formApp = app;
+      b.classList.remove("is-form-estimate", "is-form-invoice", "is-form-change");
+      if (app === "estimate") b.classList.add("is-form-estimate");
+      else if (app === "invoice") b.classList.add("is-form-invoice");
+      else if (app === "change") b.classList.add("is-form-change");
+    }
 
     var appBtns = APPS.map(function (a) {
       var on = a.id === app;

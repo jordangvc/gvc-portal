@@ -179,6 +179,35 @@ def validate(data: dict) -> None:
         )
 
 
+def _prepare_dry_run_payload(data: dict) -> dict:
+    d = deepcopy(data) if isinstance(data, dict) else {}
+    if not isinstance(d, dict):
+        d = {}
+    client = d.setdefault("client", {})
+    job = d.setdefault("job", {})
+    est = d.setdefault("estimate", {})
+    # Keep downstream renderer happy with partial forms.
+    est.setdefault("identifier", f"EST-PREVIEW-{datetime.now().strftime('%Y%m%d-%H%M%S')}")
+    est.setdefault("date", date.today().isoformat())
+    if not isinstance(est.get("line_items"), list):
+        est["line_items"] = []
+    normalized = []
+    for li in est.get("line_items") or []:
+        if not isinstance(li, dict):
+            continue
+        li = dict(li)
+        unit_price = li.get("unit_price")
+        try:
+            li["unit_price"] = 0.0 if unit_price in (None, "") else float(unit_price)
+        except (TypeError, ValueError):
+            li["unit_price"] = 0.0
+        normalized.append(li)
+    est["line_items"] = normalized
+    if not est.get("line_items"):
+        est["line_items"] = []
+    return d
+
+
 def _parse_date(value: Optional[str]) -> Optional[date]:
     if not value:
         return None
@@ -410,8 +439,11 @@ def process_estimate(
     before the new versions land under the canonical names; the Monday
     column sync switches to overwrite; Slack/Gmail use revision wording.
     """
-    validate(data)
-    if revise and not ((data.get("estimate") or {}).get("identifier") or "").strip():
+    if mode == "dry-run":
+        data = _prepare_dry_run_payload(data)
+    else:
+        validate(data)
+    if mode != "dry-run" and revise and not ((data.get("estimate") or {}).get("identifier") or "").strip():
         raise ValueError(
             "Revision requires estimate.identifier — the original estimate "
             "number that stays on the updated document."

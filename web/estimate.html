@@ -51,7 +51,7 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
 .opt-row input { width:auto; min-height:0; }
 </style>
 </head>
-<body>
+<body data-form-app="estimate" class="is-form-estimate">
 <div class="gvc-page">
   <div id="gvc-form-chrome"></div>
   <div class="gvc-shell">
@@ -195,7 +195,7 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
     <div class="gvc-panel">
       <div class="gvc-panel-head"><h2 class="gvc-h2">Estimate details</h2><span class="gvc-rule"></span></div>
       <div class="grid">
-        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned on Preview)</span></label><input class="gvc-input" name="identifier" placeholder="auto: EST-YYYY-MMDD-NNN" />
+        <div><label>Estimate number <span class="opt">(leave blank — auto-assigned on Accept)</span></label><input class="gvc-input" name="identifier" placeholder="auto: EST-YYYY-MMDD-NNN" />
         </div>
         <div><label>Plan Folder # <span class="opt">(optional — Jake's numbered Drive folder)</span></label>
           <input class="gvc-input" name="plan_folder_number" inputmode="numeric" placeholder="341" />
@@ -274,11 +274,11 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
 <span id="t-withopt" hidden>$0.00</span>
       </form>
     </main>
-    <aside class="gvc-doc-col">
+    <aside class="gvc-doc-col" style="display:none!important;width:0!important;min-width:0!important;max-width:0!important;overflow:hidden!important;padding:0!important;margin:0!important;border:0!important;" aria-hidden="true">
       <div class="gvc-doc-sticky">
-        <div class="gvc-doc-cap">Live document</div>
+        <div class="gvc-doc-cap">Document output</div>
         <div id="preview-card" class="gvc-doc">
-          <div class="gvc-doc-placeholder">The customer's estimate builds here — tap Preview to see the exact PDF they'll receive.</div>
+          <div class="gvc-doc-placeholder">Generated documents appear after you click Preview draft.</div>
           <iframe id="preview-frame" title="Estimate PDF preview"></iframe>
         </div>
       </div>
@@ -297,10 +297,10 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
         <button type="button" class="gvc-btn gvc-btn-ghost-dark" id="btn-back" hidden>Back</button>
-        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate" hidden>Preview</button>
         <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-new-estimate">Start new</button>
         <button type="button" class="gvc-btn gvc-btn-primary" id="btn-next">Continue</button>
         <button type="button" class="gvc-btn gvc-btn-primary" id="btn-accept" hidden>Accept</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate">Preview draft</button>
         <span class="spinner" id="spinner">Working…</span>
       </div>
     </div>
@@ -460,7 +460,7 @@ function collectData() {
   return data;
 }
 
-function validateData(d) {
+function validateData(d, mode = "dry-run") {
   const e = [];
   if (!d.client.name) e.push("Client name is required.");
   if (d.client.no_email) {
@@ -489,7 +489,12 @@ function setStatus(kind, html) {
 function clearStatus() { const el = $("#status"); if (el) { el.className = "gvc-pop"; el.style.display = "none"; el.innerHTML = ""; } }
 
 let lastPreviewOk = false;
-function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = false; void (on || !lastPreviewOk); }
+function showSpinner(on) {
+  $("#spinner").classList.toggle("show", on);
+  const btn = $("#btn-generate");
+  if (btn) btn.disabled = on;
+  $("#btn-accept").disabled = on;
+}
 
 function isReviseMode() {
   const box = $("#revise-flag");
@@ -508,9 +513,10 @@ function updateReviseUI() {
 
 async function run(mode) {
   const data = collectData();
-  const errs = validateData(data);
+  const errs = validateData(data, mode);
   const revise = isReviseMode();
-  if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  if (errs.length && mode !== "dry-run") { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  if (errs.length && mode === "dry-run") { setStatus("warn", "<strong>Preview mode:</strong> required fields are missing. The document will still generate with placeholders.<ul><li>" + errs.join("</li><li>") + "</li></ul>"); }
   showSpinner(true); clearStatus();
   try {
     const resp = await fetch("/ui/api/estimate/run", {
@@ -525,21 +531,29 @@ async function run(mode) {
       return;
     }
     const wb = body.writeback || {};
+    if (wb.identifier) {
+      setField("identifier", wb.identifier);
+      updateReviseUI();
+    }
     if (mode === "dry-run") {
-      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}`;
-      $("#preview-frame").src = url;
-      $("#preview-card").classList.add("show");
-      lastPreviewOk = true; $("#btn-accept").disabled = false; document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-withopt")||{}).textContent || document.getElementById("barTotal").textContent);
-      // Surface the service-assigned EST-… in the field (it was blank on purpose
-      // until Preview). Accept keeps this number; leave blank on a fresh form
-      // for the next new estimate.
-      if (wb.identifier) {
-        setField("identifier", wb.identifier);
-        updateReviseUI();
+      const ident = (wb.identifier || $("#estimate-form").elements["identifier"].value || "").trim();
+      const url = wb.preview_pdf_url || (ident ? `/ui/api/preview?identifier=${encodeURIComponent(ident)}` : "");
+      if (url) {
+        $("#preview-frame").src = url;
+        $("#preview-card").classList.add("show");
+        lastPreviewOk = true;
+        $("#btn-accept").disabled = false;
+        const idBit = ident ? ` (estimate <strong>${ident}</strong>)` : "";
+        setStatus("info", `✅ Preview ready below${idBit}. Review, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
+        $("#preview-card").scrollIntoView({ behavior: "smooth" });
+      } else {
+        setStatus("warn", "Preview is unavailable right now. Save the estimate number and try again.");
+        lastPreviewOk = false;
+        $("#btn-accept").disabled = false;
       }
-      setStatus("info", `✅ Preview ready below (estimate <strong>${wb.identifier}</strong>). Number is filled in above — review the PDF, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
-      $("#preview-card").scrollIntoView({ behavior: "smooth" });
-    } else {
+      return;
+    }
+    if (mode === "finalize" || mode === "live") {
       lastPreviewOk = false; $("#btn-accept").disabled = true;
       let html = wb.revised
         ? `<strong>✅ Estimate ${wb.identifier} UPDATED${wb.revision_version ? " (v" + wb.revision_version + ")" : ""} — same outbound number.</strong><br />`
@@ -562,6 +576,9 @@ async function run(mode) {
       setStatus("warn", html);
       try { document.dispatchEvent(new CustomEvent("gvc:estimate-accepted", { detail: wb })); } catch (e) {}
       deleteCurrentDraftAfterFinalize();  // estimate is now real (in Monday) — drop the draft
+    } else {
+      setStatus("warn", `<strong>Unknown mode:</strong> ${mode}`);
+      lastPreviewOk = false; $("#btn-accept").disabled = false;
     }
   } catch (e) {
     setStatus("err", "Network/error: " + e.message);
@@ -988,7 +1005,6 @@ async function importFromTakeoff() {
   $("#revise-flag").checked = false;
   lastPreviewOk = false;
   $("#btn-accept").disabled = true;
-  $("#preview-card").classList.remove("show");
 
   const local = Object.assign({}, draft, { payload: imported, _syncedAt: draft.updated_at });
   upsertLocal(local);
@@ -1136,7 +1152,6 @@ function resumeDraft(id) {
   updateReviseUI();
   currentDraftId = id;
   lastPreviewOk = false; $("#btn-accept").disabled = true;
-  $("#preview-card").classList.remove("show");
   setSaveState(rec._syncedAt ? "synced" : "local",
     wantRevise && ident ? "Resumed draft · revise mode on" : "Resumed draft");
   renderDrafts();
@@ -1219,7 +1234,6 @@ async function loadBid(ref) {
   // Treat a prefill as a new estimate (don't overwrite an in-progress draft id).
   currentDraftId = null;
   lastPreviewOk = false; $("#btn-accept").disabled = true;
-  $("#preview-card").classList.remove("show");
   applyData(pf);
   // Bid Board only stores the salesperson's name — fill email/phone from the
   // already-loaded salespeople roster when they match (case-insensitive).
@@ -1277,7 +1291,6 @@ function clearForm() {
   lineItemsEl.innerHTML = ""; addLineItem();
   $("[name=date]").value = new Date().toISOString().slice(0, 10);
   lastPreviewOk = false; $("#btn-accept").disabled = true;
-  $("#preview-card").classList.remove("show");
   recalc();
   updateReviseUI();
 }
@@ -1347,6 +1360,7 @@ $("#dup-guard-new").addEventListener("click", () => {
 $("#add-line").addEventListener("click", () => addLineItem());
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
 $("#btn-accept").addEventListener("click", () => {
+  if (!lastPreviewOk && !confirm("No draft preview was generated. Continue to accept anyway?")) return;
   const msg = isReviseMode()
     ? "Update this estimate under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), Monday is updated, and a fresh hello@ draft + #bids notice go out."
     : "Create the estimate draft in hello@ and post to #bids?";
@@ -1594,8 +1608,6 @@ fetch("/ui/api/monday/warm", {
     validateStep: validateStep,
     onEnterReview: function () {
       paintReview();
-      var gen = document.getElementById("btn-generate");
-      if (gen) gen.click();
     },
     onAccept: function () {
       return new Promise(function (resolve, reject) {

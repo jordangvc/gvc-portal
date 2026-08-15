@@ -17,6 +17,19 @@ from typing import Any, Optional
 from subsystems.nonneg import tracker
 
 TASK = "nonneg_coach"
+
+# Street addresses are deterministically detectable — scrub them from public
+# post copy in code rather than trusting the model (same philosophy as the
+# Job Start GC-email SF scrub). "312 Elm Street" -> "the job site".
+import re as _re
+STREET_RE = _re.compile(
+    r"\b\d{1,6}\s+(?:[NSEW]\.?\s+)?[A-Z][A-Za-z.]*(?:\s+[A-Z][A-Za-z.]*)?\s+"
+    r"(?:Street|St|Avenue|Ave|Drive|Dr|Road|Rd|Lane|Ln|Boulevard|Blvd|Way|"
+    r"Court|Ct|Pike|Place|Pl|Trail|Trl|Circle|Cir|Parkway|Pkwy)\.?\b")
+
+
+def scrub_street_addresses(text: str) -> str:
+    return STREET_RE.sub("the job site", text or "")
 NOTE_MAX = 2000
 MIN_REFRESH_INTERVAL_S = 60          # button mashing guard
 NOTES_WINDOW_DAYS = 14
@@ -96,6 +109,19 @@ def build_prompt(doc: dict, stats: dict, *, today: date) -> str:
                      "in the focus line that daily notes will sharpen these)")
     lines += [
         "",
+        "GVC MEDIA RULES — company policy (2026-07-28 admin meeting). The "
+        "\"idea\" field is draft POST COPY and posts are public, so every "
+        "idea must obey these; the \"why\" field and outreach are private "
+        "to Jordan, names allowed there:",
+        "- NEVER name a customer, builder, GC, or job in an idea. Rewrite: "
+        "\"the KPMG job\" → \"a corporate office build-out in Cincinnati\".",
+        "- Location in an idea: city and state only, never a street address.",
+        "- No crew members' faces unless a note says they agreed. Nothing "
+        "showing unsafe work.",
+        "FINAL CHECK before you answer: re-read every post_ideas \"idea\"; "
+        "if one contains a company, client, GC, person, or job name, rewrite "
+        "it without the name. This check is mandatory.",
+        "",
         "Return ONLY a JSON object, no prose, exactly this shape:",
         '{"focus": "one sentence — the single most useful push for tomorrow",',
         f' "post_ideas": [{{"idea": "the content piece", "why": "which note/goal it comes from"}}] (max {MAX_IDEAS}),',
@@ -115,6 +141,8 @@ def parse_tips(raw: dict, *, generated_at: str, through: str) -> dict:
             if not isinstance(item, dict):
                 continue
             shaped = {f: str(item.get(f) or "").strip()[:500] for f in fields}
+            if key == "post_ideas" and "idea" in shaped:
+                shaped["idea"] = scrub_street_addresses(shaped["idea"])
             if shaped[fields[0]]:
                 out.append(shaped)
         return out

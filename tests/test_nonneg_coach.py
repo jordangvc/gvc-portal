@@ -59,6 +59,27 @@ def test_prompt_carries_notes_goals_and_stats():
     assert '"post_ideas"' in p and '"outreach"' in p
 
 
+def test_prompt_carries_gvc_media_rules_for_public_posts():
+    """Post ideas are PUBLIC — the 2026-07-28 admin-meeting media rules ride
+    in the prompt: no street addresses, no customer/GC names in posts, no
+    crew faces without consent, nothing unsafe. Outreach stays exempt
+    (private messages may use names)."""
+    doc = _doc_with_notes()
+    p = coach.build_prompt(doc, tracker.compute_stats(doc, today=TODAY),
+                           today=TODAY)
+    assert "GVC MEDIA RULES" in p
+    assert "city and state only, never a street address" in p
+    assert "NEVER name a customer, builder, GC" in p
+    assert "No crew members' faces" in p
+    assert "unsafe work" in p
+    assert "outreach is private, names" in p
+    # The rules sit AFTER the notes, adjacent to the output schema, with a
+    # mandatory final self-check — mid-prompt placement was blown past by the
+    # live model (verified 2026-08-09).
+    assert p.index("GVC MEDIA RULES") > p.index("DAILY NOTES")
+    assert "FINAL CHECK" in p
+
+
 def test_prompt_honest_when_empty():
     doc = tracker.blank_doc()
     stats = tracker.compute_stats(doc, today=TODAY)
