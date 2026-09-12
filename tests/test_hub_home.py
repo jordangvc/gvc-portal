@@ -6,6 +6,7 @@ Run: python tests/test_hub_home.py
 from __future__ import annotations
 
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -219,7 +220,7 @@ def test_hub_files_and_route() -> None:
     check("no competing gvc.css", 'href="/ui/gvc.css"' not in hub)
     check("topbar + page", 'class="topbar"' in hub and 'class="page"' in hub)
     check("needs you today", "Needs you today" in hub)
-    check("r116 footer", ">r116<" in hub)
+    check("footer has Portal rN", re.search(r"Portal <b>[Rr]\d+</b>", hub) is not None)
     check("boot json placeholder", "{{HUB_BOOT_JSON}}" in hub or "HUB_BOOT" in hub)
     check("instant shell paint", "paintInstantShell" in hub)
     check("quick actions", "quickactions" in hub)

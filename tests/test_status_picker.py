@@ -1,3 +1,4 @@
+import re
 """Pure tests for Job Check status-picker grouping helpers.
 
 Loads web/gvc-status-picker.js into a minimal JS runtime via Node when
@@ -113,7 +114,7 @@ def test_row_align_css() -> None:
     check("status picker host + mount", "status-picker-host" in jc and "GvcStatusPicker.mount" in jc)
     hub = (ROOT / "web" / "hub.html").read_text(encoding="utf-8")
     # Footer rN bumps every user-visible ship — assert the marker, not a pinned rev.
-    check("hub footer has Portal rN", "Portal" in hub and ">r" in hub and "</b>" in hub)
+    check("hub footer has Portal rN", re.search(r"Portal <b>[Rr]\d+</b>", hub) is not None)
 
 
 if __name__ == "__main__":

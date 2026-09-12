@@ -72,7 +72,7 @@ def test_prompt_carries_gvc_media_rules_for_public_posts():
     assert "NEVER name a customer, builder, GC" in p
     assert "No crew members' faces" in p
     assert "unsafe work" in p
-    assert "outreach is private, names" in p
+    assert "outreach are private" in p and "names allowed there" in p
     # The rules sit AFTER the notes, adjacent to the output schema, with a
     # mandatory final self-check — mid-prompt placement was blown past by the
     # live model (verified 2026-08-09).

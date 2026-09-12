@@ -83,7 +83,7 @@ def test_hub_inline_script_still_parses() -> None:
 
 
 def test_footer_bumped() -> None:
-    assert "Portal <b>r116</b>" in _hub()
+    assert re.search(r"Portal <b>[Rr]\d+</b>", _hub()), "hub footer must carry Portal rN"
 
 
 if __name__ == "__main__":
