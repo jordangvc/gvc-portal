@@ -200,6 +200,23 @@ class GmailScopeMissing(GmailNotConfigured):
     callers skip + surface instead of failing the request."""
 
 
+OFFICE_COPY_SUBJECT_MARK = "NO EMAIL"
+
+
+def sent_search_query(subject_query: str, newer_than_days: int = 60) -> str:
+    """
+    The Gmail search the sent-watcher runs. Excludes subjects carrying the
+    "[NO EMAIL — PRINT]" mark: that is the INTERNAL office copy of a print /
+    mail / hand-deliver document, sent to Andrea, never to the customer.
+    Counting it as "emailed to client" stamped a print-only estimate as sent
+    (EST-2026-0824-003, Sep 12 2026) — the exact false signal the watcher
+    exists to prevent.
+    """
+    return (f'in:sent subject:"{subject_query}" '
+            f'-subject:"{OFFICE_COPY_SUBJECT_MARK}" '
+            f'newer_than:{int(newer_than_days)}d')
+
+
 def find_sent_message(subject_query: str, *, newer_than_days: int = 60,
                       token_path: Optional[Path] = None) -> Optional[dict]:
     """
@@ -216,7 +233,7 @@ def find_sent_message(subject_query: str, *, newer_than_days: int = 60,
 
     creds = _load_credentials(token_path)
     service = build("gmail", "v1", credentials=creds, cache_discovery=False)
-    q = f'in:sent subject:"{subject_query}" newer_than:{int(newer_than_days)}d'
+    q = sent_search_query(subject_query, newer_than_days)
     try:
         resp = service.users().messages().list(
             userId="me", q=q, maxResults=3).execute()

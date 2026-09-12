@@ -2886,3 +2886,8 @@ Still un-created: Andrea's INV-2026-0824-003 (Krista Jeffries, print-only) — s
 Status doc for Andrea: Google Doc 10yW9Wawk5XBG3OrYRBo7GcXKk5RTHVsf3KmyfvDGBpI.
 FOLLOW-UP (not built): the watcher counts a print-only estimate's internal office copy as "sent" when
 its subject matches — exclude "[NO EMAIL — PRINT]" subjects, or stamp them as office-copy instead.
+ADDENDUM 2026-09-12 (same day): `adapters/gmail.sent_search_query` now appends `-subject:"NO EMAIL"` so the
+internal "[NO EMAIL — PRINT]" office copy of a print/mail/hand-deliver document can never count as a
+client send (it had stamped EST-2026-0824-003 as emailed). `tests/test_gmail_sent_query.py`. After this
+deploys, clear that one Emailed-on stamp on Bid Board item 2844029418 — clearing it BEFORE the deploy
+would just get re-stamped by the next 10-minute sweep.
