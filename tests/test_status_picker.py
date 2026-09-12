@@ -1,4 +1,3 @@
-import re
 """Pure tests for Job Check status-picker grouping helpers.
 
 Loads web/gvc-status-picker.js into a minimal JS runtime via Node when
@@ -9,6 +8,8 @@ Run: python tests/test_status_picker.py
   or: .venv/bin/pytest tests/test_status_picker.py -q
 """
 from __future__ import annotations
+
+import re
 
 import json
 import subprocess
