@@ -2836,3 +2836,43 @@ pairs balanced, py compileall clean.
 - Estimate Generator now uploads/pastes Takeoff JSON, resumes the returned
   shared draft, and supports `/ui/estimate?takeoff=1`. Hub footer r21 → r22.
 - Phase 2 Firebase `gvc_portal_outbox/{draftId}` pickup remains deferred.
+
+### 2026-09-12 — 🔴 INCIDENT: "invoices/estimates not confirmed in Slack, Stripe maybe broken" — four bugs, none Stripe
+Jordan reported sends not confirming in Slack and suspected Stripe. **Stripe was fine** — every
+invoice since Aug 27 has a live Stripe invoice, PDF, Drive file and Gmail draft. Four real bugs,
+each verified against logs/boards before touching code (branch `fix/ledger-relation-est500-noemail`):
+1. **Bare ledger rows (5 invoices, Aug 27–Sep 10).** The Ops-Ready → Invoice path passes an
+   OPERATIONS item as `linked_project_id`; the Invoices board's Linked Project relation
+   (`board_relation_mm40j9h9`) is connected to PROJECTS only → Monday `itemsNotInConnectedBoards`
+   → the whole `change_multiple_column_values` failed → row created with a name and nothing else
+   (no Document #, Stripe id, dates). Cascade: the sent-watcher requires Document # + issue date so
+   those rows never entered its work list (`invoices: []`, `skipped: 0`) → no 📤 Slack, no
+   Emailed-on, and Paid-by-Check has no Stripe pointer to settle against. FIX:
+   `MondayClient.resolve_ledger_project_link` (Projects as-is; Operations → its `link_to_projects`
+   target; else a Notes-column sentence) + `_set_invoice_columns(droppable=…)` retries ONCE without
+   a rejected relation and reports `dropped_columns` (strict for status/paid stamps — a half-applied
+   stamp must still raise). invoice_flow's degraded alert now names a dropped link.
+   REPAIR: `scripts/repair_bare_ledger_rows.py` (dry-run default, `--apply` writes by ITEM ID —
+   an upsert-by-Document# would duplicate). Hosted URLs are fetched live from Stripe, never typed.
+2. **Estimate finalize 500s (Jake, 13× Sep 8–11).** `estimate.qa` log_event passed `target=` AND
+   `**activity_detail.summarize()` (which already emits `target`) → TypeError AFTER the estimate
+   had fully finalized → 500 → Jake re-ran → each retry a Rev. `billing.search` had the same shape.
+   FIX: pop `target` from the summarize dict at both sites; `tests/test_activity_no_target_collision.py`
+   AST-scans service.py so the shape can't come back.
+3. **Invoice `KeyError: 'email'` (Andrea, INV-2026-0824-003, Sep 11).** No-email customer
+   (`no_email: true`, `delivery_method: print`) has no `email` key; `preflight_stripe` and
+   `upsert_stripe_customer` indexed it directly. FIX: `_customer_lookup_email` → the same synthetic
+   `no-email.<slug>@noemail.gvc.invalid` the live create path uses.
+4. **Estimate "emailed to client" never fired (62 skipped every sweep).** Bid Board stores
+   Estimate # as the bare core (`2026-0831-001`, numbers column); the subject carries
+   `EST-2026-0831-001`; the watcher searched `subject:"Estimate 2026-0831-001"` → never a phrase
+   match. Jordan was checking hello@ Sent by hand (his Sep 2 #bids post). FIX:
+   `estimate_subject_needle` normalizes via `shared.doc_number.for_estimate`.
+GOTCHAS LEARNED: Cloud Logging `severity>=WARNING` finds NONE of this — the 500s are INFO-level
+activity events (`jsonPayload.action:invoice.run AND jsonPayload.result:error`) and the ledger
+failure is a `[live …] Invoices ledger: FAILED` textPayload; the degraded-finalize alerts DID post
+to #technology-bugs-and-improvements (C0BE9S4C3JT) six times — nobody was watching that channel.
+Windows: `gcloud logging read` strips embedded double quotes → use PowerShell `--%` and `\"`.
+The Git Bash tool truncates long inline scripts (~10 KB) — write a file, then run it.
+Live revision at incident time: `gvc-invoice-00246-cfx` (Aug 15) — origin/master was BEHIND it;
+the deploy came from `cursor/coach-posting-rules` (`ed259a6`). Fix branch cut from `ed259a6`.

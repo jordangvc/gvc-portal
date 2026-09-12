@@ -52,6 +52,24 @@ def _within_days(iso_text: Optional[str], days: int) -> bool:
     return d >= (date.today() - timedelta(days=days))
 
 
+def invoice_subject_needle(identifier: str) -> str:
+    """Gmail phrase the invoice draft subject is guaranteed to contain."""
+    return f"Invoice {identifier}"
+
+
+def estimate_subject_needle(identifier: str) -> str:
+    """
+    Gmail phrase for an estimate. The Bid Board stores Estimate # as the BARE
+    core (numbers column: 2026-0831-001) while the outbound subject carries the
+    spine prefix ("… Estimate EST-2026-0831-001 — …"). Searching the bare
+    phrase never matches, so every estimate came back "not sent" on every
+    sweep (62 skipped, Sep 2026) while invoices worked fine. Normalize through
+    shared.doc_number so the needle equals the subject text.
+    """
+    from shared.doc_number import for_estimate
+    return f"Estimate {for_estimate(identifier)}"
+
+
 def _pretty_sent(sent_dt: datetime) -> str:
     return sent_dt.astimezone(_EASTERN).strftime("%b %d, %I:%M %p")
 
@@ -153,7 +171,7 @@ def check_sent(*, limit_days: int = 45, notify_backfill_hours: int = 48,
         })
 
     aborted = not _sweep("invoices", inv_pending,
-                         lambda ident: f"Invoice {ident}",
+                         invoice_subject_needle,
                          _stamp_invoice, _notify_invoice)
 
     # ---------------- estimates (Bid Board 1918846027) ----------------
@@ -174,14 +192,15 @@ def check_sent(*, limit_days: int = 45, notify_backfill_hours: int = 48,
             bid.stamp_estimate_emailed(mc, r["monday_item_id"], date_str)
 
         def _notify_estimate(r: dict, sent_dt: datetime) -> None:
+            from shared.doc_number import for_estimate
             slack_notify.notify_estimate_emailed({
-                "identifier": r["identifier"],
+                "identifier": for_estimate(r["identifier"]),
                 "job": r.get("item_name"),
                 "sent_at_pretty": _pretty_sent(sent_dt),
             })
 
         _sweep("estimates", est_pending,
-               lambda ident: f"Estimate {ident}",
+               estimate_subject_needle,
                _stamp_estimate, _notify_estimate)
 
     # -------- GC scope confirmations (Job Start packets, not Monday) --------

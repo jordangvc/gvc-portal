@@ -1720,15 +1720,14 @@ def ui_billing_search(request: Request, q: str = "") -> dict:
                     "detail": f"{type(e).__name__}: {e}",
                     "advice": "Try a shorter name, address fragment, or Project #."},
         )
-    activity.log_event(
-        "billing.search", actor=email, result="ok", target=term,
-        **activity_detail.summarize(
-            "billing",
-            {"billing": {"q": term}, "name": term},
-            {"project_count": len(payload.get("projects") or []),
-             "bid_count": len(payload.get("bids") or [])},
-        ),
+    _detail = activity_detail.summarize(
+        "billing",
+        {"billing": {"q": term}, "name": term},
+        {"project_count": len(payload.get("projects") or []),
+         "bid_count": len(payload.get("bids") or [])},
     )
+    _detail.pop("target", None)  # summarize() emits target; passing it twice is a TypeError
+    activity.log_event("billing.search", actor=email, result="ok", target=term, **_detail)
     return payload
 
 
@@ -2321,6 +2320,12 @@ def ui_estimate_run(req: EstimateRunRequest, request: Request) -> dict:
             _log_estimate_slack(wb, actor=user_email)
             qa = wb.get("qa") if isinstance(wb.get("qa"), dict) else None
             if qa is not None:
+                # summarize() emits `target` itself; passing target= as well raised
+                # "got multiple values for keyword argument 'target'" — AFTER the
+                # estimate had fully finalized, so every finalize showed Jake a 500
+                # and he re-ran it (13 retries Sep 8–11 2026, each one a revision).
+                _qa_detail = activity_detail.summarize("estimate", req.data, wb, mode=_est_mode)
+                _qa_detail.pop("target", None)
                 activity.log_event(
                     "estimate.qa",
                     actor=user_email,
@@ -2328,7 +2333,7 @@ def ui_estimate_run(req: EstimateRunRequest, request: Request) -> dict:
                     target=(wb.get("identifier")
                             or (req.data.get("estimate") or {}).get("identifier")
                             or ""),
-                    **activity_detail.summarize("estimate", req.data, wb, mode=_est_mode),
+                    **_qa_detail,
                     qa_ok=bool(qa.get("ok")),
                     qa_summary=(qa.get("summary") or "")[:240],
                 )

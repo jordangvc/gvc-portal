@@ -172,7 +172,7 @@ def _record_trace(**kwargs: Any) -> None:
 
 # Board IDs (env-overridable for testing)
 from shared.boards import (PROJECTS_BOARD_ID, CUSTOMERS_BOARD_ID,
-                           INVOICES_SENT_BOARD_ID)
+                           INVOICES_SENT_BOARD_ID, OPERATIONS_BOARD_ID)
 
 # Invoices board column IDs (board 1931784889). Verified against get_board_info
 # 2026-06-19 after the 2026-06 board migration. NOTE: the board's item NAME now
@@ -202,6 +202,15 @@ INV_COL_NOTE = "long_text_mm3qpsay"  # free-text note; check-deposit appends her
 # "Invoice Sent" after clicking Send. Both overridable via env.
 LEDGER_CREATE_STATUS_LABEL = os.environ.get("GVC_MONDAY_LEDGER_CREATE_STATUS", "Draft Ready")
 LEDGER_GROUP_ID = os.environ.get("GVC_MONDAY_LEDGER_GROUP_ID", "topics")  # "Billed Invoices"
+
+# Relation columns Monday may reject for reasons unrelated to the invoice itself
+# (target item lives on a board the column isn't connected to). One rejected
+# column fails the WHOLE change_multiple_column_values mutation, and on a fresh
+# row that leaves a name-only shell: no Document #, no Stripe id, no dates — which
+# the sent-watcher then can't see and Paid-by-Check can't settle. Sep 2026: five
+# invoices landed that way because the Ops-Ready → Invoice path handed an
+# OPERATIONS item to the Projects-only Linked Project column.
+LEDGER_DROPPABLE_COLUMNS = (INV_COL_LINKED_PROJECT, INV_COL_CUSTOMER)
 # An invoice is CLOSED only when Paid or Void. Everything else — "Invoice Sent"
 # (the board's actual active label), "Overdue", a blank status, etc. — counts as
 # open for check-matching. Defined as a closed-set so new active labels don't
@@ -1435,6 +1444,69 @@ class MondayClient:
                     }
         return None
 
+    # ---- Resolve: which Projects item may the ledger link to? ----
+
+    def resolve_ledger_project_link(self, item_id: Optional[int]) -> dict:
+        """
+        Turn "the Monday item this invoice was started from" into something the
+        Invoices board's Linked Project column accepts — that column is connected
+        to the PROJECTS board only (boardIds [1918846405]).
+
+        The Ops-Ready → Invoice path hands over an OPERATIONS item. Written
+        straight into the relation, Monday rejects it (itemsNotInConnectedBoards)
+        and, since the mutation is all-or-nothing, the whole ledger write died
+        with it. Operations items carry `link_to_projects`, so follow that hop.
+
+        Returns {project_item_id, source, note}: source is "projects",
+        "ops→projects", or None; note is a human sentence for the ledger Notes
+        column when nothing usable was found. Never raises.
+        """
+        out: dict = {"project_item_id": None, "source": None, "note": None}
+        if not item_id:
+            return out
+        try:
+            iid = int(item_id)
+        except (TypeError, ValueError):
+            return out
+        query = """
+        query ($ids: [ID!]) {
+          items(ids: $ids) {
+            id
+            board { id }
+            column_values(ids: ["link_to_projects"]) {
+              id
+              ... on BoardRelationValue { linked_item_ids }
+            }
+          }
+        }
+        """
+        try:
+            data = self._query(query, {"ids": [str(iid)]})
+            items = data.get("items") or []
+        except Exception as e:  # noqa: BLE001 — a lookup failure must not block the ledger
+            out["note"] = (f"Linked Project: could not verify item {iid} "
+                           f"({type(e).__name__}) — link manually.")
+            return out
+        if not items:
+            out["note"] = f"Linked Project: item {iid} not found — link manually."
+            return out
+        board_id = int((items[0].get("board") or {}).get("id") or 0)
+        if board_id == PROJECTS_BOARD_ID:
+            out.update(project_item_id=iid, source="projects")
+            return out
+        if board_id == OPERATIONS_BOARD_ID:
+            for cv in items[0].get("column_values") or []:
+                linked = [x for x in (cv.get("linked_item_ids") or []) if x]
+                if linked:
+                    out.update(project_item_id=int(linked[0]), source="ops→projects")
+                    return out
+            out["note"] = (f"Linked Project: invoice was started from Operations item "
+                           f"{iid}, which has no linked Projects item — link manually.")
+            return out
+        out["note"] = (f"Linked Project: item {iid} is on board {board_id}, not "
+                       f"Projects — link manually.")
+        return out
+
     # ---- Write: create/upsert an Invoices-board ledger row ----
 
     def upsert_invoice_row(
@@ -1497,18 +1569,21 @@ class MondayClient:
 
         existing = self.find_invoice_row_by_document(identifier, board_id=board_id)
         if existing:
-            self._set_invoice_columns(existing["item_id"], values, board_id=board_id)
+            dropped = self._set_invoice_columns(existing["item_id"], values, board_id=board_id,
+                                                droppable=LEDGER_DROPPABLE_COLUMNS)
             return {"action": "updated", "item_id": existing["item_id"],
-                    "item_url": existing["item_url"]}
+                    "item_url": existing["item_url"], "dropped_columns": dropped}
 
         # Create with the initial Status, then set the rest.
         values_create = dict(values)
         values_create[INV_COL_STATUS] = {"label": status_label or LEDGER_CREATE_STATUS_LABEL}
         item_id = self._create_invoice_item(board_id, item_name, LEDGER_GROUP_ID)
-        self._set_invoice_columns(item_id, values_create, board_id=board_id)
+        dropped = self._set_invoice_columns(item_id, values_create, board_id=board_id,
+                                            droppable=LEDGER_DROPPABLE_COLUMNS)
         return {"action": "created", "item_id": item_id,
                 "item_url": (f"https://greenvalleycontractors.monday.com/boards/"
-                             f"{board_id}/pulses/{item_id}")}
+                             f"{board_id}/pulses/{item_id}"),
+                "dropped_columns": dropped}
 
     def _create_invoice_item(self, board_id: int, name: str, group_id: Optional[str]) -> int:
         query = """
@@ -1521,9 +1596,21 @@ class MondayClient:
         return int(data["create_item"]["id"])
 
     def _set_invoice_columns(self, item_id: int, values: dict,
-                             board_id: Optional[int] = None) -> None:
+                             board_id: Optional[int] = None,
+                             droppable: tuple = ()) -> list[str]:
+        """
+        Write column values on one ledger row. Returns the column ids that were
+        DROPPED to get the write through ([] on a clean write).
+
+        With `droppable` given (the ledger upsert passes LEDGER_DROPPABLE_COLUMNS),
+        a rejected batch is retried ONCE without the columns Monday named in its
+        error — or, if it named none, without the droppable relations — so the row
+        still records every fact about the invoice. Without `droppable` (status
+        stamps, paid marks) the write is strict and raises exactly as before: a
+        half-applied stamp would let the watcher report "stamped" when it wasn't.
+        """
         if not values:
-            return
+            return []
         board_id = board_id or INVOICES_SENT_BOARD_ID
         query = """
         mutation ($boardId: ID!, $itemId: ID!, $values: JSON!) {
@@ -1531,8 +1618,26 @@ class MondayClient:
                                         column_values: $values) { id }
         }
         """
-        self._query(query, {"boardId": str(board_id), "itemId": str(item_id),
-                            "values": json.dumps(values)})
+        try:
+            self._query(query, {"boardId": str(board_id), "itemId": str(item_id),
+                                "values": json.dumps(values)})
+            return []
+        except Exception as first_err:  # noqa: BLE001 — retry without the rejected bits
+            if not droppable:
+                raise
+            msg = str(first_err)
+            drop = [cid for cid in values if cid in msg]          # what Monday named
+            if not drop:
+                drop = [cid for cid in values if cid in droppable]  # else the usual suspects
+            reduced = {k: v for k, v in values.items() if k not in drop}
+            if not drop or not reduced:
+                raise
+            print(f"[monday-ledger] column write rejected on item {item_id} "
+                  f"({type(first_err).__name__}); retrying without {drop}",
+                  file=sys.stderr)
+            self._query(query, {"boardId": str(board_id), "itemId": str(item_id),
+                                "values": json.dumps(reduced)})
+            return drop
 
 
 # ---------------------------------------------------------------------------
@@ -1675,6 +1780,12 @@ def write_invoice_ledger(
             if drive_folder_id else None
         )
 
+        # The caller passes whatever Monday item the invoice was opened from; only
+        # a PROJECTS item is valid for the Linked Project relation (see resolver).
+        link = mc.resolve_ledger_project_link(linked_project_id or job.get("monday_item_id"))
+        if link.get("note"):
+            note_text = (note_text + "\n" + link["note"]) if note_text else link["note"]
+
         result = mc.upsert_invoice_row(
             identifier=identifier,
             item_name=job.get("name") or identifier,
@@ -1684,7 +1795,7 @@ def write_invoice_ledger(
             job_ref=job.get("site_address") or job.get("name"),
             job_type=job_type or job.get("monday_job_type"),
             customer_item_id=customer_item_id,
-            linked_project_id=linked_project_id or job.get("monday_item_id"),
+            linked_project_id=link.get("project_item_id"),
             stripe_invoice_id=writeback.get("stripe_invoice_id"),
             stripe_hosted_url=writeback.get("hosted_invoice_url"),
             gmail_draft_url=writeback.get("gmail_draft_url"),
@@ -1698,7 +1809,20 @@ def write_invoice_ledger(
             "ledger_item_id": result["item_id"],
             "ledger_item_url": result["item_url"],
             "ledger_customer_linked": bool(customer_item_id),
+            "ledger_link_source": link.get("source"),
         })
+        dropped = result.get("dropped_columns") or []
+        if dropped:
+            report["ledger_dropped_columns"] = dropped
+            # Best-effort second write so the ROW itself says what's missing.
+            try:
+                tail = "Ledger: Monday rejected " + ", ".join(dropped) + " — set by hand."
+                mc._set_invoice_columns(
+                    result["item_id"],
+                    {INV_COL_NOTE: {"text": (note_text + "\n" + tail) if note_text else tail}},
+                )
+            except Exception:  # noqa: BLE001 — the note is a courtesy, never a blocker
+                pass
         return report
     except Exception as e:  # noqa: BLE001 — never block the flow on a ledger failure
         report["ledger_status"] = f"FAILED — {type(e).__name__}: {e}"

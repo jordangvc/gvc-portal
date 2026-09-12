@@ -739,6 +739,10 @@ def process_one(
                 failed["Invoices ledger row"] = (
                     (writeback.get("ledger") or {}).get("ledger_status")
                     or "ledger write did not run")
+            _dropped = (writeback.get("ledger") or {}).get("ledger_dropped_columns")
+            if _dropped:
+                failed["Invoices ledger link"] = (
+                    f"row recorded, but Monday rejected {', '.join(_dropped)} — set by hand")
             notify_finalize_degraded("Invoice", identifier, failed)
     except Exception:  # noqa: BLE001 — alerting must never break the flow
         pass

@@ -12,6 +12,21 @@ import stripe
 from adapters.monday.client import MondayClient
 from shared.money import to_cents
 
+def _customer_lookup_email(client_data: dict) -> str:
+    """
+    The email Stripe keys the customer on. A no-email customer (print / mail /
+    hand-deliver) has NO `email` key at all, so `client_data["email"]` raised
+    KeyError — twice on Andrea's INV-2026-0824-003 (Sep 11, 2026), a print-only
+    homeowner — before the live path ever reached the create step that knows
+    how to synthesize one. Resolve it the same way that step does.
+    """
+    email = (client_data.get("email") or "").strip()
+    if email:
+        return email
+    from shared.recipients import normalize_client_recipients
+    return normalize_client_recipients(client_data)["stripe_email"]
+
+
 def upsert_stripe_customer(client_data: dict) -> stripe.Customer:
     """
     Lookup customer by stripe_customer_id if present, else by email.
@@ -28,7 +43,7 @@ def upsert_stripe_customer(client_data: dict) -> stripe.Customer:
     if sid:
         return stripe.Customer.modify(sid, name=desired_name, address=desired_address)
 
-    email = client_data["email"]
+    email = _customer_lookup_email(client_data)
     existing = stripe.Customer.list(email=email, limit=1).data
     if existing:
         return stripe.Customer.modify(existing[0].id, name=desired_name, address=desired_address)
@@ -313,10 +328,11 @@ def preflight_stripe(enriched: dict) -> dict:
     """
     client_data = enriched["client"]
     identifier = enriched["invoice"]["identifier"]
+    lookup_email = _customer_lookup_email(client_data)
 
     report: dict = {
         "identifier": identifier,
-        "customer": {"action": None, "id": None, "email": client_data["email"]},
+        "customer": {"action": None, "id": None, "email": lookup_email},
         "existing_invoice_with_identifier": None,
     }
 
@@ -326,7 +342,7 @@ def preflight_stripe(enriched: dict) -> dict:
         report["customer"]["action"] = "reuse_by_id"
         report["customer"]["id"] = cust.id
     else:
-        existing = stripe.Customer.list(email=client_data["email"], limit=1).data
+        existing = stripe.Customer.list(email=lookup_email, limit=1).data
         if existing:
             report["customer"]["action"] = "reuse_by_email"
             report["customer"]["id"] = existing[0].id
