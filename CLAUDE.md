@@ -2876,3 +2876,13 @@ Windows: `gcloud logging read` strips embedded double quotes → use PowerShell 
 The Git Bash tool truncates long inline scripts (~10 KB) — write a file, then run it.
 Live revision at incident time: `gvc-invoice-00246-cfx` (Aug 15) — origin/master was BEHIND it;
 the deploy came from `cursor/coach-posting-rules` (`ed259a6`). Fix branch cut from `ed259a6`.
+✅ **CLOSED 2026-09-12.** Deployed as revision `gvc-invoice-00247-7mm` (Jordan ran the deploy; /health all
+green). Jordan ran `scripts/repair_bare_ledger_rows.py --apply` — five `WRITTEN — clean`. A manual
+`POST /v1/tasks/check-sent` on the live service then stamped **5 invoices + 61 estimates, 0 errors**;
+all five rows read "Invoice Sent" with the true Emailed-on dates, and the Bid Board carries Emailed-on
+for the 61 (verified by re-read, not by the response). Four `#bids` notes posted for the Sep 10–11
+sends (inside the 48h window — by design). Still un-sent: EST-2026-0820-002 (Douglas Co., Green Oaks).
+Still un-created: Andrea's INV-2026-0824-003 (Krista Jeffries, print-only) — she re-runs it once.
+Status doc for Andrea: Google Doc 10yW9Wawk5XBG3OrYRBo7GcXKk5RTHVsf3KmyfvDGBpI.
+FOLLOW-UP (not built): the watcher counts a print-only estimate's internal office copy as "sent" when
+its subject matches — exclude "[NO EMAIL — PRINT]" subjects, or stamp them as office-copy instead.
