@@ -397,6 +397,12 @@ function applyData(p) {
   updateReviseUI();
 }
 
+// Stage-bar Accept waits on gvc:co-accepted; this ends the wait on any other
+// outcome (error, cancel) so it never sits on "Accepting…" (2026-09-23).
+function signalAcceptEnded() {
+  try { document.dispatchEvent(new CustomEvent("gvc:co-accept-ended")); } catch (e) {}
+}
+
 async function run(mode) {
   const data = collectData();
   const errs = validateData(data);
@@ -933,7 +939,10 @@ $("#btn-accept").addEventListener("click", () => {
   const msg = isReviseMode()
     ? "Update this change order under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), the Monday CO item + Operations task are updated in place, and a fresh hello@ draft + #change-orders notice go out."
     : "Create the change order draft in hello@, file it to Drive, and add the Monday CO item + Operations task?";
-  if (confirm(msg)) run("finalize");
+  (async () => {
+    try { if (confirm(msg)) await run("finalize"); }
+    finally { signalAcceptEnded(); }
+  })();
 });
 $("#co-form").addEventListener("input", (ev) => {
   lastPreviewOk = false; $("#btn-accept").disabled = true;
@@ -1038,10 +1047,13 @@ refreshDrafts();
           if (done) return;
           done = true;
           document.removeEventListener("gvc:co-accepted", onOk);
+          document.removeEventListener("gvc:co-accept-ended", onEnded);
           ok ? resolve() : reject(err || new Error("Accept cancelled or failed"));
         }
         function onOk() { finish(true); }
+        function onEnded() { finish(false, new Error("Not accepted — see the banner, then try again")); }
         document.addEventListener("gvc:co-accepted", onOk);
+        document.addEventListener("gvc:co-accept-ended", onEnded);
         btn.disabled = false;
         btn.click();
         setTimeout(function () { finish(false, new Error("Accept timed out — check the status banner")); }, 180000);

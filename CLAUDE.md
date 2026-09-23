@@ -2891,3 +2891,23 @@ internal "[NO EMAIL — PRINT]" office copy of a print/mail/hand-deliver documen
 client send (it had stamped EST-2026-0824-003 as emailed). `tests/test_gmail_sent_query.py`. After this
 deploys, clear that one Emailed-on stamp on Bid Board item 2844029418 — clearing it BEFORE the deploy
 would just get re-stamped by the next 10-minute sweep.
+
+### 2026-09-23 — 🐛 Estimate "stuck on Accepting…" (web/estimate.html)
+Report: generating an estimate hangs. Root cause is client-side, not the server (a local dry-run
+renders in ~1s). The stage bar's Accept (`GvcFormStages.onAccept`) clicks the hidden `#btn-accept`
+and waits for `gvc:estimate-accepted` — which fires ONLY on success. Validation errors, a server
+error envelope, a 401, a network error, or cancelling either confirm() never fired anything, so the
+bar sat on "Accepting…" for the full 180s timeout. Since ed259a6 (Aug 15) the Review step no longer
+auto-previews, so the "No draft preview was generated" confirm fires on nearly every Accept, making
+the cancel path common. FIX: `signalAcceptFailed()` dispatches `gvc:estimate-failed` on every
+non-success path; onAccept rejects immediately with that message (bar shows it, user retries).
+PART 2 (same day): ported to Invoice + Change Order (`gvc:{invoice,co}-accept-ended` fires
+after the Accept click handler finishes, success or not). Also: 🐛 estimate SUCCESS path threw
+`ReferenceError: val is not defined` (no global val() on that page) whenever Monday returned no
+item id — a CREATED estimate showed "Network/error", the draft wasn't cleared, and the user
+re-ran it (= a revision). Fixed. Estimate + Invoice hide the doc column (ed259a6), so "Preview
+ready below" pointed at an invisible iframe — banner now links the PDF, and the always-firing
+"No draft preview was generated" confirm is gone (the real live-step confirm stays).
+VERIFIED in Chromium via the local harness (route-mocked run API): cancel / 502 / validation
+error / success all resolve in ~0.3s on all three forms, zero pageerrors.
+Guard: tests/test_form_accept_never_hangs.py.
