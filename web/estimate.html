@@ -552,8 +552,9 @@ async function run(mode) {
         lastPreviewOk = true;
         $("#btn-accept").disabled = false;
         const idBit = ident ? ` (estimate <strong>${ident}</strong>)` : "";
-        setStatus("info", `✅ Preview ready below${idBit}. Review, then click <strong>Accept &amp; Create Draft in hello@</strong>.`);
-        $("#preview-card").scrollIntoView({ behavior: "smooth" });
+        // The doc column is hidden on this page, so the iframe is invisible —
+        // hand the user the PDF directly instead of "ready below".
+        setStatus("info", `✅ Preview ready${idBit}. <a href="${url}" target="_blank" rel="noopener"><strong>Open the preview PDF</strong></a>, then click <strong>Accept &amp; create draft</strong>.`);
       } else {
         setStatus("warn", "Preview is unavailable right now. Save the estimate number and try again.");
         lastPreviewOk = false;
@@ -576,7 +577,11 @@ async function run(mode) {
       if (wb.monday_item_url) html += `<div class="result-line">📋 <a href="${wb.monday_item_url}" target="_blank" rel="noopener">Monday item</a> — Stage set to "Sent to Client"${wb.monday_item_created ? " (new item created)" : ""}</div>`;
       if (wb.monday_status) html += `<div class="result-line gvc-msg--warn">⚠️ Monday: ${wb.monday_status}</div>`;
       html += `<div class="result-line">#estimates Slack notice: ${wb.slack_notified ? "posted ✅" : "not sent (Slack not configured)"}</div>`;
-      const bidId = wb.monday_item_id || val("job_monday_item_id") || "";
+      // NOTE: no global val() on this page — reading it here threw a
+      // ReferenceError AFTER a successful finalize whenever Monday returned no
+      // item id, so a created estimate showed "Network/error" (2026-09-23).
+      const bidEl = $("#estimate-form").elements["job_monday_item_id"];
+      const bidId = wb.monday_item_id || (bidEl ? (bidEl.value || "").trim() : "") || "";
       const jobStartHref = bidId
         ? `/ui/jobstart?bid=${encodeURIComponent(String(bidId))}`
         : "/ui/jobstart";
@@ -1369,7 +1374,6 @@ $("#dup-guard-new").addEventListener("click", () => {
 $("#add-line").addEventListener("click", () => addLineItem());
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
 $("#btn-accept").addEventListener("click", () => {
-  if (!lastPreviewOk && !confirm("No draft preview was generated. Continue to accept anyway?")) { signalAcceptFailed("Accept cancelled"); return; }
   const msg = isReviseMode()
     ? "Update this estimate under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), Monday is updated, and a fresh hello@ draft + #bids notice go out."
     : "Create the estimate draft in hello@ and post to #bids?";

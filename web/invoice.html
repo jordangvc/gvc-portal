@@ -805,6 +805,12 @@ function showSpinner(on) {
   $("#btn-accept").disabled = on;
 }
 
+// Stage-bar Accept waits on gvc:invoice-accepted; this ends the wait on any
+// other outcome (error, cancel) so it never sits on "Accepting…" (2026-09-23).
+function signalAcceptEnded() {
+  try { document.dispatchEvent(new CustomEvent("gvc:invoice-accept-ended")); } catch (e) {}
+}
+
 async function run(mode) {
   const data = collectData();
   const errs = validateData(data, mode);
@@ -817,7 +823,8 @@ async function run(mode) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data, mode, finalize: true }),
     });
-    const body = await resp.json();
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json().catch(() => ({ detail: { code: "HTTP " + resp.status, detail: "The server returned an unreadable response." } }));
     if (!resp.ok) {
       const dd = body.detail || body;
       let ehtml = `<strong>${dd.code || "Error"}</strong><br />${dd.advice || dd.detail || JSON.stringify(dd)}`;
@@ -842,8 +849,8 @@ async function run(mode) {
         if (data.invoice) data.invoice.identifier = wb.identifier;
       }
       const idBit = ident ? ` (invoice <strong>${ident}</strong>)` : "";
-      setStatus("info", `✅ Preview ready below${idBit}. Review, then click <strong>Accept &amp; Create Invoice</strong>.`);
-      $("#preview-card").scrollIntoView({ behavior: "smooth" });
+      // Doc column is hidden on this page — link the PDF instead of "below".
+      setStatus("info", `✅ Preview ready${idBit}. <a href="${url}" target="_blank" rel="noopener"><strong>Open the preview PDF</strong></a>, then click <strong>Accept</strong>.`);
     } else {
       if (wb.identifier) {
         setVal("identifier", wb.identifier);
@@ -1660,9 +1667,10 @@ $("#commercial-toggle").addEventListener("change", (e) => $("#commercial-body").
 $("#retainage-toggle").addEventListener("change", (e) => { $("#retainage-body").style.display = e.target.checked ? "grid" : "none"; });
 $("#add-extra-pdf").addEventListener("click", () => extraPdfsEl.appendChild(extraPdfRow()));
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
-$("#btn-accept").addEventListener("click", () => {
-  if (!lastPreviewOk && !confirm("No draft preview was generated yet. Continue to accept anyway?")) return;
-  if (confirm("Create a REAL Stripe invoice and a billing@ Gmail draft? This is the live step.")) run("live");
+$("#btn-accept").addEventListener("click", async () => {
+  try {
+    if (confirm("Create a REAL Stripe invoice and a billing@ Gmail draft? This is the live step.")) await run("live");
+  } finally { signalAcceptEnded(); }
 });
 $("#btn-new-invoice").addEventListener("click", () => {
   const p = collectData();
@@ -1788,10 +1796,13 @@ var api = window.GvcFormStages && window.GvcFormStages.mount({
           if (done) return;
           done = true;
           document.removeEventListener("gvc:invoice-accepted", onOk);
+          document.removeEventListener("gvc:invoice-accept-ended", onEnded);
           ok ? resolve() : reject(err || new Error("Accept cancelled or failed"));
         }
         function onOk() { finish(true); }
+        function onEnded() { finish(false, new Error("Not accepted — see the banner, then try again")); }
         document.addEventListener("gvc:invoice-accepted", onOk);
+        document.addEventListener("gvc:invoice-accept-ended", onEnded);
         btn.disabled = false;
         btn.click();
         setTimeout(function () { finish(false, new Error("Accept timed out — check the status banner")); }, 180000);

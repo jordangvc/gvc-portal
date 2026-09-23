@@ -2901,5 +2901,13 @@ bar sat on "Accepting…" for the full 180s timeout. Since ed259a6 (Aug 15) the 
 auto-previews, so the "No draft preview was generated" confirm fires on nearly every Accept, making
 the cancel path common. FIX: `signalAcceptFailed()` dispatches `gvc:estimate-failed` on every
 non-success path; onAccept rejects immediately with that message (bar shows it, user retries).
-⚠ SAME PATTERN, NOT FIXED: web/invoice.html and web/change-order.html onAccept wait on
-`gvc:invoice-accepted` / `gvc:co-accepted` with the same 180s gap — port this fix there next.
+PART 2 (same day): ported to Invoice + Change Order (`gvc:{invoice,co}-accept-ended` fires
+after the Accept click handler finishes, success or not). Also: 🐛 estimate SUCCESS path threw
+`ReferenceError: val is not defined` (no global val() on that page) whenever Monday returned no
+item id — a CREATED estimate showed "Network/error", the draft wasn't cleared, and the user
+re-ran it (= a revision). Fixed. Estimate + Invoice hide the doc column (ed259a6), so "Preview
+ready below" pointed at an invisible iframe — banner now links the PDF, and the always-firing
+"No draft preview was generated" confirm is gone (the real live-step confirm stays).
+VERIFIED in Chromium via the local harness (route-mocked run API): cancel / 502 / validation
+error / success all resolve in ~0.3s on all three forms, zero pageerrors.
+Guard: tests/test_form_accept_never_hangs.py.
