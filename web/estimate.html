@@ -511,11 +511,18 @@ function updateReviseUI() {
     : "Accept & Create Draft in hello@";
 }
 
+// The stage bar's Accept waits on gvc:estimate-accepted. Every path that ends
+// WITHOUT creating the estimate must fire this, or the bar sits on
+// "Accepting…" for 3 minutes with nothing happening (reported 2026-09-23).
+function signalAcceptFailed(msg) {
+  try { document.dispatchEvent(new CustomEvent("gvc:estimate-failed", { detail: { message: msg } })); } catch (e) {}
+}
+
 async function run(mode) {
   const data = collectData();
   const errs = validateData(data, mode);
   const revise = isReviseMode();
-  if (errs.length && mode !== "dry-run") { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  if (errs.length && mode !== "dry-run") { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); signalAcceptFailed("Fix the fields in the banner, then accept again"); return; }
   if (errs.length && mode === "dry-run") { setStatus("warn", "<strong>Preview mode:</strong> required fields are missing. The document will still generate with placeholders.<ul><li>" + errs.join("</li><li>") + "</li></ul>"); }
   showSpinner(true); clearStatus();
   try {
@@ -523,11 +530,12 @@ async function run(mode) {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data, mode, revise }),
     });
-    if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); setTimeout(() => location.reload(), 1200); return; }
-    const body = await resp.json();
+    if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); signalAcceptFailed("Session expired — signing you back in"); setTimeout(() => location.reload(), 1200); return; }
+    const body = await resp.json().catch(() => ({ detail: { code: "HTTP " + resp.status, detail: "The server returned an unreadable response." } }));
     if (!resp.ok) {
       const d = body.detail || body;
       setStatus("err", `<strong>${d.code || "Error"}</strong><br />${d.advice || d.detail || JSON.stringify(d)}`);
+      signalAcceptFailed((d.code || "Error") + " — see the banner, then try again");
       return;
     }
     const wb = body.writeback || {};
@@ -582,6 +590,7 @@ async function run(mode) {
     }
   } catch (e) {
     setStatus("err", "Network/error: " + e.message);
+    signalAcceptFailed("Network error — try again");
   } finally { showSpinner(false); }
 }
 
@@ -1360,11 +1369,12 @@ $("#dup-guard-new").addEventListener("click", () => {
 $("#add-line").addEventListener("click", () => addLineItem());
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
 $("#btn-accept").addEventListener("click", () => {
-  if (!lastPreviewOk && !confirm("No draft preview was generated. Continue to accept anyway?")) return;
+  if (!lastPreviewOk && !confirm("No draft preview was generated. Continue to accept anyway?")) { signalAcceptFailed("Accept cancelled"); return; }
   const msg = isReviseMode()
     ? "Update this estimate under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), Monday is updated, and a fresh hello@ draft + #bids notice go out."
     : "Create the estimate draft in hello@ and post to #bids?";
   if (confirm(msg)) run("finalize");
+  else signalAcceptFailed("Accept cancelled");
 });
 $("#estimate-form").addEventListener("input", (ev) => {
   lastPreviewOk = false; $("#btn-accept").disabled = true;
@@ -1618,10 +1628,16 @@ fetch("/ui/api/monday/warm", {
           if (done) return;
           done = true;
           document.removeEventListener("gvc:estimate-accepted", onOk);
+          document.removeEventListener("gvc:estimate-failed", onFail);
           ok ? resolve() : reject(err || new Error("Accept cancelled or failed"));
         }
         function onOk() { finish(true); }
+        function onFail(ev) {
+          var m = ev && ev.detail && ev.detail.message;
+          finish(false, new Error(m || "Couldn't accept — see the banner"));
+        }
         document.addEventListener("gvc:estimate-accepted", onOk);
+        document.addEventListener("gvc:estimate-failed", onFail);
         btn.disabled = false;
         btn.click();
         setTimeout(function () { finish(false, new Error("Accept timed out — check the status banner")); }, 180000);

@@ -2891,3 +2891,15 @@ internal "[NO EMAIL — PRINT]" office copy of a print/mail/hand-deliver documen
 client send (it had stamped EST-2026-0824-003 as emailed). `tests/test_gmail_sent_query.py`. After this
 deploys, clear that one Emailed-on stamp on Bid Board item 2844029418 — clearing it BEFORE the deploy
 would just get re-stamped by the next 10-minute sweep.
+
+### 2026-09-23 — 🐛 Estimate "stuck on Accepting…" (web/estimate.html)
+Report: generating an estimate hangs. Root cause is client-side, not the server (a local dry-run
+renders in ~1s). The stage bar's Accept (`GvcFormStages.onAccept`) clicks the hidden `#btn-accept`
+and waits for `gvc:estimate-accepted` — which fires ONLY on success. Validation errors, a server
+error envelope, a 401, a network error, or cancelling either confirm() never fired anything, so the
+bar sat on "Accepting…" for the full 180s timeout. Since ed259a6 (Aug 15) the Review step no longer
+auto-previews, so the "No draft preview was generated" confirm fires on nearly every Accept, making
+the cancel path common. FIX: `signalAcceptFailed()` dispatches `gvc:estimate-failed` on every
+non-success path; onAccept rejects immediately with that message (bar shows it, user retries).
+⚠ SAME PATTERN, NOT FIXED: web/invoice.html and web/change-order.html onAccept wait on
+`gvc:invoice-accepted` / `gvc:co-accepted` with the same 180s gap — port this fix there next.
