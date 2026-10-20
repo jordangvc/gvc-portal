@@ -2911,3 +2911,21 @@ ready below" pointed at an invisible iframe — banner now links the PDF, and th
 VERIFIED in Chromium via the local harness (route-mocked run API): cancel / 502 / validation
 error / success all resolve in ~0.3s on all three forms, zero pageerrors.
 Guard: tests/test_form_accept_never_hangs.py.
+
+### 2026-10-19 — Estimate terms split: commercial vs residential, scope always governs (R120)
+INCIDENT: every estimate printed the old residential homeowner boilerplate (STANDARD_BOILERPLATE:
+1/2" board throughout, Level 5 finish, "design provided by GVC ... verbal directions", payment on
+completion, six month warranty), including the $4.62M (413 Euclid + Corry) and $340K (418 Barnes
+and Noble) commercial GC bids. project_type only changed the email wording.
+FIX (branch claude/estimate-terms-split-2026-10-19, DRAFT PR, wording pending Jordan + attorney):
+`orchestrators/estimate_flow.py` now has COMMERCIAL_TERMS / RESIDENTIAL_TERMS (from Drive doc
+"Estimate Terms Fix | GVC | 2026-10-19"), picked by `select_terms(job.project_type)`.
+Blank/unknown project_type: finalize REJECTS it in `validate()` (422 INVALID_INPUT before any PDF,
+Drive, Gmail, Slack or Monday side effect); dry-run preview renders a "Standard Terms (NEEDS
+REVIEW)" page instead of guessing. The precedence line ("scope section governs") ALWAYS prints.
+No default may hard code board thickness, Level 5, "design provided by GVC" or "verbal direction".
+Residential terms still carry [bracket] fill-ins (deposit, draws, warranty term); `validate()`
+refuses to finalize while any remain, so residential finalize is BLOCKED until Jordan fills them.
+Form (`web/estimate.html`) no longer preselects Residential; the user must pick a type.
+`example_estimate.json` (cross-repo takeoff contract) gained `job.project_type: "commercial"`;
+takeoff payloads now need project_type too. Guard: tests/test_estimate_terms.py.
