@@ -171,10 +171,10 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
         <div><label>Project name</label><input class="gvc-input" name="job_name" required placeholder="Lawrenceburg Admin Bldg Reno & Addition" /></div>
         <div><label>Job location <span class="opt">(optional)</span></label><input class="gvc-input" name="job_location" placeholder="300 Tiger Blvd, Lawrenceburg IN 47025" /></div>
         <div>
-          <span class="gvc-label">Type</span>
-          <input type="hidden" name="project_type" value="residential" />
+          <span class="gvc-label">Type <span class="opt">(required: picks the standard terms)</span></span>
+          <input type="hidden" name="project_type" value="" />
           <div class="gvc-chips" data-chipset="project_type" data-radio>
-            <button type="button" class="gvc-chip is-on" data-value="residential">Residential</button>
+            <button type="button" class="gvc-chip" data-value="residential">Residential</button>
             <button type="button" class="gvc-chip" data-value="commercial">Commercial</button>
           </div>
         </div>
@@ -420,7 +420,9 @@ function collectData() {
     if (cc.length) client.cc_emails = cc;
   }
 
-  const job = { name: val("job_name"), project_type: val("project_type") || "residential" };
+  // No silent default: blank project_type is caught by validateData and the
+  // server (estimate_flow.validate) so the wrong terms page can't go out.
+  const job = { name: val("job_name"), project_type: val("project_type") || "" };
   if (val("job_location")) job.location = val("job_location");
   if (val("scope_summary")) job.scope_summary = val("scope_summary");
   // Carried from a Monday Bid Board prefill so finalize writes back to that
@@ -469,6 +471,7 @@ function validateData(d, mode = "dry-run") {
     e.push("Client email is required — or check “Customer has no email”.");
   }
   if (!d.job.name) e.push("Project name is required.");
+  if (!/^(commercial|residential)/i.test(d.job.project_type || "")) e.push("Pick Commercial or Residential (it picks the standard terms page).");
   if (!d.estimate.date) e.push("Date is required.");
   if (!d.estimate.line_items.length) e.push("At least one line item is required.");
   d.estimate.line_items.forEach((li, i) => {
@@ -936,7 +939,7 @@ function applyData(p) {
   setField("job_name", j.name); setField("job_location", j.location);
   setField("job_monday_item_id", j.monday_item_id);
   setField("plan_folder_number", j.plan_folder_number);
-  setField("project_type", j.project_type || "residential"); setField("scope_summary", j.scope_summary);
+  setField("project_type", (j.project_type || "").toLowerCase()); setField("scope_summary", j.scope_summary);
   setField("identifier", e.identifier); setField("date", e.date || new Date().toISOString().slice(0, 10));
   setField("expiry_date", e.expiry_date);
   setField("special_notes", Array.isArray(e.special_notes) ? e.special_notes.join("\n") : (e.special_notes || ""));
