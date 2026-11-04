@@ -261,6 +261,7 @@ function addLineItem(v) { lineItemsEl.appendChild(lineItemRow(v)); recalc(); }
 function money(n) { return "$" + Number(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 
 function recalc() {
+  invalidatePreview();
   let total = 0;
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
     const amt = parseFloat(row.querySelector(".li-amount").value);
@@ -275,6 +276,7 @@ function val(n) {
   return e ? (e.value || "").trim() : "";
 }
 function setField(name, value) {
+  invalidatePreview();
   const el = ($("#co-form").elements[name]) || document.querySelector(`[name="${name}"]`);
   if (el) el.value = value == null ? "" : value;
 }
@@ -354,6 +356,19 @@ function setStatus(kind, html) {
 function clearStatus() { const el = $("#status"); if (el) { el.className = "gvc-pop"; el.style.display = "none"; el.innerHTML = ""; } }
 
 let lastPreviewOk = false;
+let previewEpoch = 0;
+let pendingPreview = null;
+function invalidatePreview() {
+  previewEpoch += 1;
+  if (pendingPreview !== null) showSpinner(false);
+  pendingPreview = null;
+  const hadPreview = lastPreviewOk || $("#preview-frame").hasAttribute("src");
+  lastPreviewOk = false;
+  $("#preview-card").classList.remove("show");
+  $("#preview-frame").removeAttribute("src");
+  if (hadPreview) clearStatus(); // Remove the previous document's open-PDF link too.
+}
+
 function showSpinner(on) { $("#spinner").classList.toggle("show", on); $("#btn-generate").disabled = on; $("#btn-accept").disabled = false; void (on || !lastPreviewOk); }
 
 function isReviseMode() {
@@ -372,6 +387,7 @@ function updateReviseUI() {
 }
 
 function applyData(p) {
+  invalidatePreview();
   p = p || {};
   const c = p.client || {}, j = p.job || {}, co = p.change_order || {}, link = p._link || {};
   setField("client_name", c.name); setField("contact_name", c.contact_name);
@@ -404,23 +420,27 @@ function signalAcceptEnded() {
 }
 
 async function run(mode) {
-  if (mode === "dry-run") {
-    lastPreviewOk = false;
-    $("#preview-card").classList.remove("show");
-    $("#preview-frame").removeAttribute("src");
-  }
+  invalidatePreview();
+  const token = previewEpoch;
+  const stalePreview = () => mode === "dry-run" && token !== previewEpoch;
   const data = collectData();
+  const snapshot = JSON.stringify(data);
+  const obsoletePreview = () => stalePreview() ||
+    (mode === "dry-run" && snapshot !== JSON.stringify(collectData()));
   const errs = validateData(data);
   const revise = isReviseMode();
   if (errs.length) { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
+  if (mode === "dry-run") pendingPreview = token;
   showSpinner(true); clearStatus();
   try {
     const resp = await fetch("/ui/api/change-order/run", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data, mode, revise }),
     });
+    if (obsoletePreview()) return;
     if (resp.status === 401) { setStatus("err", "Session expired — reloading…"); setTimeout(() => location.reload(), 1200); return; }
     const body = await resp.json();
+    if (obsoletePreview()) return;
     if (!resp.ok) {
       const d = body.detail || body;
       setStatus("err", `<strong>${d.code || "Error"}</strong><br />${d.advice || d.detail || JSON.stringify(d)}`);
@@ -465,8 +485,15 @@ async function run(mode) {
       deleteCurrentDraftAfterFinalize();  // CO is now real (in Monday) — drop the draft
     }
   } catch (e) {
+    if (obsoletePreview()) return;
     setStatus("err", "Network/error: " + e.message);
-  } finally { showSpinner(false); }
+  } finally {
+    // An older response must not unlock controls owned by a newer request.
+    if (!stalePreview()) {
+      if (mode === "dry-run") pendingPreview = null;
+      showSpinner(false);
+    }
+  }
 }
 
 /* ===================== Find the Project (search / URL / revision) ===================== */
@@ -607,7 +634,7 @@ async function applyProjectLookup(r) {
   if (!r.ok) { const d = body.detail || body; setLinkState("warn", (d.advice || d.detail || "Lookup failed.")); return; }
   const c = body.context || {};
   currentDraftId = null;
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
   if (c.client_name) setField("client_name", c.client_name);
   if (c.client_email) setField("client_email", c.client_email);
@@ -686,7 +713,7 @@ async function loadForRevision(identifier) {
   }
   const rev = body.revision || {};
   currentDraftId = null;
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
   if (body.prefill) {
     applyData(body.prefill);
@@ -882,7 +909,7 @@ function resumeDraft(id) {
   $("#revise-flag").checked = !!(wantRevise && ident);
   updateReviseUI();
   currentDraftId = id;
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
   setSaveState(rec._syncedAt ? "synced" : "local",
     wantRevise && ident ? "Resumed draft · revise mode on" : "Resumed draft");
@@ -899,12 +926,13 @@ async function deleteDraft(id) {
 }
 
 function clearForm() {
+  invalidatePreview();
   $("#co-form").reset();
   lineItemsEl.innerHTML = ""; addLineItem();
   $("[name=date]").value = new Date().toISOString().slice(0, 10);
   linked = { monday_item_id: null, gfolder_url: null, existing_co_identifiers: [], project_type: null };
   $("#existing-cos").innerHTML = ""; $("#search-results").innerHTML = "";
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   $("#preview-card").classList.remove("show");
   recalc();
   updateReviseUI();
@@ -949,8 +977,9 @@ $("#btn-accept").addEventListener("click", () => {
     finally { signalAcceptEnded(); }
   })();
 });
+$("#co-form").addEventListener("change", invalidatePreview);
 $("#co-form").addEventListener("input", (ev) => {
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   if (ev.target && (ev.target.name === "co_number" || ev.target.id === "revise-flag")) updateReviseUI();
   scheduleAutosave();
 });

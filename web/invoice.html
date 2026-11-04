@@ -395,6 +395,7 @@ function addLineItem(v) { lineItemsEl.appendChild(lineItemRow(v)); recalcTotals(
 
 function money(n) { return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function recalcTotals() {
+  invalidatePreview();
   let subtotal = 0;
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
     const amt = parseFloat(row.querySelector(".li-amount").value);
@@ -413,7 +414,7 @@ function extraPdfRow() {
   div.className = "repeat-link";
   div.innerHTML = `<input class="extra-pdf-link" placeholder="https://drive.google.com/file/d/…/view" />
     <button type="button" class="btn danger small remove-row">Remove</button>`;
-  div.querySelector(".remove-row").addEventListener("click", () => div.remove());
+  div.querySelector(".remove-row").addEventListener("click", () => { invalidatePreview(); div.remove(); });
   return div;
 }
 
@@ -521,6 +522,7 @@ function formHasFilledLineItems() {
 }
 
 function applyEstimateImportLines(info, { markAdded } = {}) {
+  invalidatePreview();
   if (!info) return false;
   if (info.line_items && info.line_items.length) {
     // Drop the empty placeholder row so auto-apply doesn't leave a blank line.
@@ -778,6 +780,9 @@ function validateData(d, mode = "dry-run") {
   if (!d.invoice.identifier && !(d.job && d.job.project_number)) {
     e.push("Invoice number is required (or look up a project so INV-… can auto-fill).");
   }
+  if (mode !== "dry-run" && /^INV-PREVIEW-/i.test(d.invoice.identifier || "")) {
+    e.push("Preview-only invoice number: clear it and select a project or enter the real invoice number.");
+  }
   if (!d.invoice.issue_date) e.push("Issue date is required.");
   if (!d.invoice.line_items.length) e.push("At least one line item is required.");
   d.invoice.line_items.forEach((li, i) => {
@@ -798,6 +803,19 @@ function setStatus(kind, html) {
 function clearStatus() { const el = $("#status"); el.className = "gvc-banner"; el.style.display = "none"; el.innerHTML = ""; }
 
 let lastPreviewOk = false;
+let previewEpoch = 0;
+let pendingPreview = null;
+function invalidatePreview() {
+  previewEpoch += 1;
+  if (pendingPreview !== null) showSpinner(false);
+  pendingPreview = null;
+  const hadPreview = lastPreviewOk || $("#preview-frame").hasAttribute("src");
+  lastPreviewOk = false;
+  $("#preview-card").classList.remove("show");
+  $("#preview-frame").removeAttribute("src");
+  if (hadPreview) clearStatus(); // Remove the previous document's open-PDF link too.
+}
+
 function showSpinner(on) {
   $("#spinner").classList.toggle("show", on);
   const btn = $("#btn-generate");
@@ -812,24 +830,28 @@ function signalAcceptEnded() {
 }
 
 async function run(mode) {
-  if (mode === "dry-run") {
-    lastPreviewOk = false;
-    $("#preview-card").classList.remove("show");
-    $("#preview-frame").removeAttribute("src");
-  }
+  invalidatePreview();
+  const token = previewEpoch;
+  const stalePreview = () => mode === "dry-run" && token !== previewEpoch;
   const data = collectData();
+  const snapshot = JSON.stringify(data);
+  const obsoletePreview = () => stalePreview() ||
+    (mode === "dry-run" && snapshot !== JSON.stringify(collectData()));
   const errs = validateData(data, mode);
   if (errs.length && mode !== "dry-run") { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); return; }
   if (errs.length && mode === "dry-run") { setStatus("warn", "<strong>Preview mode:</strong> required fields are missing. The document will still generate with placeholders.<ul><li>" + errs.join("</li><li>") + "</li></ul>"); }
   window._lastInvoiceData = data;
+  if (mode === "dry-run") pendingPreview = token;
   showSpinner(true); clearStatus();
   try {
     const resp = await fetch("/ui/api/invoice/run", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data, mode, finalize: true }),
     });
+    if (obsoletePreview()) return;
     if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); setTimeout(() => location.reload(), 1200); return; }
     const body = await resp.json().catch(() => ({ detail: { code: "HTTP " + resp.status, detail: "The server returned an unreadable response." } }));
+    if (obsoletePreview()) return;
     if (!resp.ok) {
       const dd = body.detail || body;
       let ehtml = `<strong>${dd.code || "Error"}</strong><br />${dd.advice || dd.detail || JSON.stringify(dd)}`;
@@ -849,10 +871,7 @@ async function run(mode) {
       $("#preview-card").classList.add("show");
       lastPreviewOk = true; $("#btn-accept").disabled = false;
       document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-total") || {}).textContent || document.getElementById("barTotal").textContent);
-      if (wb.identifier) {
-        setVal("identifier", wb.identifier);
-        if (data.invoice) data.invoice.identifier = wb.identifier;
-      }
+      // Preview-only numbers must never become identifiers for Accept.
       const idBit = ident ? ` (invoice <strong>${ident}</strong>)` : "";
       setStatus("info", `✅ Preview ready${idBit}. <a href="${url}" target="_blank" rel="noopener"><strong>Open the preview PDF</strong></a>, then click <strong>Accept</strong>.`);
     } else {
@@ -901,8 +920,15 @@ async function run(mode) {
       deleteCurrentDraftAfterFinalize();  // invoice is now real (Stripe + ledger) — drop the draft
     }
   } catch (e) {
+    if (obsoletePreview()) return;
     setStatus("err", "Network/error: " + e.message);
-  } finally { showSpinner(false); }
+  } finally {
+    // An older response must not unlock controls owned by a newer request.
+    if (!stalePreview()) {
+      if (mode === "dry-run") pendingPreview = null;
+      showSpinner(false);
+    }
+  }
 }
 
 /* ====================================================================
@@ -1039,6 +1065,7 @@ async function checkHealth() {
 
 /* ---- Project # prefill (Projects board = source of truth) ---- */
 function setVal(name, value) {
+  invalidatePreview();
   const el = $("#invoice-form").elements[name];
   if (el && value !== undefined && value !== null) el.value = value;
   if (window.GvcChips) GvcChips.sync(name);
@@ -1056,6 +1083,7 @@ function applyPhoneToContactName(phone) {
 }
 
 function applyPrefill(p) {
+  invalidatePreview();
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   if (c.name) setVal("client_name", c.name);
   if (c.contact_name) setVal("contact_name", c.contact_name);
@@ -1491,6 +1519,7 @@ function setSaveState(kind, text) { const el = $("#save-state"); el.className = 
 function escapeHtml(s) { return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])); }
 
 function setField(name, value) {
+  invalidatePreview();
   const el = $("#invoice-form").elements[name];
   if (!el) return;
   if (el.type === "checkbox") el.checked = !!value;
@@ -1499,6 +1528,7 @@ function setField(name, value) {
 }
 
 function applyData(p) {
+  invalidatePreview();
   p = p || {};
   const c = p.client || {}, j = p.job || {}, inv = p.invoice || {};
   setField("client_name", c.name); setField("contact_name", c.contact_name);
@@ -1552,6 +1582,7 @@ function applyData(p) {
 }
 
 function clearForm() {
+  invalidatePreview();
   $("#invoice-form").reset();
   lineItemsEl.innerHTML = ""; addLineItem();
   extraPdfsEl.innerHTML = "";
@@ -1560,7 +1591,7 @@ function clearForm() {
   ["job_monday_item_id", "job_monday_job_type", "job_project_type", "job_project_number"].forEach((n) => setField(n, ""));
   const note = $("#prefill-note"); if (note) note.textContent = "";
   $("[name=issue_date]").value = new Date().toISOString().slice(0, 10);
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   recalcTotals();
 }
 
@@ -1644,7 +1675,7 @@ function resumeDraft(id) {
   const rec = loadLocal()[id]; if (!rec) return;
   applyData(rec.payload);
   currentDraftId = id;
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   setSaveState(rec._syncedAt ? "synced" : "local", "Resumed draft");
   renderDrafts();
   $("#invoice-form").scrollIntoView({ behavior: "smooth" });
@@ -1669,7 +1700,7 @@ $("#add-line").addEventListener("click", () => addLineItem());
 $("[name=discount_amount]").addEventListener("input", recalcTotals);
 $("#commercial-toggle").addEventListener("change", (e) => $("#commercial-body").classList.toggle("show", e.target.checked));
 $("#retainage-toggle").addEventListener("change", (e) => { $("#retainage-body").style.display = e.target.checked ? "grid" : "none"; });
-$("#add-extra-pdf").addEventListener("click", () => extraPdfsEl.appendChild(extraPdfRow()));
+$("#add-extra-pdf").addEventListener("click", () => { invalidatePreview(); extraPdfsEl.appendChild(extraPdfRow()); });
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
 $("#btn-accept").addEventListener("click", async () => {
   try {
@@ -1681,7 +1712,8 @@ $("#btn-new-invoice").addEventListener("click", () => {
   if (!isEmptyPayload(p) && !confirm("Start a new invoice? Your current entry is saved as a draft you can resume.")) return;
   startNewInvoice();
 });
-$("#invoice-form").addEventListener("input", () => { lastPreviewOk = false; $("#btn-accept").disabled = true; scheduleAutosave(); });
+$("#invoice-form").addEventListener("change", invalidatePreview);
+$("#invoice-form").addEventListener("input", () => { invalidatePreview(); $("#btn-accept").disabled = true; scheduleAutosave(); });
 $("#btn-prefill").addEventListener("click", findProject);
 $("#project-search").addEventListener("keydown", (e) => {
   if (e.key === "Enter") { e.preventDefault(); findProject(); }

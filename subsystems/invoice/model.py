@@ -111,6 +111,11 @@ def validate(data: dict) -> None:
     if "client" not in data or "invoice" not in data or "job" not in data:
         raise ValueError("Input must have top-level keys: client, job, invoice")
 
+    if str((data.get("invoice") or {}).get("identifier") or "").strip().upper().startswith("INV-PREVIEW-"):
+        raise ValueError(
+            "Preview-only invoice identifier cannot be used for a real invoice. "
+            "Clear it and set job.project_number or enter the real invoice number."
+        )
     ensure_invoice_identifier(data)
 
     for f in REQUIRED_CLIENT_FIELDS:

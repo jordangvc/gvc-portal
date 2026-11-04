@@ -377,6 +377,7 @@ function syncNoEmailUi() {
 }
 
 function recalc() {
+  invalidatePreview();
   let main = 0, opt = 0;
   lineItemsEl.querySelectorAll(".line-item").forEach((row) => {
     const price = parseFloat(row.querySelector(".li-price").value);
@@ -489,6 +490,19 @@ function setStatus(kind, html) {
 function clearStatus() { const el = $("#status"); if (el) { el.className = "gvc-pop"; el.style.display = "none"; el.innerHTML = ""; } }
 
 let lastPreviewOk = false;
+let previewEpoch = 0;
+let pendingPreview = null;
+function invalidatePreview() {
+  previewEpoch += 1;
+  if (pendingPreview !== null) showSpinner(false);
+  pendingPreview = null;
+  const hadPreview = lastPreviewOk || $("#preview-frame").hasAttribute("src");
+  lastPreviewOk = false;
+  $("#preview-card").classList.remove("show");
+  $("#preview-frame").removeAttribute("src");
+  if (hadPreview) clearStatus(); // Remove the previous document's open-PDF link too.
+}
+
 function showSpinner(on) {
   $("#spinner").classList.toggle("show", on);
   const btn = $("#btn-generate");
@@ -519,24 +533,28 @@ function signalAcceptFailed(msg) {
 }
 
 async function run(mode) {
-  if (mode === "dry-run") {
-    lastPreviewOk = false;
-    $("#preview-card").classList.remove("show");
-    $("#preview-frame").removeAttribute("src");
-  }
+  invalidatePreview();
+  const token = previewEpoch;
+  const stalePreview = () => mode === "dry-run" && token !== previewEpoch;
   const data = collectData();
+  const snapshot = JSON.stringify(data);
+  const obsoletePreview = () => stalePreview() ||
+    (mode === "dry-run" && snapshot !== JSON.stringify(collectData()));
   const errs = validateData(data, mode);
   const revise = isReviseMode();
   if (errs.length && mode !== "dry-run") { setStatus("err", "<strong>Please fix:</strong><ul><li>" + errs.join("</li><li>") + "</li></ul>"); signalAcceptFailed("Fix the fields in the banner, then accept again"); return; }
   if (errs.length && mode === "dry-run") { setStatus("warn", "<strong>Preview mode:</strong> required fields are missing. The document will still generate with placeholders.<ul><li>" + errs.join("</li><li>") + "</li></ul>"); }
+  if (mode === "dry-run") pendingPreview = token;
   showSpinner(true); clearStatus();
   try {
     const resp = await fetch("/ui/api/estimate/run", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ data, mode, revise }),
     });
+    if (obsoletePreview()) return;
     if (resp.status === 401) { setStatus("err", "Session expired — reloading to sign in…"); signalAcceptFailed("Session expired — signing you back in"); setTimeout(() => location.reload(), 1200); return; }
     const body = await resp.json().catch(() => ({ detail: { code: "HTTP " + resp.status, detail: "The server returned an unreadable response." } }));
+    if (obsoletePreview()) return;
     if (!resp.ok) {
       const d = body.detail || body;
       setStatus("err", `<strong>${d.code || "Error"}</strong><br />${d.advice || d.detail || JSON.stringify(d)}`);
@@ -544,7 +562,8 @@ async function run(mode) {
       return;
     }
     const wb = body.writeback || {};
-    if (wb.identifier) {
+    // A proposed preview number is not reserved; finalize assigns the real number.
+    if (mode !== "dry-run" && wb.identifier) {
       setField("identifier", wb.identifier);
       updateReviseUI();
     }
@@ -597,9 +616,16 @@ async function run(mode) {
       lastPreviewOk = false; $("#btn-accept").disabled = false;
     }
   } catch (e) {
+    if (obsoletePreview()) return;
     setStatus("err", "Network/error: " + e.message);
     signalAcceptFailed("Network error — try again");
-  } finally { showSpinner(false); }
+  } finally {
+    // An older response must not unlock controls owned by a newer request.
+    if (!stalePreview()) {
+      if (mode === "dry-run") pendingPreview = null;
+      showSpinner(false);
+    }
+  }
 }
 
 /* ===================== Scope Selection =====================
@@ -688,7 +714,7 @@ function scopeItem(trade, scope) {
       editor.style.display = "none";
       removeScopeRow(key);
       state.textContent = "";
-      lastPreviewOk = false; $("#btn-accept").disabled = true;
+      invalidatePreview(); $("#btn-accept").disabled = true;
       scheduleAutosave();
     }
   });
@@ -702,7 +728,7 @@ function scopeItem(trade, scope) {
     const existed = !!lineItemsEl.querySelector('.line-item[data-scope-key="' + key + '"]');
     upsertScopeLine(key, item.dataset.tradeName, item.dataset.scopeTitle, text.value, p);
     state.className = "sc-state ok"; state.textContent = existed ? "Updated ✓" : "Saved to line items ✓";
-    lastPreviewOk = false; $("#btn-accept").disabled = true;
+    invalidatePreview(); $("#btn-accept").disabled = true;
     scheduleAutosave();
   });
   return item;
@@ -916,11 +942,13 @@ function setSaveState(kind, text) {
 }
 
 function setField(name, value) {
+  invalidatePreview();
   const el = $("#estimate-form").elements[name];
   if (el) el.value = value == null ? "" : value;
   if (window.GvcChips) GvcChips.sync(name);
 }
 function applyData(p) {
+  invalidatePreview();
   p = p || {}; const pb = p.prepared_by || {}, c = p.client || {}, j = p.job || {}, e = p.estimate || {};
   setField("pb_name", pb.name); setField("pb_email", pb.email); setField("pb_phone", pb.phone);
   setField("client_name", c.name); setField("contact_name", c.contact_name);
@@ -1020,7 +1048,7 @@ async function importFromTakeoff() {
   applyData(imported);
   setField("identifier", "");
   $("#revise-flag").checked = false;
-  lastPreviewOk = false;
+  invalidatePreview();
   $("#btn-accept").disabled = true;
 
   const local = Object.assign({}, draft, { payload: imported, _syncedAt: draft.updated_at });
@@ -1168,7 +1196,7 @@ function resumeDraft(id) {
   $("#revise-flag").checked = !!(wantRevise && ident);
   updateReviseUI();
   currentDraftId = id;
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   setSaveState(rec._syncedAt ? "synced" : "local",
     wantRevise && ident ? "Resumed draft · revise mode on" : "Resumed draft");
   renderDrafts();
@@ -1250,7 +1278,7 @@ async function loadBid(ref) {
   const rev = data.revision || null;
   // Treat a prefill as a new estimate (don't overwrite an in-progress draft id).
   currentDraftId = null;
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   applyData(pf);
   // Bid Board only stores the salesperson's name — fill email/phone from the
   // already-loaded salespeople roster when they match (case-insensitive).
@@ -1303,11 +1331,12 @@ async function deleteDraft(id) {
 }
 
 function clearForm() {
+  invalidatePreview();
   $("#dup-guard").style.display = "none"; pendingBidGuard = null;
   $("#estimate-form").reset();
   lineItemsEl.innerHTML = ""; addLineItem();
   $("[name=date]").value = new Date().toISOString().slice(0, 10);
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   recalc();
   updateReviseUI();
 }
@@ -1343,6 +1372,7 @@ $("#btn-takeoff-import").addEventListener("click", importFromTakeoff);
 
 // -- Duplicate-bid guard: the estimator explicitly chooses revise vs. new --
 $("#dup-guard-revise").addEventListener("click", () => {
+  invalidatePreview();
   const g = pendingBidGuard; if (!g) return;
   setField("identifier", g.rev.estimate_number);
   $("#revise-flag").checked = true;
@@ -1357,6 +1387,7 @@ $("#dup-guard-revise").addEventListener("click", () => {
     `Revising <strong>Estimate ${escapeHtml(g.rev.estimate_number)}</strong> (same outbound number; prior PDF archived in Drive). ${tail}`;
 });
 $("#dup-guard-new").addEventListener("click", () => {
+  invalidatePreview();
   const g = pendingBidGuard; if (!g) return;
   // Fresh estimate for a different GC: drop the identifier + revise, and CLEAR the
   // carried-over customer contact fields so the old contact can't go out. Job
@@ -1383,8 +1414,9 @@ $("#btn-accept").addEventListener("click", () => {
   if (confirm(msg)) run("finalize");
   else signalAcceptFailed("Accept cancelled");
 });
+$("#estimate-form").addEventListener("change", invalidatePreview);
 $("#estimate-form").addEventListener("input", (ev) => {
-  lastPreviewOk = false; $("#btn-accept").disabled = true;
+  invalidatePreview(); $("#btn-accept").disabled = true;
   if (ev.target && (ev.target.name === "identifier" || ev.target.id === "revise-flag")) updateReviseUI();
   scheduleAutosave();
 });
@@ -1429,7 +1461,7 @@ function pickSalesperson(idx) {
   const hid = $("#salesperson-select");
   if (hid) hid.value = String(idx);
   setField("pb_name", p.name); setField("pb_email", p.email); setField("pb_phone", p.phone);
-  lastPreviewOk = false; $("#btn-accept").disabled = false;
+  invalidatePreview(); $("#btn-accept").disabled = false;
   scheduleAutosave();
 }
 async function loadSalespeople() {
@@ -1498,7 +1530,7 @@ function customerSearch() {
           if ($("#client_no_email")) { $("#client_no_email").checked = false; syncNoEmailUi(); }
           setField("customer_search", c.name || "");
           box.style.display = "none"; box.innerHTML = "";
-          lastPreviewOk = false; $("#btn-accept").disabled = true;
+          invalidatePreview(); $("#btn-accept").disabled = true;
           scheduleAutosave();
         });
         box.appendChild(d);

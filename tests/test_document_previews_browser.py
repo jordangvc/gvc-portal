@@ -26,7 +26,7 @@ def browser():
 @pytest.mark.parametrize('kind', ['estimate', 'invoice', 'change-order', 'coi'])
 def test_preview_review_repeat_and_recovery(browser, width, kind):
     page = browser.new_page(viewport={'width': width, 'height': 900})
-    runs, errors = [], []
+    runs, errors, pending = [], [], []
     state = {'status': 200, 'signed': kind == 'coi'}
     page.on('pageerror', lambda error: errors.append(str(error)))
 
@@ -36,12 +36,21 @@ def test_preview_review_repeat_and_recovery(browser, width, kind):
         if path == f'/ui/api/{kind}/run':
             body = request.post_data_json
             runs.append(body)
-            assert body['mode'] == 'dry-run', 'Preview must never finalize'
-            wb = {'identifier': '2026-1104-001', 'filename': 'TEST-PREVIEW.pdf'}
+            if body['mode'] != 'dry-run':
+                assert kind == 'invoice' and state.get('accept_test'), 'Preview must never finalize'
+                assert body['mode'] == 'live'
+                assert body['data']['invoice']['identifier'] == ''
+                assert body['data']['job']['project_number'] == 'PRO-2026-1104-001'
+                route.fulfill(status=422, json={'detail': {'code':'TEST_ACCEPT_INTERCEPTED', 'detail':'Offline test; no invoice created.'}})
+                return
+            wb = {'identifier': 'INV-PREVIEW-20261104-120000' if kind == 'invoice' else '2026-1104-001', 'filename': 'TEST-PREVIEW.pdf'}
             if state['signed']:
                 wb['preview_pdf_url'] = 'https://preview.invalid/test.pdf?signature=unchanged'
             result = {'writeback': wb} if state['status'] == 200 else {'detail': {'code': 'TEST_ERROR', 'detail': 'Test failure. Retry preview.'}}
-            route.fulfill(status=state['status'], json=result)
+            if state.get('hold'):
+                pending.append((route, result, state['status']))
+            else:
+                route.fulfill(status=state['status'], json=result)
         elif path == '/ui/api/preview' or request.url.startswith('https://preview.invalid/'):
             # HTML stand-in avoids headless PDF viewer differences. This test
             # verifies the UI's URL, visibility, and requests, not PDF rendering.
@@ -64,6 +73,7 @@ def test_preview_review_repeat_and_recovery(browser, width, kind):
             route.fulfill(status=404)
 
     page.route('**/*', route_request)
+    page.on('dialog', lambda dialog: dialog.accept())
     page.goto(f'https://portal.test/ui/{kind}')
     page.evaluate('''() => {
       const values = {client_name:'Test Contractor', client_email:'preview@example.invalid',
@@ -84,6 +94,8 @@ def test_preview_review_repeat_and_recovery(browser, width, kind):
         page.locator('.gvc-stage[data-step="4"]').click()
     pw.expect(page.locator('#preview-frame')).to_be_visible()
     assert len(runs) == 1
+    if kind in ('estimate', 'invoice'):
+        assert page.locator('[name=identifier]').input_value() == ''
     first = page.locator('#preview-frame').get_attribute('src')
     assert page.locator('#preview-frame').bounding_box()['width'] > 250
     if kind != 'coi':
@@ -108,6 +120,80 @@ def test_preview_review_repeat_and_recovery(browser, width, kind):
         state['status'] = 200
         page.locator('#btn-generate').click()
         pw.expect(page.locator('#preview-frame')).to_be_visible()
+        saved = page.evaluate('collectData()')
+        page.evaluate("() => { const e = document.querySelector('[name=job_name]'); e.value = 'Edited'; e.dispatchEvent(new Event('input', {bubbles:true})); }")
+        pw.expect(page.locator('#preview-frame')).not_to_be_visible()
+        assert page.locator('#preview-frame').get_attribute('src') is None
+        assert page.get_by_role('link', name='Open the preview PDF').count() == 0
+        page.evaluate('p => applyData(p)', saved)
+        page.locator('#btn-generate').click()
+        pw.expect(page.locator('#preview-frame')).to_be_visible()
+        new_button = {'estimate':'btn-new-estimate', 'invoice':'btn-new-invoice', 'change-order':'btn-new-co'}[kind]
+        page.locator('#' + new_button).click()
+        assert page.locator('#preview-frame').get_attribute('src') is None
+        assert page.get_by_role('link', name='Open the preview PDF').count() == 0
+        page.evaluate('p => applyData(p)', saved)
+        page.locator('#btn-generate').click()
+        pw.expect(page.locator('#preview-frame')).to_be_visible()
+        page.evaluate("p => { upsertLocal({id:'test-other-draft', payload:p, label:'Other draft'}); resumeDraft('test-other-draft'); }", saved)
+        assert page.locator('#preview-frame').get_attribute('src') is None
+        assert page.get_by_role('link', name='Open the preview PDF').count() == 0
+
+        # Hold two real run() promises and resolve them in both orders. Resetting
+        # between them must discard the old PDF, identifier, error, and finally.
+        state['hold'] = True
+        for order, old_status in (((0, 1), 200), ((1, 0), 200), ((1, 0), 403), ((1, 0), 401)):
+            pending.clear()
+            with page.expect_request(f'**/ui/api/{kind}/run'):
+                page.evaluate("() => { window.oldPreview = run('dry-run'); }")
+            pw.expect(page.locator('#btn-generate')).to_be_disabled()
+            with page.expect_request(f'**/ui/api/{kind}/run'):
+                page.evaluate("p => { clearForm(); applyData(p); window.newPreview = run('dry-run'); }", saved)
+            pw.expect(page.locator('#btn-generate')).to_be_disabled()
+            assert len(pending) == 2
+            for index in order:
+                route, result, status = pending[index]
+                result['writeback']['preview_pdf_url'] = f'https://preview.invalid/{index}.pdf?signature=unchanged'
+                result['writeback']['identifier'] = f'TEST-RESPONSE-{index}'
+                if index == 0 and old_status != 200:
+                    status, result = old_status, {'detail': {'code':'STALE_ERROR'}}
+                route.fulfill(status=status, json=result)
+                page.evaluate('window.oldPreview' if index == 0 else 'window.newPreview')
+                if index == 0 and order[0] == 0:
+                    assert page.locator('#preview-frame').get_attribute('src') is None
+                    pw.expect(page.locator('#btn-generate')).to_be_disabled()
+            pw.expect(page.locator('#preview-frame')).to_have_attribute('src', 'https://preview.invalid/1.pdf?signature=unchanged')
+            assert 'STALE_ERROR' not in page.locator('#status').inner_text()
+            if kind in ('estimate','invoice'):
+                assert page.locator('[name=identifier]').input_value() == ''
+            else:
+                assert page.locator('[name=co_number]').input_value() == ''
+        state['hold'] = False
+        if kind == 'invoice':
+            invoice = {
+                'client': {'name':'Synthetic client', 'email':'test@example.invalid', 'billing_address':'100 Test Street'},
+                'job': {'name':'Synthetic project'},
+                'invoice': {'identifier':'', 'issue_date':'2026-11-04', 'payment_terms':'Net 30',
+                            'line_items':[{'description':'Test work', 'amount':125}]},
+            }
+            page.evaluate('p => applyData(p)', invoice)
+            page.locator('.gvc-stage[data-step="4"]').click()
+            pw.expect(page.locator('#preview-frame')).to_be_visible()
+            assert page.locator('[name=identifier]').input_value() == ''
+            count = len(runs)
+            page.locator('#btn-next').click()
+            pw.expect(page.locator('#status')).to_contain_text('Invoice number is required')
+            assert len(runs) == count  # Blank number + no project cannot create.
+            invoice['job']['project_number'] = 'PRO-2026-1104-001'
+            page.evaluate('p => applyData(p)', invoice)
+            page.locator('.gvc-stage[data-step="4"]').click()
+            pw.expect(page.locator('#preview-frame')).to_be_visible()
+            assert page.locator('[name=identifier]').input_value() == ''
+            state['accept_test'] = True
+            page.locator('#btn-next').click()
+            pw.expect(page.locator('#status')).to_contain_text('TEST_ACCEPT_INTERCEPTED')
+            assert runs[-1]['mode'] == 'live'
+            state['accept_test'] = False
         state['status'] = 401
         page.locator('#btn-generate').click()
         pw.expect(page.locator('#status')).to_contain_text('Session expired')
