@@ -33,8 +33,8 @@
   -webkit-font-smoothing: antialiased;
 }
 
-/* two-column: form on the left, live document on the right.
-   The document column DISAPPEARS below 1080px. Do not try to keep it. */
+/* Two columns on desktop; stack the document below the form on small screens.
+   Preview is part of Review and must remain accessible at every width. */
 .gvc-shell {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(380px, 460px);
@@ -53,32 +53,10 @@
 }
 .gvc-doc-col > .gvc-doc-sticky { position: sticky; top: 104px; padding: clamp(16px,2vw,26px) clamp(14px,1.6vw,22px) 40px; }
 
-body[data-form-app="estimate"] .gvc-shell,
-body.is-form-estimate .gvc-shell,
-body[data-form-app="invoice"] .gvc-shell,
-body.is-form-invoice .gvc-shell {
-  grid-template-columns: minmax(0, 1fr) !important;
-  max-width: 100%;
-  width: 100%;
-}
-
-body[data-form-app="estimate"] .gvc-doc-col,
-body.is-form-estimate .gvc-doc-col,
-body[data-form-app="invoice"] .gvc-doc-col,
-body.is-form-invoice .gvc-doc-col {
-  display: none !important;
-  width: 0 !important;
-  min-width: 0 !important;
-  max-width: 0 !important;
-  overflow: hidden !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  border: 0 !important;
-}
-
 @media (max-width: 1079px) {
   .gvc-shell { grid-template-columns: minmax(0, 1fr); }
-  .gvc-doc-col { display: none; }
+  .gvc-doc-col { min-width: 0; min-height: 0; border-left: 0; border-top: 1px solid var(--color-divider); padding-bottom: 132px; }
+  .gvc-doc-col > .gvc-doc-sticky { position: static; }
 }
 
 /* --------------------------------------------------------------------------
@@ -578,6 +556,7 @@ body.is-form-invoice .gvc-doc-col {
   padding-bottom: max(10px, env(safe-area-inset-bottom));
 }
 .gvc-actionbar-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.gvc-actionbar-row > div { max-width: 100%; }
 .gvc-actionbar-label {
   font-size: 9.5px; font-weight: 700; letter-spacing: .15em;
   text-transform: uppercase; color: var(--color-accent);

@@ -207,7 +207,7 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;flex-wrap:wrap">
         <button type="button" class="gvc-btn gvc-btn-ghost-dark" id="btn-back" hidden>Back</button>
-        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate" hidden>Preview</button>
+        <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-generate">Preview draft</button>
         <button type="button" class="gvc-btn gvc-btn-ghost-dark gvc-btn-sm" id="btn-new-co">Start new</button>
         <button type="button" class="gvc-btn gvc-btn-primary" id="btn-next">Continue</button>
         <button type="button" class="gvc-btn gvc-btn-primary" id="btn-accept" hidden>Accept</button>
@@ -404,6 +404,11 @@ function signalAcceptEnded() {
 }
 
 async function run(mode) {
+  if (mode === "dry-run") {
+    lastPreviewOk = false;
+    $("#preview-card").classList.remove("show");
+    $("#preview-frame").removeAttribute("src");
+  }
   const data = collectData();
   const errs = validateData(data);
   const revise = isReviseMode();
@@ -423,11 +428,11 @@ async function run(mode) {
     }
     const wb = body.writeback || {};
     if (mode === "dry-run") {
-      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}`;
+      const url = wb.preview_pdf_url || `/ui/api/preview?identifier=${encodeURIComponent(wb.identifier)}&v=${Date.now()}`;
       $("#preview-frame").src = url;
       $("#preview-card").classList.add("show");
       lastPreviewOk = true; $("#btn-accept").disabled = false; document.getElementById("barTotal") && (document.getElementById("barTotal").textContent = ($("#t-total")||{}).textContent || document.getElementById("barTotal").textContent);
-      setStatus("info", `✅ Preview ready below (change order <strong>${wb.identifier}</strong>${revise ? "" : " — final number assigned at Accept"}). Review it, then click <strong>${revise ? "Update this Change Order" : "Accept & Create Draft in hello@"}</strong>.`);
+      setStatus("info", `✅ Preview ready below (change order <strong>${wb.identifier}</strong>${revise ? "" : " — final number assigned at Accept"}). <a href="${url}" target="_blank" rel="noopener"><strong>Open the preview PDF</strong></a>, then click <strong>${revise ? "Update this Change Order" : "Accept & Create Draft in hello@"}</strong>.`);
       $("#preview-card").scrollIntoView({ behavior: "smooth" });
     } else {
       lastPreviewOk = false; $("#btn-accept").disabled = true;

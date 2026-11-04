@@ -24,8 +24,8 @@ def test_every_accept_wait_has_a_failure_exit():
         assert f'new CustomEvent("{event}"' in html, f"{page}: nothing ever dispatches {event}"
 
 
-def test_hidden_preview_is_linked_not_promised_below():
-    # Estimate + invoice hide the doc column, so "Preview ready below" was a lie.
+def test_preview_has_direct_pdf_link():
+    # Keep a direct link for browsers that cannot embed a PDF.
     for page in ("estimate.html", "invoice.html"):
         html = (WEB / page).read_text(encoding="utf-8")
         assert "Preview ready below" not in html, page

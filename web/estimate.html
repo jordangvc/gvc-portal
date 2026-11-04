@@ -274,7 +274,7 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
 <span id="t-withopt" hidden>$0.00</span>
       </form>
     </main>
-    <aside class="gvc-doc-col" style="display:none!important;width:0!important;min-width:0!important;max-width:0!important;overflow:hidden!important;padding:0!important;margin:0!important;border:0!important;" aria-hidden="true">
+    <aside class="gvc-doc-col">
       <div class="gvc-doc-sticky">
         <div class="gvc-doc-cap">Document output</div>
         <div id="preview-card" class="gvc-doc">
@@ -519,6 +519,11 @@ function signalAcceptFailed(msg) {
 }
 
 async function run(mode) {
+  if (mode === "dry-run") {
+    lastPreviewOk = false;
+    $("#preview-card").classList.remove("show");
+    $("#preview-frame").removeAttribute("src");
+  }
   const data = collectData();
   const errs = validateData(data, mode);
   const revise = isReviseMode();
@@ -545,15 +550,13 @@ async function run(mode) {
     }
     if (mode === "dry-run") {
       const ident = (wb.identifier || $("#estimate-form").elements["identifier"].value || "").trim();
-      const url = wb.preview_pdf_url || (ident ? `/ui/api/preview?identifier=${encodeURIComponent(ident)}` : "");
+      const url = wb.preview_pdf_url || (ident ? `/ui/api/preview?identifier=${encodeURIComponent(ident)}&v=${Date.now()}` : "");
       if (url) {
         $("#preview-frame").src = url;
         $("#preview-card").classList.add("show");
         lastPreviewOk = true;
         $("#btn-accept").disabled = false;
         const idBit = ident ? ` (estimate <strong>${ident}</strong>)` : "";
-        // The doc column is hidden on this page, so the iframe is invisible —
-        // hand the user the PDF directly instead of "ready below".
         setStatus("info", `✅ Preview ready${idBit}. <a href="${url}" target="_blank" rel="noopener"><strong>Open the preview PDF</strong></a>, then click <strong>Accept &amp; create draft</strong>.`);
       } else {
         setStatus("warn", "Preview is unavailable right now. Save the estimate number and try again.");
@@ -1622,6 +1625,8 @@ fetch("/ui/api/monday/warm", {
     validateStep: validateStep,
     onEnterReview: function () {
       paintReview();
+      var gen = document.getElementById("btn-generate");
+      if (gen) gen.click();
     },
     onAccept: function () {
       return new Promise(function (resolve, reject) {
