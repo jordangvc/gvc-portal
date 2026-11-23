@@ -75,7 +75,7 @@ def _stub_modules(stubs: dict):
                 setattr(parent, attr, old)
 
 
-class _GmailScopeMissing(Exception):
+class GmailScopeMissing(Exception):
     pass
 
 
@@ -105,7 +105,7 @@ def _invoice_row() -> dict:
 def _stubs(*, mc, find_sent_message, release_ops_tasks, slack_calls):
     """The full stub set check_sent() imports at call time."""
     gmail = _module("adapters.gmail",
-                    GmailScopeMissing=_GmailScopeMissing,
+                    GmailScopeMissing=GmailScopeMissing,
                     GmailNotConfigured=_GmailNotConfigured,
                     find_sent_message=find_sent_message)
     slack = _module(
@@ -154,7 +154,7 @@ def test_co_leg_runs_when_gmail_aborts():
         return dict(_RELEASE_OK)
 
     def find_sent_message(needle, newer_than_days=None):
-        raise _GmailScopeMissing("gmail scope missing")
+        raise GmailScopeMissing("gmail scope missing")
 
     stubs = _stubs(mc=_FakeMonday([_invoice_row()]),
                    find_sent_message=find_sent_message,
