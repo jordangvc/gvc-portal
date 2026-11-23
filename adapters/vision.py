@@ -33,9 +33,9 @@ def _explicit_creds_path() -> Optional[Path]:
     return p if p.exists() else None
 
 
-def ocr_text(image: Union[str, Path, bytes]) -> str:
+def _annotate(image: Union[str, Path, bytes]):
     """
-    Return the full OCR text of a check image (path or raw bytes).
+    Run DOCUMENT_TEXT_DETECTION once and return the raw Vision response.
 
     Credentials, in order: explicit service-account JSON (GVC_DRIVE_CREDENTIALS or
     .google-service-account.json) → otherwise Application Default Credentials
@@ -60,7 +60,46 @@ def ocr_text(image: Union[str, Path, bytes]) -> str:
     response = client.document_text_detection(image=vision.Image(content=content))
     if response.error.message:
         raise RuntimeError(f"Vision API error: {response.error.message}")
-    return response.full_text_annotation.text or ""
+    return response
+
+
+def ocr_text(image: Union[str, Path, bytes]) -> str:
+    """Return the full OCR text of a check image (path or raw bytes)."""
+    return _annotate(image).full_text_annotation.text or ""
+
+
+def ocr_document(image: Union[str, Path, bytes]) -> tuple[str, list[dict]]:
+    """
+    Return (full_text, words) for a check image.
+
+    `words` is a flat list of {"text", "x0", "y0", "x1", "y1"} dicts — one per
+    OCR word, with bounding boxes NORMALIZED to 0..1 page fractions (origin
+    top-left). The check-number parser needs this geometry: the printed check
+    number lives in the top-RIGHT corner, and flat text alone can't tell it
+    apart from the ZIP code and phone number printed at the top-LEFT (the
+    office's 2026-11-23 live test saved both of those instead). Pages without
+    usable dimensions yield an empty word list; callers fall back to text.
+    """
+    annotation = _annotate(image).full_text_annotation
+    text = annotation.text or ""
+    words: list[dict] = []
+    for page in annotation.pages:
+        if not page.width or not page.height:
+            continue
+        for block in page.blocks:
+            for para in block.paragraphs:
+                for word in para.words:
+                    verts = word.bounding_box.vertices
+                    if not verts:
+                        continue
+                    xs = [v.x / page.width for v in verts]
+                    ys = [v.y / page.height for v in verts]
+                    words.append({
+                        "text": "".join(s.text for s in word.symbols),
+                        "x0": min(xs), "y0": min(ys),
+                        "x1": max(xs), "y1": max(ys),
+                    })
+    return text, words
 
 
 if __name__ == "__main__":  # pragma: no cover — local tuning harness
