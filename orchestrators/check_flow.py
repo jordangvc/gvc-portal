@@ -39,7 +39,14 @@ def _slim_row(r: dict) -> dict:
 def extract_check(image_bytes: bytes, *, email: str) -> dict:
     """READ ONLY. OCR the check, parse fields, match against open invoices. No writes."""
     try:
-        text = vision.ocr_text(image_bytes)
+        # Word geometry lets the parser pick the printed check number by
+        # position (top-right corner); a vision module without
+        # ocr_document (older build, unit-test stub) falls back to text.
+        ocr_document = getattr(vision, "ocr_document", None)
+        if ocr_document is not None:
+            text, words = ocr_document(image_bytes)
+        else:
+            text, words = vision.ocr_text(image_bytes), None
     except vision.VisionNotConfigured as e:
         raise HTTPException(
             status_code=503,
@@ -47,7 +54,7 @@ def extract_check(image_bytes: bytes, *, email: str) -> dict:
                     "advice": "Ask an admin — Vision API / credentials aren't set up on the service."},
         )
 
-    parsed = check_deposit.parse_check_ocr(text)
+    parsed = check_deposit.parse_check_ocr(text, words=words)
     n_checks = check_deposit.count_checks(text)
     try:
         rows = MondayClient().fetch_invoice_rows(open_only=True)
