@@ -32,6 +32,11 @@ _MONTH_DATE_RE = re.compile(
     r"\b((?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2},?\s+\d{4})\b",
     re.I,
 )
+# A bank routing fraction ("24-22/1230"): digit groups joined by BOTH a
+# dash and a slash. It is printed at the top-right of the check, it matches
+# the numeric-date pattern above, and it was saved as the check date
+# (office report, July 2026; live retest 2026-11-23). It is never a date.
+_FRACTION_RE = re.compile(r"\b\d{1,2}\s*-\s*\d{1,2}\s*/\s*\d{2,4}\b")
 # Check-number label (require >=4 digits so the routing fraction "73-27/421"
 # can't masquerade as the check number).
 _CHECK_NO_LABEL_RE = re.compile(
@@ -52,8 +57,11 @@ _STATE_ZIP_RE = re.compile(r"\b[A-Z]{2}\s+(\d{5})(?:-\d{4})?\b")
 _CHECK_NO_TOKEN_RE = re.compile(r"\b(\d{3,10})\b")
 # Lines whose numbers belong to an address or a phone label, never to the
 # check number (a street number / PO Box number is not a check number).
+# "route"/"rte"/"sr" matter: "State Route 123" contains no older keyword
+# ("State" is not "st"), and its 123 was saved as a check number
+# (office live retest, 2026-11-23).
 _ADDRESS_LINE_RE = re.compile(
-    r"\b(st|street|ave|avenue|blvd|rd|road|dr|drive|ln|lane|pkwy|parkway|"
+    r"\b(st|street|ave|avenue|blvd|rd|road|route|rte|sr|dr|drive|ln|lane|pkwy|parkway|"
     r"ct|court|hwy|highway|box|suite|ste|trl|trail|cir|circle)\b", re.I)
 _PHONE_LABEL_RE = re.compile(r"\b(tel|telephone|phone|fax)\b", re.I)
 # MICR E-13B symbols Vision emits around the bottom number line: the OCR
@@ -62,7 +70,8 @@ _PHONE_LABEL_RE = re.compile(r"\b(tel|telephone|phone|fax)\b", re.I)
 # either must be recognized: an unrecognized MICR line leaks into the
 # printed-number candidates and its check-number group gets recorded as
 # the printed number (deploy-gate failures, 2026-11-23).
-_MICR_SYMBOLS = "⑆⑇⑈⑉" + "".join(chr(c) for c in (0x2406, 0x2407, 0x2408, 0x2409))
+_MICR_SYMBOLS = "".join(chr(c) for c in (0x2446, 0x2447, 0x2448, 0x2449,
+                                        0x2406, 0x2407, 0x2408, 0x2409))
 # Company-ish suffixes used to find the payer (remitter) line.
 _COMPANY_RE = re.compile(
     r"\b(L\.?L\.?C\.?|INC\.?|INCORPORATED|LTD\.?|CO\.?|CORP\.?|COMPANY|BUILDERS?|"
@@ -103,12 +112,33 @@ def find_money(text: str) -> list[Decimal]:
     return out
 
 
+def _valid_numeric_date(tok: str) -> bool:
+    """Plausibility gate for a _NUM_DATE_RE hit: ONE consistent separator
+    (a bank fraction mixes "-" and "/"), month 1-12, day 1-31."""
+    if "-" in tok and "/" in tok:
+        return False
+    parts = re.split(r"[/-]", tok)
+    if len(parts) != 3:
+        return False
+    if len(parts[0]) == 4:      # ISO yyyy-mm-dd
+        _yr, mo, dy = parts
+    else:                       # m/d/y
+        mo, dy, _yr = parts
+    return 1 <= int(mo) <= 12 and 1 <= int(dy) <= 31
+
+
 def find_date(text: str) -> Optional[str]:
-    m = _MONTH_DATE_RE.search(text or "")
+    text = text or ""
+    m = _MONTH_DATE_RE.search(text)
     if m:
         return m.group(1)
-    m = _NUM_DATE_RE.search(text or "")
-    return m.group(1) if m else None
+    fraction_spans = [mm.span() for mm in _FRACTION_RE.finditer(text)]
+    for m in _NUM_DATE_RE.finditer(text):
+        if any(s <= m.start() and m.end() <= e for s, e in fraction_spans):
+            continue  # inside the bank fraction -- never a date
+        if _valid_numeric_date(m.group(1)):
+            return m.group(1)
+    return None
 
 
 def _aba_checksum_ok(routing: str) -> bool:
@@ -117,6 +147,18 @@ def _aba_checksum_ok(routing: str) -> bool:
         return False
     total = sum(int(d) * w for d, w in zip(routing, (3, 7, 1) * 3))
     return total % 10 == 0
+
+
+def _canon_check_no(value: Optional[str]) -> Optional[str]:
+    """A check number with leading zeros stripped ("004837" -> "4837").
+
+    The MICR band zero-pads its check-number group where the printed
+    number is not padded; the office rule is to ignore the padding, both
+    when comparing the two reads and when storing a MICR-derived number.
+    """
+    if not value:
+        return value
+    return value.lstrip("0") or "0"
 
 
 def parse_micr(lines: list[str]) -> dict:
@@ -257,6 +299,8 @@ def _line_candidates(ln: str, excluded: set) -> list[str]:
         return []  # the MICR band is never a printed-number source
     if _ADDRESS_LINE_RE.search(ln) or _PHONE_LABEL_RE.search(ln):
         return []  # street / PO Box / phone-label lines carry no check number
+    if re.match(r"\d{1,6}\s+[A-Za-z]", ln):
+        return []  # leading street number ("123 Main ...") -- an address line
     scrubbed = _MONEY_RE.sub(" ", ln)
     scrubbed = _NUM_DATE_RE.sub(" ", scrubbed)
     scrubbed = _MONTH_DATE_RE.sub(" ", scrubbed)
@@ -264,6 +308,50 @@ def _line_candidates(ln: str, excluded: set) -> list[str]:
     scrubbed = _DIGIT_CHAIN_RE.sub(" ", scrubbed)  # whole chains, not two groups
     return [tok for tok in _CHECK_NO_TOKEN_RE.findall(scrubbed)
             if tok not in excluded]
+
+
+# A digit token merged with its printed label inside a single OCR word
+# ("No.4837", "#4837", "No:4837"). Vision merges the tiny label into the
+# number at check print sizes; the flat-text path finds the digits inside
+# such a token, and geometry mode must too -- a pure-isdigit() gate drops
+# the real top-right number and lets a lesser top-band token (an address
+# number) win by default (office live retests, 2026-11-23).
+_WORD_LABEL_TOKEN_RE = re.compile(
+    r"(?:#|no\.?|check\s*(?:no|number)\.?)\s*[:.]?\s*(\d{3,10})", re.I)
+
+
+def _word_digit_token(raw: str) -> Optional[str]:
+    """The check-number digit token carried by one OCR word, or None."""
+    if raw.isdigit():
+        return raw if 3 <= len(raw) <= 10 else None
+    m = _WORD_LABEL_TOKEN_RE.fullmatch(raw)
+    return m.group(1) if m else None
+
+
+def _word_line_text(words: list) -> dict:
+    """
+    Approximate the text line each OCR word sits on (words grouped by
+    vertical overlap), keyed by id(word). Geometry mode uses it for the
+    line-context exclusions: a digit word never stands alone -- the "123"
+    in "State Route 123" is an address token even inside the top band,
+    and a candidate from an address line must never beat the top-right
+    corner.
+    """
+    ordered = sorted(words, key=lambda w: ((w["y0"] + w["y1"]) / 2.0, w["x0"]))
+    groups: list = []
+    for w in ordered:
+        y_mid = (w["y0"] + w["y1"]) / 2.0
+        if groups and abs(y_mid - groups[-1][0]) <= 0.03:
+            groups[-1][1].append(w)
+        else:
+            groups.append((y_mid, [w]))
+    out: dict = {}
+    for _y, ws in groups:
+        line = " ".join((w.get("text") or "")
+                        for w in sorted(ws, key=lambda w: w["x0"]))
+        for w in ws:
+            out[id(w)] = line
+    return out
 
 
 def _select_printed_check_number(lines: list[str], *, routing: Optional[str] = None,
@@ -295,22 +383,27 @@ def _select_printed_check_number(lines: list[str], *, routing: Optional[str] = N
     excluded |= _excluded_number_values(lines, amounts or [])
 
     if words:
+        line_text = _word_line_text(words)
         cands = []
         for w in words:
-            tok = (w.get("text") or "").strip()
-            if not tok.isdigit() or not 3 <= len(tok) <= 10 or tok in excluded:
+            tok = _word_digit_token((w.get("text") or "").strip())
+            if tok is None or tok in excluded:
                 continue
+            lt = line_text.get(id(w), "")
+            if (_ADDRESS_LINE_RE.search(lt) or _PHONE_LABEL_RE.search(lt)
+                    or any(sym in lt for sym in _MICR_SYMBOLS)):
+                continue  # address / phone-label / MICR line -- not the corner
             y_mid = (w["y0"] + w["y1"]) / 2.0
             if y_mid > _TOP_BAND_Y or y_mid >= _BOTTOM_BAND_Y:
                 continue
-            cands.append(w)
+            cands.append((w, tok))
         if cands:
-            best = max(cands, key=lambda w: (w["x1"], -w["y0"]))
+            _best_w, best_tok = max(cands, key=lambda wt: (wt[0]["x1"], -wt[0]["y0"]))
             right_values = {
-                (w.get("text") or "").strip() for w in cands
+                tok for w, tok in cands
                 if (w["x0"] + w["x1"]) / 2.0 >= _RIGHT_REGION_X
             }
-            return best["text"].strip(), len(right_values) > 1
+            return best_tok, len(right_values) > 1
 
     chosen: Optional[str] = None
     seen: set = set()
@@ -446,7 +539,16 @@ def parse_check_ocr(text: str, words: Optional[list] = None) -> ParsedCheck:
         fb_excluded |= _excluded_number_values(lines, money)
         printed = fallback if fallback and fallback not in fb_excluded else None
         printed_ambiguous = False
+    # Leading zeros are cosmetic (office rule): the MICR band zero-pads
+    # ("004837", "014145") where the printed number is not padded.
+    # Canonicalize both reads -- a MICR-derived check number is stored
+    # unpadded, and the printed-vs-MICR comparison below ignores padding,
+    # so 14145 vs 014145 no longer raises a false mismatch warning.
+    if printed is not None:
+        printed = _canon_check_no(printed)
     micr_no = micr.get("check_no")
+    if micr_no is not None:
+        micr_no = _canon_check_no(micr_no)
     return ParsedCheck(
         payer=_find_payer(lines, payee) or _find_remitter(lines),
         payee=payee,
