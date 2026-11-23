@@ -56,8 +56,13 @@ _ADDRESS_LINE_RE = re.compile(
     r"\b(st|street|ave|avenue|blvd|rd|road|dr|drive|ln|lane|pkwy|parkway|"
     r"ct|court|hwy|highway|box|suite|ste|trl|trail|cir|circle)\b", re.I)
 _PHONE_LABEL_RE = re.compile(r"\b(tel|telephone|phone|fax)\b", re.I)
-# MICR E-13B symbols Vision emits around the bottom number line.
-_MICR_SYMBOLS = "⑆⑇⑈⑉"
+# MICR E-13B symbols Vision emits around the bottom number line: the OCR
+# block glyphs (U+2446-U+2449) and the Control Pictures variants
+# (U+2406-U+2409). Both encodings occur in OCR output, and a MICR band in
+# either must be recognized: an unrecognized MICR line leaks into the
+# printed-number candidates and its check-number group gets recorded as
+# the printed number (deploy-gate failures, 2026-11-23).
+_MICR_SYMBOLS = "⑆⑇⑈⑉" + "".join(chr(c) for c in (0x2406, 0x2407, 0x2408, 0x2409))
 # Company-ish suffixes used to find the payer (remitter) line.
 _COMPANY_RE = re.compile(
     r"\b(L\.?L\.?C\.?|INC\.?|INCORPORATED|LTD\.?|CO\.?|CORP\.?|COMPANY|BUILDERS?|"
@@ -431,7 +436,15 @@ def parse_check_ocr(text: str, words: Optional[list] = None) -> ParsedCheck:
         lines, routing=micr.get("routing"), account=micr.get("account"),
         words=words, amounts=money)
     if printed is None:
-        printed = find_check_number(text)
+        # Label-based fallback ("Check No: 1042") for layouts the selector
+        # misses. Hold its result to the SAME exclusions as the selector:
+        # an excluded value (routing, account, ZIP, phone tail, date part,
+        # amount echo) is never a printed check number in ANY path; when it
+        # is all the fallback finds, the MICR number rules instead.
+        fallback = find_check_number(text)
+        fb_excluded = {x for x in (micr.get("routing"), micr.get("account")) if x}
+        fb_excluded |= _excluded_number_values(lines, money)
+        printed = fallback if fallback and fallback not in fb_excluded else None
         printed_ambiguous = False
     micr_no = micr.get("check_no")
     return ParsedCheck(
