@@ -37,6 +37,25 @@ _MONTH_DATE_RE = re.compile(
 _CHECK_NO_LABEL_RE = re.compile(
     r"(?:check\s*(?:no|number|#)|#|(?<!form )\bno\.)\s*[:.]?\s*(\d{4,10})", re.I
 )
+# A maximal chain of digit groups joined by - or / : a phone number
+# ("513-800-3376"), a routing fraction ("73-27/421"), a ZIP+4, a numeric
+# date. EVERY group in the chain is part of that larger number — the old
+# scrub removed only the first two groups of a chain, so the tail of a
+# phone number ("...-3376") survived and was saved as a check number
+# (office live test, 2026-11-23).
+_DIGIT_CHAIN_RE = re.compile(r"\d+(?:\s*[-/]\s*\d+)+")
+# Phone numbers with space/dot separators ("513 800 3376").
+_PHONE_RE = re.compile(r"\b\d{3}[\s.\-]\d{3}[\s.\-]\d{4}\b")
+# ZIP in an address: the 5 digits right after a "City, ST" state token.
+_STATE_ZIP_RE = re.compile(r"\b[A-Z]{2}\s+(\d{5})(?:-\d{4})?\b")
+# A standalone check-number candidate.
+_CHECK_NO_TOKEN_RE = re.compile(r"\b(\d{3,10})\b")
+# Lines whose numbers belong to an address or a phone label, never to the
+# check number (a street number / PO Box number is not a check number).
+_ADDRESS_LINE_RE = re.compile(
+    r"\b(st|street|ave|avenue|blvd|rd|road|dr|drive|ln|lane|pkwy|parkway|"
+    r"ct|court|hwy|highway|box|suite|ste|trl|trail|cir|circle)\b", re.I)
+_PHONE_LABEL_RE = re.compile(r"\b(tel|telephone|phone|fax)\b", re.I)
 # MICR E-13B symbols Vision emits around the bottom number line.
 _MICR_SYMBOLS = "⑆⑇⑈⑉"
 # Company-ish suffixes used to find the payer (remitter) line.
@@ -193,28 +212,123 @@ def _find_reference(lines: list[str]) -> Optional[str]:
 # How many OCR lines from the top of the check to scan for the printed
 # check number (it is printed in the top-right corner).
 _TOP_REGION_LINES = 6
+# Word-geometry bands (normalized page fractions, origin top-left): the
+# printed check number sits in the top band; the MICR line sits at the
+# bottom and is never a printed-number source.
+_TOP_BAND_Y = 0.35
+_BOTTOM_BAND_Y = 0.75
+# A candidate counts as "top-right" (the check number's corner) when its
+# center is at least this far across the page.
+_RIGHT_REGION_X = 0.55
+
+
+def _excluded_number_values(lines: list[str], amounts: list[Decimal]) -> set:
+    """
+    Digit strings that appear at the top of a check but are NEVER the check
+    number, wherever they appear: every group inside a digit chain (phone
+    segments like the "3376" in "513-800-3376", routing-fraction parts,
+    ZIP+4 parts, numeric-date parts), ZIP codes after a state token,
+    digit groups inside a date, and the whole-dollar part of any money
+    amount on the check (a bare "6400" echo of "$6,400.00").
+    """
+    text = "\n".join(lines or [])
+    excluded: set = set()
+    for m in _DIGIT_CHAIN_RE.finditer(text):
+        excluded.update(re.findall(r"\d+", m.group(0)))
+    for m in _PHONE_RE.finditer(text):
+        excluded.update(re.findall(r"\d+", m.group(0)))
+    excluded.update(_STATE_ZIP_RE.findall(text))
+    for rx in (_NUM_DATE_RE, _MONTH_DATE_RE):
+        for m in rx.finditer(text):
+            excluded.update(re.findall(r"\d+", m.group(0)))
+    for amt in amounts or []:
+        excluded.add(str(int(amt)))
+    return excluded
+
+
+def _line_candidates(ln: str, excluded: set) -> list[str]:
+    """Surviving check-number candidates on one OCR line, in order."""
+    if any(sym in ln for sym in _MICR_SYMBOLS):
+        return []  # the MICR band is never a printed-number source
+    if _ADDRESS_LINE_RE.search(ln) or _PHONE_LABEL_RE.search(ln):
+        return []  # street / PO Box / phone-label lines carry no check number
+    scrubbed = _MONEY_RE.sub(" ", ln)
+    scrubbed = _NUM_DATE_RE.sub(" ", scrubbed)
+    scrubbed = _MONTH_DATE_RE.sub(" ", scrubbed)
+    scrubbed = _PHONE_RE.sub(" ", scrubbed)
+    scrubbed = _DIGIT_CHAIN_RE.sub(" ", scrubbed)  # whole chains, not two groups
+    return [tok for tok in _CHECK_NO_TOKEN_RE.findall(scrubbed)
+            if tok not in excluded]
+
+
+def _select_printed_check_number(lines: list[str], *, routing: Optional[str] = None,
+                                 account: Optional[str] = None,
+                                 words: Optional[list] = None,
+                                 amounts: Optional[list] = None) -> tuple:
+    """
+    Pick the printed check number; returns (value, ambiguous).
+
+    The office rule: the check number comes from the TOP-RIGHT corner of
+    the check. The first implementation returned the first plausible digit
+    token in reading order — and the top-LEFT of a check carries the payer
+    address and phone, so it saved a ZIP code and a phone suffix instead
+    (live test, 2026-11-23). Now, in order:
+
+      1. GEOMETRY (when Vision word boxes are available): pure-digit words
+         in the top band, minus every excluded value (routing, account,
+         ZIPs, phone segments, date parts, amount echoes). The RIGHTMOST
+         survivor wins — that is the corner the number is printed in.
+      2. TEXT (fallback): the top few lines, same exclusions; the last
+         (rightmost in reading order) candidate on the first candidate
+         line wins.
+
+    `ambiguous` is True when more than one DISTINCT plausible value
+    survives in the top region — the modal warns so a human verifies,
+    instead of a wrong number being saved quietly.
+    """
+    excluded = {x for x in (routing, account) if x}
+    excluded |= _excluded_number_values(lines, amounts or [])
+
+    if words:
+        cands = []
+        for w in words:
+            tok = (w.get("text") or "").strip()
+            if not tok.isdigit() or not 3 <= len(tok) <= 10 or tok in excluded:
+                continue
+            y_mid = (w["y0"] + w["y1"]) / 2.0
+            if y_mid > _TOP_BAND_Y or y_mid >= _BOTTOM_BAND_Y:
+                continue
+            cands.append(w)
+        if cands:
+            best = max(cands, key=lambda w: (w["x1"], -w["y0"]))
+            right_values = {
+                (w.get("text") or "").strip() for w in cands
+                if (w["x0"] + w["x1"]) / 2.0 >= _RIGHT_REGION_X
+            }
+            return best["text"].strip(), len(right_values) > 1
+
+    chosen: Optional[str] = None
+    seen: set = set()
+    for ln in (lines or [])[:_TOP_REGION_LINES]:
+        toks = _line_candidates(ln, excluded)
+        if toks and chosen is None:
+            chosen = toks[-1]  # rightmost on the first candidate line
+        seen.update(toks)
+    return chosen, len(seen) > 1
 
 
 def find_printed_check_number(lines: list[str], *, routing: Optional[str] = None,
-                              account: Optional[str] = None) -> Optional[str]:
+                              account: Optional[str] = None,
+                              words: Optional[list] = None,
+                              amounts: Optional[list] = None) -> Optional[str]:
     """
-    The printed check number lives in the TOP-RIGHT corner of the check —
-    the office rule is to read it there, never off the bottom MICR line.
-    Scan the first few OCR lines for a standalone 3–10 digit token,
-    skipping anything equal to the routing or account number, and anything
-    that is part of a date, a money amount, or a routing fraction
-    (e.g. "73-27/421").
+    The printed check number from the TOP-RIGHT corner of the check — the
+    office rule is to read it there, never off the bottom MICR line. See
+    _select_printed_check_number for the geometry + exclusion rules.
     """
-    excluded = {x for x in (routing, account) if x}
-    for ln in (lines or [])[:_TOP_REGION_LINES]:
-        scrubbed = _MONEY_RE.sub(" ", ln)
-        scrubbed = _NUM_DATE_RE.sub(" ", scrubbed)
-        scrubbed = _MONTH_DATE_RE.sub(" ", scrubbed)
-        scrubbed = re.sub(r"\d+\s*[-/]\s*\d+", " ", scrubbed)  # fractions / hyphenated ids
-        for tok in re.findall(r"\b(\d{3,10})\b", scrubbed):
-            if tok not in excluded:
-                return tok
-    return None
+    value, _ambiguous = _select_printed_check_number(
+        lines, routing=routing, account=account, words=words, amounts=amounts)
+    return value
 
 
 def find_check_number(text: str) -> Optional[str]:
@@ -267,6 +381,7 @@ class ParsedCheck:
     check_no_printed: Optional[str] = None   # number printed top-right of the check
     check_no_micr: Optional[str] = None      # check-number group from the MICR line
     check_no_conflict: bool = False          # both read, and they disagree
+    check_no_ambiguous: bool = False         # >1 plausible printed number survived
     date: Optional[str] = None
     routing: Optional[str] = None
     account: Optional[str] = None
@@ -284,6 +399,7 @@ class ParsedCheck:
             "check_no_printed": self.check_no_printed,
             "check_no_micr": self.check_no_micr,
             "check_no_conflict": self.check_no_conflict,
+            "check_no_ambiguous": self.check_no_ambiguous,
             "date": self.date,
             "routing": self.routing,
             "account": self.account,
@@ -292,8 +408,16 @@ class ParsedCheck:
         }
 
 
-def parse_check_ocr(text: str) -> ParsedCheck:
-    """Heuristic parse over Vision's full text. Conservative; confirm in the modal."""
+def parse_check_ocr(text: str, words: Optional[list] = None) -> ParsedCheck:
+    """
+    Heuristic parse over Vision's OCR. Conservative; confirm in the modal.
+
+    `words` (optional) is the Vision word-geometry list from
+    vision.ocr_document — {"text", "x0", "y0", "x1", "y1"} normalized
+    boxes. It lets the printed check number be picked by POSITION
+    (top-right corner) instead of reading order; without it the parser
+    falls back to the same exclusions over the text lines alone.
+    """
     text = text or ""
     lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
     money = find_money(text)
@@ -303,9 +427,12 @@ def parse_check_ocr(text: str) -> ParsedCheck:
     # parse is positional and a misread/shifted group silently produced
     # bank account numbers as check numbers. Keep both + flag conflicts
     # so the confirm modal can warn instead of guessing quietly.
-    printed = find_printed_check_number(
-        lines, routing=micr.get("routing"), account=micr.get("account")
-    ) or find_check_number(text)
+    printed, printed_ambiguous = _select_printed_check_number(
+        lines, routing=micr.get("routing"), account=micr.get("account"),
+        words=words, amounts=money)
+    if printed is None:
+        printed = find_check_number(text)
+        printed_ambiguous = False
     micr_no = micr.get("check_no")
     return ParsedCheck(
         payer=_find_payer(lines, payee) or _find_remitter(lines),
@@ -316,6 +443,7 @@ def parse_check_ocr(text: str) -> ParsedCheck:
         check_no_printed=printed,
         check_no_micr=micr_no,
         check_no_conflict=bool(printed and micr_no and printed != micr_no),
+        check_no_ambiguous=printed_ambiguous,
         date=find_date(text),
         routing=micr.get("routing"),
         account=micr.get("account"),
