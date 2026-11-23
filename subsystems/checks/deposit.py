@@ -87,6 +87,14 @@ def find_date(text: str) -> Optional[str]:
     return m.group(1) if m else None
 
 
+def _aba_checksum_ok(routing: str) -> bool:
+    """ABA routing checksum: weights 3,7,1 repeating; total mod 10 == 0."""
+    if len(routing) != 9 or not routing.isdigit():
+        return False
+    total = sum(int(d) * w for d, w in zip(routing, (3, 7, 1) * 3))
+    return total % 10 == 0
+
+
 def parse_micr(lines: list[str]) -> dict:
     """
     Parse the MICR line(s) at the bottom of a check. Vision often splits the MICR
@@ -95,6 +103,16 @@ def parse_micr(lines: list[str]) -> dict:
     only 9-digit group and anchors the rest: groups before it → check number,
     groups after → account. Falls back to a single-line scan if no glyphs were
     detected. Returns {} if no MICR found.
+
+    Two trust rules, learned the hard way:
+      - The routing candidate must pass the ABA checksum. A misread routing
+        number means the whole MICR read is suspect, so we return {} (no
+        MICR) rather than guess from a garbled line.
+      - The check number is ONLY the digit group before the routing group.
+        When there is none, check_no is None — the group AFTER the routing
+        number is the bank account and must NEVER be recorded as the check
+        number (the office found full account numbers sitting in check-#
+        notes on the Invoices board).
     """
     groups: list[str] = []
     for ln in lines:
@@ -110,10 +128,12 @@ def parse_micr(lines: list[str]) -> dict:
     if not nine:
         return {}
     routing = nine[0]
+    if not _aba_checksum_ok(routing):
+        return {}
     idx = groups.index(routing)
     before, after = groups[:idx], groups[idx + 1:]
-    check_no = before[-1] if before else (after[0] if after else None)
-    account = after[0] if after else (before[-1] if before else None)
+    check_no = before[-1] if before else None
+    account = after[0] if after else None
     return {"check_no": check_no, "routing": routing, "account": account}
 
 
@@ -170,9 +190,39 @@ def _find_reference(lines: list[str]) -> Optional[str]:
     return None
 
 
+# How many OCR lines from the top of the check to scan for the printed
+# check number (it is printed in the top-right corner).
+_TOP_REGION_LINES = 6
+
+
+def find_printed_check_number(lines: list[str], *, routing: Optional[str] = None,
+                              account: Optional[str] = None) -> Optional[str]:
+    """
+    The printed check number lives in the TOP-RIGHT corner of the check —
+    the office rule is to read it there, never off the bottom MICR line.
+    Scan the first few OCR lines for a standalone 3–10 digit token,
+    skipping anything equal to the routing or account number, and anything
+    that is part of a date, a money amount, or a routing fraction
+    (e.g. "73-27/421").
+    """
+    excluded = {x for x in (routing, account) if x}
+    for ln in (lines or [])[:_TOP_REGION_LINES]:
+        scrubbed = _MONEY_RE.sub(" ", ln)
+        scrubbed = _NUM_DATE_RE.sub(" ", scrubbed)
+        scrubbed = _MONTH_DATE_RE.sub(" ", scrubbed)
+        scrubbed = re.sub(r"\d+\s*[-/]\s*\d+", " ", scrubbed)  # fractions / hyphenated ids
+        for tok in re.findall(r"\b(\d{3,10})\b", scrubbed):
+            if tok not in excluded:
+                return tok
+    return None
+
+
 def find_check_number(text: str) -> Optional[str]:
     m = _CHECK_NO_LABEL_RE.search(text or "")
-    return m.group(1) if m else None
+    if m:
+        return m.group(1)
+    lines = [ln.strip() for ln in (text or "").splitlines() if ln.strip()]
+    return find_printed_check_number(lines)
 
 
 _PAY_TO_RE = re.compile(r"pay\s*to\s*the\s*order\s*of", re.I)
@@ -214,6 +264,9 @@ class ParsedCheck:
     amount: Optional[Decimal] = None
     amount_candidates: list[Decimal] = field(default_factory=list)
     check_no: Optional[str] = None
+    check_no_printed: Optional[str] = None   # number printed top-right of the check
+    check_no_micr: Optional[str] = None      # check-number group from the MICR line
+    check_no_conflict: bool = False          # both read, and they disagree
     date: Optional[str] = None
     routing: Optional[str] = None
     account: Optional[str] = None
@@ -228,6 +281,9 @@ class ParsedCheck:
             "amount": str(self.amount) if self.amount is not None else None,
             "amount_candidates": [str(a) for a in self.amount_candidates],
             "check_no": self.check_no,
+            "check_no_printed": self.check_no_printed,
+            "check_no_micr": self.check_no_micr,
+            "check_no_conflict": self.check_no_conflict,
             "date": self.date,
             "routing": self.routing,
             "account": self.account,
@@ -243,12 +299,23 @@ def parse_check_ocr(text: str) -> ParsedCheck:
     money = find_money(text)
     micr = parse_micr(lines)
     payee = _find_payee(lines)
+    # The printed (top-right) number wins over the MICR group: the MICR
+    # parse is positional and a misread/shifted group silently produced
+    # bank account numbers as check numbers. Keep both + flag conflicts
+    # so the confirm modal can warn instead of guessing quietly.
+    printed = find_printed_check_number(
+        lines, routing=micr.get("routing"), account=micr.get("account")
+    ) or find_check_number(text)
+    micr_no = micr.get("check_no")
     return ParsedCheck(
         payer=_find_payer(lines, payee) or _find_remitter(lines),
         payee=payee,
         amount=_find_amount(lines, money),
         amount_candidates=money,
-        check_no=micr.get("check_no") or find_check_number(text),
+        check_no=printed or micr_no,
+        check_no_printed=printed,
+        check_no_micr=micr_no,
+        check_no_conflict=bool(printed and micr_no and printed != micr_no),
         date=find_date(text),
         routing=micr.get("routing"),
         account=micr.get("account"),

@@ -162,7 +162,7 @@ details.soft-fold > .fold-body { padding:0 14px 14px; }
     <div style="display:flex;flex-direction:column;gap:9px;margin-top:11px">
       <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">1</span><span style="font-size:13.5px">CO PDF filed to Drive</span></div>
       <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">2</span><span style="font-size:13.5px">Draft created in hello@ — not sent</span></div>
-      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">3</span><span style="font-size:13.5px">Monday CO item + Operations task</span></div>
+      <div style="display:flex;align-items:center;gap:11px"><span style="width:22px;height:22px;border-radius:9999px;background:var(--color-primary-soft);color:var(--color-primary);font-family:var(--font-mono);font-size:11px;font-weight:800;display:grid;place-items:center">3</span><span style="font-size:13.5px">Monday CO item (Operations task follows on approval)</span></div>
     </div>
     <div style="margin-top:14px;padding-top:13px;border-top:1px solid var(--color-divider);font-size:12.5px;color:var(--color-text-faint)">Nothing emails until someone clicks Send in the draft.</div>
   </div>
@@ -937,8 +937,8 @@ $("#btn-prefill").addEventListener("click", lookupFromMonday);
 $("#btn-generate").addEventListener("click", () => run("dry-run"));
 $("#btn-accept").addEventListener("click", () => {
   const msg = isReviseMode()
-    ? "Update this change order under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), the Monday CO item + Operations task are updated in place, and a fresh hello@ draft + #change-orders notice go out."
-    : "Create the change order draft in hello@, file it to Drive, and add the Monday CO item + Operations task?";
+    ? "Update this change order under the SAME number? The prior PDF is archived in Drive (e1-, e2-, …), the Monday CO item is updated in place, and a fresh hello@ draft + #change-orders notice go out. (The Operations task is created once the CO is Approved.)"
+    : "Create the change order draft in hello@, file it to Drive, and add the Monday CO item? (The Operations task is created once the CO is Approved.)";
   (async () => {
     try { if (confirm(msg)) await run("finalize"); }
     finally { signalAcceptEnded(); }
