@@ -22,6 +22,14 @@ sweep small and the channels quiet:
     (dateless history counts as old — the work list can't grow unbounded);
   • sends older than `notify_backfill_hours` are stamped QUIETLY (no Slack) —
     the first sweep after deploy records history instead of spamming it.
+
+The sweep also carries one Monday-only passenger: the CO Operations-task
+release (orchestrators.change_order_flow.release_ops_tasks). Finalize defers
+a CO's Operations task until the CO is Approved in Monday; this sweep is what
+notices the approval and releases the task. It touches no Gmail state, so it
+runs even when the Gmail legs abort, and its result rides along in the
+payload under "co_ops_release". A dry run skips it — a dry run writes
+nothing, and the release writes to Monday.
 """
 from __future__ import annotations
 
@@ -77,7 +85,8 @@ def _pretty_sent(sent_dt: datetime) -> str:
 def check_sent(*, limit_days: int = 45, notify_backfill_hours: int = 48,
                dry_run: bool = False) -> dict:
     """
-    One sweep. Returns {ok, invoices: [...], estimates: [...], skipped, errors}.
+    One sweep. Returns {ok, invoices: [...], estimates: [...], skipped, errors,
+    co_ops_release: {...}}.
     Never raises on per-item problems; only a missing Gmail scope/config aborts
     (ok=False + code) because every subsequent search would fail identically.
     """
@@ -243,12 +252,37 @@ def check_sent(*, limit_days: int = 45, notify_backfill_hours: int = 48,
         _sweep("gc_confirmations", gc_pending,
                lambda ident: ident, _stamp_gc, _notify_gc)
 
+    # -------- CO Operations-task release (Monday only — no Gmail) --------
+    # Finalize defers a CO's Operations task until the CO is Approved; this
+    # leg is the release valve (change_order_flow.release_ops_tasks). It is
+    # deliberately NOT gated on `aborted`: a Gmail scope/config failure must
+    # not stop CO releases, and a CO-leg failure must never fail the sweep —
+    # release_ops_tasks is graceful by contract, and the try/except covers
+    # even its import. A dry run writes nothing anywhere, so it skips the
+    # leg (the release writes Operations tasks to Monday).
+    if dry_run:
+        out["co_ops_release"] = {"ok": True, "skipped": "dry_run"}
+    else:
+        try:
+            from orchestrators.change_order_flow import release_ops_tasks
+            out["co_ops_release"] = release_ops_tasks()
+        except Exception as e:  # noqa: BLE001 — the CO leg never breaks the sweep
+            out["co_ops_release"] = {"ok": False, "code": "RELEASE_FAILED",
+                                     "detail": f"{type(e).__name__}: {e}"}
+
+    _co_rel = out.get("co_ops_release") or {}
+    _co_note = ""
+    if _co_rel and not _co_rel.get("skipped"):
+        _co_note = (f" · co ops release: {len(_co_rel.get('released') or [])} released / "
+                    f"{len(_co_rel.get('already_had_task') or [])} already had task")
+
     print(f"[sent-watch] invoices: {len(out['invoices'])} detected / "
           f"{out['skipped']['invoices']} still waiting · estimates: "
           f"{len(out['estimates'])} detected / {out['skipped']['estimates']} "
           f"still waiting · gc confirmations: {len(out['gc_confirmations'])} "
           f"detected / {out['skipped']['gc_confirmations']} still waiting · "
           f"errors: {len(out['errors'])}"
+          + _co_note
           + (" · DRY-RUN" if dry_run else ""),
           file=sys.stderr)
     return out
