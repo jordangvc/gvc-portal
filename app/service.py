@@ -5089,6 +5089,12 @@ async def ui_check_commit(
         raise HTTPException(status_code=400, detail={"ok": False, "code": "NO_INVOICES",
             "detail": "No invoices selected.",
             "advice": "Pick the invoice(s) this check pays before recording."})
+    if check_no is not None and check_no.strip() \
+            and not re.fullmatch(r"\d{3,10}", check_no.strip()):
+        raise HTTPException(status_code=400, detail={"ok": False, "code": "INVALID_CHECK_NO",
+            "detail": f"check_no must be 3-10 digits, got: {check_no!r}.",
+            "advice": "Use the number printed in the top-right corner of the check "
+                      "— not the bank account number from the bottom MICR line."})
     alloc_map = None
     if allocations:
         try:

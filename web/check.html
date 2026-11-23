@@ -148,6 +148,7 @@
     <p class="hint">Edit anything OCR got wrong. Use the image below for reference. Nothing is recorded until you confirm.</p>
     <img id="m-image" class="check-img" alt="Uploaded check" />
     <div id="multi-warn" class="callout callout--warn" style="display:none;"></div>
+    <div id="conflict-warn" class="callout callout--warn" style="display:none;"></div>
     <div class="grid" style="margin-top:12px;">
       <div><label for="m-payer">Payer</label><input class="input" id="m-payer" /></div>
       <div><label for="m-amount">Amount</label><input class="input" id="m-amount" /></div>
@@ -234,7 +235,16 @@
       $("#confirm").disabled = false;
       $("#confirm").removeAttribute("title");
     }
+    const cwarn = $("#conflict-warn");
     const p = data.parsed || {};
+    if (p.check_no_conflict) {
+      cwarn.style.display = "block";
+      cwarn.innerHTML = `⚠️ <strong>Check number mismatch:</strong> the number printed at the top-right of the check ` +
+        `(<strong>${p.check_no_printed}</strong>) disagrees with the bottom MICR line (${p.check_no_micr}). ` +
+        `The printed top-right number is the one being used — double-check the Check # field before recording.`;
+    } else {
+      cwarn.style.display = "none";
+    }
     $("#m-payer").value = p.payer || "";
     $("#m-amount").value = p.amount || "";
     $("#m-check_no").value = p.check_no || "";
