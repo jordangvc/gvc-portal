@@ -43,7 +43,7 @@ from pathlib import Path
 from typing import Optional
 
 from subsystems.change_order.document import render_co_pdf
-from subsystems.change_order.number import next_co_number, parse_co_number
+from subsystems.change_order.number import extract_co_identifier, next_co_number, parse_co_number
 from subsystems.change_order.revision import (
     archive_version, co_pdf_filename, next_archive_name, sidecar_filename,
 )
@@ -162,7 +162,13 @@ def _gather_existing_identifiers(data: dict, *, refresh: bool) -> list[str]:
                 sub = up._find_child(fid, CO_SUBFOLDER_NAME, is_folder=True)
                 scan_id = sub["id"] if sub else fid
                 for name in up.list_child_names(scan_id):
-                    existing.append(Path(name).stem)
+                    # Drive names look like `CO.1-{base} - {job name}.pdf`;
+                    # the raw stem never parses as a CO id, so Drive-only
+                    # COs used to be invisible to numbering. Extract the
+                    # identifier proper (None = not a CO file; skip it).
+                    ident = extract_co_identifier(name)
+                    if ident:
+                        existing.append(ident)
         except Exception as e:  # noqa: BLE001 — non-fatal
             print(f"[change-order] Drive scan skipped: {type(e).__name__}: {e}",
                   file=sys.stderr)
@@ -485,8 +491,11 @@ def process_change_order(
             writeback["slack_error"] = f"{type(e).__name__}: {e}"
             print(f"[finalize {co_number}] Slack notice failed (non-fatal): {e}", file=sys.stderr)
 
-        # 4) Monday: create/update the top-level CO item + the Operations task
-        #    (new model, 2026-07-16). Graceful; never raises. On revise, the
+        # 4) Monday: create/update the top-level CO item (new model,
+        #    2026-07-16). The Operations task is NOT created here — it is
+        #    deferred until the CO is Approved (write_back's ops_task flag
+        #    stays off at finalize; the co-ops-release sweep creates the
+        #    task on approval). Graceful; never raises. On revise, the
         #    existing CO item is updated in place and CO Status resets to
         #    Drafted; a prior Billed status surfaces as monday_billed_warning
         #    (WARN + ALLOW — the invoice is never touched).
@@ -528,3 +537,56 @@ def process_change_order(
         return writeback
 
     raise ValueError(f"Unknown mode: {mode!r} (expected 'dry-run' or 'finalize').")
+
+
+# ---------------------------------------------------------------------------
+# Operations-task release sweep
+# ---------------------------------------------------------------------------
+
+def release_ops_tasks() -> dict:
+    """
+    Create the deferred Operations tasks for COs that are now Approved.
+
+    Finalize no longer creates the Operations task (it used to fire the
+    moment a draft was finalized, before anyone approved the CO). This
+    sweep is the release valve: for every CO item whose Monday Status is
+    Approved, find-or-create its Operations task via monday_co.sync_ops_task.
+    Idempotent — a CO whose task already exists is reported under
+    already_had_task and left in place. Per-item failures land in `errors`
+    and never abort the sweep. Graceful by contract like the other task
+    sweeps: sweep-level problems return ok=False + code, never raise.
+    """
+    try:
+        from adapters.monday.client import MondayClient, MondayNotConfigured
+        try:
+            mc = MondayClient()
+        except MondayNotConfigured as e:
+            return {"ok": False, "code": "MONDAY_NOT_CONFIGURED", "detail": str(e)}
+        from adapters.monday import co as monday_co
+
+        released: list[str] = []
+        already: list[str] = []
+        errors: list[dict] = []
+        approved = monday_co.list_approved_co_items(mc)
+        for item in approved:
+            ident = item.get("identifier") or ""
+            try:
+                res = monday_co.sync_ops_task(
+                    mc,
+                    co_item_id=item.get("item_id"),
+                    name=item.get("name") or ident,
+                    parent_item_id=item.get("parent_item_id"),
+                    issue_date=item.get("issue_date"),
+                )
+                if res.get("created"):
+                    released.append(ident)
+                else:
+                    already.append(ident)
+            except Exception as e:  # noqa: BLE001 — one bad CO never aborts the sweep
+                errors.append({"identifier": ident,
+                               "error": f"{type(e).__name__}: {e}"})
+        return {"ok": True, "approved": len(approved), "released": released,
+                "already_had_task": already, "errors": errors}
+    except Exception as e:  # noqa: BLE001 — sweep-level failure, reported not raised
+        return {"ok": False, "code": "RELEASE_FAILED",
+                "detail": f"{type(e).__name__}: {e}"}

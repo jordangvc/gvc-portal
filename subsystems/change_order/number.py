@@ -19,6 +19,8 @@ from __future__ import annotations
 import re
 from typing import Iterable, Optional
 
+from shared.doc_number import core_number
+
 # CO.{n}-{base}. Base captured greedily; a trailing " Rev N" is stripped first.
 _CO_RE = re.compile(r"^CO\.(\d+)-(.+)$")
 _REV_SUFFIX_RE = re.compile(r"\s+Rev\s+\d+$", re.I)
@@ -43,19 +45,52 @@ def parse_co_number(value: str) -> Optional[tuple[int, str]]:
     return int(m.group(1)), m.group(2).strip()
 
 
+def _base_key(base: str) -> str:
+    """Comparison key for a CO base: the spine core when the base is a
+    portal spine number — so the bare / EST- / PRO- / INV- forms of the
+    same job compare equal — else the stripped base verbatim (legacy
+    bases like `GVC-2026-MV-005` keep exact-match semantics)."""
+    base = (base or "").strip()
+    return core_number(base) or base
+
+
+def extract_co_identifier(text: str) -> Optional[str]:
+    """
+    Pull a `CO.{n}-{base}` identifier out of a free-form string — e.g. a
+    Drive file name like `CO.1-2026-0611-001 - Smith Kitchen.pdf`, where
+    everything after " - " is the job name, not part of the identifier.
+    A trailing " Rev N" is stripped (parse_co_number tolerates it).
+    Returns the normalized identifier, or None when the string doesn't
+    start with a CO identifier.
+    """
+    stem = (text or "").strip()
+    if stem.lower().endswith(".pdf"):
+        stem = stem[:-4]
+    candidate = stem.split(" - ")[0].strip()
+    parsed = parse_co_number(candidate)
+    if not parsed:
+        return None
+    return format_co_number(parsed[0], parsed[1])
+
+
 def next_co_number(base_number: str, existing_identifiers: Iterable[str]) -> str:
     """
     Next `CO.{n}-{base_number}` for a job, given the identifiers of COs that
     already exist for it. `n` = max existing n for THIS base + 1 (1 if none).
-    Identifiers for other jobs and malformed values are ignored.
+    Identifiers for other jobs and malformed values are ignored. Bases are
+    compared core-normalized (see _base_key): an existing CO stored under
+    the bare core still counts when the caller's base arrives EST-/PRO-/
+    INV-prefixed, and vice versa — the old verbatim comparison split one
+    job's COs into separate sequences.
     """
     base_number = (base_number or "").strip()
     if not base_number:
         raise ValueError("base_number is required (the linked job's number).")
+    base_key = _base_key(base_number)
     counters = []
     for ident in existing_identifiers or []:
         parsed = parse_co_number(ident)
-        if parsed and parsed[1] == base_number:
+        if parsed and _base_key(parsed[1]) == base_key:
             counters.append(parsed[0])
     n = (max(counters) + 1) if counters else 1
     return format_co_number(n, base_number)

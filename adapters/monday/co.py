@@ -14,9 +14,12 @@ docs/portal-co-parity-design.md): a finalized CO creates/updates
   2. a task on the Operations board (1920364853), same name, group
      "Activities/Tasks (In-Progress)", Stage=Upcoming, BIllable=Yes,
      Start Date = the CO date, "Link to Projects Board" → the CO item + the
-     parent project. Ops. Owner is left for Jordan to assign.
+     parent project. Ops. Owner is left for Jordan to assign. The task is
+     created only once the CO is APPROVED — finalize alone no longer
+     creates it (write_back(ops_task=...) / the co-ops-release sweep).
 
-Revisions update BOTH in place (found via the Project # column / task name)
+Revisions update the CO item in place (found via the Project # column),
+and the Operations task too once it exists (found by task name)
 and reset CO Status → Drafted; a prior status of Billed is surfaced as a
 warning (WARN + ALLOW, locked 2026-07-16) — the linked invoice is never
 touched.
@@ -105,6 +108,7 @@ CO_COL_SCOPE = "long_text_mm0w7pdx"        # reused "Define Scope of Work"
 CO_COL_BILLED_INVOICE = "link_mm4cb2wm"    # "CO Billed Invoice" (added 2026-06-16)
 
 CO_STATUS_DRAFTED = "Drafted"
+CO_STATUS_APPROVED = "Approved"
 CO_STATUS_BILLED = "Billed"
 CO_STATUS_VOID = "Void"
 
@@ -773,6 +777,74 @@ def _find_ops_task(mc, name: str) -> Optional[int]:
     return None
 
 
+def sync_ops_task(mc, *, co_item_id: Optional[int], name: str,
+                  parent_item_id: Optional[int] = None,
+                  issue_date: Optional[str] = None) -> dict:
+    """
+    Find-or-create the Operations-board task for a CO item (idempotent —
+    the task is found by exact name, the rule write_back always used).
+    Returns {ops_task_id, created, updated}. Raises on Monday failure;
+    callers that must not fail (write_back, the release sweep) catch.
+    """
+    ops_values = build_ops_task_values(
+        co_item_id=co_item_id,
+        parent_item_id=parent_item_id,
+        issue_date=issue_date,
+    )
+    ops_id = _find_ops_task(mc, name)
+    if ops_id:
+        _update_item(mc, OPERATIONS_BOARD_ID, ops_id, ops_values)
+        return {"ops_task_id": ops_id, "created": False, "updated": True}
+    ops_id = _create_item(mc, OPERATIONS_BOARD_ID, OPS_GROUP_TASKS,
+                          name, ops_values)
+    return {"ops_task_id": ops_id, "created": True, "updated": False}
+
+
+def list_approved_co_items(mc) -> list[dict]:
+    """
+    Every top-level CO item whose CO Status is Approved, across all jobs —
+    the work list for the Operations-task release sweep. Rows carry what
+    sync_ops_task needs: {item_id, identifier, name, parent_item_id,
+    issue_date}. CO items carry no parent link column, so parent_item_id
+    is None and the released task links the CO item itself.
+    """
+    query = """
+    query ($boardId: [ID!], $value: CompareValue!) {
+      boards(ids: $boardId) {
+        items_page(limit: 500, query_params: {
+          rules: [{column_id: "%s", compare_value: $value,
+                   operator: contains_text}]}) {
+          items {
+            id
+            name
+            column_values(ids: ["%s", "%s", "date"]) { id text }
+          }
+        }
+      }
+    }
+    """ % (P_COL_PROJECT_NUMBER, P_COL_PROJECT_NUMBER, CO_ITEM_COL_STATUS)
+    data = mc._query(query, {"boardId": [str(PROJECTS_BOARD_ID)], "value": "CO."})
+    out: list[dict] = []
+    for board in data.get("boards") or []:
+        for item in (board.get("items_page") or {}).get("items") or []:
+            texts = {cv["id"]: (cv.get("text") or "").strip()
+                     for cv in item.get("column_values") or []}
+            ident = texts.get(P_COL_PROJECT_NUMBER, "")
+            if not parse_co_number(ident):
+                continue
+            if (texts.get(CO_ITEM_COL_STATUS) or "").strip().lower() != CO_STATUS_APPROVED.lower():
+                continue
+            out.append({
+                "item_id": int(item["id"]),
+                "identifier": ident,
+                "name": (item.get("name") or "").strip(),
+                "parent_item_id": None,
+                "issue_date": texts.get("date") or None,
+            })
+    out.sort(key=lambda c: c["identifier"])
+    return out
+
+
 def write_back(
     *,
     parent_item_id: Optional[int],
@@ -784,6 +856,7 @@ def write_back(
     gmail_url: Optional[str],
     scope_notes: Optional[str],
     revise: bool = False,
+    ops_task: bool = False,
 ) -> dict:
     """
     Graceful Monday write for a finalized CO (NEW MODEL, 2026-07-16). NEVER
@@ -796,8 +869,12 @@ def write_back(
     UPDATED in place — this makes finalize retries idempotent and is the
     revision path (CO Status resets → Drafted; a prior Billed status is
     surfaced as monday_billed_warning, never blocked). Otherwise a new item
-    is created in the parent's group. The Operations task follows the same
-    find-by-name-or-create rule and NEVER fails the project write.
+    is created in the parent's group. The Operations task is DEFERRED by
+    default: it is created when the CO is Approved, not at finalize (a
+    draft CO is not work yet). Pass ops_task=True only when the existing
+    CO's status is already Approved; COs approved later are covered by
+    the /v1/tasks/co-ops-release sweep. When it does run, the task follows
+    the same find-by-name-or-create rule and NEVER fails the project write.
     """
     report: dict = {"monday_synced": False}
     try:
@@ -883,26 +960,28 @@ def write_back(
         report["monday_item_url"] = report["monday_co_item_url"]
         invalidate_co_list_cache(co_identifier)
 
-        # ---- The Operations-board task (best-effort; never fails the CO) ----
-        try:
-            ops_values = build_ops_task_values(
-                co_item_id=co_item_id,
-                parent_item_id=int(resolved) if resolved else None,
-                issue_date=issue_date,
-            )
-            ops_id = _find_ops_task(mc, name)
-            if ops_id:
-                _update_item(mc, OPERATIONS_BOARD_ID, ops_id, ops_values)
-                report["monday_ops_task_updated"] = True
-            else:
-                ops_id = _create_item(mc, OPERATIONS_BOARD_ID, OPS_GROUP_TASKS,
-                                      name, ops_values)
-                report["monday_ops_task_created"] = True
-            report["monday_ops_task_id"] = ops_id
-            report["monday_ops_task_url"] = _item_url(OPERATIONS_BOARD_ID, ops_id)
-        except Exception as e:  # noqa: BLE001 — the CO item write already succeeded
-            report["monday_ops_status"] = f"FAILED — {type(e).__name__}: {e}"
-            print(f"[monday-co] Operations task write failed: {e}", file=sys.stderr)
+        # ---- The Operations-board task (deferred until the CO is Approved) ----
+        existing_status = ((existing or {}).get("status") or "").strip().lower()
+        if ops_task and existing_status == CO_STATUS_APPROVED.lower():
+            try:
+                res = sync_ops_task(
+                    mc,
+                    co_item_id=co_item_id,
+                    name=name,
+                    parent_item_id=int(resolved) if resolved else None,
+                    issue_date=issue_date,
+                )
+                if res["created"]:
+                    report["monday_ops_task_created"] = True
+                else:
+                    report["monday_ops_task_updated"] = True
+                report["monday_ops_task_id"] = res["ops_task_id"]
+                report["monday_ops_task_url"] = _item_url(OPERATIONS_BOARD_ID, res["ops_task_id"])
+            except Exception as e:  # noqa: BLE001 — the CO item write already succeeded
+                report["monday_ops_status"] = f"FAILED — {type(e).__name__}: {e}"
+                print(f"[monday-co] Operations task write failed: {e}", file=sys.stderr)
+        else:
+            report["monday_ops_status"] = "DEFERRED — created when CO is Approved"
 
         return report
     except Exception as e:  # noqa: BLE001 — a Monday failure never blocks the draft

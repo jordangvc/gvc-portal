@@ -876,6 +876,28 @@ def tasks_warm_monday(
     return {"ok": True, "started": True}
 
 
+@app.post("/v1/tasks/co-ops-release")
+def tasks_co_ops_release(
+    x_api_key: Optional[str] = Header(None, alias="X-API-Key"),
+) -> dict:
+    """
+    CO Operations-task release sweep: finalize no longer creates the
+    Operations task for a change order (a draft CO is not work yet). For
+    every CO whose Monday Status is Approved, find-or-create its
+    Operations task. Idempotent — a CO whose task already exists is
+    reported and left in place, so Cloud Scheduler retries are safe.
+
+    X-API-Key protected, same as the other /v1/tasks/* endpoints.
+    """
+    require_api_key(x_api_key)
+    from orchestrators.change_order_flow import release_ops_tasks
+
+    # release_ops_tasks is graceful by contract (per-item try/except;
+    # returns ok=False + code on a sweep-level problem like Monday not
+    # being configured) — no _friendly_error translation needed here.
+    return release_ops_tasks()
+
+
 @app.post("/v1/webhooks/stripe")
 async def webhook_stripe(request: Request) -> dict:
     """
