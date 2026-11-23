@@ -62,7 +62,7 @@ _PHONE_LABEL_RE = re.compile(r"\b(tel|telephone|phone|fax)\b", re.I)
 # either must be recognized — an unrecognized MICR line leaks into the
 # printed-number candidates and its check-number group gets recorded as
 # the printed number (deploy-gate failures, 2026-11-23).
-_MICR_SYMBOLS = "⑆⑇⑈⑉␆␇␈␉"
+_MICR_SYMBOLS = "⑆⑇⑈⑉" + "".join(chr(c) for c in (0x2406, 0x2407, 0x2408, 0x2409))
 # Company-ish suffixes used to find the payer (remitter) line.
 _COMPANY_RE = re.compile(
     r"\b(L\.?L\.?C\.?|INC\.?|INCORPORATED|LTD\.?|CO\.?|CORP\.?|COMPANY|BUILDERS?|"
@@ -95,7 +95,7 @@ def find_money(text: str) -> list[Decimal]:
     out: list[Decimal] = []
     for whole, cents in _MONEY_RE.findall(text or ""):
         try:
-            amt = Decimal(f"{whole.replace(chr(44), chr(39)+chr(39))}.{cents}")
+            amt = Decimal(f"{whole.replace(chr(44), chr(39))}.{cents}")
         except InvalidOperation:
             continue
         if amt not in out:
