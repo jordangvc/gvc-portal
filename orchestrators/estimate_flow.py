@@ -19,6 +19,7 @@ The canonical JSON shape is documented in example_estimate.json.
 from __future__ import annotations
 
 import os
+import re
 import sys
 from copy import deepcopy
 from datetime import date, datetime, timedelta
@@ -66,75 +67,158 @@ DEFAULT_COMPANY = {
     "tagline": "Drywall Experts Since 1987",
 }
 
-# Standard estimate terms. Transcribed VERBATIM from the canonical GVC template
-# (GVC Estimate v01), with these deliberate edits — Jordan/Andrea to bless:
-#   - "Table 1" -> "the pricing table above" (our doc has no 'Table 1' label).
-#   - "2024 Standard Rate Sheet" -> "current Standard Rate Sheet" (de-stale).
-#   - WARRANTY: dropped the unfilled "(list specific types of defects…)" template
-#     placeholder; kept the substance.
-#   - The template's "Please sign below to acknowledge…" signature line is
-#     intentionally OMITTED (no signature tracking, per scope). Add a printed
-#     acceptance line later if desired.
-# Edit here in ONE place; it renders on every estimate. Per-job variances go in
-# the editable "Special Notes" section, which supersedes these defaults.
-STANDARD_BOILERPLATE = {
-    "inclusions": [
-        "Services outlined in the pricing table above.",
-        "GVC's estimate is based on a carefully developed schedule that includes: "
-        "submittal and approval of equipment and materials; review and approval of "
-        "the scope of work; logical sequencing of work; procurement activities; "
-        "resource leveling; manpower allocation; and project duration.",
-        "Coordination with project personnel to refine project tasks and ensure "
-        "effective communication throughout the project.",
+# Standard estimate terms, split by project type (2026-10-19).
+# Wording comes from "Estimate Terms Fix | GVC | 2026-10-19" (Drive doc
+# 1cUz-zqtNUi2_sE_slQ4jq0FiUrn6ATkFH20uzIZurDU) and still needs Jordan's
+# approval and an attorney pass before it goes out.
+#
+# Replaces the old single STANDARD_BOILERPLATE, which was a residential
+# homeowner template (1/2" board throughout, Level 5 finish, "design provided
+# by GVC ... verbal directions", payment on completion, six month warranty)
+# printed on EVERY estimate, including commercial GC bids.
+#
+# Rules locked by tests/test_estimate_terms.py:
+#   - No default may hard code a board thickness, a Level 5 finish, "design
+#     provided by GVC" or "verbal direction(s)". Board and finish come from the
+#     job's own scope.
+#   - The scope-governs precedence line ALWAYS prints (it used to print only
+#     when a job had special notes).
+#   - Terms are picked from job.project_type. Blank or unrecognized never
+#     silently falls back to one block (see select_terms / validate).
+#
+# Items in [square brackets] are fill-ins Jordan still owes. finalize refuses
+# to send terms that contain one (see _unfilled_placeholders), so a bracket can
+# never reach a customer.
+
+SCOPE_GOVERNS_LINE = (
+    "Order of precedence. The Scope of Work section of this estimate governs. "
+    "Where these standard terms conflict with the scope section, the scope "
+    "section controls."
+)
+
+COMMERCIAL_TERMS = {
+    "project_type": "commercial",
+    "title": "Standard Terms (Commercial)",
+    "precedence": (
+        "Order of precedence. The Scope of Work section of this proposal governs. "
+        "Where these standard terms conflict with the scope section, the scope "
+        "section controls."
+    ),
+    "items": [
+        "Board and finish. Board types, thicknesses, ratings and finish levels are as "
+        "stated in the scope section and the contract drawings. Nothing in these terms "
+        "changes them.",
+        "Contract documents. Work is performed per the contract documents listed in the "
+        "scope section. Changes, including field direction, must be in writing as a "
+        "signed change order or a written directive from the GC before the work is "
+        "performed.",
+        "Design. Design is by others. GVC is not responsible for design, engineering or "
+        "code interpretation, except any delegated design that is specifically listed "
+        "and priced in the scope section.",
+        "Billing. Progress billing per the GC subcontract and the project pay "
+        "application schedule.",
+        "Retainage. Per the subcontract.",
+        "Warranty. Per the subcontract. If the subcontract is silent, GVC warrants its "
+        "workmanship for one year from substantial completion.",
+        "Pricing validity. Pricing is valid for 30 days from the estimate date. Material "
+        "pricing is subject to supplier changes at the time of buyout. Material increases "
+        "after the validity period will be passed through at cost with supplier "
+        "documentation.",
+        "Schedule and access. Pricing assumes normal working hours, continuous work "
+        "areas, and site conditions ready for our trades. Overtime, premium time and out "
+        "of sequence work are extra unless listed in the scope.",
+        # Draft had a "[Job specific exclusions placeholder ...]" line whose own
+        # instruction was "list each one, or reference the exclusions in the scope
+        # section". There is no per-job exclusions field yet, so this references
+        # the scope section. Jordan to confirm wording.
+        "Exclusions. Job specific exclusions are as listed in the scope section.",
     ],
-    "exclusions": [
-        "Any items or services not specifically detailed in this proposal.",
-        "Shipping costs (if applicable).",
-    ],
-    "clarifications": [
-        "This proposal and the associated scope of work are based on the design "
-        "provided by GVC, relying primarily on verbal directions from the owner and "
-        "minimum code standards as interpreted by GVC.",
-        "Utilities: The Owner/Builder will be responsible for providing necessary "
-        "utilities, including electricity, water, and ventilation/heat, to facilitate "
-        "the completion of the work. The workspace temperature must be maintained at a "
-        "minimum of 55°F during colder months.",
-        "Fasteners: All fasteners used will comply with relevant code requirements, "
-        "utilizing nails or screws at seams and edges, and screws in the field as "
-        "necessary.",
-        "Drywall Installation: 1/2\" standard drywall will be installed throughout the "
-        "project area, with mold-resistant drywall used in designated areas, excluding "
-        "wet areas set for tile installation.",
-        "Cleanup: Upon completion of the installation, GVC will remove and properly "
-        "dispose of any leftover drywall scraps from the site.",
-        "Finishing: The drywall finishing process will achieve a Level 5 finish, which "
-        "includes: tape coating, bedding, a third coat, rolling skim coat, and sanding.",
-        "Ceiling Finish: The ceiling finish will be determined by the builder/owner "
-        "prior to the commencement of the project. Available finish options include: "
-        "smooth, crows-foot texture, and knockdown crows-foot texture.",
-        "Post-Installation Cleanup: Once sanding is complete, floors will be scraped "
-        "and broom-swept. Empty containers used for finishing will be discarded in the "
-        "site's dumpster or off-site if no dumpster is available.",
-        "Schedule Delays: Delays caused by factors outside GVC's control (e.g., delays "
-        "\"caused by others\") will not be considered in this proposal. Any necessary "
-        "change orders will be issued by GVC.",
-        "Cost Considerations: No premium or overtime costs have been included in this "
-        "proposal and are not applicable for the tasks listed. All change orders and "
-        "extra work orders will be based on our current Standard Rate Sheet.",
-        "This proposal assumes timely and appropriate access to the owner's assets. "
-        "Delays due to inclement weather have not been factored into the proposed costs.",
-        "Our working schedule will be Monday to Friday, 8 hours per day (typically "
-        "9 AM – 5 PM), excluding holidays, rest days, special holidays, and weekends.",
-    ],
-    "payment": "An invoice will be sent upon project completion, with payment due upon receipt.",
-    "warranty": "The Contractor warrants that all work will be completed to the highest "
-                "standards under industry best practices. This warranty covers any defects "
-                "in workmanship for a period of six (6) months from the date of completion. "
-                "It does not cover damage caused by normal wear and tear or intentional acts.",
-    "insurance": "The Contractor maintains general liability insurance coverage for the "
-                 "duration of the project. A copy of the insurance policy will be provided "
-                 "to the Client upon request.",
 }
+
+RESIDENTIAL_TERMS = {
+    "project_type": "residential",
+    "title": "Standard Terms (Residential)",
+    "precedence": (
+        "Order of precedence. The Scope of Work section of this estimate governs. "
+        "Where these standard terms conflict with it, the scope section controls."
+    ),
+    "items": [
+        "Board and finish. Board type and finish level are as stated on this estimate. "
+        "If no finish level is stated, finish is Level 4. Level 5 (full skim coat) is "
+        "priced only when listed.",
+        "Material. This estimate states who supplies material. When the builder or owner "
+        "supplies material, GVC is responsible for labor only, and delays from late, "
+        "short or damaged material are not GVC's responsibility.",
+        "Payment. [Deposit amount or percent] due at signing. Balance billed in draws: "
+        "[after hang] and [after finish], each due [on receipt or within X days]. Final "
+        "balance due at completion.",
+        "Warranty. GVC warrants its workmanship for [one year] from completion. Settling "
+        "cracks, nail pops from framing movement, and damage by others are not covered.",
+        "Changes. All changes must be in writing and agreed before the work is done. "
+        "Extra work is billed at our current rate sheet.",
+        "Site readiness. The owner or builder provides power, water, heat (55 degrees F "
+        "minimum in cold months) and clear access.",
+        "Validity. Pricing is valid for 30 days from the estimate date.",
+    ],
+}
+
+TERMS_BY_PROJECT_TYPE = {
+    "commercial": COMMERCIAL_TERMS,
+    "residential": RESIDENTIAL_TERMS,
+}
+
+# Shown on a dry-run preview when project_type is blank or unrecognized.
+# finalize never gets here: validate() rejects the payload first.
+NEEDS_REVIEW_TERMS = {
+    "project_type": None,
+    "title": "Standard Terms (NEEDS REVIEW)",
+    "precedence": SCOPE_GOVERNS_LINE,
+    "needs_review": True,
+    "items": [
+        "Project type is not set to Commercial or Residential, so no standard terms "
+        "were selected. Set the project type before finalizing; this estimate cannot "
+        "be finalized until it is set.",
+    ],
+}
+
+PROJECT_TYPE_ERROR = (
+    "job.project_type must be Commercial or Residential so the right standard "
+    "terms print (got {value!r})."
+)
+
+
+def normalize_terms_type(project_type: Optional[str]) -> Optional[str]:
+    """'commercial' / 'residential', or None when blank or unrecognized.
+    Accepts the Monday status labels too ("Commercial", "Residential")."""
+    t = (project_type or "").strip().lower()
+    if t.startswith("commercial"):
+        return "commercial"
+    if t.startswith("residential"):
+        return "residential"
+    return None
+
+
+def select_terms(project_type: Optional[str], *, strict: bool = True) -> dict:
+    """Pick the terms block for a project type.
+
+    strict=True (finalize): blank or unrecognized raises ValueError.
+    strict=False (dry-run preview): returns NEEDS_REVIEW_TERMS instead, so the
+    preview still renders but shows plainly that terms are missing.
+    """
+    key = normalize_terms_type(project_type)
+    if key is None:
+        if strict:
+            raise ValueError(PROJECT_TYPE_ERROR.format(value=project_type or ""))
+        return deepcopy(NEEDS_REVIEW_TERMS)
+    return deepcopy(TERMS_BY_PROJECT_TYPE[key])
+
+
+def _unfilled_placeholders(terms: dict) -> list[str]:
+    """Bracketed fill-ins ("[one year]") still left in a terms block."""
+    found: list[str] = []
+    for text in [terms.get("precedence") or ""] + list(terms.get("items") or []):
+        found.extend(re.findall(r"\[[^\]]+\]", text))
+    return found
 
 
 # ---------------------------------------------------------------------------
@@ -158,6 +242,20 @@ def validate(data: dict) -> None:
     except ValueError as e:
         _require(False, str(e))
     _require(bool(job.get("name")), "job.name (project name) is required.")
+    # Terms are chosen from project_type. Never guess: a blank or unknown type
+    # stops finalize with a 422 the form shows to the user.
+    _require(
+        normalize_terms_type(job.get("project_type")) is not None,
+        PROJECT_TYPE_ERROR.format(value=job.get("project_type") or ""),
+    )
+    terms = select_terms(job.get("project_type"))
+    holes = _unfilled_placeholders(terms)
+    _require(
+        not holes,
+        f"The {terms['project_type']} standard terms still have unfilled "
+        f"placeholders ({', '.join(holes)}). Fill them in "
+        "orchestrators/estimate_flow.py before finalizing.",
+    )
     # estimate.identifier is OPTIONAL — when absent the service assigns the
     # next EST-YYYY-MMDD-NNN (see estimate_number.py / shared.doc_number).
     # A supplied value must be a portal spine number (bare or EST-/PRO-/INV-).
@@ -219,7 +317,10 @@ def _pretty_date(d: date) -> str:
     return d.strftime("%B %-d, %Y")
 
 
-def enrich(data: dict, catalog: Optional[dict] = None) -> dict:
+def enrich(data: dict, catalog: Optional[dict] = None, *, strict_terms: bool = False) -> dict:
+    """strict_terms=True raises on a blank/unknown project_type; the default
+    (False) renders a NEEDS REVIEW terms page instead. finalize is already
+    protected by validate()."""
     d = deepcopy(data)
 
     company = {**DEFAULT_COMPANY, **(d.get("company") or {})}
@@ -314,7 +415,8 @@ def enrich(data: dict, catalog: Optional[dict] = None) -> dict:
         "client": client,
         "job": job,
         "estimate": enriched_est,
-        "boilerplate": STANDARD_BOILERPLATE,
+        "terms": select_terms(job.get("project_type"), strict=strict_terms),
+        "scope_governs_line": SCOPE_GOVERNS_LINE,
         "additional_services": additional_services,
     }
 
@@ -323,7 +425,7 @@ def enrich(data: dict, catalog: Optional[dict] = None) -> dict:
 # Render
 # ---------------------------------------------------------------------------
 
-def render_estimate_pdf(enriched: dict, output_path: Path) -> Path:
+def render_estimate_html(enriched: dict) -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATES_DIR)),
         autoescape=select_autoescape(["html"]),
@@ -335,10 +437,16 @@ def render_estimate_pdf(enriched: dict, output_path: Path) -> Path:
         client=enriched["client"],
         job=enriched["job"],
         estimate=enriched["estimate"],
-        boilerplate=enriched["boilerplate"],
+        terms=enriched["terms"],
+        scope_governs_line=enriched.get("scope_governs_line") or SCOPE_GOVERNS_LINE,
         additional_services=enriched.get("additional_services") or [],
         logo_data_uri=make_logo_data_uri(),
     )
+    return html_str
+
+
+def render_estimate_pdf(enriched: dict, output_path: Path) -> Path:
+    html_str = render_estimate_html(enriched)
     output_path.parent.mkdir(parents=True, exist_ok=True)
     HTML(string=html_str, base_url=str(ROOT)).write_pdf(str(output_path))
     return output_path
@@ -472,7 +580,7 @@ def process_estimate(
     except Exception:  # noqa: BLE001
         catalog = None
 
-    enriched = enrich(data, catalog=catalog)
+    enriched = enrich(data, catalog=catalog, strict_terms=(mode != "dry-run"))
     est = enriched["estimate"]
     identifier = est["identifier"]
     output_path = Path(output_dir) / f"{identifier}.pdf"

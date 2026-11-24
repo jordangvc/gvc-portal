@@ -138,7 +138,7 @@
     font-size: 9pt; text-transform: uppercase; letter-spacing: 0.08em;
     color: var(--gvc-green-dark); font-weight: 800; margin-bottom: 4pt;
   }
-  .terms ul { margin: 0; padding-left: 16pt; }
+  .terms ul, .terms ol { margin: 0; padding-left: 16pt; }
   .terms li { margin-bottom: 4pt; font-size: 9.5pt; }
 
   .notes { margin-top: 10pt; font-size: 9.5pt; page-break-inside: avoid; }
@@ -338,7 +338,7 @@
     <ul>
       {% for note in estimate.special_notes %}<li>{{ note }}</li>{% endfor %}
     </ul>
-    <div class="fine">These special notes supersede the standard deliverables and clarifications below and are reflected in the estimate price above.</div>
+    <div class="fine">These special notes supersede the standard terms and are reflected in the estimate price above.</div>
   </div>
   {% endif %}
 
@@ -373,44 +373,28 @@
   </div>
   {% endif %}
 
-  <!-- Standard deliverables / terms (own page) -->
+  <!-- Standard terms (own page). Block chosen by job.project_type in
+       orchestrators/estimate_flow.py (COMMERCIAL_TERMS / RESIDENTIAL_TERMS).
+       The scope-governs line ALWAYS prints, special notes or not. -->
   <div class="terms">
-    <div class="terms-title">Standard Deliverables &amp; Terms</div>
-    <div class="block">
-      <div class="label">Inclusions</div>
-      <ul>{% for item in boilerplate.inclusions %}<li>{{ item }}</li>{% endfor %}</ul>
+    <div class="terms-title">{{ terms.title }}</div>
+    <div class="block scope-governs">
+      <div class="label">Order of Precedence</div>
+      <div>{{ terms.precedence or scope_governs_line }}</div>
     </div>
+    {% if terms.needs_review %}
     <div class="block">
-      <div class="label">Exclusions</div>
-      <ul>{% for item in boilerplate.exclusions %}<li>{{ item }}</li>{% endfor %}</ul>
-    </div>
-    <div class="block">
-      <div class="label">Clarifications</div>
-      <ul>{% for item in boilerplate.clarifications %}<li>{{ item }}</li>{% endfor %}</ul>
-    </div>
-    {% if boilerplate.payment %}
-    <div class="block">
-      <div class="label">Payment</div>
-      <div>{{ boilerplate.payment }}</div>
+      <div class="label" style="color:#7C2D12;">Needs Review</div>
     </div>
     {% endif %}
-    {% if boilerplate.warranty %}
     <div class="block">
-      <div class="label">Warranty</div>
-      <div>{{ boilerplate.warranty }}</div>
+      <ol>{% for item in terms["items"] %}<li>{{ item }}</li>{% endfor %}</ol>
     </div>
-    {% endif %}
-    {% if boilerplate.insurance %}
-    <div class="block">
-      <div class="label">Insurance</div>
-      <div>{{ boilerplate.insurance }}</div>
-    </div>
-    {% endif %}
     {% if estimate.special_notes %}
     <div class="block">
       <div class="label" style="color:#7C2D12;">Project-Specific Overrides</div>
       <ul>{% for note in estimate.special_notes %}<li>{{ note }}</li>{% endfor %}</ul>
-      <div style="font-size:8pt;color:var(--gvc-muted);font-style:italic;">The above supersede the standard deliverables and clarifications where they conflict.</div>
+      <div style="font-size:8pt;color:var(--gvc-muted);font-style:italic;">The above supersede these standard terms where they conflict.</div>
     </div>
     {% endif %}
   </div>

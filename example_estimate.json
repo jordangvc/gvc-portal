@@ -13,6 +13,7 @@
   "job": {
     "name": "Maxwell — Lawrenceburg Admin Bldg Reno & Addition",
     "location": "300 Tiger Blvd, Lawrenceburg IN 47025",
+    "project_type": "commercial",
     "scope_summary": "Drywall and ACT ceilings for the admin building renovation and addition per plans and schedule."
   },
   "estimate": {
@@ -40,7 +41,7 @@
       }
     ],
     "special_notes": [
-      "Use 5/8\" drywall throughout (supersedes our standard 1/2\" deliverable).",
+      "Use 5/8\" drywall throughout.",
       "All fire-rated assemblies per the life safety plan (1-hour and 2-hour)."
     ],
     "notes": "Lead time on ACT grid is approximately 3 weeks from approved submittals."
